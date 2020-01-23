@@ -202,13 +202,16 @@ model generate_cuboid(float width, float height, float depth) {
 	return ret;
 }
 
-static std::vector<std::string> split_string(std::string& s) {
-	std::istringstream iss(s);
-	std::vector<std::string> ret {
-		std::istream_iterator<std::string>(iss),
-		std::istream_iterator<std::string>{}
-	};
+static std::vector<std::string> split_string(std::string s, char delim=' ') {
+	std::vector<std::string> ret;
+	std::size_t pos = std::string::npos, last = 0;
 
+	for (pos = s.find(delim); pos != std::string::npos; pos = s.find(delim, pos + 1)) {
+		ret.push_back(s.substr(last, pos - last));
+		last = pos + 1;
+	}
+
+	ret.push_back(s.substr(last));
 	return ret;
 }
 
@@ -310,6 +313,7 @@ void model::load_object(std::string filename) {
 			unsigned elements_added = 0;
 
 			// TODO: handle normal specifications
+			// TODO: also generate new vertices so each face has unique normals
 			auto asdf = [](std::string foo) {
 				for (unsigned i = 0; i < foo.size(); i++) {
 					if (foo[i] == '/') foo[i] = ' ';
@@ -330,19 +334,16 @@ void model::load_object(std::string filename) {
 		}
 
 		else if (statement[0] == "vn") {
-			/*
-			have_normals = true;
-
-			for (unsigned i = 1; i < 4; i++) {
-				normals.push_back(std::stoi(statement[i]));
-			}
-			*/
+			glm::vec3 v = glm::vec3(std::stof(statement[1]),
+			                        std::stof(statement[2]),
+			                        std::stof(statement[3]));
+			normals.push_back(glm::normalize(v));
 		}
 
 		else if (statement[0] == "vt") {
-			/*
+			texcoords.push_back(std::stof(statement[1]));
+			texcoords.push_back(std::stof(statement[2]));
 			have_texcoords = true;
-			*/
 		}
 	}
 
@@ -354,8 +355,12 @@ void model::load_object(std::string filename) {
 	if (!have_texcoords) {
 		gen_texcoords();
 	}
-}
 
+	if (normals.size() != vertices.size()) {
+		std::cerr << " ? mismatched normals and vertices" << std::endl;
+		// TODO: should handle this
+	}
+}
 
 void model::load_materials(std::string filename) {
 	std::ifstream input(filename);
