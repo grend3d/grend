@@ -247,11 +247,12 @@ void model::gen_normals(void) {
 
 void model::gen_texcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
+	texcoords.resize(2*vertices.size());
 
 	for (unsigned i = 0; i < vertices.size(); i++) {
 		glm::vec3& foo = vertices[i];
-		texcoords.push_back(foo.x);
-		texcoords.push_back(foo.y);
+		texcoords[2*i]   = foo.x;
+		texcoords[2*i+1] = foo.y;
 	}
 }
 
@@ -269,6 +270,10 @@ void model::load_object(std::string filename) {
 	std::ifstream input(filename);
 	std::string line;
 	std::string current_mesh = "default";
+
+	std::vector<glm::vec3> vertbuf;
+	std::vector<glm::vec3> normbuf;
+	std::vector<GLfloat> texbuf;
 
 	if (!input.good()) {
 		// TODO: exception
@@ -305,30 +310,37 @@ void model::load_object(std::string filename) {
 			glm::vec3 v = glm::vec3(std::stof(statement[1]),
 			                        std::stof(statement[2]),
 			                        std::stof(statement[3]));
-			vertices.push_back(v);
+			vertbuf.push_back(v);
 		}
 
 		else if (statement[0] == "f") {
 			std::size_t end = statement.size();
 			unsigned elements_added = 0;
 
-			// TODO: handle normal specifications
-			// TODO: also generate new vertices so each face has unique normals
-			auto asdf = [](std::string foo) {
-				for (unsigned i = 0; i < foo.size(); i++) {
-					if (foo[i] == '/') foo[i] = ' ';
+			// XXX: we should be checking for buffer ranges here
+			auto load_face_tri = [&] (std::string& statement) {
+				auto spec = split_string(statement, '/');
+				unsigned vert_index = std::stoi(spec[0]) - 1;
+
+				vertices.push_back(vertbuf[vert_index]);
+				meshes[current_mesh].faces.push_back(vertices.size() - 1);
+
+				if (spec.size() > 1 && !spec[1].empty()) {
+					unsigned buf_index = 2*(std::stoi(spec[1]) - 1);
+					texcoords.push_back(texbuf[buf_index]);
+					texcoords.push_back(texbuf[buf_index + 1]);
 				}
 
-				auto vec = split_string(foo);
-				return std::stoi(vec[0]);
+				if (spec.size() > 2 && !spec[2].empty()) {
+					normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
+				}
 			};
 
 			for (std::size_t cur = 1; cur + 2 < end; cur++) {
-				meshes[current_mesh].faces.push_back(asdf(statement[1]) - 1);
+				load_face_tri(statement[1]);
 
 				for (unsigned k = 1; k < 3; k++) {
-					meshes[current_mesh].
-					faces.push_back(asdf(statement[cur + k]) - 1);
+					load_face_tri(statement[cur + k]);
 				}
 			}
 		}
@@ -337,12 +349,14 @@ void model::load_object(std::string filename) {
 			glm::vec3 v = glm::vec3(std::stof(statement[1]),
 			                        std::stof(statement[2]),
 			                        std::stof(statement[3]));
-			normals.push_back(glm::normalize(v));
+			//normals.push_back(glm::normalize(v));
+			normbuf.push_back(v);
+			have_normals = true;
 		}
 
 		else if (statement[0] == "vt") {
-			texcoords.push_back(std::stof(statement[1]));
-			texcoords.push_back(std::stof(statement[2]));
+			texbuf.push_back(std::stof(statement[1]));
+			texbuf.push_back(std::stof(statement[2]));
 			have_texcoords = true;
 		}
 	}
@@ -357,7 +371,18 @@ void model::load_object(std::string filename) {
 	}
 
 	if (normals.size() != vertices.size()) {
-		std::cerr << " ? mismatched normals and vertices" << std::endl;
+		std::cerr << " ? mismatched normals and vertices: "
+			<< normals.size() << ", "
+			<< vertices.size()
+			<< std::endl;
+		// TODO: should handle this
+	}
+
+	if (texcoords.size()/2 != vertices.size()) {
+		std::cerr << " ? mismatched texcoords and vertices: "
+			<< texcoords.size() << ", "
+			<< vertices.size()
+			<< std::endl;
 		// TODO: should handle this
 	}
 }
@@ -409,7 +434,11 @@ void model::load_materials(std::string filename) {
 			materials[current_material].shininess = std::stof(statement[1]);
 		}
 
-		// TODO: light maps, other attributes
+		else if (statement[0] == "map_Kd") {
+			materials[current_material].diffuse_map = base_dir(filename) + statement[1];
+		}
+
+		// TODO: other light maps, attributes
 	}
 }
 
@@ -513,6 +542,7 @@ class grend {
 				//       optimizations to be done in buffering all the material info
 				//       to the shaders during initialization
 				std::map<std::string, material> materials;
+				std::map<std::string, rhandle> mat_textures;
 
 				void *vertices_offset;
 				void *normals_offset;
@@ -733,6 +763,10 @@ void grend::compile_models(model_map& models) {
 		// copy materials
 		for (const auto& mat : x.second.materials) {
 			obj.materials[mat.first] = mat.second;
+
+			if (!mat.second.diffuse_map.empty()) {
+				obj.mat_textures[mat.first] = load_texture(mat.second.diffuse_map);
+			}
 		}
 
 		cooked_models[x.first] = obj;
@@ -1079,13 +1113,29 @@ void testscene::draw_mesh_lines(compiled_mesh& foo, glm::mat4 transform) {
 
 void testscene::draw_model(compiled_model& obj, glm::mat4 transform) {
 	for (std::string& name : obj.meshes) {
-		if (obj.materials.find(cooked_meshes[name].material) == obj.materials.end()) {
+		std::string mat_name = cooked_meshes[name].material;
+
+		if (obj.materials.find(mat_name) == obj.materials.end()) {
 			material& mat = default_materials["(null)"];
+
+			glBindTexture(GL_TEXTURE_2D, textures[0].first);
+			glUniform1i(uniform_mytexture, 0);
+
 			draw_mesh(cooked_meshes[name], transform, mat);
 		}
 
 		else {
-			material& mat = obj.materials[cooked_meshes[name].material];
+			material& mat = obj.materials[mat_name];
+
+			if (!mat.diffuse_map.empty()) {
+				glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
+				glUniform1i(uniform_mytexture, 0);
+
+			} else {
+				glBindTexture(GL_TEXTURE_2D, textures[0].first);
+				glUniform1i(uniform_mytexture, 0);
+			}
+
 			draw_mesh(cooked_meshes[name], transform, mat);
 		}
 	}
