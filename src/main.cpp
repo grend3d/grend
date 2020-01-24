@@ -638,8 +638,11 @@ class testscene : public grend {
 		glm::vec3 view_up = glm::vec3(0, 1, 0);
 		glm::vec3 view_right = glm::vec3(1, 0, 0);
 
-		float last_mouse_x;
-		float last_mouse_y;
+		glm::vec3 select_position = glm::vec3(0, 0, 0);
+		float     select_distance = 5;
+		// TODO: obj rotation
+		// TODO: model types
+		std::vector<glm::vec3> dynamic_models;
 
 		Uint32 last_frame;
 
@@ -1209,6 +1212,13 @@ void testscene::render(context& ctx) {
 	glm::mat4 bizz = glm::translate(glm::mat4(1), hpos);
 	draw_model(cooked_models["person"], bizz);
 
+	draw_model(cooked_models["ground"], glm::translate(select_position));
+	draw_model_lines(cooked_models["ground"], glm::translate(select_position));
+
+	for (auto& v : dynamic_models) {
+		draw_model(cooked_models["ground"], glm::translate(v));
+	}
+
 	for (unsigned i = 0; i < 16; i++) {
 		float time_component = i + M_PI*SDL_GetTicks()/1000.f;
 		const float fpi = 3.1415926f;
@@ -1292,6 +1302,10 @@ void testscene::input(context& ctx) {
 					break;
 			}
 		}
+
+		else if (ev.type == SDL_MOUSEWHEEL) {
+			select_distance -= ev.wheel.y/10.f /* fidelity */;
+		}
 	}
 
 	int x, y;
@@ -1323,8 +1337,18 @@ void testscene::input(context& ctx) {
 	view_position += view_velocity.y * view_up * fticks;
 	view_position += view_velocity.x * glm::normalize(glm::cross(view_direction, view_up)) * fticks;
 
-	last_mouse_x = rel_x;
-	last_mouse_y = rel_y;
+	// TODO: "fidelity" parameter to help align objects
+	float fidelity = 10.f;
+	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
+
+	select_position = glm::vec3(align(view_direction.x*select_distance + view_position.x),
+	                            align(view_direction.y*select_distance + view_position.y),
+	                            align(view_direction.z*select_distance + view_position.z));
+
+	if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+		// TODO: should check for button down, this will usually place multiple objects otherwise
+		dynamic_models.push_back(select_position);
+	}
 }
 
 void testscene::physics(context& ctx) {
