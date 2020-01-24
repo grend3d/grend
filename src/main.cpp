@@ -638,22 +638,113 @@ class testscene : public grend {
 		glm::vec3 view_up = glm::vec3(0, 1, 0);
 		glm::vec3 view_right = glm::vec3(1, 0, 0);
 
+		struct editor_entry {
+			std::string name;
+			glm::vec3   position;
+			// TODO: full rotation
+			float       y_rotation;
+		};
+
+		// Map editing things
+		bool in_select_mode = false;
 		glm::vec3 select_position = glm::vec3(0, 0, 0);
 		float     select_distance = 5;
-		// TODO: obj rotation
-		// TODO: model types
-		std::vector<glm::vec3> dynamic_models;
+		float     select_rotation = 0;
+		std::vector<editor_entry> dynamic_models;
+		model_map::iterator select_model;
 
 		Uint32 last_frame;
 
 		// models
 		model_map models = {
-			{"ground",    model("assets/obj/Modular Terrain Hilly/Grass_Flat.obj")},
-			{"path",      model("assets/obj/Modular Terrain Hilly/Path_Center.obj")},
-			{"grass",     model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_1.obj")},
-			{"stump",     model("assets/obj/Modular Terrain Hilly/Prop_Stump.obj")},
-			{"tree",      model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_1.obj")},
+			/*
+			   {"ground",    model("assets/obj/Modular Terrain Hilly/Grass_Flat.obj")},
+			   {"path",      model("assets/obj/Modular Terrain Hilly/Path_Center.obj")},
+			   {"grass",     model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_1.obj")},
+			   {"stump",     model("assets/obj/Modular Terrain Hilly/Prop_Stump.obj")},
+			   {"tree",      model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_1.obj")},
+			   {"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
+			   */
 			{"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
+
+			// TODO: load whole directories (model libraries)
+			{"Grass_Flat.obj", model("assets/obj/Modular Terrain Hilly/Grass_Flat.obj")},
+			{"Hill_Corner_Inner_2x2.obj", model("assets/obj/Modular Terrain Hilly/Hill_Corner_Inner_2x2.obj")},
+			{"Hill_Corner_Outer_2x2.obj", model("assets/obj/Modular Terrain Hilly/Hill_Corner_Outer_2x2.obj")},
+			{"Hill_Side.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side.obj")},
+			{"Hill_Side_On_Side.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_On_Side.obj")},
+			{"Hill_Side_Transition_From_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_Transition_From_Gentle.obj")},
+			{"Hill_Side_Transition_To_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_Transition_To_Gentle.obj")},
+			{"Path_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Center.obj")},
+			{"Path_Corner_Inner_1x1.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Inner_1x1.obj")},
+			{"Path_Corner_Inner_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Inner_2x2.obj")},
+			{"Path_Corner_Outer_1x1.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_1x1.obj")},
+			{"Path_Corner_Outer_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_2x2.obj")},
+			{"Path_Corner_Outer_3x3.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_3x3.obj")},
+			{"Path_Corner_Y_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Y_2x2.obj")},
+			{"Path_Corner_Y_3x3.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Y_3x3.obj")},
+			{"Path_Hill_Gentle_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Gentle_Center.obj")},
+			{"Path_Hill_Gentle_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Gentle_Side.obj")},
+			{"Path_Hill_Sharp_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Sharp_Center.obj")},
+			{"Path_Hill_Sharp_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Sharp_Side.obj")},
+			{"Path_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Side.obj")},
+			{"Prop_Branch_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_1.obj")},
+			{"Prop_Branch_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_2.obj")},
+			{"Prop_Branch_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_3.obj")},
+			{"Prop_Bridge_Log_End_Edge.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_End_Edge.obj")},
+			{"Prop_Bridge_Log_End.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_End.obj")},
+			{"Prop_Bridge_Log_Middle_Edge.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Middle_Edge.obj")},
+			{"Prop_Bridge_Log_Middle.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Middle.obj")},
+			{"Prop_Bridge_Log_Post_Support.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Post_Support.obj")},
+			{"Prop_Bridge_Log_Post_Top.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Post_Top.obj")},
+			{"Prop_Bush_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_1.obj")},
+			{"Prop_Bush_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_2.obj")},
+			{"Prop_Bush_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_3.obj")},
+			{"Prop_Cattail_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Cattail_1.obj")},
+			{"Prop_Cattail_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Cattail_2.obj")},
+			{"Prop_Fence_Boards_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_1.obj")},
+			{"Prop_Fence_Boards_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_2.obj")},
+			{"Prop_Fence_Boards_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_3.obj")},
+			{"Prop_Fence_Boards_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_4.obj")},
+			{"Prop_Fence_Curve_1x1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_1x1.obj")},
+			{"Prop_Fence_Curve_2x2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_2x2.obj")},
+			{"Prop_Fence_Curve_3x3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_3x3.obj")},
+			{"Prop_Fence_Gate_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Gate_1.obj")},
+			{"Prop_Fence_Gate_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Gate_2.obj")},
+			{"Prop_Fence_Hill_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Hill_Gentle.obj")},
+			{"Prop_Fence_Hill_Sharp.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Hill_Sharp.obj")},
+			{"Prop_Fence_Post_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_1.obj")},
+			{"Prop_Fence_Post_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_2.obj")},
+			{"Prop_Fence_Post_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_3.obj")},
+			{"Prop_Fence_Post_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_4.obj")},
+			{"Prop_Flower_Daisy.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Daisy.obj")},
+			{"Prop_Flower_Lily_Blue.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Lily_Blue.obj")},
+			{"Prop_Flower_Lily_Pink.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Lily_Pink.obj")},
+			{"Prop_Flower_Rose.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Rose.obj")},
+			{"Prop_Flower_Sunflower.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Sunflower.obj")},
+			{"Prop_Flower_Tulip.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Tulip.obj")},
+			{"Prop_Grass_Clump_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_1.obj")},
+			{"Prop_Grass_Clump_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_2.obj")},
+			{"Prop_Grass_Clump_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_3.obj")},
+			{"Prop_Grass_Clump_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_4.obj")},
+			{"Prop_Hollow_Trunk.obj", model("assets/obj/Modular Terrain Hilly/Prop_Hollow_Trunk.obj")},
+			{"Prop_Mushroom_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Mushroom_1.obj")},
+			{"Prop_Mushroom_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Mushroom_2.obj")},
+			{"Prop_Rock_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_1.obj")},
+			{"Prop_Rock_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_2.obj")},
+			{"Prop_Rock_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_3.obj")},
+			{"Prop_Rock_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_4.obj")},
+			{"Prop_Stump.obj", model("assets/obj/Modular Terrain Hilly/Prop_Stump.obj")},
+			{"Prop_Tree_Cedar_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Cedar_1.obj")},
+			{"Prop_Tree_Cedar_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Cedar_2.obj")},
+			{"Prop_Tree_Oak_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_1.obj")},
+			{"Prop_Tree_Oak_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_2.obj")},
+			{"Prop_Tree_Oak_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_3.obj")},
+			{"Prop_Tree_Pine_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_1.obj")},
+			{"Prop_Tree_Pine_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_2.obj")},
+			{"Prop_Tree_Pine_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_3.obj")},
+			{"Water_Flat.obj", model("assets/obj/Modular Terrain Hilly/Water_Flat.obj")},
+			{"Water_Slope.obj", model("assets/obj/Modular Terrain Hilly/Water_Slope.obj")},
 
 			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
 			{"unit_cube", generate_cuboid(1, 1, 1)},
@@ -1035,6 +1126,7 @@ testscene::testscene() : grend() {
 	view = glm::lookAt(glm::vec3(0.0, 1.0, 5.0),
 	                   glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
+	select_model = models.begin();
 
 	// buffers
 	main_vao = bind_vao(gen_vao());
@@ -1150,6 +1242,11 @@ void testscene::draw_model(compiled_model& obj, glm::mat4 transform) {
 }
 
 void testscene::draw_model_lines(compiled_model& obj, glm::mat4 transform) {
+	// TODO: need a set_material() function to handle stuff
+	//       and we need to explicitly set a material
+	glBindTexture(GL_TEXTURE_2D, textures[0].first);
+	glUniform1i(uniform_mytexture, 0);
+
 	for (std::string& name : obj.meshes) {
 		draw_mesh_lines(cooked_meshes[name], transform);
 	}
@@ -1189,20 +1286,20 @@ void testscene::render(context& ctx) {
 		for (int y = -dimension; y < dimension; y++) {
 			glm::mat4 trans = glm::translate(glm::vec3(x, 0, y));
 			if (abs(x) < 4 || abs(y) < 4) {
-				draw_model(cooked_models["path"], trans);
+				draw_model(cooked_models["Path_Center.obj"], trans);
 
 			} else {
-				draw_model(cooked_models["ground"], trans);
+				draw_model(cooked_models["Grass_Flat.obj"], trans);
 				trans = glm::translate(glm::vec3(x, 0.2, y));
 
 				if (abs(x) == 12 && abs(y) == 12) {
-					draw_model(cooked_models["tree"], trans);
+					draw_model(cooked_models["Prop_Tree_Oak_2.obj"], trans);
 
 				} else if (rand() % 3 == 0) {
-					draw_model(cooked_models["grass"], trans);
+					draw_model(cooked_models["Prop_Grass_Clump_4.obj"], trans);
 
 				} else if (rand() % 17 == 0) {
-					draw_model(cooked_models["stump"], trans);
+					draw_model(cooked_models["Prop_Stump.obj"], trans);
 				}
 			}
 		}
@@ -1212,11 +1309,20 @@ void testscene::render(context& ctx) {
 	glm::mat4 bizz = glm::translate(glm::mat4(1), hpos);
 	draw_model(cooked_models["person"], bizz);
 
-	draw_model(cooked_models["ground"], glm::translate(select_position));
-	draw_model_lines(cooked_models["ground"], glm::translate(select_position));
+	if (in_select_mode) {
+		glm::mat4 trans =
+			glm::translate(select_position)
+			* glm::rotate(select_rotation, glm::vec3(0, 1, 0));
+
+		draw_model_lines(cooked_models[select_model->first], trans);
+		draw_model(cooked_models[select_model->first], trans);
+	}
 
 	for (auto& v : dynamic_models) {
-		draw_model(cooked_models["ground"], glm::translate(v));
+		glm::mat4 trans =
+			glm::translate(v.position) * glm::rotate(v.y_rotation, glm::vec3(0, 1, 0));
+
+		draw_model(cooked_models[v.name], trans);
 	}
 
 	for (unsigned i = 0; i < 16; i++) {
@@ -1228,9 +1334,9 @@ void testscene::render(context& ctx) {
 			* glm::rotate(fpi*cosf(0.025 * fpi * time_component), glm::vec3(0, 1, 0));
 
 		compiled_model& foo =
-		     (i%4 == 0)? cooked_models["grass"]
-		   : (i%4 == 1)? cooked_models["stump"]
-		   : (i%4 == 2)? cooked_models["tree"]
+		     (i%4 == 0)? cooked_models["Grass_Flat.obj"]
+		   : (i%4 == 1)? cooked_models["Prop_Stump.obj"]
+		   : (i%4 == 2)? cooked_models["Prop_Tree_Oak_2.obj"]
 		   :             cooked_models["person"];
 
 		draw_model(foo, model);
@@ -1263,6 +1369,8 @@ void testscene::input(context& ctx) {
 				case SDLK_d: view_velocity.x =  movement_speed; break;
 				case SDLK_q: view_velocity.y =  movement_speed; break;
 				case SDLK_e: view_velocity.y = -movement_speed; break;
+				case SDLK_m: in_select_mode = !in_select_mode; break;
+
 				case SDLK_x: running = false; break;
 			}
 		}
@@ -1303,8 +1411,49 @@ void testscene::input(context& ctx) {
 			}
 		}
 
-		else if (ev.type == SDL_MOUSEWHEEL) {
-			select_distance -= ev.wheel.y/10.f /* fidelity */;
+		// keeping editing commands seperate from the main input handling
+		if (in_select_mode) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_z: select_rotation -= M_PI/4; break;
+					case SDLK_c: select_rotation += M_PI/4; break;
+
+					case SDLK_r:
+						if (select_model == models.begin()) {
+							select_model = models.end();
+						}
+						select_model--;
+						break;
+
+					case SDLK_f:
+						select_model++;
+						if (select_model == models.end()) {
+							select_model = models.begin();
+						}
+						break;
+
+					case SDLK_DELETE:
+						// undo, basically
+						if (!dynamic_models.empty()) {
+							dynamic_models.pop_back();
+						}
+						break;
+				}
+			}
+
+			else if (ev.type == SDL_MOUSEWHEEL) {
+				select_distance -= ev.wheel.y/10.f /* fidelity */;
+			}
+
+			else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+				if (ev.button.button == SDL_BUTTON_LEFT) {
+					dynamic_models.push_back({
+						select_model->first,
+						select_position,
+						select_rotation
+					});
+				}
+			}
 		}
 	}
 
@@ -1344,11 +1493,6 @@ void testscene::input(context& ctx) {
 	select_position = glm::vec3(align(view_direction.x*select_distance + view_position.x),
 	                            align(view_direction.y*select_distance + view_position.y),
 	                            align(view_direction.z*select_distance + view_position.z));
-
-	if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-		// TODO: should check for button down, this will usually place multiple objects otherwise
-		dynamic_models.push_back(select_position);
-	}
 }
 
 void testscene::physics(context& ctx) {
