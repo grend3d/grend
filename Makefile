@@ -3,7 +3,7 @@ OBJ  = $(SRC:.cpp=.o)
 DEPS = $(SRC:.cpp=.d)
 
 CXXFLAGS += `sdl2-config --cflags --libs` -lSDL2_image -lGL -lGLEW -lglut \
-			--std=c++17 -Wall -g -Og \
+			-I./include --std=c++17 -Wall -g -Og \
 			-MD
 
 all: grend-test
@@ -18,4 +18,4 @@ test: grend-test
 
 .PHONY: clean
 clean:
-	-rm -f grend-test $(OBJ)
+	-rm -f grend-test $(OBJ) $(DEPS)
