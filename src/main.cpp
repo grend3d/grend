@@ -28,8 +28,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-#define SCREEN_SIZE_X 1024
-#define SCREEN_SIZE_Y 1024
+// premium HD resolution
+#define SCREEN_SIZE_X 1366
+#define SCREEN_SIZE_Y 768
 
 #define ENABLE_MIPMAPS 1
 #define ENABLE_FACE_CULLING 1
@@ -472,7 +473,10 @@ context::context(const char *progname) {
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
 	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-	                          SCREEN_SIZE_X, SCREEN_SIZE_Y, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	                          SCREEN_SIZE_X, SCREEN_SIZE_Y,
+	                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+
+	SDL_ShowCursor(SDL_DISABLE);
 
 	if (!window) {
 		SDL_Die("Couldn't create a window");
@@ -1023,7 +1027,8 @@ grend::rhandle grend::load_shader(const std::string filename, GLuint type) {
 }
 
 testscene::testscene() : grend() {
-	projection = glm::perspective(glm::radians(60.f), 1.f, 0.1f, 100.f);
+	projection = glm::perspective(glm::radians(60.f),
+	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 1.0, 5.0),
 	                   glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
@@ -1270,26 +1275,41 @@ void testscene::input(context& ctx) {
 					break;
 			}
 		}
+
+		else if (ev.type == SDL_WINDOWEVENT) {
+			switch (ev.window.event) {
+				case SDL_WINDOWEVENT_RESIZED:
+				case SDL_WINDOWEVENT_SIZE_CHANGED:
+					{
+						int win_x, win_y;
+						SDL_GetWindowSize(ctx.window, &win_x, &win_y);
+						std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
+						glViewport(0, 0, win_x, win_y);
+						projection = glm::perspective(glm::radians(60.f),
+						                              (1.f*win_x)/win_y, 0.1f, 100.f);
+
+					}
+					break;
+			}
+		}
 	}
 
 	int x, y;
+	int win_x, win_y;
 	Uint32 buttons = SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(ctx.window, &win_x, &win_y);
 
-	x = (x > 0)? x : SCREEN_SIZE_X/2;
-	y = (x > 0)? y : SCREEN_SIZE_Y/2;
+	x = (x > 0)? x : win_x/2;
+	y = (x > 0)? y : win_y/2;
 
 	// TODO: get window resolution
-	float center_x = (float)SCREEN_SIZE_X / 2;
-	float center_y = (float)SCREEN_SIZE_Y / 2;
+	float center_x = (float)win_x / 2;
+	float center_y = (float)win_y / 2;
 
 	float rel_x = ((float)x - center_x) / center_x;
 	float rel_y = ((float)y - center_y) / center_y;
 
-	/*
-	float delta_x = rel_x - last_mouse_x;
-	float delta_y = rel_y - last_mouse_y;
-	*/
-
+	// adjust view
 	view_direction = glm::normalize(glm::vec3(
 		rotation_speed * rel_x,
 		rotation_speed *-rel_y,
