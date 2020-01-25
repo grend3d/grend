@@ -57,14 +57,21 @@ class testscene : public grend {
 			std::string name;
 			glm::vec3   position;
 			// TODO: full rotation
-			float       y_rotation;
+			glm::mat4   transform;
+			bool        inverted;
+
+			// TODO: might be a good idea to keep track of whether face culling is enabled for
+			//       this model, although that might be better off in the model class itself...
 		};
 
 		// Map editing things
 		bool in_select_mode = false;
 		glm::vec3 select_position = glm::vec3(0, 0, 0);
+		glm::mat4 select_transform = glm::mat4(1);
 		float     select_distance = 5;
-		float     select_rotation = 0;
+		// this keeps track of the current face order after flipping along an axis
+		bool      select_inverted = false;
+
 		std::vector<editor_entry> dynamic_models;
 		model_map::iterator select_model;
 
@@ -374,21 +381,21 @@ void testscene::render(context& ctx) {
 	draw_model(cooked_models["person"], bizz);
 
 	if (in_select_mode) {
-		glm::mat4 trans =
-			glm::translate(select_position)
-			* glm::rotate(select_rotation, glm::vec3(0, 1, 0));
+		glm::mat4 trans = glm::translate(select_position) * select_transform;
 
+		glFrontFace(select_inverted? GL_CW : GL_CCW);
 		draw_model_lines(cooked_models[select_model->first], trans);
 		draw_model(cooked_models[select_model->first], trans);
 	}
 
 	for (auto& v : dynamic_models) {
-		glm::mat4 trans =
-			glm::translate(v.position) * glm::rotate(v.y_rotation, glm::vec3(0, 1, 0));
+		glm::mat4 trans = glm::translate(v.position) * v.transform;
 
+		glFrontFace(v.inverted? GL_CW : GL_CCW);
 		draw_model(cooked_models[v.name], trans);
 	}
 
+	glFrontFace(GL_CCW);
 	for (unsigned i = 0; i < 16; i++) {
 		float time_component = i + M_PI*SDL_GetTicks()/1000.f;
 		const float fpi = 3.1415926f;
@@ -435,7 +442,7 @@ void testscene::input(context& ctx) {
 				case SDLK_e: view_velocity.y = -movement_speed; break;
 				case SDLK_m: in_select_mode = !in_select_mode; break;
 
-				case SDLK_x: running = false; break;
+				case SDLK_ESCAPE: running = false; break;
 			}
 		}
 
@@ -479,8 +486,33 @@ void testscene::input(context& ctx) {
 		if (in_select_mode) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
-					case SDLK_z: select_rotation -= M_PI/4; break;
-					case SDLK_c: select_rotation += M_PI/4; break;
+					case SDLK_z:
+						//select_rotation -= M_PI/4;
+						select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
+						break;
+
+					case SDLK_c:
+						//select_rotation += M_PI/4;
+						select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
+						break;
+
+					case SDLK_x:
+						// flip horizontally (along the X axis)
+						select_transform *= glm::scale(glm::vec3(-1, 1, 1));
+						select_inverted = !select_inverted;
+						break;
+
+					case SDLK_b:
+						// flip horizontally (along the Z axis)
+						select_transform *= glm::scale(glm::vec3( 1, 1, -1));
+						select_inverted = !select_inverted;
+						break;
+
+					case SDLK_v:
+						// flip vertically
+						select_transform *= glm::scale(glm::vec3( 1, -1, 1));
+						select_inverted = !select_inverted;
+						break;
 
 					case SDLK_r:
 						if (select_model == models.begin()) {
@@ -514,7 +546,8 @@ void testscene::input(context& ctx) {
 					dynamic_models.push_back({
 						select_model->first,
 						select_position,
-						select_rotation
+						select_transform,
+						select_inverted,
 					});
 				}
 			}
