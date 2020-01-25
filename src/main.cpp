@@ -3,6 +3,7 @@
 #include <grend/glm-includes.hpp>
 #include <grend/geometry-gen.hpp>
 #include <grend/grend.hpp>
+#include <grend/utility.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,9 @@ class testscene : public grend {
 		virtual void logic(context& ctx);
 		virtual void physics(context& ctx);
 		virtual void input(context& ctx);
+
+		void save_map(std::string name="save.map");
+		void load_map(std::string name="save.map");
 
 		void draw_mesh(compiled_mesh& foo, glm::mat4 transform, material& mat);
 		void draw_mesh_lines(compiled_mesh& foo, glm::mat4 transform);
@@ -324,7 +328,7 @@ void testscene::draw_model_lines(compiled_model& obj, glm::mat4 transform) {
 }
 
 void testscene::render(context& ctx) {
-	glClearColor(0.1, 0.1, 0.1, 1);
+	glClearColor(0.7, 0.9, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0].first);
@@ -486,6 +490,9 @@ void testscene::input(context& ctx) {
 		if (in_select_mode) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
+					case SDLK_i: load_map(); break;
+					case SDLK_o: save_map(); break;
+
 					case SDLK_z:
 						//select_rotation -= M_PI/4;
 						select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
@@ -606,6 +613,65 @@ void testscene::logic(context& ctx) {
 	last_frame = cur_ticks;
 
 	view = glm::lookAt(view_position, view_position + view_direction, view_up);
+}
+
+void testscene::save_map(std::string name) {
+	std::ofstream foo(name);
+	std::cerr << "saving map " << name << std::endl;
+
+	if (!foo.good()) {
+		std::cerr << "couldn't open save file" << name << std::endl;
+		return;
+	}
+
+	foo << "### test scene save file" << std::endl;
+
+	for (auto& v : dynamic_models) {
+		foo << v.name << "\t"
+			<< v.position.x << "," << v.position.y << "," << v.position.z << "\t";
+
+		for (unsigned y = 0; y < 4; y++) {
+			for (unsigned x = 0; x < 4; x++) {
+				foo << v.transform[y][x] << ",";
+			}
+		}
+
+		foo << "\t" << v.inverted;
+		foo << std::endl;
+	}
+}
+
+void testscene::load_map(std::string name) {
+	std::ifstream foo(name);
+	std::cerr << "loading map " << name << std::endl;
+
+	if (!foo.good()) {
+		std::cerr << "couldn't open save file" << name << std::endl;
+		return;
+	}
+
+	std::string line;
+	while (std::getline(foo, line)) {
+		auto statement = split_string(line, '\t');
+		if (line[0] == '#' || line[0] == '\n' || statement.size() < 4) {
+			continue;
+		}
+
+		auto posvec = split_string(statement[1], ',');
+		auto matvec = split_string(statement[2], ',');
+
+		editor_entry v;
+		v.name = statement[0];
+		v.position = glm::vec3(std::stof(posvec[0]), std::stof(posvec[1]), std::stof(posvec[2]));
+		v.inverted = std::stoi(statement[3]);
+
+		for (unsigned i = 0; i < 16; i++) {
+			v.transform[i/4][i%4] = std::stof(matvec[i]);
+		}
+
+		dynamic_models.push_back(v);
+		std::cerr << "# loaded a " << v.name << std::endl;
+	}
 }
 
 int main(int argc, char *argv[]) {
