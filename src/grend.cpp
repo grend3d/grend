@@ -8,10 +8,6 @@
 #include <iostream>
 #include <sstream>
 
-// TODO: expose this config somehow
-#define ENABLE_MIPMAPS 1
-#define ENABLE_FACE_CULLING 1
-
 // TODO: header for general utility functions (see also split_string())
 static std::string load_file(const std::string filename) {
 	std::ifstream ifs(filename);

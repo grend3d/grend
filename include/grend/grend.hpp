@@ -9,6 +9,10 @@
 #include <string>
 #include <utility>
 
+// TODO: expose this config somehow
+#define ENABLE_MIPMAPS 1
+#define ENABLE_FACE_CULLING 1
+
 namespace grendx {
 
 class grend {
