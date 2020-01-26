@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include <tuple>
 #include <vector>
@@ -19,6 +21,7 @@
 #include <memory>
 #include <utility>
 #include <map>
+#include <list>
 
 using namespace grendx;
 
@@ -29,6 +32,35 @@ std::map<std::string, material> default_materials = {
 	{"Yellow", {{0.01, 0.01, 0.01, 1}, {0, 0, 0, 1}, {0.2, 0.2, 0.2, 0.2}, 20}},
 	{"Steel",  {{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, 20}},
 };
+
+grend::model_map load_library(std::string dir) {
+	grend::model_map ret;
+	struct dirent *dirent;
+	DIR *dirp;
+
+	if (!(dirp = opendir(dir.c_str()))) {
+		std::cerr << "Warning: couldn't load models from " << dir << std::endl;
+		return ret;
+	}
+
+	while ((dirent = readdir(dirp))) {
+		std::string fname = dirent->d_name;
+		std::size_t pos = fname.rfind('.');
+
+		if (pos == std::string::npos) {
+			// no extension
+			continue;
+		}
+
+		if (fname.substr(pos) == ".obj") {
+			std::cerr << "   - " << fname << std::endl;;
+			ret[fname] = model(dir + "/" + fname);
+		}
+	}
+
+	closedir(dirp);
+	return ret;
+}
 
 class testscene : public grend {
 	public:
@@ -83,97 +115,15 @@ class testscene : public grend {
 
 		// models
 		model_map models = {
-			/*
-			   {"ground",    model("assets/obj/Modular Terrain Hilly/Grass_Flat.obj")},
-			   {"path",      model("assets/obj/Modular Terrain Hilly/Path_Center.obj")},
-			   {"grass",     model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_1.obj")},
-			   {"stump",     model("assets/obj/Modular Terrain Hilly/Prop_Stump.obj")},
-			   {"tree",      model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_1.obj")},
-			   {"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
-			   */
 			{"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
-
-			// TODO: load whole directories (model libraries)
-			{"Grass_Flat.obj", model("assets/obj/Modular Terrain Hilly/Grass_Flat.obj")},
-			{"Hill_Corner_Inner_2x2.obj", model("assets/obj/Modular Terrain Hilly/Hill_Corner_Inner_2x2.obj")},
-			{"Hill_Corner_Outer_2x2.obj", model("assets/obj/Modular Terrain Hilly/Hill_Corner_Outer_2x2.obj")},
-			{"Hill_Side.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side.obj")},
-			{"Hill_Side_On_Side.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_On_Side.obj")},
-			{"Hill_Side_Transition_From_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_Transition_From_Gentle.obj")},
-			{"Hill_Side_Transition_To_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Hill_Side_Transition_To_Gentle.obj")},
-			{"Path_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Center.obj")},
-			{"Path_Corner_Inner_1x1.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Inner_1x1.obj")},
-			{"Path_Corner_Inner_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Inner_2x2.obj")},
-			{"Path_Corner_Outer_1x1.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_1x1.obj")},
-			{"Path_Corner_Outer_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_2x2.obj")},
-			{"Path_Corner_Outer_3x3.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Outer_3x3.obj")},
-			{"Path_Corner_Y_2x2.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Y_2x2.obj")},
-			{"Path_Corner_Y_3x3.obj", model("assets/obj/Modular Terrain Hilly/Path_Corner_Y_3x3.obj")},
-			{"Path_Hill_Gentle_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Gentle_Center.obj")},
-			{"Path_Hill_Gentle_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Gentle_Side.obj")},
-			{"Path_Hill_Sharp_Center.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Sharp_Center.obj")},
-			{"Path_Hill_Sharp_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Hill_Sharp_Side.obj")},
-			{"Path_Side.obj", model("assets/obj/Modular Terrain Hilly/Path_Side.obj")},
-			{"Prop_Branch_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_1.obj")},
-			{"Prop_Branch_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_2.obj")},
-			{"Prop_Branch_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Branch_3.obj")},
-			{"Prop_Bridge_Log_End_Edge.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_End_Edge.obj")},
-			{"Prop_Bridge_Log_End.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_End.obj")},
-			{"Prop_Bridge_Log_Middle_Edge.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Middle_Edge.obj")},
-			{"Prop_Bridge_Log_Middle.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Middle.obj")},
-			{"Prop_Bridge_Log_Post_Support.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Post_Support.obj")},
-			{"Prop_Bridge_Log_Post_Top.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bridge_Log_Post_Top.obj")},
-			{"Prop_Bush_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_1.obj")},
-			{"Prop_Bush_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_2.obj")},
-			{"Prop_Bush_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Bush_3.obj")},
-			{"Prop_Cattail_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Cattail_1.obj")},
-			{"Prop_Cattail_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Cattail_2.obj")},
-			{"Prop_Fence_Boards_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_1.obj")},
-			{"Prop_Fence_Boards_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_2.obj")},
-			{"Prop_Fence_Boards_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_3.obj")},
-			{"Prop_Fence_Boards_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Boards_4.obj")},
-			{"Prop_Fence_Curve_1x1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_1x1.obj")},
-			{"Prop_Fence_Curve_2x2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_2x2.obj")},
-			{"Prop_Fence_Curve_3x3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Curve_3x3.obj")},
-			{"Prop_Fence_Gate_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Gate_1.obj")},
-			{"Prop_Fence_Gate_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Gate_2.obj")},
-			{"Prop_Fence_Hill_Gentle.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Hill_Gentle.obj")},
-			{"Prop_Fence_Hill_Sharp.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Hill_Sharp.obj")},
-			{"Prop_Fence_Post_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_1.obj")},
-			{"Prop_Fence_Post_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_2.obj")},
-			{"Prop_Fence_Post_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_3.obj")},
-			{"Prop_Fence_Post_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Fence_Post_4.obj")},
-			{"Prop_Flower_Daisy.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Daisy.obj")},
-			{"Prop_Flower_Lily_Blue.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Lily_Blue.obj")},
-			{"Prop_Flower_Lily_Pink.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Lily_Pink.obj")},
-			{"Prop_Flower_Rose.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Rose.obj")},
-			{"Prop_Flower_Sunflower.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Sunflower.obj")},
-			{"Prop_Flower_Tulip.obj", model("assets/obj/Modular Terrain Hilly/Prop_Flower_Tulip.obj")},
-			{"Prop_Grass_Clump_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_1.obj")},
-			{"Prop_Grass_Clump_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_2.obj")},
-			{"Prop_Grass_Clump_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_3.obj")},
-			{"Prop_Grass_Clump_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Grass_Clump_4.obj")},
-			{"Prop_Hollow_Trunk.obj", model("assets/obj/Modular Terrain Hilly/Prop_Hollow_Trunk.obj")},
-			{"Prop_Mushroom_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Mushroom_1.obj")},
-			{"Prop_Mushroom_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Mushroom_2.obj")},
-			{"Prop_Rock_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_1.obj")},
-			{"Prop_Rock_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_2.obj")},
-			{"Prop_Rock_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_3.obj")},
-			{"Prop_Rock_4.obj", model("assets/obj/Modular Terrain Hilly/Prop_Rock_4.obj")},
-			{"Prop_Stump.obj", model("assets/obj/Modular Terrain Hilly/Prop_Stump.obj")},
-			{"Prop_Tree_Cedar_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Cedar_1.obj")},
-			{"Prop_Tree_Cedar_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Cedar_2.obj")},
-			{"Prop_Tree_Oak_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_1.obj")},
-			{"Prop_Tree_Oak_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_2.obj")},
-			{"Prop_Tree_Oak_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Oak_3.obj")},
-			{"Prop_Tree_Pine_1.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_1.obj")},
-			{"Prop_Tree_Pine_2.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_2.obj")},
-			{"Prop_Tree_Pine_3.obj", model("assets/obj/Modular Terrain Hilly/Prop_Tree_Pine_3.obj")},
-			{"Water_Flat.obj", model("assets/obj/Modular Terrain Hilly/Water_Flat.obj")},
-			{"Water_Slope.obj", model("assets/obj/Modular Terrain Hilly/Water_Slope.obj")},
-
-			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
 			{"unit_cube", generate_cuboid(1, 1, 1)},
+			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
+		};
+
+		std::list<std::string> libraries = {
+			"assets/obj/Modular Terrain Cliff/",
+			"assets/obj/Modular Terrain Hilly/",
+			"assets/obj/Modular Terrain Beach/",
 		};
 
 		rhandle main_vao;
@@ -205,7 +155,15 @@ testscene::testscene() : grend() {
 
 	// buffers
 	main_vao = bind_vao(gen_vao());
-	//compile_meshes(meshes);
+
+	for (std::string libname : libraries) {
+		// inserting each library into the models map so that way
+		// we can access them from the editor, but could also do another
+		// compile_models() call before bind_cooked_meshes to load the models.
+		auto library = load_library(libname);
+		models.insert(library.begin(), library.end());
+	}
+
 	compile_models(models);
 	bind_cooked_meshes();
 
@@ -626,8 +584,12 @@ void testscene::save_map(std::string name) {
 
 	foo << "### test scene save file" << std::endl;
 
+	for (std::string& lib : libraries) {
+		foo << "library\t" << lib << std::endl;
+	}
+
 	for (auto& v : dynamic_models) {
-		foo << v.name << "\t"
+		foo << "entity\t" << v.name << "\t"
 			<< v.position.x << "," << v.position.y << "," << v.position.z << "\t";
 
 		for (unsigned y = 0; y < 4; y++) {
@@ -653,24 +615,26 @@ void testscene::load_map(std::string name) {
 	std::string line;
 	while (std::getline(foo, line)) {
 		auto statement = split_string(line, '\t');
-		if (line[0] == '#' || line[0] == '\n' || statement.size() < 4) {
+		if (line[0] == '#' || line[0] == '\n') {
 			continue;
 		}
 
-		auto posvec = split_string(statement[1], ',');
-		auto matvec = split_string(statement[2], ',');
+		if (statement[0] == "entity" && statement.size() >= 5) {
+			auto posvec = split_string(statement[2], ',');
+			auto matvec = split_string(statement[3], ',');
 
-		editor_entry v;
-		v.name = statement[0];
-		v.position = glm::vec3(std::stof(posvec[0]), std::stof(posvec[1]), std::stof(posvec[2]));
-		v.inverted = std::stoi(statement[3]);
+			editor_entry v;
+			v.name = statement[1];
+			v.position = glm::vec3(std::stof(posvec[0]), std::stof(posvec[1]), std::stof(posvec[2]));
+			v.inverted = std::stoi(statement[4]);
 
-		for (unsigned i = 0; i < 16; i++) {
-			v.transform[i/4][i%4] = std::stof(matvec[i]);
+			for (unsigned i = 0; i < 16; i++) {
+				v.transform[i/4][i%4] = std::stof(matvec[i]);
+			}
+
+			dynamic_models.push_back(v);
+			std::cerr << "# loaded a " << v.name << std::endl;
 		}
-
-		dynamic_models.push_back(v);
-		std::cerr << "# loaded a " << v.name << std::endl;
 	}
 }
 
