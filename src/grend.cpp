@@ -24,6 +24,9 @@ grend::grend() {
 	std::cerr << " # maximum texture units: " << GL_MAX_TEXTURE_UNITS << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
 
+	// make sure we start with a bound VAO
+	bind_vao(gen_vao());
+
 	cooked_vertices.clear();
 	cooked_normals.clear();
 	cooked_elements.clear();
@@ -41,7 +44,7 @@ grend::grend() {
 	*/
 }
 
-void grend::compile_meshes(std::string objname, const grend::mesh_map& meshies) {
+void grend::compile_meshes(std::string objname, const mesh_map& meshies) {
 	for (const auto& x : meshies) {
 		compiled_mesh foo;
 		std::string meshname = objname + "." + x.first;

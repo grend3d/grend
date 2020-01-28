@@ -15,22 +15,19 @@
 
 namespace grendx {
 
+typedef std::map<std::string, model_submesh> mesh_map;
+typedef std::map<std::string, model> model_map;
+
+
+// TODO: need to split this up somehow
 class grend {
 	public:
 		grend();
 		~grend() { free_objects(); };
-		bool running = true;
-
-		virtual void render(context& ctx) = 0;
-		virtual void logic(context& ctx) = 0;
-		virtual void physics(context& ctx) = 0;
-		virtual void input(context& ctx) = 0;
 
 		// TODO: we could have a parent field so we can catch mismatched vbo->vao binds
 		//       which could be neat
 		typedef std::pair<GLuint, std::size_t> rhandle;
-		typedef std::map<std::string, model_submesh> mesh_map;
-		typedef std::map<std::string, model> model_map;
 
 		class compiled_mesh {
 			public:

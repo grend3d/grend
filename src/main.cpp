@@ -26,15 +26,108 @@
 using namespace grendx;
 
 std::map<std::string, material> default_materials = {
-	{"(null)", {{0.75, 0.75, 0.75, 1}, {1, 1, 1, 1}, {0.5, 0.5, 0.5, 1}, 15}},
-	{"Blk",    {{1, 0.8, 0.2, 1}, {1, 0.8, 0.2, 1}, {1, 1, 1, 1}, 50}},
-	{"Grey",   {{0.1, 0.1, 0.1, 0.5}, {0.1, 0.1, 0.1, 0.2}, {0.0, 0.0, 0.0, 0.05}, 15}},
-	{"Yellow", {{0.01, 0.01, 0.01, 1}, {0, 0, 0, 1}, {0.2, 0.2, 0.2, 0.2}, 20}},
-	{"Steel",  {{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, 20}},
+	{"(null)", {
+				   .diffuse = {0.75, 0.75, 0.75, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {0.5, 0.5, 0.5, 1},
+				   .shininess = 15,
+
+				   .diffuse_map  = "assets/tex/white.png",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/blue.png",
+			   }},
+
+	{"Black",  {
+				   .diffuse = {1, 0.8, 0.2, 1},
+				   .ambient = {1, 0.8, 0.2, 1},
+				   .specular = {1, 1, 1, 1},
+				   .shininess = 50
+			   }},
+
+	{"Grey",   {
+				   .diffuse = {0.1, 0.1, 0.1, 0.5},
+				   .ambient = {0.1, 0.1, 0.1, 0.2},
+				   .specular = {0.0, 0.0, 0.0, 0.05},
+				   .shininess = 15
+			   }},
+
+	{"Yellow", {
+				   .diffuse = {0.01, 0.01, 0.01, 1},
+				   .ambient = {0, 0, 0, 1},
+				   .specular = {0.2, 0.2, 0.2, 0.2},
+				   .shininess = 20,
+			   }},
+
+	{"Gravel",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 1},
+				   .shininess = 0,
+
+				   .diffuse_map  = "assets/tex/dims/Textures/Grass.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Grass_N.jpg",
+			   }},
+
+	{"Steel",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 1},
+				   .shininess = 35,
+
+				   .diffuse_map  = "assets/tex/rubberduck-tex/flipped-199.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/rubberduck-tex/flipped-199_norm.JPG",
+			   }},
+
+	{"Brick",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 1},
+				   .shininess = 15,
+
+				   .diffuse_map  = "assets/tex/brickwall.jpg",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/brickwall_normal.jpg",
+			   }},
+
+
+	{"Rock",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 0.5},
+				   .shininess = 5,
+
+				   .diffuse_map  = "assets/tex/rubberduck-tex/flipped-156.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/rubberduck-tex/flipped-156_norm.JPG",
+			   }},
+
+	{"Wood",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 0.5},
+				   .shininess = 1,
+
+				   .diffuse_map  = "assets/tex/dims/Textures/OakBark.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/OakBark_N.jpg",
+			   }},
+
+	{"Clover",  {
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 0.5},
+				   .shininess = 1,
+
+				   .diffuse_map  = "assets/tex/dims/Textures/GroundCover.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/GroundCover_N.jpg",
+			   }},
 };
 
-grend::model_map load_library(std::string dir) {
-	grend::model_map ret;
+model_map load_library(std::string dir) {
+	model_map ret;
 	struct dirent *dirent;
 	DIR *dirp;
 
@@ -62,7 +155,164 @@ grend::model_map load_library(std::string dir) {
 	return ret;
 }
 
-class testscene : public grend {
+static glm::mat4 model_to_world(glm::mat4 model) {
+	glm::quat rotation = glm::quat_cast(model);
+	//rotation = -glm::conjugate(rotation);
+
+	return glm::mat4_cast(rotation);
+}
+
+class engine {
+	public:
+		engine();
+		~engine() { };
+
+		virtual void render(context& ctx) = 0;
+		virtual void logic(context& ctx) = 0;
+		virtual void physics(context& ctx) = 0;
+		virtual void input(context& ctx) = 0;
+
+		void draw_mesh(std::string name, glm::mat4 transform);
+		void draw_mesh_lines(std::string name, glm::mat4 transform);
+		void draw_model(std::string name, glm::mat4 transform);
+		void draw_model_lines(std::string name, glm::mat4 transform);
+
+		void set_material(grend::compiled_model& obj, std::string mat_name);
+		void set_default_material(std::string mat_name);
+
+		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
+		void set_m(glm::mat4 mod);
+
+		bool running = true;
+
+	protected:
+		grend::rhandle shader;
+		grend glman;
+		GLint u_diffuse_map;
+		GLint u_specular_map;
+		GLint u_normal_map;
+
+		std::string fallback_material = "(null)";
+		//std::string fallback_material = "Rock";
+
+		std::map<std::string, grend::rhandle> diffuse_handles;
+		std::map<std::string, grend::rhandle> specular_handles;
+		std::map<std::string, grend::rhandle> normmap_handles;
+};
+
+engine::engine() {
+	for (auto& thing : default_materials) {
+		if (!thing.second.diffuse_map.empty()) {
+			diffuse_handles[thing.first] = glman.load_texture(thing.second.diffuse_map);
+		}
+
+		if (!thing.second.specular_map.empty()) {
+			specular_handles[thing.first] = glman.load_texture(thing.second.specular_map);
+		}
+
+		if (!thing.second.normal_map.empty()) {
+			normmap_handles[thing.first] = glman.load_texture(thing.second.normal_map);
+		}
+	}
+}
+
+void engine::set_material(grend::compiled_model& obj, std::string mat_name) {
+	if (obj.materials.find(mat_name) == obj.materials.end()) {
+		// TODO: maybe show a warning
+		set_default_material(mat_name);
+
+	} else {
+		material& mat = obj.materials[mat_name];
+
+		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
+				mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
+		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
+				mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
+		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
+				mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
+		glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
+				mat.shininess);
+
+		glActiveTexture(GL_TEXTURE0);
+		if (!mat.diffuse_map.empty()) {
+			glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
+			glUniform1i(u_diffuse_map, 0);
+
+		} else {
+			glBindTexture(GL_TEXTURE_2D, diffuse_handles[fallback_material].first);
+			glUniform1i(u_diffuse_map, 0);
+		}
+
+		glActiveTexture(GL_TEXTURE1);
+		if (!mat.specular_map.empty()) {
+			// TODO: specular maps
+		} else {
+			glBindTexture(GL_TEXTURE_2D, specular_handles[fallback_material].first);
+			glUniform1i(u_specular_map, 1);
+		}
+
+		glActiveTexture(GL_TEXTURE2);
+		if (!mat.normal_map.empty()) {
+			// TODO: normal maps
+
+		} else {
+			glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
+			glUniform1i(u_normal_map, 2);
+		}
+	}
+}
+
+void engine::set_default_material(std::string mat_name) {
+	if (default_materials.find(mat_name) == default_materials.end()) {
+		// TODO: really show an error here
+		mat_name = fallback_material;
+		puts("asdf");
+	}
+
+	material& mat = default_materials[mat_name];
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.empty()?
+	                                                 fallback_material
+	                                                 : mat_name].first);
+	glUniform1i(u_diffuse_map, 0);
+
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.specular_map.empty()?
+	                                                 fallback_material
+	                                                 : mat_name].first);
+	glUniform1i(u_specular_map, 1);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, normmap_handles[mat.normal_map.empty()?
+	                                                 fallback_material
+	                                                 : mat_name].first);
+	glUniform1i(u_normal_map, 2);
+}
+
+void engine::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
+	glm::mat4 v_inv = glm::inverse(view);
+
+	glUniformMatrix4fv(glGetUniformLocation(shader.first, "v"),
+			1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(shader.first, "p"),
+			1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniformMatrix4fv(glGetUniformLocation(shader.first, "v_inv"),
+			1, GL_FALSE, glm::value_ptr(v_inv));
+}
+
+void engine::set_m(glm::mat4 mod) {
+	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(mod)));
+
+	glUniformMatrix4fv(glGetUniformLocation(shader.first, "m"),
+			1, GL_FALSE, glm::value_ptr(mod));
+	glUniformMatrix3fv(glGetUniformLocation(shader.first, "m_3x3_inv_transp"),
+			1, GL_FALSE, glm::value_ptr(m_3x3_inv_transp));
+}
+
+class testscene : public engine {
 	public:
 		testscene();
 		virtual ~testscene();
@@ -73,12 +323,6 @@ class testscene : public grend {
 
 		void save_map(std::string name="save.map");
 		void load_map(std::string name="save.map");
-
-		void draw_mesh(compiled_mesh& foo, glm::mat4 transform, material& mat);
-		void draw_mesh_lines(compiled_mesh& foo, glm::mat4 transform);
-		void draw_mesh_lines(compiled_mesh& foo, glm::mat4 transform, material& mat);
-		void draw_model(compiled_model& obj, glm::mat4 transform);
-		void draw_model_lines(compiled_model& obj, glm::mat4 transform);
 
 		glm::mat4 projection, view;
 
@@ -101,60 +345,51 @@ class testscene : public grend {
 		};
 
 		// Map editing things
-		bool in_select_mode = false;
+		std::vector<editor_entry> dynamic_models;
+		model_map::iterator select_model;
+
+		bool      in_select_mode = false;
 		glm::vec3 select_position = glm::vec3(0, 0, 0);
 		glm::mat4 select_transform = glm::mat4(1);
 		float     select_distance = 5;
 		// this keeps track of the current face order after flipping along an axis
 		bool      select_inverted = false;
 
-		std::vector<editor_entry> dynamic_models;
-		model_map::iterator select_model;
 
 		Uint32 last_frame;
 
 		// models
 		model_map models = {
 			{"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
+			{"teapot",    model("assets/obj/teapot.obj")},
+			{"monkey",    model("assets/obj/suzanne.obj")},
 			{"unit_cube", generate_cuboid(1, 1, 1)},
-			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
+			{"unit_cube_wood", generate_cuboid(1, 1, 1)},
+			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
+			{"grid",      generate_grid(-32, -32, 32, 32, 1)},
 		};
 
 		std::list<std::string> libraries = {
+			/*
 			"assets/obj/Modular Terrain Cliff/",
 			"assets/obj/Modular Terrain Hilly/",
 			"assets/obj/Modular Terrain Beach/",
+			"assets/obj/Dungeon Set 2/",
+			*/
 		};
 
-		rhandle main_vao;
-		rhandle vertex_shader, fragment_shader;
-		rhandle textures[8] = {
-			load_texture("assets/tex/white.png"),
+		grend::rhandle textures[8] = {
+			glman.load_texture("assets/tex/white.png"),
 		};
-
-		rhandle shader_program;
-		GLint uniform_mytexture;
-
-		// cube info
-		rhandle vertices, color, elements, texcoords, normals;
-
-		// monkey info
-		rhandle mk_vertices, mk_faces, mk_normals;
-
-		// weapon info
-		rhandle wp_vertices, wp_faces, wp_normals;
 };
 
-testscene::testscene() : grend() {
+testscene::testscene() : engine() {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 1.0, 5.0),
 	                   glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
 	select_model = models.begin();
-
-	// buffers
-	main_vao = bind_vao(gen_vao());
 
 	for (std::string libname : libraries) {
 		// inserting each library into the models map so that way
@@ -164,33 +399,57 @@ testscene::testscene() : grend() {
 		models.insert(library.begin(), library.end());
 	}
 
-	compile_models(models);
-	bind_cooked_meshes();
+	models["teapot"].meshes["default"].material = "Wood";
+	models["grid"].meshes["default"].material = "Gravel";
+	models["monkey"].meshes["Monkey"].material = "Steel";
+	//models["unit_cube"].meshes["default"].material = "Steel";
+	models["unit_cube"].meshes["default"].material = "Brick";
+	models["unit_cube_wood"].meshes["default"].material = "Wood";
+	models["unit_cube_ground"].meshes["default"].material = "Clover";
 
+	glman.compile_models(models);
+	glman.bind_cooked_meshes();
+
+	/*
 	vertex_shader = load_shader("assets/shaders/vertex-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = load_shader("assets/shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
-	shader_program = gen_program();
+	*/
 
-	glAttachShader(shader_program.first, vertex_shader.first);
-	glAttachShader(shader_program.first, fragment_shader.first);
+	grend::rhandle vertex_shader, fragment_shader;
+	vertex_shader = glman.load_shader("assets/shaders/pixel-shading.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("assets/shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+
+	shader = glman.gen_program();
+
+	glAttachShader(shader.first, vertex_shader.first);
+	glAttachShader(shader.first, fragment_shader.first);
 
 	// monkey business
-	fprintf(stderr, " # have %lu vertices\n", cooked_vertices.size());
-	glBindAttribLocation(shader_program.first, cooked_vert_vbo.first, "in_Position");
-	glBindAttribLocation(shader_program.first, cooked_texcoord_vbo.first, "texcoord");
-	glBindAttribLocation(shader_program.first, cooked_normal_vbo.first, "v_normal");
-	glLinkProgram(shader_program.first);
+	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertices.size());
+	glBindAttribLocation(shader.first, glman.cooked_vert_vbo.first, "in_Position");
+	glBindAttribLocation(shader.first, glman.cooked_texcoord_vbo.first, "texcoord");
+	glBindAttribLocation(shader.first, glman.cooked_normal_vbo.first, "v_normal");
+	glLinkProgram(shader.first);
 
 	int linked;
 
-	glGetProgramiv(shader_program.first, GL_LINK_STATUS, &linked);
+	glGetProgramiv(shader.first, GL_LINK_STATUS, &linked);
 	if (!linked) {
-		SDL_Die("couldn't link monkey shaders");
+		SDL_Die("couldn't link shaders");
 	}
 
-	glUseProgram(shader_program.first);
-	if ((uniform_mytexture = glGetUniformLocation(shader_program.first, "mytexture")) == -1) {
-		SDL_Die("Couldn't bind mytexture");
+	glUseProgram(shader.first);
+
+	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
+		SDL_Die("Couldn't bind diffuse_map");
+	}
+
+	if ((u_specular_map = glGetUniformLocation(shader.first, "specular_map")) == -1) {
+		SDL_Die("Couldn't bind specular_map");
+	}
+
+	if ((u_normal_map = glGetUniformLocation(shader.first, "normal_map")) == -1) {
+		SDL_Die("Couldn't bind normal_map");
 	}
 }
 
@@ -198,181 +457,88 @@ testscene::~testscene() {
 	puts("got here");
 }
 
-static glm::mat4 model_to_world(glm::mat4 model) {
-	glm::quat rotation = glm::quat_cast(model);
-	//rotation = -glm::conjugate(rotation);
+void engine::draw_mesh(std::string name, glm::mat4 transform) {
+	grend::compiled_mesh& foo = glman.cooked_meshes[name];
+	set_m(transform);
 
-	return glm::mat4_cast(rotation);
-}
-
-void testscene::draw_mesh(compiled_mesh& foo, glm::mat4 transform, material& mat) {
-	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(transform)));
-
-	glUniformMatrix4fv(glGetUniformLocation(shader_program.first, "m"),
-			1, GL_FALSE, glm::value_ptr(transform));
-	glUniformMatrix3fv(glGetUniformLocation(shader_program.first, "m_3x3_inv_transp"),
-			1, GL_FALSE, glm::value_ptr(m_3x3_inv_transp));
-
-	// TODO: bind light maps here
-
-	glUniform4f(glGetUniformLocation(shader_program.first, "anmaterial.diffuse"),
-			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
-	glUniform4f(glGetUniformLocation(shader_program.first, "anmaterial.ambient"),
-			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
-	glUniform4f(glGetUniformLocation(shader_program.first, "anmaterial.specular"),
-			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-	glUniform1f(glGetUniformLocation(shader_program.first, "anmaterial.shininess"),
-			mat.shininess);
-
-	bind_vao(foo.vao);
+	glman.bind_vao(foo.vao);
 	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
 }
 
 // TODO: overload of this that takes a material
-void testscene::draw_mesh_lines(compiled_mesh& foo, glm::mat4 transform) {
-	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(transform)));
+void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
+	grend::compiled_mesh& foo = glman.cooked_meshes[name];
 
-	glUniformMatrix4fv(glGetUniformLocation(shader_program.first, "m"),
-			1, GL_FALSE, glm::value_ptr(transform));
-	glUniformMatrix3fv(glGetUniformLocation(shader_program.first, "m_3x3_inv_transp"),
-			1, GL_FALSE, glm::value_ptr(m_3x3_inv_transp));
+	set_m(transform);
+	glman.bind_vao(foo.vao);
 
-	// TODO: bind light maps here
-
-	bind_vao(foo.vao);
-	//glDrawElements(GL_LINE_LOOP, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
 	glDrawElements(GL_LINES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
 }
 
-void testscene::draw_model(compiled_model& obj, glm::mat4 transform) {
+void engine::draw_model(std::string name, glm::mat4 transform) {
+	grend::compiled_model& obj = glman.cooked_models[name];
+
 	for (std::string& name : obj.meshes) {
-		std::string mat_name = cooked_meshes[name].material;
-
-		if (obj.materials.find(mat_name) == obj.materials.end()) {
-			material& mat = default_materials["(null)"];
-
-			glBindTexture(GL_TEXTURE_2D, textures[0].first);
-			glUniform1i(uniform_mytexture, 0);
-
-			draw_mesh(cooked_meshes[name], transform, mat);
-		}
-
-		else {
-			material& mat = obj.materials[mat_name];
-
-			if (!mat.diffuse_map.empty()) {
-				glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
-				glUniform1i(uniform_mytexture, 0);
-
-			} else {
-				glBindTexture(GL_TEXTURE_2D, textures[0].first);
-				glUniform1i(uniform_mytexture, 0);
-			}
-
-			draw_mesh(cooked_meshes[name], transform, mat);
-		}
+		set_material(obj, glman.cooked_meshes[name].material);
+		draw_mesh(name, transform);
 	}
 }
 
-void testscene::draw_model_lines(compiled_model& obj, glm::mat4 transform) {
+void engine::draw_model_lines(std::string name, glm::mat4 transform) {
+	grend::compiled_model& obj = glman.cooked_models[name];
 	// TODO: need a set_material() function to handle stuff
 	//       and we need to explicitly set a material
-	glBindTexture(GL_TEXTURE_2D, textures[0].first);
-	glUniform1i(uniform_mytexture, 0);
 
+	set_default_material("(null)");
 	for (std::string& name : obj.meshes) {
-		draw_mesh_lines(cooked_meshes[name], transform);
+		draw_mesh_lines(name, transform);
 	}
 }
 
 void testscene::render(context& ctx) {
-	glClearColor(0.7, 0.9, 1, 1);
+	//glClearColor(0.7, 0.9, 1, 1);
+	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	/*
 	glActiveTexture(GL_TEXTURE0);
+
 	glBindTexture(GL_TEXTURE_2D, textures[0].first);
-	glUniform1i(uniform_mytexture, 0);
+	glUniform1i(u, 0);
+	*/
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
 	glEnable(GL_CULL_FACE);
+	// make sure we always start with counter-clockwise faces
+	// (also should be toggled per-model)
+	glFrontFace(GL_CCW);
 #endif
 
-	glm::mat4 v_inv = glm::inverse(view);
-
-	glUniformMatrix4fv(glGetUniformLocation(shader_program.first, "v"),
-			1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(glGetUniformLocation(shader_program.first, "p"),
-			1, GL_FALSE, glm::value_ptr(projection));
-
-	glUniformMatrix4fv(glGetUniformLocation(shader_program.first, "v_inv"),
-			1, GL_FALSE, glm::value_ptr(v_inv));
-
-	srand(0x1337babe);
-	const int dimension = 16;
-
-	// TODO: this is really inefficient, especially combined with how inefficient
-	//       draw_model is right now, need to join these meshes together to make a few
-	//       bigger "world" meshes
-	//       something like 16-unit cubes would be good probably
-	//draw_model_lines(cooked_models["grid"], glm::mat4(1));
-	for (int x = -dimension; x < dimension; x++) {
-		for (int y = -dimension; y < dimension; y++) {
-			glm::mat4 trans = glm::translate(glm::vec3(x, 0, y));
-			if (abs(x) < 4 || abs(y) < 4) {
-				draw_model(cooked_models["Path_Center.obj"], trans);
-
-			} else {
-				draw_model(cooked_models["Grass_Flat.obj"], trans);
-				trans = glm::translate(glm::vec3(x, 0.2, y));
-
-				if (abs(x) == 12 && abs(y) == 12) {
-					draw_model(cooked_models["Prop_Tree_Oak_2.obj"], trans);
-
-				} else if (rand() % 3 == 0) {
-					draw_model(cooked_models["Prop_Grass_Clump_4.obj"], trans);
-
-				} else if (rand() % 17 == 0) {
-					draw_model(cooked_models["Prop_Stump.obj"], trans);
-				}
-			}
-		}
-	}
-
-	glm::vec3 hpos = glm::vec3(view_direction.x*10 + view_position.x, 0, view_direction.z*10 + view_position.z);
+	glm::vec3 hpos = glm::vec3(view_direction.x*5 + view_position.x, 0, view_direction.z*5 + view_position.z);
 	glm::mat4 bizz = glm::translate(glm::mat4(1), hpos);
-	draw_model(cooked_models["person"], bizz);
+	float asdf = 0.5*(SDL_GetTicks()/1000.f);
+	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 10, 15*sin(asdf), 1.f);
+
+	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
+			1, glm::value_ptr(lfoo));
+
+	set_mvp(glm::mat4(1), view, projection);
+	draw_model("person", bizz);
 
 	if (in_select_mode) {
 		glm::mat4 trans = glm::translate(select_position) * select_transform;
 
 		glFrontFace(select_inverted? GL_CW : GL_CCW);
-		draw_model_lines(cooked_models[select_model->first], trans);
-		draw_model(cooked_models[select_model->first], trans);
+		draw_model_lines(select_model->first, trans);
+		draw_model(select_model->first, trans);
 	}
 
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
 
 		glFrontFace(v.inverted? GL_CW : GL_CCW);
-		draw_model(cooked_models[v.name], trans);
-	}
-
-	glFrontFace(GL_CCW);
-	for (unsigned i = 0; i < 16; i++) {
-		float time_component = i + M_PI*SDL_GetTicks()/1000.f;
-		const float fpi = 3.1415926f;
-
-		glm::mat4 model = glm::translate(glm::mat4(1),
-			glm::vec3(-32.f + 4*i, 4 + sin(time_component), 0))
-			* glm::rotate(fpi*cosf(0.025 * fpi * time_component), glm::vec3(0, 1, 0));
-
-		compiled_model& foo =
-		     (i%4 == 0)? cooked_models["Grass_Flat.obj"]
-		   : (i%4 == 1)? cooked_models["Prop_Stump.obj"]
-		   : (i%4 == 2)? cooked_models["Prop_Tree_Oak_2.obj"]
-		   :             cooked_models["person"];
-
-		draw_model(foo, model);
+		draw_model(v.name, trans);
 	}
 
 	SDL_GL_SwapWindow(ctx.window);
@@ -640,7 +806,7 @@ void testscene::load_map(std::string name) {
 
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
-	std::unique_ptr<grend> scene(new testscene());
+	std::unique_ptr<engine> scene(new testscene());
 
 	while (scene->running) {
 		scene->input(ctx);

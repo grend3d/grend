@@ -7,23 +7,17 @@
 
 namespace grendx {
 
-class material {
-	public:
-		material(){};
-		material(glm::vec4 d, glm::vec4 a, glm::vec4 s, GLfloat shine) {
-			diffuse = d, ambient = a, specular = s, shininess = shine;
-		}
+struct material {
+	glm::vec4 diffuse;
+	glm::vec4 ambient;
+	glm::vec4 specular;
+	GLfloat   shininess = 10;
 
-		glm::vec4 diffuse;
-		glm::vec4 ambient;
-		glm::vec4 specular;
-		GLfloat   shininess = 10;
-
-		// file names of textures
-		// no ambient map, diffuse map serves as both
-		std::string diffuse_map;
-		std::string specular_map;
-		std::string bump_map;
+	// file names of textures
+	// no ambient map, diffuse map serves as both
+	std::string diffuse_map;
+	std::string specular_map;
+	std::string normal_map;
 };
 
 class model_submesh {
