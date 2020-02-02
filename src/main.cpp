@@ -32,9 +32,10 @@ std::map<std::string, material> default_materials = {
 				   .specular = {0.5, 0.5, 0.5, 1},
 				   .shininess = 15,
 
-				   .diffuse_map  = "assets/tex/white.png",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/lightblue-normal.png",
+				   .diffuse_map     = "assets/tex/white.png",
+				   .specular_map    = "assets/tex/white.png",
+				   .normal_map      = "assets/tex/lightblue-normal.png",
+				   .ambient_occ_map = "assets/tex/white.png",
 			   }},
 
 	{"Black",  {
@@ -71,10 +72,26 @@ std::map<std::string, material> default_materials = {
 				   // materials from freepbr.com are way higher quality, but I'm not sure how
 				   // github would feel about hosting a few hundred megabytes to gigabytes of
 				   // textures
+
 				   /*
 				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/octostoneAlbedo.png",
 				   .specular_map = "assets/tex/octostone-Unreal-Engine/octostoneMetallic.png",
 				   .normal_map   = "assets/tex/octostone-Unreal-Engine/octostoneNormalc.png",
+				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/octostoneAmbient_Occlusionc.png",
+				   */
+
+				   /*
+				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/256px-octostoneAlbedo.png",
+				   .specular_map = "assets/tex/octostone-Unreal-Engine/256px-octostoneMetallic.png",
+				   .normal_map   = "assets/tex/octostone-Unreal-Engine/256px-octostoneNormalc.png",
+				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/256px-octostoneAmbient_Occlusionc.png",
+				   */
+
+				   /*
+				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/128px-octostoneAlbedo.png",
+				   .specular_map = "assets/tex/octostone-Unreal-Engine/128px-octostoneMetallic.png",
+				   .normal_map   = "assets/tex/octostone-Unreal-Engine/128px-octostoneNormalc.png",
+				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/128px-octostoneAmbient_Occlusionc.png",
 				   */
 			   }},
 
@@ -87,6 +104,7 @@ std::map<std::string, material> default_materials = {
 				   .diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/rubberduck-tex/199_norm.JPG",
+				   .ambient_occ_map = "assets/tex/white.png",
 
 				   /*
 				   .diffuse_map  = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png",
@@ -104,6 +122,7 @@ std::map<std::string, material> default_materials = {
 				   .diffuse_map  = "assets/tex/rubberduck-tex/179.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/rubberduck-tex/179_norm.JPG",
+				   .ambient_occ_map = "assets/tex/white.png",
 				   /*
 				   .diffuse_map  = "assets/tex/dims/Textures/Chimeny.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -121,6 +140,7 @@ std::map<std::string, material> default_materials = {
 				   .diffuse_map  = "assets/tex/rubberduck-tex/165.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/rubberduck-tex/165_norm.JPG",
+				   .ambient_occ_map = "assets/tex/white.png",
 			   }},
 
 	{"Wood",  {
@@ -132,6 +152,7 @@ std::map<std::string, material> default_materials = {
 				   .diffuse_map  = "assets/tex/dims/Textures/Boards.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Boards_N.jpg",
+				   .ambient_occ_map = "assets/tex/white.png",
 			   }},
 
 	{"Clover",  {
@@ -143,6 +164,7 @@ std::map<std::string, material> default_materials = {
 				   .diffuse_map  = "assets/tex/dims/Textures/GroundCover.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/dims/Textures/Textures_N/GroundCover_N.jpg",
+				   .ambient_occ_map = "assets/tex/white.png",
 			   }},
 };
 
@@ -211,6 +233,7 @@ class engine {
 		GLint u_diffuse_map;
 		GLint u_specular_map;
 		GLint u_normal_map;
+		GLint u_ao_map;
 
 		std::string fallback_material = "(null)";
 		//std::string fallback_material = "Rock";
@@ -218,6 +241,7 @@ class engine {
 		std::map<std::string, grend::rhandle> diffuse_handles;
 		std::map<std::string, grend::rhandle> specular_handles;
 		std::map<std::string, grend::rhandle> normmap_handles;
+		std::map<std::string, grend::rhandle> aomap_handles;
 };
 
 engine::engine() {
@@ -232,6 +256,10 @@ engine::engine() {
 
 		if (!thing.second.normal_map.empty()) {
 			normmap_handles[thing.first] = glman.load_texture(thing.second.normal_map);
+		}
+
+		if (!thing.second.ambient_occ_map.empty()) {
+			aomap_handles[thing.first] = glman.load_texture(thing.second.ambient_occ_map);
 		}
 	}
 }
@@ -278,6 +306,15 @@ void engine::set_material(grend::compiled_model& obj, std::string mat_name) {
 		} else {
 			glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
 			glUniform1i(u_normal_map, 2);
+		}
+
+		glActiveTexture(GL_TEXTURE3);
+		if (!mat.ambient_occ_map.empty()) {
+			// TODO: normal maps
+
+		} else {
+			glBindTexture(GL_TEXTURE_2D, aomap_handles[fallback_material].first);
+			glUniform1i(u_ao_map, 3);
 		}
 	}
 }
@@ -484,6 +521,11 @@ testscene::testscene() : engine() {
 
 	if ((u_normal_map = glGetUniformLocation(shader.first, "normal_map")) == -1) {
 		std::cerr << "Couldn't bind normal map" << std::endl;
+		//SDL_Die("Couldn't bind normal_map");
+	}
+
+	if ((u_ao_map = glGetUniformLocation(shader.first, "ambient_occ_map")) == -1) {
+		std::cerr << "Couldn't bind ambient occulsion map" << std::endl;
 		//SDL_Die("Couldn't bind normal_map");
 	}
 }

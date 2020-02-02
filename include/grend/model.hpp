@@ -18,6 +18,7 @@ struct material {
 	std::string diffuse_map;
 	std::string specular_map;
 	std::string normal_map;
+	std::string ambient_occ_map;
 };
 
 class model_submesh {
