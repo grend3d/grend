@@ -779,9 +779,9 @@ void testscene::input(context& ctx) {
 
 	// adjust view
 	view_direction = glm::normalize(glm::vec3(
-		rotation_speed * rel_x,
-		rotation_speed *-rel_y,
-		rotation_speed * -cos(rel_x*M_PI)
+		rotation_speed * sin(rel_x*2*M_PI),
+		rotation_speed * sin(-rel_y*M_PI/2.f),
+		rotation_speed * -cos(rel_x*2*M_PI)
 	));
 
 	view_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), view_direction));
