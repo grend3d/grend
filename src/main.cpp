@@ -34,7 +34,7 @@ std::map<std::string, material> default_materials = {
 
 				   .diffuse_map  = "assets/tex/white.png",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/blue.png",
+				   .normal_map   = "assets/tex/lightblue-normal.png",
 			   }},
 
 	{"Black",  {
@@ -62,11 +62,20 @@ std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 0,
+				   .shininess = 5,
 
-				   .diffuse_map  = "assets/tex/dims/Textures/Grass.JPG",
+				   .diffuse_map  = "assets/tex/dims/Textures/Gravel.JPG",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Grass_N.jpg",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Gravel_N.jpg",
+
+				   // materials from freepbr.com are way higher quality, but I'm not sure how
+				   // github would feel about hosting a few hundred megabytes to gigabytes of
+				   // textures
+				   /*
+				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/octostoneAlbedo.png",
+				   .specular_map = "assets/tex/octostone-Unreal-Engine/octostoneMetallic.png",
+				   .normal_map   = "assets/tex/octostone-Unreal-Engine/octostoneNormalc.png",
+				   */
 			   }},
 
 	{"Steel",  {
@@ -75,20 +84,31 @@ std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 35,
 
-				   .diffuse_map  = "assets/tex/rubberduck-tex/flipped-199.JPG",
+				   .diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/rubberduck-tex/flipped-199_norm.JPG",
+				   .normal_map   = "assets/tex/rubberduck-tex/199_norm.JPG",
+
+				   /*
+				   .diffuse_map  = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png",
+				   .specular_map = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png",
+				   .normal_map   = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png",
+				   */
 			   }},
 
 	{"Brick",  {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 15,
+				   .shininess = 3,
 
-				   .diffuse_map  = "assets/tex/brickwall.jpg",
+				   .diffuse_map  = "assets/tex/rubberduck-tex/179.JPG",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/brickwall_normal.jpg",
+				   .normal_map   = "assets/tex/rubberduck-tex/179_norm.JPG",
+				   /*
+				   .diffuse_map  = "assets/tex/dims/Textures/Chimeny.JPG",
+				   .specular_map = "assets/tex/white.png",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Chimeny_N.jpg",
+				   */
 			   }},
 
 
@@ -98,20 +118,20 @@ std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 5,
 
-				   .diffuse_map  = "assets/tex/rubberduck-tex/flipped-156.JPG",
+				   .diffuse_map  = "assets/tex/rubberduck-tex/165.JPG",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/rubberduck-tex/flipped-156_norm.JPG",
+				   .normal_map   = "assets/tex/rubberduck-tex/165_norm.JPG",
 			   }},
 
 	{"Wood",  {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
-				   .specular = {1, 1, 1, 0.5},
-				   .shininess = 1,
+				   .specular = {1, 1, 1, 0.3},
+				   .shininess = 5,
 
-				   .diffuse_map  = "assets/tex/dims/Textures/OakBark.JPG",
+				   .diffuse_map  = "assets/tex/dims/Textures/Boards.JPG",
 				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/OakBark_N.jpg",
+				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Boards_N.jpg",
 			   }},
 
 	{"Clover",  {
@@ -271,6 +291,15 @@ void engine::set_default_material(std::string mat_name) {
 
 	material& mat = default_materials[mat_name];
 
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
+			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
+			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
+			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
+			mat.shininess);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.empty()?
 	                                                 fallback_material
@@ -366,7 +395,7 @@ class testscene : public engine {
 			{"unit_cube", generate_cuboid(1, 1, 1)},
 			{"unit_cube_wood", generate_cuboid(1, 1, 1)},
 			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-			{"grid",      generate_grid(-32, -32, 32, 32, 1)},
+			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
 		};
 
 		std::list<std::string> libraries = {
@@ -399,11 +428,10 @@ testscene::testscene() : engine() {
 		models.insert(library.begin(), library.end());
 	}
 
-	models["teapot"].meshes["default"].material = "Wood";
+	models["teapot"].meshes["default"].material = "Steel";
 	models["grid"].meshes["default"].material = "Gravel";
-	models["monkey"].meshes["Monkey"].material = "Steel";
-	//models["unit_cube"].meshes["default"].material = "Steel";
-	models["unit_cube"].meshes["default"].material = "Brick";
+	models["monkey"].meshes["Monkey"].material = "Wood";
+	models["unit_cube"].meshes["default"].material = "Rock";
 	models["unit_cube_wood"].meshes["default"].material = "Wood";
 	models["unit_cube_ground"].meshes["default"].material = "Clover";
 
@@ -429,6 +457,10 @@ testscene::testscene() : engine() {
 	glBindAttribLocation(shader.first, glman.cooked_vert_vbo.first, "in_Position");
 	glBindAttribLocation(shader.first, glman.cooked_texcoord_vbo.first, "texcoord");
 	glBindAttribLocation(shader.first, glman.cooked_normal_vbo.first, "v_normal");
+	glBindAttribLocation(shader.first,
+	                     glman.cooked_tangent_vbo.first, "v_tangent");
+	glBindAttribLocation(shader.first,
+	                     glman.cooked_bitangent_vbo.first, "v_bitangent");
 	glLinkProgram(shader.first);
 
 	int linked;
@@ -441,15 +473,18 @@ testscene::testscene() : engine() {
 	glUseProgram(shader.first);
 
 	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
-		SDL_Die("Couldn't bind diffuse_map");
+		//SDL_Die("Couldn't bind diffuse_map");
+		std::cerr << "Couldn't bind diffuse map" << std::endl;
 	}
 
 	if ((u_specular_map = glGetUniformLocation(shader.first, "specular_map")) == -1) {
-		SDL_Die("Couldn't bind specular_map");
+		std::cerr << "Couldn't bind specular map" << std::endl;
+		//SDL_Die("Couldn't bind specular_map");
 	}
 
 	if ((u_normal_map = glGetUniformLocation(shader.first, "normal_map")) == -1) {
-		SDL_Die("Couldn't bind normal_map");
+		std::cerr << "Couldn't bind normal map" << std::endl;
+		//SDL_Die("Couldn't bind normal_map");
 	}
 }
 
@@ -518,7 +553,7 @@ void testscene::render(context& ctx) {
 	glm::vec3 hpos = glm::vec3(view_direction.x*5 + view_position.x, 0, view_direction.z*5 + view_position.z);
 	glm::mat4 bizz = glm::translate(glm::mat4(1), hpos);
 	float asdf = 0.5*(SDL_GetTicks()/1000.f);
-	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 10, 15*sin(asdf), 1.f);
+	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 5, 15*sin(asdf), 1.f);
 
 	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
 			1, glm::value_ptr(lfoo));

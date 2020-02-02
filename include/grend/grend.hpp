@@ -46,6 +46,8 @@ class grend {
 				GLint vertices_size;
 				GLint normals_size;
 				GLint texcoords_size;
+				GLint tangents_size;
+				GLint bitangents_size;
 
 				std::vector<std::string> meshes;
 				// NOTE: duplicating materials here because the model may not be valid
@@ -58,6 +60,8 @@ class grend {
 				void *vertices_offset;
 				void *normals_offset;
 				void *texcoords_offset;
+				void *tangents_offset;
+				void *bitangents_offset;
 		};
 		typedef std::map<std::string, compiled_model> cooked_model_map;
 
@@ -71,13 +75,17 @@ class grend {
 		cooked_model_map cooked_models;
 
 		std::vector<glm::vec3> cooked_vertices;
-		std::vector<GLushort> cooked_elements;
 		std::vector<glm::vec3> cooked_normals;
+		std::vector<glm::vec3> cooked_tangents;
+		std::vector<glm::vec3> cooked_bitangents;
+		std::vector<GLushort> cooked_elements;
 		std::vector<GLfloat> cooked_texcoords;
 
 		rhandle cooked_vert_vbo;
-		rhandle cooked_element_vbo;
 		rhandle cooked_normal_vbo;
+		rhandle cooked_tangent_vbo;
+		rhandle cooked_bitangent_vbo;
+		rhandle cooked_element_vbo;
 		rhandle cooked_texcoord_vbo;
 
 		rhandle gen_vao(void);

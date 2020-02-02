@@ -37,9 +37,12 @@ class model {
 		void gen_all(void);
 		void gen_normals(void);
 		void gen_texcoords(void);
+		void gen_tangents(void);
 
 		std::vector<glm::vec3> vertices;
 		std::vector<glm::vec3> normals;
+		std::vector<glm::vec3> tangents;
+		std::vector<glm::vec3> bitangents;
 		std::vector<GLfloat>  texcoords;
 
 		std::map<std::string, model_submesh> meshes;

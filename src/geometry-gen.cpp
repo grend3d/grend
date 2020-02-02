@@ -2,31 +2,36 @@
 
 namespace grendx {
 
+// TODO: terrain generator or something, take a lambda that generates
+//       a height mesh
 model generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	model ret;
 
 	unsigned i = 0;
 	for (int y = sx; y <= ey; y += spacing) {
 		for (int x = sx; x <= ex; x += spacing) {
-			//float foo = sin(i*0.005f);
+			float y1 = 0.2*sin(y*0.3f);
+			float y2 = 0.2*sin((y + spacing)*0.3f);
+			float x1 = 0.2*sin((x)*0.2f);
+			float x2 = 0.2*sin((x + spacing)*0.2f);
 			//float foo = (x ^ y)*(1./ex);
-			float foo = 0;
+			//float foo = 0;
 
-			ret.vertices.push_back(glm::vec3(x - spacing, foo, y - spacing));
-			ret.vertices.push_back(glm::vec3(x - spacing, foo, y));
-			ret.vertices.push_back(glm::vec3(x,           foo, y));
+			ret.vertices.push_back(glm::vec3(x - spacing, x1+y2, y));
+			ret.vertices.push_back(glm::vec3(x,           x2+y2, y));
+			ret.vertices.push_back(glm::vec3(x - spacing, x1+y1, y - spacing));
 
-			ret.vertices.push_back(glm::vec3(x,           foo, y - spacing));
-			ret.vertices.push_back(glm::vec3(x - spacing, foo, y - spacing));
-			ret.vertices.push_back(glm::vec3(x,           foo, y));
+			ret.vertices.push_back(glm::vec3(x,           x2+y1, y - spacing));
+			ret.vertices.push_back(glm::vec3(x - spacing, x1+y1, y - spacing));
+			ret.vertices.push_back(glm::vec3(x,           x2+y2, y));
 
 			ret.texcoords.push_back(0); ret.texcoords.push_back(0);
-			ret.texcoords.push_back(0); ret.texcoords.push_back(1);
-			ret.texcoords.push_back(1); ret.texcoords.push_back(1);
-
 			ret.texcoords.push_back(1); ret.texcoords.push_back(0);
-			ret.texcoords.push_back(0); ret.texcoords.push_back(0);
+			ret.texcoords.push_back(0); ret.texcoords.push_back(1);
+
 			ret.texcoords.push_back(1); ret.texcoords.push_back(1);
+			ret.texcoords.push_back(0); ret.texcoords.push_back(1);
+			ret.texcoords.push_back(1); ret.texcoords.push_back(0);
 
 			for (unsigned k = 0; k < 6; k++) {
 				ret.meshes["default"].faces.push_back(i++);
@@ -34,6 +39,9 @@ model generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 			}
 		}
 	}
+
+	//ret.gen_normals();
+	ret.gen_tangents();
 
 	ret.have_normals = true;
 	ret.have_texcoords = true;
@@ -100,6 +108,9 @@ model generate_cuboid(float width, float height, float depth) {
 	}
 
 	ret.gen_normals();
+	ret.gen_tangents();
+
+	ret.have_normals = ret.have_texcoords = true;
 
 	return ret;
 }

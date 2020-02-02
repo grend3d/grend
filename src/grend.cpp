@@ -29,6 +29,8 @@ grend::grend() {
 
 	cooked_vertices.clear();
 	cooked_normals.clear();
+	cooked_tangents.clear();
+	cooked_bitangents.clear();
 	cooked_elements.clear();
 	cooked_texcoords.clear();
 
@@ -95,6 +97,19 @@ void grend::compile_models(model_map& models) {
 		                                            x.second.normals.end());
 		fprintf(stderr, " > normals size %lu\n", cooked_normals.size());
 
+		obj.tangents_size = x.second.tangents.size() * sizeof(glm::vec3);
+		obj.tangents_offset = reinterpret_cast<void*>(cooked_tangents.size() * sizeof(glm::vec3));
+		cooked_tangents.insert(cooked_tangents.end(), x.second.tangents.begin(),
+		                                              x.second.tangents.end());
+		fprintf(stderr, " > tangents size %lu\n", cooked_tangents.size());
+
+		obj.bitangents_size = x.second.bitangents.size() * sizeof(glm::vec3);
+		obj.bitangents_offset = reinterpret_cast<void*>(cooked_bitangents.size() * sizeof(glm::vec3));
+		cooked_bitangents.insert(cooked_bitangents.end(), x.second.bitangents.begin(),
+		                                                  x.second.bitangents.end());
+		fprintf(stderr, " > bitangents size %lu\n", cooked_bitangents.size());
+
+
 		obj.texcoords_size = x.second.texcoords.size() * sizeof(GLfloat) * 2;
 		obj.texcoords_offset = reinterpret_cast<void*>(cooked_texcoords.size() * sizeof(GLfloat));
 		cooked_texcoords.insert(cooked_texcoords.end(),
@@ -136,6 +151,14 @@ grend::rhandle grend::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh)
 	glVertexAttribPointer(cooked_normal_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.normals_offset);
 	enable_vbo(cooked_normal_vbo);
 
+	bind_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER);
+	glVertexAttribPointer(cooked_tangent_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.tangents_offset);
+	enable_vbo(cooked_tangent_vbo);
+
+	bind_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER);
+	glVertexAttribPointer(cooked_bitangent_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.bitangents_offset);
+	enable_vbo(cooked_bitangent_vbo);
+
 	bind_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER);
 	glVertexAttribPointer(cooked_texcoord_vbo.first, 2, GL_FLOAT, GL_FALSE, 0, obj.texcoords_offset);
 	enable_vbo(cooked_texcoord_vbo);
@@ -163,10 +186,14 @@ void grend::bind_cooked_meshes(void) {
 	cooked_vert_vbo = gen_vbo();
 	cooked_element_vbo = gen_vbo();
 	cooked_normal_vbo = gen_vbo();
+	cooked_tangent_vbo = gen_vbo();
+	cooked_bitangent_vbo = gen_vbo();
 	cooked_texcoord_vbo = gen_vbo();
 
 	buffer_vbo(cooked_vert_vbo, GL_ARRAY_BUFFER, cooked_vertices);
 	buffer_vbo(cooked_normal_vbo, GL_ARRAY_BUFFER, cooked_normals);
+	buffer_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER, cooked_tangents);
+	buffer_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER, cooked_bitangents);
 	buffer_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER, cooked_texcoords);
 	buffer_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 

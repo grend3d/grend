@@ -52,6 +52,41 @@ void model::gen_texcoords(void) {
 	}
 }
 
+void model::gen_tangents(void) {
+	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
+	// generate tangents for each triangle
+	for (std::size_t i = 0; i < vertices.size(); i += 3) {
+		glm::vec3& a = vertices[i];
+		glm::vec3& b = vertices[i+1];
+		glm::vec3& c = vertices[i+2];
+
+		glm::vec2 auv = {texcoords[2*i], texcoords[2*i + 1]};
+		glm::vec2 buv = {texcoords[2*(i+1)], texcoords[2*(i+1) + 1]};
+		glm::vec2 cuv = {texcoords[2*(i+2)], texcoords[2*(i+2) + 1]};
+
+		glm::vec3 e1 = b - a, e2 = c - a;
+		glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
+
+		glm::vec3 tangent, bitangent;
+
+		float f = 1.f / (duv1.x * duv2.y - duv2.x * duv1.y);
+		tangent.x = f * (duv2.y * e1.x + duv1.y * e2.x);
+		tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
+		tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
+		tangent = glm::normalize(tangent);
+
+		bitangent.x = f * (-duv2.x * e1.x + duv1.x * e2.x);
+		bitangent.x = f * (-duv2.x * e1.y + duv1.x * e2.y);
+		bitangent.x = f * (-duv2.x * e1.z + duv1.x * e2.z);
+		bitangent = glm::normalize(bitangent);
+
+		for (unsigned k = 0; k < 3; k++) {
+			tangents.push_back(tangent);
+			bitangents.push_back(bitangent);
+		}
+	}
+}
+
 static std::string base_dir(std::string filename) {
 	std::size_t found = filename.rfind("/");
 
@@ -63,6 +98,7 @@ static std::string base_dir(std::string filename) {
 }
 
 void model::load_object(std::string filename) {
+	std::cerr << " > loading " << filename << std::endl;
 	std::ifstream input(filename);
 	std::string line;
 	std::string current_mesh = "default";
@@ -166,6 +202,8 @@ void model::load_object(std::string filename) {
 		gen_texcoords();
 	}
 
+	gen_tangents();
+
 	if (normals.size() != vertices.size()) {
 		std::cerr << " ? mismatched normals and vertices: "
 			<< normals.size() << ", "
@@ -180,6 +218,15 @@ void model::load_object(std::string filename) {
 			<< vertices.size()
 			<< std::endl;
 		// TODO: should handle this
+	}
+
+	if (tangents.size() != vertices.size()
+	    || bitangents.size() != vertices.size())
+	{
+		std::cerr << " ? mismatched tangents and vertices: "
+			<< tangents.size() << ", "
+			<< vertices.size()
+			<< std::endl;
 	}
 }
 
