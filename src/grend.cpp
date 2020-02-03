@@ -345,6 +345,13 @@ gl_manager::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
 }
 
 gl_manager::rhandle gl_manager::load_texture(std::string filename) {
+	if (texture_cache.find(filename) != texture_cache.end()) {
+		// avoid redundantly loading textures
+		std::cerr << " > cached texture " << filename << std::endl;
+		return texture_cache[filename];
+	}
+	std::cerr << " > loading texture " << filename << std::endl;
+
 	SDL_Surface *texture = IMG_Load(filename.c_str());
 
 	if (!texture) {
@@ -383,6 +390,7 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 
 	SDL_FreeSurface(texture);
 
+	texture_cache[filename] = temp;
 	return temp;
 }
 

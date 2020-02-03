@@ -118,6 +118,9 @@ class gl_manager {
 		rhandle load_texture(std::string filename);
 		rhandle load_shader(std::string filename, GLuint type);
 
+		// map of loaded textures by filename
+		std::map<std::string, rhandle> texture_cache;
+
 		std::vector<GLuint> vaos;
 		std::vector<GLuint> vbos;
 		std::vector<GLuint> shaders;
