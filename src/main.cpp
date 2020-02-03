@@ -481,8 +481,8 @@ testscene::testscene() : engine() {
 	*/
 
 	grend::rhandle vertex_shader, fragment_shader;
-	vertex_shader = glman.load_shader("assets/shaders/pixel-shading.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("assets/shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
 
 	shader = glman.gen_program();
 
