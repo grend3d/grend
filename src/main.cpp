@@ -292,6 +292,9 @@ void testscene::render(context& ctx) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
 
 		glFrontFace(v.inverted? GL_CW : GL_CCW);
+		if (in_select_mode) {
+			draw_model_lines(v.name, trans);
+		}
 		draw_model(v.name, trans);
 	}
 
