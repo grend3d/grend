@@ -20,10 +20,10 @@ typedef std::map<std::string, model> model_map;
 
 
 // TODO: need to split this up somehow
-class grend {
+class gl_manager {
 	public:
-		grend();
-		~grend() { free_objects(); };
+		gl_manager();
+		~gl_manager() { free_objects(); };
 
 		// TODO: we could have a parent field so we can catch mismatched vbo->vao binds
 		//       which could be neat

@@ -1,4 +1,4 @@
-#include <grend/grend.hpp>
+#include <grend/gl_manager.hpp>
 
 #include <string>
 #include <vector>
@@ -19,7 +19,7 @@ static std::string load_file(const std::string filename) {
 
 namespace grendx {
 
-grend::grend() {
+gl_manager::gl_manager() {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	std::cerr << " # maximum texture units: " << GL_MAX_TEXTURE_UNITS << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
@@ -46,7 +46,7 @@ grend::grend() {
 	*/
 }
 
-void grend::compile_meshes(std::string objname, const mesh_map& meshies) {
+void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 	for (const auto& x : meshies) {
 		compiled_mesh foo;
 		std::string meshname = objname + "." + x.first;
@@ -80,7 +80,7 @@ void grend::compile_meshes(std::string objname, const mesh_map& meshies) {
 	fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
 }
 
-void grend::compile_models(model_map& models) {
+void gl_manager::compile_models(model_map& models) {
 	for (const auto& x : models) {
 		std::cerr << " >>> compiling " << x.first << std::endl;
 		compiled_model obj;
@@ -139,7 +139,7 @@ void grend::compile_models(model_map& models) {
 	}
 }
 
-grend::rhandle grend::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
+gl_manager::rhandle gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
 	rhandle orig_vao = current_vao;
 	rhandle ret = bind_vao(gen_vao());
 
@@ -171,7 +171,7 @@ grend::rhandle grend::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh)
 	return ret;
 }
 
-grend::rhandle grend::preload_model_vao(compiled_model& obj) {
+gl_manager::rhandle gl_manager::preload_model_vao(compiled_model& obj) {
 	rhandle orig_vao = current_vao;
 
 	for (std::string& mesh_name : obj.meshes) {
@@ -182,7 +182,7 @@ grend::rhandle grend::preload_model_vao(compiled_model& obj) {
 	return orig_vao;
 }
 
-void grend::bind_cooked_meshes(void) {
+void gl_manager::bind_cooked_meshes(void) {
 	cooked_vert_vbo = gen_vbo();
 	cooked_element_vbo = gen_vbo();
 	cooked_normal_vbo = gen_vbo();
@@ -203,7 +203,7 @@ void grend::bind_cooked_meshes(void) {
 	}
 }
 
-void grend::free_objects() {
+void gl_manager::free_objects() {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	glUseProgram(0);
 
@@ -239,14 +239,14 @@ void grend::free_objects() {
 	std::cerr << " # done cleanup" << std::endl;
 }
 
-grend::rhandle grend::gen_vao(void) {
+gl_manager::rhandle gl_manager::gen_vao(void) {
 	GLuint temp;
 	glGenVertexArrays(1, &temp);
 	vaos.push_back(temp);
 	return {temp, vaos.size() - 1};
 }
 
-grend::rhandle grend::gen_vbo(void) {
+gl_manager::rhandle gl_manager::gen_vbo(void) {
 	GLuint temp;
 	glGenBuffers(1, &temp);
 	vbos.push_back(temp);
@@ -254,47 +254,52 @@ grend::rhandle grend::gen_vbo(void) {
 	return {temp, vbos.size() - 1};
 }
 
-grend::rhandle grend::gen_texture(void) {
+gl_manager::rhandle gl_manager::gen_texture(void) {
 	GLuint temp;
 	glGenTextures(1, &temp);
 	textures.push_back(temp);
 	return {temp, textures.size() - 1};
 }
 
-grend::rhandle grend::gen_shader(GLuint type) {
+gl_manager::rhandle gl_manager::gen_shader(GLuint type) {
 	GLuint temp = glCreateShader(type);
 	shaders.push_back(temp);
 	return {temp, shaders.size() - 1};
 }
 
-grend::rhandle grend::gen_program(void) {
+gl_manager::rhandle gl_manager::gen_program(void) {
 	GLuint temp = glCreateProgram();
 	programs.push_back(temp);
 	return {temp, programs.size() - 1};
 }
 
-grend::rhandle grend::bind_vao(const grend::rhandle& handle) {
+gl_manager::rhandle gl_manager::bind_vao(const gl_manager::rhandle& handle) {
 	current_vao = handle;
 	glBindVertexArray(handle.first);
 	return handle;
 }
 
-grend::rhandle grend::bind_vbo(const grend::rhandle& handle, GLuint type) {
+gl_manager::rhandle
+gl_manager::bind_vbo(const gl_manager::rhandle& handle, GLuint type) {
 	glBindBuffer(type, handle.first);
 	return handle;
 }
 
-grend::rhandle grend::va_pointer(const grend::rhandle& handle, GLuint width, GLuint type) {
+gl_manager::rhandle
+gl_manager::va_pointer(const gl_manager::rhandle& handle,
+                       GLuint width,
+                       GLuint type)
+{
 	glVertexAttribPointer(handle.first, width, type, GL_FALSE, 0, 0);
 	return handle;
 }
 
-grend::rhandle grend::enable_vbo(const grend::rhandle& handle) {
+gl_manager::rhandle gl_manager::enable_vbo(const gl_manager::rhandle& handle) {
 	glEnableVertexAttribArray(handle.first);
 	return handle;
 }
 
-grend::rhandle grend::buffer_vbo(const grend::rhandle& handle,
+gl_manager::rhandle gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
                                  GLuint type,
                                  const std::vector<GLfloat>& vec)
 {
@@ -303,37 +308,43 @@ grend::rhandle grend::buffer_vbo(const grend::rhandle& handle,
 	return handle;
 }
 
-grend::rhandle grend::buffer_vbo(const grend::rhandle& handle,
-                                 GLuint type,
-                                 const std::vector<glm::vec3>& vec)
+gl_manager::rhandle
+gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
+                       GLuint type,
+                       const std::vector<glm::vec3>& vec)
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(glm::vec3) * vec.size(), vec.data(), GL_STATIC_DRAW);
 	return handle;
 }
 
-grend::rhandle grend::buffer_vbo(const grend::rhandle& handle,
-                                 GLuint type,
-                                 const std::vector<GLushort>& vec)
+gl_manager::rhandle
+gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
+                       GLuint type,
+                       const std::vector<GLushort>& vec)
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), GL_STATIC_DRAW);
 	return handle;
 }
 
-grend::rhandle grend::load_vec3f_ab_vattrib(const std::vector<GLfloat>& vec) {
+gl_manager::rhandle
+gl_manager::load_vec3f_ab_vattrib(const std::vector<GLfloat>& vec) {
+	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ARRAY_BUFFER, vec)),
+	                  3, GL_FLOAT);
+}
+
+gl_manager::rhandle
+gl_manager::load_vec3f_ab_vattrib(const std::vector<glm::vec3>& vec) {
 	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ARRAY_BUFFER, vec)), 3, GL_FLOAT);
 }
 
-grend::rhandle grend::load_vec3f_ab_vattrib(const std::vector<glm::vec3>& vec) {
-	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ARRAY_BUFFER, vec)), 3, GL_FLOAT);
-}
-
-grend::rhandle grend::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
+gl_manager::rhandle
+gl_manager::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
 	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ELEMENT_ARRAY_BUFFER, vec)), 3, GL_UNSIGNED_SHORT);
 }
 
-grend::rhandle grend::load_texture(std::string filename) {
+gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	SDL_Surface *texture = IMG_Load(filename.c_str());
 
 	if (!texture) {
@@ -375,7 +386,8 @@ grend::rhandle grend::load_texture(std::string filename) {
 	return temp;
 }
 
-grend::rhandle grend::load_shader(const std::string filename, GLuint type) {
+gl_manager::rhandle
+gl_manager::load_shader(const std::string filename, GLuint type) {
 	std::string source = load_file(filename);
 	const char *temp = source.c_str();
 	int compiled;
