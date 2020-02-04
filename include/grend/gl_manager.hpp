@@ -54,8 +54,11 @@ class gl_manager {
 				//       for the lifetime of the compiled model, and there's some possible
 				//       optimizations to be done in buffering all the material info
 				//       to the shaders during initialization
-				std::map<std::string, material> materials;
-				std::map<std::string, rhandle> mat_textures;
+				std::map<std::string, material> materials   = {};
+				std::map<std::string, rhandle> mat_textures = {};
+				std::map<std::string, rhandle> mat_specular = {};
+				std::map<std::string, rhandle> mat_normal   = {};
+				std::map<std::string, rhandle> mat_ao       = {};
 
 				void *vertices_offset;
 				void *normals_offset;
@@ -131,6 +134,10 @@ class gl_manager {
 		unsigned frames = 0;
 		rhandle current_vao;
 };
+
+void check_errors(int line, const char *func);
+#define DO_ERROR_CHECK() \
+	{ check_errors(__LINE__, __func__); }
 
 // namespace grendx
 }

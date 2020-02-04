@@ -15,10 +15,10 @@ struct material {
 
 	// file names of textures
 	// no ambient map, diffuse map serves as both
-	std::string diffuse_map;
-	std::string specular_map;
-	std::string normal_map;
-	std::string ambient_occ_map;
+	std::string diffuse_map = "";
+	std::string specular_map = "";
+	std::string normal_map = "";
+	std::string ambient_occ_map = "";
 };
 
 class model_submesh {
@@ -29,7 +29,13 @@ class model_submesh {
 
 class model {
 	public:
-		model(){};
+		model(){
+			vertices.clear();
+			normals.clear();
+			tangents.clear();
+			bitangents.clear();
+			texcoords.clear();
+		};
 		model(std::string filename);
 		void load_object(std::string filename);
 		void load_materials(std::string filename);
@@ -46,8 +52,8 @@ class model {
 		std::vector<glm::vec3> bitangents;
 		std::vector<GLfloat>  texcoords;
 
-		std::map<std::string, model_submesh> meshes;
-		std::map<std::string, material> materials;
+		std::map<std::string, model_submesh> meshes = {};
+		std::map<std::string, material> materials = {};
 
 		bool have_normals = false;
 		bool have_texcoords = false;

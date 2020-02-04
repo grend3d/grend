@@ -2,6 +2,7 @@
 #include <grend/model.hpp>
 #include <vector>
 #include <map>
+#include <iostream>
 
 using namespace grendx;
 
@@ -172,54 +173,60 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	if (obj.materials.find(mat_name) == obj.materials.end()) {
 		// TODO: maybe show a warning
 		set_default_material(mat_name);
+		//std::cerr << " ! couldn't find material " << mat_name << std::endl;
+		return;
+	}
+
+	material& mat = obj.materials[mat_name];
+
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
+			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
+			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
+	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
+			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
+			mat.shininess);
+
+	glActiveTexture(GL_TEXTURE0);
+	if (!mat.diffuse_map.empty()) {
+		glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
+		glUniform1i(u_diffuse_map, 0);
 
 	} else {
-		material& mat = obj.materials[mat_name];
+		glBindTexture(GL_TEXTURE_2D, diffuse_handles[fallback_material].first);
+		glUniform1i(u_diffuse_map, 0);
+	}
 
-		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
-				mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
-		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
-				mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
-		glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
-				mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-		glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
-				mat.shininess);
+	glActiveTexture(GL_TEXTURE1);
+	if (!mat.specular_map.empty()) {
+		// TODO: specular maps
+		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
+		glUniform1i(u_specular_map, 1);
 
-		glActiveTexture(GL_TEXTURE0);
-		if (!mat.diffuse_map.empty()) {
-			glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
-			glUniform1i(u_diffuse_map, 0);
+	} else {
+		glBindTexture(GL_TEXTURE_2D, specular_handles[fallback_material].first);
+		glUniform1i(u_specular_map, 1);
+	}
 
-		} else {
-			glBindTexture(GL_TEXTURE_2D, diffuse_handles[fallback_material].first);
-			glUniform1i(u_diffuse_map, 0);
-		}
+	glActiveTexture(GL_TEXTURE2);
+	if (!mat.normal_map.empty()) {
+		glBindTexture(GL_TEXTURE_2D, obj.mat_normal[mat_name].first);
+		glUniform1i(u_normal_map, 2);
 
-		glActiveTexture(GL_TEXTURE1);
-		if (!mat.specular_map.empty()) {
-			// TODO: specular maps
-		} else {
-			glBindTexture(GL_TEXTURE_2D, specular_handles[fallback_material].first);
-			glUniform1i(u_specular_map, 1);
-		}
+	} else {
+		glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
+		glUniform1i(u_normal_map, 2);
+	}
 
-		glActiveTexture(GL_TEXTURE2);
-		if (!mat.normal_map.empty()) {
-			// TODO: normal maps
+	glActiveTexture(GL_TEXTURE3);
+	if (!mat.ambient_occ_map.empty()) {
+		glBindTexture(GL_TEXTURE_2D, obj.mat_ao[mat_name].first);
+		glUniform1i(u_ao_map, 3);
 
-		} else {
-			glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
-			glUniform1i(u_normal_map, 2);
-		}
-
-		glActiveTexture(GL_TEXTURE3);
-		if (!mat.ambient_occ_map.empty()) {
-			// TODO: normal maps
-
-		} else {
-			glBindTexture(GL_TEXTURE_2D, aomap_handles[fallback_material].first);
-			glUniform1i(u_ao_map, 3);
-		}
+	} else {
+		glBindTexture(GL_TEXTURE_2D, aomap_handles[fallback_material].first);
+		glUniform1i(u_ao_map, 3);
 	}
 }
 
@@ -259,6 +266,12 @@ void engine::set_default_material(std::string mat_name) {
 	                                                 fallback_material
 	                                                 : mat_name].first);
 	glUniform1i(u_normal_map, 2);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, aomap_handles[mat.ambient_occ_map.empty()?
+	                                                 fallback_material
+	                                                 : mat_name].first);
+	glUniform1i(u_ao_map, 3);
 }
 
 void engine::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {

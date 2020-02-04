@@ -77,7 +77,7 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 
 		cooked_meshes[meshname] = foo;
 	}
-	fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
+	//fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
 }
 
 void gl_manager::compile_models(model_map& models) {
@@ -89,25 +89,25 @@ void gl_manager::compile_models(model_map& models) {
 		obj.vertices_offset = reinterpret_cast<void*>(cooked_vertices.size() * sizeof(glm::vec3));
 		cooked_vertices.insert(cooked_vertices.end(), x.second.vertices.begin(),
 		                                              x.second.vertices.end());
-		fprintf(stderr, " > vertices size %lu\n", cooked_vertices.size());
+		//fprintf(stderr, " > vertices size %lu\n", cooked_vertices.size());
 
 		obj.normals_size = x.second.normals.size() * sizeof(glm::vec3);
 		obj.normals_offset = reinterpret_cast<void*>(cooked_normals.size() * sizeof(glm::vec3));
 		cooked_normals.insert(cooked_normals.end(), x.second.normals.begin(),
 		                                            x.second.normals.end());
-		fprintf(stderr, " > normals size %lu\n", cooked_normals.size());
+		//fprintf(stderr, " > normals size %lu\n", cooked_normals.size());
 
 		obj.tangents_size = x.second.tangents.size() * sizeof(glm::vec3);
 		obj.tangents_offset = reinterpret_cast<void*>(cooked_tangents.size() * sizeof(glm::vec3));
 		cooked_tangents.insert(cooked_tangents.end(), x.second.tangents.begin(),
 		                                              x.second.tangents.end());
-		fprintf(stderr, " > tangents size %lu\n", cooked_tangents.size());
+		//fprintf(stderr, " > tangents size %lu\n", cooked_tangents.size());
 
 		obj.bitangents_size = x.second.bitangents.size() * sizeof(glm::vec3);
 		obj.bitangents_offset = reinterpret_cast<void*>(cooked_bitangents.size() * sizeof(glm::vec3));
 		cooked_bitangents.insert(cooked_bitangents.end(), x.second.bitangents.begin(),
 		                                                  x.second.bitangents.end());
-		fprintf(stderr, " > bitangents size %lu\n", cooked_bitangents.size());
+		//fprintf(stderr, " > bitangents size %lu\n", cooked_bitangents.size());
 
 
 		obj.texcoords_size = x.second.texcoords.size() * sizeof(GLfloat) * 2;
@@ -115,7 +115,7 @@ void gl_manager::compile_models(model_map& models) {
 		cooked_texcoords.insert(cooked_texcoords.end(),
 				x.second.texcoords.begin(),
 				x.second.texcoords.end());
-		fprintf(stderr, " > texcoords size %lu\n", cooked_texcoords.size());
+		//fprintf(stderr, " > texcoords size %lu\n", cooked_texcoords.size());
 
 		compile_meshes(x.first, x.second.meshes);
 
@@ -130,8 +130,23 @@ void gl_manager::compile_models(model_map& models) {
 		for (const auto& mat : x.second.materials) {
 			obj.materials[mat.first] = mat.second;
 
+			// TODO: is there a less tedious way to do this?
+			//       like could load all of the textures into a map then iterate over
+			//       the map rather than do this for each map type...
 			if (!mat.second.diffuse_map.empty()) {
 				obj.mat_textures[mat.first] = load_texture(mat.second.diffuse_map);
+			}
+
+			if (!mat.second.specular_map.empty()) {
+				obj.mat_specular[mat.first] = load_texture(mat.second.specular_map);
+			}
+
+			if (!mat.second.normal_map.empty()) {
+				obj.mat_normal[mat.first]   = load_texture(mat.second.normal_map);
+			}
+
+			if (!mat.second.ambient_occ_map.empty()) {
+				obj.mat_ao[mat.first]       = load_texture(mat.second.ambient_occ_map);
 			}
 		}
 
@@ -192,9 +207,9 @@ void gl_manager::bind_cooked_meshes(void) {
 
 	buffer_vbo(cooked_vert_vbo, GL_ARRAY_BUFFER, cooked_vertices);
 	buffer_vbo(cooked_normal_vbo, GL_ARRAY_BUFFER, cooked_normals);
+	buffer_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER, cooked_texcoords);
 	buffer_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER, cooked_tangents);
 	buffer_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER, cooked_bitangents);
-	buffer_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER, cooked_texcoords);
 	buffer_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 
 	for (auto& x : cooked_models) {
@@ -238,10 +253,42 @@ void gl_manager::free_objects() {
 
 	std::cerr << " # done cleanup" << std::endl;
 }
+#include <GL/glew.h>
+
+void check_errors(int line, const char *func) {
+	GLenum err;
+
+	// TODO: maybe exceptions or some way to address errors
+	while ((err = glGetError()) != GL_NO_ERROR) {
+		std::cerr << "/!\\ ERROR: " << func << ":" << line << ", ";
+
+		switch (err) {
+			case GL_INVALID_ENUM:     
+				std::cerr << "invalid enum"; break;
+			case GL_INVALID_VALUE:    
+				std::cerr << "invalid value"; break;
+			case GL_INVALID_OPERATION:
+				std::cerr << "invalid operation"; break;
+			case GL_INVALID_FRAMEBUFFER_OPERATION:
+				std::cerr << "invalid framebuffer operation"; break;
+			case GL_OUT_OF_MEMORY:
+				std::cerr << "out of memory"; break;
+			case GL_STACK_UNDERFLOW:
+				std::cerr << "stack underflow"; break;
+			case GL_STACK_OVERFLOW:
+				std::cerr << "stack overflow"; break;
+			default:
+				std::cerr << "some kind of error code, #" << err; break;
+		}
+
+		std::cerr << std::endl;
+	}
+}
 
 gl_manager::rhandle gl_manager::gen_vao(void) {
 	GLuint temp;
 	glGenVertexArrays(1, &temp);
+	DO_ERROR_CHECK();
 	vaos.push_back(temp);
 	return {temp, vaos.size() - 1};
 }
@@ -249,6 +296,7 @@ gl_manager::rhandle gl_manager::gen_vao(void) {
 gl_manager::rhandle gl_manager::gen_vbo(void) {
 	GLuint temp;
 	glGenBuffers(1, &temp);
+	DO_ERROR_CHECK();
 	vbos.push_back(temp);
 
 	return {temp, vbos.size() - 1};
@@ -257,18 +305,21 @@ gl_manager::rhandle gl_manager::gen_vbo(void) {
 gl_manager::rhandle gl_manager::gen_texture(void) {
 	GLuint temp;
 	glGenTextures(1, &temp);
+	DO_ERROR_CHECK();
 	textures.push_back(temp);
 	return {temp, textures.size() - 1};
 }
 
 gl_manager::rhandle gl_manager::gen_shader(GLuint type) {
 	GLuint temp = glCreateShader(type);
+	DO_ERROR_CHECK();
 	shaders.push_back(temp);
 	return {temp, shaders.size() - 1};
 }
 
 gl_manager::rhandle gl_manager::gen_program(void) {
 	GLuint temp = glCreateProgram();
+	DO_ERROR_CHECK();
 	programs.push_back(temp);
 	return {temp, programs.size() - 1};
 }
@@ -276,12 +327,14 @@ gl_manager::rhandle gl_manager::gen_program(void) {
 gl_manager::rhandle gl_manager::bind_vao(const gl_manager::rhandle& handle) {
 	current_vao = handle;
 	glBindVertexArray(handle.first);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
 gl_manager::rhandle
 gl_manager::bind_vbo(const gl_manager::rhandle& handle, GLuint type) {
 	glBindBuffer(type, handle.first);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
@@ -291,11 +344,13 @@ gl_manager::va_pointer(const gl_manager::rhandle& handle,
                        GLuint type)
 {
 	glVertexAttribPointer(handle.first, width, type, GL_FALSE, 0, 0);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
 gl_manager::rhandle gl_manager::enable_vbo(const gl_manager::rhandle& handle) {
 	glEnableVertexAttribArray(handle.first);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
@@ -305,6 +360,7 @@ gl_manager::rhandle gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(GLfloat) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
@@ -315,6 +371,7 @@ gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(glm::vec3) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
@@ -325,6 +382,7 @@ gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	DO_ERROR_CHECK();
 	return handle;
 }
 
@@ -347,10 +405,10 @@ gl_manager::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
 gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	if (texture_cache.find(filename) != texture_cache.end()) {
 		// avoid redundantly loading textures
-		std::cerr << " > cached texture " << filename << std::endl;
+		//std::cerr << " > cached texture " << filename << std::endl;
 		return texture_cache[filename];
 	}
-	std::cerr << " > loading texture " << filename << std::endl;
+	//std::cerr << " > loading texture " << filename << std::endl;
 
 	SDL_Surface *texture = IMG_Load(filename.c_str());
 
@@ -363,7 +421,7 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 
 	GLenum texformat = GL_RGBA;
 	switch (texture->format->BytesPerPixel) {
-		case 1: texformat = GL_R; break;
+		case 1: texformat = GL_RED; break;
 		case 2: texformat = GL_RG; break;
 		case 3: texformat = GL_RGB; break;
 		case 4: texformat = GL_RGBA; break;
@@ -376,17 +434,21 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	*/
 	rhandle temp = gen_texture();
 	glBindTexture(GL_TEXTURE_2D, temp.first);
+	DO_ERROR_CHECK();
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D,
-	             0, texformat, texture->w, texture->h, 0, texformat,
+	             0, GL_RGBA, texture->w, texture->h, 0, texformat,
 	             GL_UNSIGNED_BYTE, texture->pixels);
+	DO_ERROR_CHECK();
 
 #if ENABLE_MIPMAPS
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	DO_ERROR_CHECK();
 	glGenerateMipmap(GL_TEXTURE_2D);
 #else
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 #endif
+	DO_ERROR_CHECK();
 
 	SDL_FreeSurface(texture);
 
@@ -403,6 +465,7 @@ gl_manager::load_shader(const std::string filename, GLuint type) {
 	rhandle ret = gen_shader(type);
 
 	glShaderSource(ret.first, 1, (const GLchar**)&temp, 0);
+	DO_ERROR_CHECK();
 	glCompileShader(ret.first);
 	glGetShaderiv(ret.first, GL_COMPILE_STATUS, &compiled);
 

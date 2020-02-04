@@ -107,7 +107,7 @@ void main(void) {
 		vec3 specular_reflection = vec3(0);
 
 #if ENABLE_DIFFUSION
-		vec3 aoidx = texture2D(ambient_occ_map, flipped_texcoord).rgb;
+		float aoidx = texture2D(ambient_occ_map, flipped_texcoord).r;
 		diffuse_reflection =
 			// diminish contribution from diffuse lighting for a more cartoony look
 			//0.5 *
@@ -117,7 +117,7 @@ void main(void) {
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
-		vec3 specidx = texture2D(specular_map, flipped_texcoord).rgb;
+		float specidx = texture2D(specular_map, flipped_texcoord).r;
 
 		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0) {
 			specular_reflection = anmaterial.specular.w * attenuation

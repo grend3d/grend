@@ -103,9 +103,9 @@ void model::load_object(std::string filename) {
 	std::string line;
 	std::string current_mesh = "default";
 
-	std::vector<glm::vec3> vertbuf;
-	std::vector<glm::vec3> normbuf;
-	std::vector<GLfloat> texbuf;
+	std::vector<glm::vec3> vertbuf = {};
+	std::vector<glm::vec3> normbuf = {};
+	std::vector<GLfloat> texbuf = {};
 
 	if (!input.good()) {
 		// TODO: exception
@@ -279,6 +279,25 @@ void model::load_materials(std::string filename) {
 
 		else if (statement[0] == "map_Kd") {
 			materials[current_material].diffuse_map = base_dir(filename) + statement[1];
+		}
+
+		else if (statement[0] == "map_Ns") {
+			// specular map
+			materials[current_material].specular_map = base_dir(filename) + statement[1];
+		}
+
+		else if (statement[0] == "map_ao") {
+			// ambient occlusion map (my own extension)
+			materials[current_material].ambient_occ_map = base_dir(filename) + statement[1];
+		}
+
+		else if (statement[0] == "map_norm" || statement[0] == "norm") {
+			// normal map (also non-standard)
+			materials[current_material].normal_map = base_dir(filename) + statement[1];
+		}
+
+		else if (statement[0] == "map_bump") {
+			// bump/height map
 		}
 
 		// TODO: other light maps, attributes

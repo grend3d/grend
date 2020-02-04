@@ -106,10 +106,12 @@ class testscene : public engine {
 			{"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
 			{"teapot",    model("assets/obj/teapot.obj")},
 			{"monkey",    model("assets/obj/suzanne.obj")},
+			/*
 			{"unit_cube", generate_cuboid(1, 1, 1)},
 			{"unit_cube_wood", generate_cuboid(1, 1, 1)},
 			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-			{"grid",      generate_grid(-32, -32, 32, 32, 4)},
+			*/
+			//{"grid",      generate_grid(-32, -32, 32, 32, 4)},
 		};
 
 		std::list<std::string> libraries = {
@@ -117,8 +119,8 @@ class testscene : public engine {
 			"assets/obj/Modular Terrain Cliff/",
 			"assets/obj/Modular Terrain Hilly/",
 			"assets/obj/Modular Terrain Beach/",
-			"assets/obj/Dungeon Set 2/",
 			*/
+			"assets/obj/Dungeon Set 2/",
 		};
 
 		gl_manager::rhandle textures[8] = {
@@ -145,9 +147,11 @@ testscene::testscene() : engine() {
 	models["teapot"].meshes["default"].material = "Steel";
 	models["grid"].meshes["default"].material = "Gravel";
 	models["monkey"].meshes["Monkey"].material = "Wood";
+	/*
 	models["unit_cube"].meshes["default"].material = "Rock";
 	models["unit_cube_wood"].meshes["default"].material = "Wood";
 	models["unit_cube_ground"].meshes["default"].material = "Clover";
+	*/
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
@@ -165,6 +169,7 @@ testscene::testscene() : engine() {
 
 	glAttachShader(shader.first, vertex_shader.first);
 	glAttachShader(shader.first, fragment_shader.first);
+	DO_ERROR_CHECK();
 
 	// monkey business
 	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertices.size());
@@ -175,11 +180,12 @@ testscene::testscene() : engine() {
 	                     glman.cooked_tangent_vbo.first, "v_tangent");
 	glBindAttribLocation(shader.first,
 	                     glman.cooked_bitangent_vbo.first, "v_bitangent");
-	glLinkProgram(shader.first);
+	DO_ERROR_CHECK();
 
 	int linked;
-
+	glLinkProgram(shader.first);
 	glGetProgramiv(shader.first, GL_LINK_STATUS, &linked);
+
 	if (!linked) {
 		SDL_Die("couldn't link shaders");
 	}
@@ -268,17 +274,22 @@ void testscene::render(context& ctx) {
 	// (also should be toggled per-model)
 	glFrontFace(GL_CCW);
 #endif
+	DO_ERROR_CHECK();
 
-	glm::vec3 hpos = glm::vec3(view_direction.x*5 + view_position.x, 0, view_direction.z*5 + view_position.z);
-	glm::mat4 bizz = glm::translate(glm::mat4(1), hpos);
+	glm::vec3 hpos = glm::vec3(view_direction.x*3 + view_position.x, 0, view_direction.z*3 + view_position.z);
+	glm::mat4 bizz =
+		glm::translate(glm::mat4(1), hpos)
+		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f));
 	float asdf = 0.5*(SDL_GetTicks()/1000.f);
 	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 5, 15*sin(asdf), 1.f);
+	//glm::vec4 lfoo = glm::vec4(hpos.x, 5, hpos.z, 1.f);
 
 	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
 			1, glm::value_ptr(lfoo));
 
 	set_mvp(glm::mat4(1), view, projection);
 	draw_model("person", bizz);
+	DO_ERROR_CHECK();
 
 	if (in_select_mode) {
 		glm::mat4 trans = glm::translate(select_position) * select_transform;
@@ -287,6 +298,7 @@ void testscene::render(context& ctx) {
 		draw_model_lines(select_model->first, trans);
 		draw_model(select_model->first, trans);
 	}
+	DO_ERROR_CHECK();
 
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
@@ -296,6 +308,7 @@ void testscene::render(context& ctx) {
 			draw_model_lines(v.name, trans);
 		}
 		draw_model(v.name, trans);
+		DO_ERROR_CHECK();
 	}
 
 	SDL_GL_SwapWindow(ctx.window);
@@ -560,6 +573,8 @@ void testscene::load_map(std::string name) {
 		}
 	}
 }
+
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
