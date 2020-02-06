@@ -156,12 +156,12 @@ testscene::testscene() : engine() {
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
 
+	gl_manager::rhandle vertex_shader, fragment_shader;
 	/*
-	vertex_shader = load_shader("assets/shaders/vertex-shading.vert", GL_VERTEX_SHADER);
-	fragment_shader = load_shader("assets/shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
+	vertex_shader = glman.load_shader("shaders/vertex-shading.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
 	*/
 
-	gl_manager::rhandle vertex_shader, fragment_shader;
 	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
 
@@ -320,7 +320,7 @@ void testscene::input(context& ctx) {
 
 	float fticks = ticks_delta / 1000.0f;
 
-	const float movement_speed = 10 /* units/s */;
+	const float movement_speed = 5 /* units/s */;
 	const float rotation_speed = 1;
 
 	SDL_Event ev;
@@ -576,16 +576,38 @@ void testscene::load_map(std::string name) {
 
 #include <unistd.h>
 
+#define SMA_BUFSIZE 16
+
+static double fps_sma(uint32_t t) {
+	static uint32_t frametimes[SMA_BUFSIZE];
+	static uint32_t frameptr = 0;
+
+	frametimes[frameptr] = t;
+	frameptr = (frameptr + 1) % SMA_BUFSIZE;
+
+	uint32_t sum = 0;
+	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
+		sum += frametimes[(frameptr + i) % SMA_BUFSIZE];
+	}
+
+	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
+}
+
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
 	std::unique_ptr<engine> scene(new testscene());
 
 	while (scene->running) {
+		uint32_t a = SDL_GetTicks();
 		scene->input(ctx);
 
 		if (scene->running) {
 			scene->logic(ctx);
 			scene->render(ctx);
+
+			double fps = fps_sma(SDL_GetTicks() - a);
+			printf(" %0.2f FPS (%0.2fms/frame)    \r", fps, 1.f/fps * 1000);
+			fflush(stdout);
 		}
 	}
 
