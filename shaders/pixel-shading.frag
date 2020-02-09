@@ -26,6 +26,7 @@ struct lightSource {
 	vec4 diffuse;
 	float const_attenuation, linear_attenuation, quadratic_attenuation;
 	float specular;
+	bool is_active;
 };
 
 struct material {
@@ -35,8 +36,8 @@ struct material {
 	float shininess;
 };
 
-const int light_count = 4;
-lightSource lights[light_count];
+const int max_lights = 32;
+uniform lightSource lights[max_lights];
 
 uniform material anmaterial = material(vec4(1.0, 1.0, 1.0, 1.0),
                                        vec4(0), vec4(1.0), 5);
@@ -60,37 +61,16 @@ void main(void) {
 	normal_dir = normalize(TBN * normal_dir);
 
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
-
-	lights[0] = lightSource(lightpos,
-	                        vec4(0.8, 0.8, 0.7, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.005,
-	                        1);
-
-	lights[1] = lightSource(vec4(-8.0, 4.0, -8.0, 0.5),
-	                        vec4(1, 0.7, 0.4, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.02,
-	                        1);
-
-	lights[2] = lightSource(vec4(-8,  4.0, 8.0, 0.5),
-	                        vec4(1.0, 1.0, 0.9, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.05,
-	                        1);
-
-	lights[3] = lightSource(vec4( 8, 4.0, 8.0, 0.2),
-	                        vec4(1, 0.5, 0, 1.0),
-	                        //1, 0.00, 0.02);
-	                        0.75, 0.0, 0.05,
-	                        1);
-
 	mat4 mvp = p*v*m;
 	vec3 total_light = vec3(anmaterial.diffuse.x * ambient_light.x,
 	                        anmaterial.diffuse.y * ambient_light.y,
 	                        anmaterial.diffuse.z * ambient_light.z);
 
-	for (int i = 0; i < light_count; i++) {
+	for (int i = 0; i < max_lights; i++) {
+		if (!lights[i].is_active) {
+			continue;
+		}
+
 		vec3 light_dir;
 		float attenuation;
 

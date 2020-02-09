@@ -301,3 +301,162 @@ void engine::set_m(glm::mat4 mod) {
 	glUniformMatrix3fv(glGetUniformLocation(shader.first, "m_3x3_inv_transp"),
 			1, GL_FALSE, glm::value_ptr(m_3x3_inv_transp));
 }
+
+void engine::draw_mesh(std::string name, glm::mat4 transform) {
+	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
+	set_m(transform);
+
+	glman.bind_vao(foo.vao);
+	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+}
+
+// TODO: overload of this that takes a material
+void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
+	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
+
+	set_m(transform);
+	glman.bind_vao(foo.vao);
+
+	glDrawElements(GL_LINES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+}
+
+void engine::draw_model(std::string name, glm::mat4 transform) {
+	gl_manager::compiled_model& obj = glman.cooked_models[name];
+
+	for (std::string& name : obj.meshes) {
+		set_material(obj, glman.cooked_meshes[name].material);
+		draw_mesh(name, transform);
+	}
+}
+
+void engine::draw_model_lines(std::string name, glm::mat4 transform) {
+	gl_manager::compiled_model& obj = glman.cooked_models[name];
+	// TODO: need a set_material() function to handle stuff
+	//       and we need to explicitly set a material
+
+	set_default_material("(null)");
+	for (std::string& name : obj.meshes) {
+		draw_mesh_lines(name, transform);
+	}
+}
+
+bool engine::is_valid_light(int id) {
+	return id < MAX_LIGHTS && id >= 0 && lights[id].is_active;
+}
+
+int engine::add_light(struct light lit) {
+	int ret = -1;
+
+	// TODO: allocated light bitmap
+	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
+		if (!lights[i].is_active) {
+			ret = i;
+			break;
+		}
+	}
+
+	if (ret >= 0) {
+		lights[ret] = lit;
+		lights[ret].changed = true;
+		lights[ret].is_active = true;
+	}
+
+	return ret;
+}
+
+int engine::set_light(int id, struct light lit) {
+	if (is_valid_light(id)) {
+		lights[id] = lit;
+		lights[id].changed = true;
+		return id;
+	}
+
+	return -1;
+}
+
+int engine::get_light(int id, struct light *lit) {
+	if (is_valid_light(id)) {
+		*lit = lights[id];
+		return id;
+	}
+
+	return -1;
+}
+
+
+void engine::remove_light(int id) {
+	if (is_valid_light(id)) {
+		lights[id].is_active = false;
+		lights[id].changed = true;
+	}
+}
+
+void engine::init_lights(void) {
+	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
+		// things should have been set to zero during construction, I'm pretty sure
+		/*
+		lights[i].position = glm::vec4(i, 5, 0, 1);
+		lights[i].diffuse  = glm::vec4(0.5 + i/(float)MAX_LIGHTS/2.f, 1.0, 0.5 + i/(float)MAX_LIGHTS/2.f, 0.0);
+		lights[i].const_attenuation = 1.0f;
+		lights[i].specular = 1.0;
+		lights[i].quadratic_attenuation = 0.02f;
+		lights[i].is_active = true;
+		*/
+		lights[i].changed   = true;
+	}
+
+	update_lights();
+}
+
+void engine::sync_light(unsigned id) {
+	if (id >= MAX_LIGHTS) {
+		std::cerr << "/!\\ light " << id << " out of bounds" << std::endl;
+		return;
+	}
+
+	// TODO: cache uniform locations (good idea: add a caching layer to glman)
+	// TODO: also updating all these uniforms can't be very efficient for a lot of
+	//       moving point lights... maybe look into how uniform buffer objects work
+	std::string locstr = "lights[" + std::to_string(id) + "]";
+	std::map<std::string, GLint> light_handles;
+
+	for (std::string str : {
+			"position", "diffuse", "const_attenuation",
+			"linear_attenuation", "quadratic_attenuation",
+			"specular", "is_active"
+	}) {
+		light_handles[str] = glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
+		DO_ERROR_CHECK();
+		if (light_handles[str] == -1) {
+			std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
+		}
+	}
+
+	glUniform4fv(light_handles["position"], 1, glm::value_ptr(lights[id].position));
+	DO_ERROR_CHECK();
+	glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(lights[id].diffuse));
+	DO_ERROR_CHECK();
+
+	glUniform1f(light_handles["const_attenuation"], lights[id].const_attenuation);
+	DO_ERROR_CHECK();
+	glUniform1f(light_handles["linear_attenuation"], lights[id].linear_attenuation);
+	DO_ERROR_CHECK();
+	glUniform1f(light_handles["quadratic_attenuation"], lights[id].quadratic_attenuation);
+	DO_ERROR_CHECK();
+	glUniform1f(light_handles["specular"], lights[id].specular);
+	DO_ERROR_CHECK();
+	glUniform1i(light_handles["is_active"], lights[id].is_active);
+	DO_ERROR_CHECK();
+}
+
+void engine::update_lights(void) {
+	// TODO: sync max light constants
+	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
+		auto& lit = lights[i];
+
+		if (lit.changed) {
+			sync_light(i);
+			lit.changed = false;
+		}
+	}
+}

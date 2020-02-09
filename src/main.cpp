@@ -123,9 +123,8 @@ class testscene : public engine {
 			"assets/obj/Dungeon Set 2/",
 		};
 
-		gl_manager::rhandle textures[8] = {
-			glman.load_texture("assets/tex/white.png"),
-		};
+		// dynamic lights
+		int player_light;
 };
 
 testscene::testscene() : engine() {
@@ -147,11 +146,6 @@ testscene::testscene() : engine() {
 	models["teapot"].meshes["default"].material = "Steel";
 	models["grid"].meshes["default"].material = "Gravel";
 	models["monkey"].meshes["Monkey"].material = "Wood";
-	/*
-	models["unit_cube"].meshes["default"].material = "Rock";
-	models["unit_cube_wood"].meshes["default"].material = "Wood";
-	models["unit_cube_ground"].meshes["default"].material = "Clover";
-	*/
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
@@ -191,6 +185,16 @@ testscene::testscene() : engine() {
 	}
 
 	glUseProgram(shader.first);
+	init_lights();
+	// TODO: assert() + logger
+	player_light = add_light((struct engine::light){
+		.position = {0, 0, 0, 1},
+		.diffuse  = {1.0, 0.9, 0.8, 0.0},
+		.const_attenuation = 0.0f,
+		.linear_attenuation = 0.f,
+		.quadratic_attenuation = 0.05f,
+		.specular = 1.0,
+	});
 
 	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
 		//SDL_Die("Couldn't bind diffuse_map");
@@ -215,44 +219,6 @@ testscene::testscene() : engine() {
 
 testscene::~testscene() {
 	puts("got here");
-}
-
-void engine::draw_mesh(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
-	set_m(transform);
-
-	glman.bind_vao(foo.vao);
-	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
-}
-
-// TODO: overload of this that takes a material
-void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
-
-	set_m(transform);
-	glman.bind_vao(foo.vao);
-
-	glDrawElements(GL_LINES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
-}
-
-void engine::draw_model(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_model& obj = glman.cooked_models[name];
-
-	for (std::string& name : obj.meshes) {
-		set_material(obj, glman.cooked_meshes[name].material);
-		draw_mesh(name, transform);
-	}
-}
-
-void engine::draw_model_lines(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_model& obj = glman.cooked_models[name];
-	// TODO: need a set_material() function to handle stuff
-	//       and we need to explicitly set a material
-
-	set_default_material("(null)");
-	for (std::string& name : obj.meshes) {
-		draw_mesh_lines(name, transform);
-	}
 }
 
 void testscene::render(context& ctx) {
@@ -283,6 +249,12 @@ void testscene::render(context& ctx) {
 	float asdf = 0.5*(SDL_GetTicks()/1000.f);
 	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 5, 15*sin(asdf), 1.f);
 	//glm::vec4 lfoo = glm::vec4(hpos.x, 5, hpos.z, 1.f);
+	struct engine::light lit;
+	get_light(player_light, &lit);
+	//lit.position = lfoo;
+	lit.position = glm::vec4(hpos.x, hpos.y + 4, hpos.z, 1.f);
+	set_light(player_light, lit);
+	update_lights();
 
 	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
 			1, glm::value_ptr(lfoo));
