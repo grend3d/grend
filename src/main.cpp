@@ -103,15 +103,17 @@ class testscene : public engine {
 
 		// models
 		model_map models = {
-			{"person",    model("assets/obj/low-poly-character-rpg/boy.obj")},
-			{"teapot",    model("assets/obj/teapot.obj")},
-			{"monkey",    model("assets/obj/suzanne.obj")},
-			/*
-			{"unit_cube", generate_cuboid(1, 1, 1)},
-			{"unit_cube_wood", generate_cuboid(1, 1, 1)},
+			{"person",       model("assets/obj/low-poly-character-rpg/boy.obj")},
+			{"teapot",       model("assets/obj/teapot.obj")},
+			{"smoothteapot", model("assets/obj/smooth-teapot.obj")},
+			{"monkey",       model("assets/obj/suzanne.obj")},
+			{"smoothmonkey", model("assets/obj/smooth-suzanne.obj")},
+			{"sphere",       model("assets/obj/sphere.obj")},
+			{"smoothsphere", model("assets/obj/smoothsphere.obj")},
+			{"unit_cube",        generate_cuboid(1, 1, 1)},
+			{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
 			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-			*/
-			//{"grid",      generate_grid(-32, -32, 32, 32, 4)},
+			{"grid",             generate_grid(-32, -32, 32, 32, 4)},
 		};
 
 		std::list<std::string> libraries = {

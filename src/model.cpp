@@ -54,6 +54,9 @@ void model::gen_texcoords(void) {
 
 void model::gen_tangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
+	tangents.resize(vertices.size(), glm::vec3(0));
+	bitangents.resize(vertices.size(), glm::vec3(0));
+
 	// generate tangents for each triangle
 	for (std::size_t i = 0; i < vertices.size(); i += 3) {
 		glm::vec3& a = vertices[i];
@@ -73,17 +76,13 @@ void model::gen_tangents(void) {
 		tangent.x = f * (duv2.y * e1.x + duv1.y * e2.x);
 		tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
 		tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
-		tangent = glm::normalize(tangent);
 
 		bitangent.x = f * (-duv2.x * e1.x + duv1.x * e2.x);
-		bitangent.x = f * (-duv2.x * e1.y + duv1.x * e2.y);
-		bitangent.x = f * (-duv2.x * e1.z + duv1.x * e2.z);
-		bitangent = glm::normalize(bitangent);
+		bitangent.y = f * (-duv2.x * e1.y + duv1.x * e2.y);
+		bitangent.z = f * (-duv2.x * e1.z + duv1.x * e2.z);
 
-		for (unsigned k = 0; k < 3; k++) {
-			tangents.push_back(tangent);
-			bitangents.push_back(bitangent);
-		}
+		tangents[i] = tangents[i+1] = tangents[i+2] = glm::normalize(tangent);
+		bitangents[i] = bitangents[i+1] = bitangents[i+2] = glm::normalize(bitangent);
 	}
 }
 
@@ -101,7 +100,9 @@ void model::load_object(std::string filename) {
 	std::cerr << " > loading " << filename << std::endl;
 	std::ifstream input(filename);
 	std::string line;
-	std::string current_mesh = "default";
+	std::string mesh_name = "default";
+	std::string mesh_material = "(null)";
+	std::string current_mesh = mesh_name + ":" + mesh_material;
 
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
@@ -124,7 +125,10 @@ void model::load_object(std::string filename) {
 
 		if (statement[0] == "o") {
 			std::cerr << " > have submesh " << statement[1] << std::endl;
-			current_mesh = statement[1];
+			// TODO: should current_mesh just be defined at the top
+			//       of this loop?
+			mesh_name = statement[1];
+			current_mesh = mesh_name + ":(null)";
 		}
 
 		else if (statement[0] == "mtllib") {
@@ -135,6 +139,7 @@ void model::load_object(std::string filename) {
 
 		else if (statement[0] == "usemtl") {
 			std::cerr << " > using material " << statement[1] << std::endl;
+			current_mesh = mesh_name + ":" + statement[1];
 			meshes[current_mesh].material = statement[1];
 		}
 
@@ -157,13 +162,13 @@ void model::load_object(std::string filename) {
 				vertices.push_back(vertbuf[vert_index]);
 				meshes[current_mesh].faces.push_back(vertices.size() - 1);
 
-				if (spec.size() > 1 && !spec[1].empty()) {
+				if (have_texcoords && spec.size() > 1 && !spec[1].empty()) {
 					unsigned buf_index = 2*(std::stoi(spec[1]) - 1);
 					texcoords.push_back(texbuf[buf_index]);
 					texcoords.push_back(texbuf[buf_index + 1]);
 				}
 
-				if (spec.size() > 2 && !spec[2].empty()) {
+				if (have_normals && spec.size() > 2 && !spec[2].empty()) {
 					normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
 				}
 			};
