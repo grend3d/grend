@@ -192,9 +192,18 @@ testscene::testscene() : engine() {
 	player_light = add_light((struct engine::light){
 		.position = {0, 0, 0, 1},
 		.diffuse  = {1.0, 0.9, 0.8, 0.0},
-		.const_attenuation = 0.0f,
+		.const_attenuation = 0.5f,
 		.linear_attenuation = 0.f,
 		.quadratic_attenuation = 0.05f,
+		.specular = 1.0,
+	});
+
+	add_light((struct engine::light){
+		.position = {-3, 1.5, 1.1, 1},
+		.diffuse  = {1.0, 0.8, 0.5, 1.0},
+		.const_attenuation = 0.5f,
+		.linear_attenuation = 0.f,
+		.quadratic_attenuation = 0.08f,
 		.specular = 1.0,
 	});
 
