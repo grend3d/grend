@@ -51,6 +51,8 @@ class engine {
 		int get_light(int id, struct light *lit);
 		void remove_light(int id);
 
+		void set_shader(gl_manager::rhandle& shd);
+
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
 

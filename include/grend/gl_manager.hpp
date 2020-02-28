@@ -119,6 +119,7 @@ class gl_manager {
 
 		// TODO: unload
 		rhandle load_texture(std::string filename);
+		rhandle load_cubemap(std::string directory, std::string extension=".jpg");
 		rhandle load_shader(std::string filename, GLuint type);
 
 		// map of loaded textures by filename

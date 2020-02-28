@@ -1,18 +1,21 @@
-#version 150
+#version 330 core
 precision highp float;
 
-varying vec3 f_normal;
-varying vec3 f_tangent;
-varying vec3 f_bitangent;
-varying vec2 f_texcoord;
-varying vec4 f_position;
-varying mat3 TBN;
+in vec3 f_normal;
+in vec3 f_tangent;
+in vec3 f_bitangent;
+in vec2 f_texcoord;
+in vec4 f_position;
+in mat3 TBN;
+out vec4 FragColor;
 
 // light maps
 uniform sampler2D diffuse_map;
 uniform sampler2D specular_map;
 uniform sampler2D normal_map;
 uniform sampler2D ambient_occ_map;
+uniform sampler2D alpha_map;
+uniform samplerCube skytexture;
 
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;
@@ -20,6 +23,8 @@ uniform mat4 v_inv;
 
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
+#define ENABLE_SKYBOX 1
+#define ENABLE_REFRACTION 1
 
 struct lightSource {
 	vec4 position;
@@ -34,13 +39,14 @@ struct material {
 	vec4 ambient;
 	vec4 specular;
 	float shininess;
+	float opacity;
 };
 
 const int max_lights = 32;
 uniform lightSource lights[max_lights];
 
 uniform material anmaterial = material(vec4(1.0, 1.0, 1.0, 1.0),
-                                       vec4(0), vec4(1.0), 5);
+                                       vec4(0), vec4(1.0), 5, 1.0);
 
 uniform vec4 lightpos;
 
@@ -51,7 +57,7 @@ void main(void) {
 	//vec2 flipped_texcoord = f_texcoord;
 	vec3 normidx = texture2D(normal_map, flipped_texcoord).rgb;
 
-	vec3 ambient_light = vec3(0.0);
+	vec3 ambient_light = vec3(0.2);
 	//vec3 normal_dir = normalize(f_normal);
 	//mat3 TBN = transpose(mat3(f_tangent, f_bitangent, f_normal));
 	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
@@ -85,13 +91,15 @@ void main(void) {
 
 		vec3 diffuse_reflection = vec3(0.0);
 		vec3 specular_reflection = vec3(0);
+		vec3 environment_reflection = vec3(0);
+		vec3 environment_refraction = vec3(0);
 
 #if ENABLE_DIFFUSION
 		float aoidx = texture2D(ambient_occ_map, flipped_texcoord).r;
 		diffuse_reflection =
 			// diminish contribution from diffuse lighting for a more cartoony look
 			//0.5 *
-			aoidx *
+			aoidx * anmaterial.diffuse.w *
 			attenuation * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
 			* max(0.0, dot(normal_dir, light_dir));
 #endif
@@ -111,7 +119,27 @@ void main(void) {
 		//specular_reflection *= specidx;
 #endif
 
-		total_light += diffuse_reflection + specular_reflection;
+#if ENABLE_SKYBOX
+		vec3 env_light
+			= vec3(texture(skytexture, reflect(-view_dir, normal_dir)))
+			* anmaterial.shininess/1000 * specidx;
+			//* 0.1
+			;
+#endif
+
+#if ENABLE_REFRACTION
+		vec3 ref_light = vec3(0);
+
+		if (anmaterial.opacity < 1.0) {
+			ref_light = anmaterial.diffuse.xyz * 0.5*vec3(texture(skytexture, refract(-view_dir, normal_dir, 1.0/1.5)));
+		}
+#endif
+
+		//total_light += diffuse_reflection + specular_reflection + env_light;
+		total_light +=
+			mix(ref_light, diffuse_reflection, anmaterial.opacity)
+			+ mix(specular_reflection, env_light, 0.5)
+			;
 	}
 
 	vec4 dispnorm = vec4((normal_dir + 1)/2, 1);
@@ -126,5 +154,5 @@ void main(void) {
 	//gl_FragColor = mix(dispnorm, displight, 0.25);
 	//gl_FragColor = mix(dispnorm, displight, 0.5);
 	//gl_FragColor = mix(dispnorm, displight, 0.99);
-	gl_FragColor = displight;
+	FragColor = displight;
 }

@@ -12,6 +12,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {0.5, 0.5, 0.5, 1},
 				   .shininess = 15,
+				   .opacity = 1,
 
 				   .diffuse_map     = "assets/tex/white.png",
 				   .specular_map    = "assets/tex/white.png",
@@ -23,14 +24,16 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 0.8, 0.2, 1},
 				   .ambient = {1, 0.8, 0.2, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 50
+				   .shininess = 50,
+				   .opacity = 1,
 			   }},
 
 	{"Grey",   {
 				   .diffuse = {0.1, 0.1, 0.1, 0.5},
 				   .ambient = {0.1, 0.1, 0.1, 0.2},
 				   .specular = {0.0, 0.0, 0.0, 0.05},
-				   .shininess = 15
+				   .shininess = 15,
+				   .opacity = 1,
 			   }},
 
 	{"Yellow", {
@@ -38,6 +41,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {0, 0, 0, 1},
 				   .specular = {0.2, 0.2, 0.2, 0.2},
 				   .shininess = 20,
+				   .opacity = 1,
 			   }},
 
 	{"Gravel",  {
@@ -45,6 +49,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 5,
+				   .opacity = 1,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/Gravel.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -80,18 +85,19 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 35,
+				   .shininess = 100,
+				   .opacity = 1,
 
+				   /*
 				   .diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/rubberduck-tex/199_norm.JPG",
 				   .ambient_occ_map = "assets/tex/white.png",
+				   */
 
-				   /*
 				   .diffuse_map  = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png",
 				   .specular_map = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png",
 				   .normal_map   = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png",
-				   */
 			   }},
 
 	{"Brick",  {
@@ -99,6 +105,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 3,
+				   .opacity = 1,
 
 				   .diffuse_map  = "assets/tex/rubberduck-tex/179.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -117,6 +124,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 5,
+				   .opacity = 1,
 
 				   .diffuse_map  = "assets/tex/rubberduck-tex/165.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -129,6 +137,7 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.3},
 				   .shininess = 5,
+				   .opacity = 1,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/Boards.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -141,11 +150,21 @@ static std::map<std::string, material> default_materials = {
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 1,
+				   .opacity = 1,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/GroundCover.JPG",
 				   .specular_map = "assets/tex/white.png",
 				   .normal_map   = "assets/tex/dims/Textures/Textures_N/GroundCover_N.jpg",
 				   .ambient_occ_map = "assets/tex/white.png",
+			   }},
+
+	{"Glass",  {
+				   //.diffuse = {0.2, 0.5, 0.2, 0},
+				   .diffuse = {0.5, 0.5, 0.5, 0},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 0.5},
+				   .shininess = 100,
+				   .opacity = 0.1,
 			   }},
 };
 
@@ -187,6 +206,8 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
 	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
 			mat.shininess);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
+			mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	if (!mat.diffuse_map.empty()) {
@@ -247,6 +268,8 @@ void engine::set_default_material(std::string mat_name) {
 			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
 	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
 			mat.shininess);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
+			mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.empty()?
@@ -277,6 +300,8 @@ void engine::set_default_material(std::string mat_name) {
 void engine::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	glm::mat4 v_inv = glm::inverse(view);
 
+	set_m(mod);
+
 	glUniformMatrix4fv(glGetUniformLocation(shader.first, "v"),
 			1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(shader.first, "p"),
@@ -303,8 +328,10 @@ void engine::set_m(glm::mat4 mod) {
 }
 
 void engine::draw_mesh(std::string name, glm::mat4 transform) {
+	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 	set_m(transform);
+	DO_ERROR_CHECK();
 
 	glman.bind_vao(foo.vao);
 	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
@@ -389,6 +416,11 @@ void engine::remove_light(int id) {
 		lights[id].is_active = false;
 		lights[id].changed = true;
 	}
+}
+
+void engine::set_shader(gl_manager::rhandle& shd) {
+	shader = shd;
+	glUseProgram(shader.first);
 }
 
 void engine::init_lights(void) {

@@ -402,6 +402,18 @@ gl_manager::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
 	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ELEMENT_ARRAY_BUFFER, vec)), 3, GL_UNSIGNED_SHORT);
 }
 
+static GLenum surface_gl_format(SDL_Surface *surf) {
+	switch (surf->format->BytesPerPixel) {
+		case 1: return GL_RED;
+		case 2: return GL_RG;
+		case 3: return GL_RGB;
+		case 4: return GL_RGBA;
+		default: break;
+	}
+
+	return GL_RGBA;
+}
+
 gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	if (texture_cache.find(filename) != texture_cache.end()) {
 		// avoid redundantly loading textures
@@ -419,15 +431,7 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        texture->w, texture->h, texture->pitch, texture->format->BytesPerPixel);
 
-	GLenum texformat = GL_RGBA;
-	switch (texture->format->BytesPerPixel) {
-		case 1: texformat = GL_RED; break;
-		case 2: texformat = GL_RG; break;
-		case 3: texformat = GL_RGB; break;
-		case 4: texformat = GL_RGBA; break;
-		default: break;
-	}
-
+	GLenum texformat = surface_gl_format(texture);
 	/*
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -454,6 +458,50 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 
 	texture_cache[filename] = temp;
 	return temp;
+}
+
+gl_manager::rhandle
+gl_manager::load_cubemap(std::string directory, std::string extension) {
+	// TODO: texture cache
+	rhandle tex = gen_texture();
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, tex.first);
+	DO_ERROR_CHECK();
+
+	std::pair<std::string, GLenum> dirmap[] =  {
+		{"negx", GL_TEXTURE_CUBE_MAP_NEGATIVE_X},
+		{"negy", GL_TEXTURE_CUBE_MAP_NEGATIVE_Y},
+		{"negz", GL_TEXTURE_CUBE_MAP_NEGATIVE_Z},
+		{"posx", GL_TEXTURE_CUBE_MAP_POSITIVE_X},
+		{"posy", GL_TEXTURE_CUBE_MAP_POSITIVE_Y},
+		{"posz", GL_TEXTURE_CUBE_MAP_POSITIVE_Z}
+	};
+
+	for (const auto& thing : dirmap) {
+		std::string fname = directory + "/" + thing.first + extension;
+		SDL_Surface *surf = IMG_Load(fname.c_str());
+
+		if (!surf) {
+			SDL_Die("couldn't load cubemap texture");
+		}
+
+		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
+	        surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
+
+		glTexImage2D(thing.second, 0, GL_RGBA, surf->w, surf->h, 0,
+			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
+		DO_ERROR_CHECK();
+
+		SDL_FreeSurface(surf);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	DO_ERROR_CHECK();
+
+	return tex;
 }
 
 gl_manager::rhandle

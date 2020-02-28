@@ -198,6 +198,10 @@ void model::load_object(std::string filename) {
 		}
 	}
 
+	for (const auto& thing : meshes) {
+		std::cerr << " > > have mesh " << thing.first << std::endl; 
+	}
+
 	// TODO: check that normals size == vertices size and fill in the difference
 	if (!have_normals) {
 		gen_normals();

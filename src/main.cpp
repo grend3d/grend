@@ -69,7 +69,7 @@ class testscene : public engine {
 
 		glm::mat4 projection, view;
 
-		glm::vec3 view_position = glm::vec3(0, 6, 5);
+		glm::vec3 view_position = glm::vec3(0, 0, 0);
 		glm::vec3 view_velocity;
 
 		glm::vec3 view_direction = glm::vec3(0, 0, -1);
@@ -110,6 +110,9 @@ class testscene : public engine {
 			{"smoothmonkey", model("assets/obj/smooth-suzanne.obj")},
 			{"sphere",       model("assets/obj/sphere.obj")},
 			{"smoothsphere", model("assets/obj/smoothsphere.obj")},
+			{"glasssphere",  model("assets/obj/smoothsphere.obj")},
+			{"steelsphere",  model("assets/obj/smoothsphere.obj")},
+			{"dragon",       model("assets/obj/tests/dragon.obj")},
 			{"unit_cube",        generate_cuboid(1, 1, 1)},
 			{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
 			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
@@ -122,8 +125,15 @@ class testscene : public engine {
 			"assets/obj/Modular Terrain Hilly/",
 			"assets/obj/Modular Terrain Beach/",
 			*/
-			"assets/obj/Dungeon Set 2/",
+			//"assets/obj/Dungeon Set 2/",
 		};
+
+		// sky box
+		// TODO: should this be in the engine?
+		gl_manager::rhandle skybox;
+		gl_manager::rhandle skybox_shader;
+
+		gl_manager::rhandle main_shader;
 
 		// dynamic lights
 		int player_light;
@@ -132,8 +142,8 @@ class testscene : public engine {
 testscene::testscene() : engine() {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
-	view = glm::lookAt(glm::vec3(0.0, 1.0, 5.0),
-	                   glm::vec3(0.0, 0.0, 0.0),
+	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
+	                   glm::vec3(0.0, 0.0, 1.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
 	select_model = models.begin();
 
@@ -145,14 +155,40 @@ testscene::testscene() : engine() {
 		models.insert(library.begin(), library.end());
 	}
 
-	models["teapot"].meshes["default"].material = "Steel";
+	models["teapot"].meshes["default:(null)"].material = "Steel";
 	models["grid"].meshes["default"].material = "Gravel";
 	models["monkey"].meshes["Monkey"].material = "Wood";
+	models["glasssphere"].meshes["Sphere:None"].material = "Glass";
+	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
 
+	skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
+	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
+
 	gl_manager::rhandle vertex_shader, fragment_shader;
+	vertex_shader = glman.load_shader("shaders/skybox.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/skybox.frag", GL_FRAGMENT_SHADER);
+	skybox_shader = glman.gen_program();
+
+	glAttachShader(skybox_shader.first, vertex_shader.first);
+	glAttachShader(skybox_shader.first, fragment_shader.first);
+	DO_ERROR_CHECK();
+
+	glBindAttribLocation(skybox_shader.first, glman.cooked_vert_vbo.first, "v_position");
+	DO_ERROR_CHECK();
+
+	// TODO: function to compile shaders
+	int linked_2;
+	glLinkProgram(skybox_shader.first);
+	glGetProgramiv(skybox_shader.first, GL_LINK_STATUS, &linked_2);
+
+	if (!linked_2) {
+		SDL_Die("couldn't link shaders");
+	}
+
 	/*
 	vertex_shader = glman.load_shader("shaders/vertex-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
@@ -161,32 +197,33 @@ testscene::testscene() : engine() {
 	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
 
-	shader = glman.gen_program();
+	main_shader = glman.gen_program();
 
-	glAttachShader(shader.first, vertex_shader.first);
-	glAttachShader(shader.first, fragment_shader.first);
+	glAttachShader(main_shader.first, vertex_shader.first);
+	glAttachShader(main_shader.first, fragment_shader.first);
 	DO_ERROR_CHECK();
 
 	// monkey business
 	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertices.size());
-	glBindAttribLocation(shader.first, glman.cooked_vert_vbo.first, "in_Position");
-	glBindAttribLocation(shader.first, glman.cooked_texcoord_vbo.first, "texcoord");
-	glBindAttribLocation(shader.first, glman.cooked_normal_vbo.first, "v_normal");
-	glBindAttribLocation(shader.first,
+	glBindAttribLocation(main_shader.first, glman.cooked_vert_vbo.first, "in_Position");
+	glBindAttribLocation(main_shader.first, glman.cooked_texcoord_vbo.first, "texcoord");
+	glBindAttribLocation(main_shader.first, glman.cooked_normal_vbo.first, "v_normal");
+	glBindAttribLocation(main_shader.first,
 	                     glman.cooked_tangent_vbo.first, "v_tangent");
-	glBindAttribLocation(shader.first,
+	glBindAttribLocation(main_shader.first,
 	                     glman.cooked_bitangent_vbo.first, "v_bitangent");
 	DO_ERROR_CHECK();
 
 	int linked;
-	glLinkProgram(shader.first);
-	glGetProgramiv(shader.first, GL_LINK_STATUS, &linked);
+	glLinkProgram(main_shader.first);
+	glGetProgramiv(main_shader.first, GL_LINK_STATUS, &linked);
 
 	if (!linked) {
 		SDL_Die("couldn't link shaders");
 	}
 
-	glUseProgram(shader.first);
+	//glUseProgram(shader.first);
+	set_shader(main_shader);
 	init_lights();
 	// TODO: assert() + logger
 	player_light = add_light((struct engine::light){
@@ -204,6 +241,15 @@ testscene::testscene() : engine() {
 		.const_attenuation = 0.5f,
 		.linear_attenuation = 0.f,
 		.quadratic_attenuation = 0.08f,
+		.specular = 1.0,
+	});
+
+	add_light((struct engine::light){
+		.position = {0, 30, 50, 0},
+		.diffuse  = {0.9, 0.9, 1.0, 1.0},
+		.const_attenuation = 1.f,
+		.linear_attenuation = 0.f,
+		.quadratic_attenuation = 0.00f,
 		.specular = 1.0,
 	});
 
@@ -244,6 +290,23 @@ void testscene::render(context& ctx) {
 	glUniform1i(u, 0);
 	*/
 
+	//glUseProgram(skybox_shader.first);
+	set_shader(skybox_shader);
+	glDepthMask(GL_FALSE);
+#ifdef ENABLE_FACE_CULLING
+	// TODO: toggle per-model
+	glDisable(GL_CULL_FACE);
+#endif
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
+	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
+	DO_ERROR_CHECK();
+	set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
+	//draw_model("unit_cube", glm::mat4(1));
+	draw_mesh("unit_cube.default", glm::mat4(0));
+	glDepthMask(GL_TRUE);
+
+	set_shader(main_shader);
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
 	glEnable(GL_CULL_FACE);
@@ -252,6 +315,8 @@ void testscene::render(context& ctx) {
 	glFrontFace(GL_CCW);
 #endif
 	DO_ERROR_CHECK();
+
+	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
 
 	glm::vec3 hpos = glm::vec3(view_direction.x*3 + view_position.x, 0, view_direction.z*3 + view_position.z);
 	glm::mat4 bizz =

@@ -12,6 +12,8 @@ struct material {
 	glm::vec4 ambient;
 	glm::vec4 specular;
 	GLfloat   shininess = 10;
+	GLfloat   opacity = 1.0;
+	GLfloat   refract_idx = 1.5;
 
 	// file names of textures
 	// no ambient map, diffuse map serves as both
@@ -19,6 +21,7 @@ struct material {
 	std::string specular_map = "";
 	std::string normal_map = "";
 	std::string ambient_occ_map = "";
+	std::string alpha_map = "";
 };
 
 class model_submesh {
