@@ -282,6 +282,10 @@ void model::load_materials(std::string filename) {
 			                                                 std::stof(statement[3]), 1);
 		}
 
+		else if (statement[0] == "d") {
+			materials[current_material].opacity = std::stof(statement[1]);
+		}
+
 		else if (statement[0] == "Ns") {
 			materials[current_material].shininess = std::stof(statement[1]);
 		}

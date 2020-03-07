@@ -113,6 +113,8 @@ class testscene : public engine {
 			{"glasssphere",  model("assets/obj/smoothsphere.obj")},
 			{"steelsphere",  model("assets/obj/smoothsphere.obj")},
 			{"dragon",       model("assets/obj/tests/dragon.obj")},
+			{"maptest",      model("assets/obj/tests/maptest.obj")},
+			{"building",     model("assets/obj/tests/building_test/building_test.obj")},
 			{"unit_cube",        generate_cuboid(1, 1, 1)},
 			{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
 			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
