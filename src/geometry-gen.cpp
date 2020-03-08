@@ -2,8 +2,6 @@
 
 namespace grendx {
 
-// TODO: terrain generator or something, take a lambda that generates
-//       a height mesh
 model generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	model ret;
 
@@ -103,8 +101,8 @@ model generate_cuboid(float width, float height, float depth) {
 
 		ret.texcoords.push_back(0); ret.texcoords.push_back(0);
 		ret.texcoords.push_back(1); ret.texcoords.push_back(0);
-		ret.texcoords.push_back(1); ret.texcoords.push_back(1);
 		ret.texcoords.push_back(0); ret.texcoords.push_back(1);
+		ret.texcoords.push_back(1); ret.texcoords.push_back(1);
 	}
 
 	ret.gen_normals();

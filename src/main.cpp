@@ -5,6 +5,7 @@
 #include <grend/geometry-gen.hpp>
 #include <grend/gl_manager.hpp>
 #include <grend/utility.hpp>
+#include <grend/octree.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -139,6 +140,10 @@ class testscene : public engine {
 
 		// dynamic lights
 		int player_light;
+
+		// testing stuff
+		void draw_octree_leaves(octree::node *node, glm::vec3 location);
+		octree oct;
 };
 
 testscene::testscene() : engine() {
@@ -162,6 +167,12 @@ testscene::testscene() : engine() {
 	models["monkey"].meshes["Monkey"].material = "Wood";
 	models["glasssphere"].meshes["Sphere:None"].material = "Glass";
 	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
+
+	for (unsigned i = 0; i < models["smoothteapot"].vertices.size(); i += 3) {
+		auto& verts = models["smoothteapot"].vertices;
+		glm::vec3 tri[3] = {verts[i], verts[i+1], verts[i+2]};
+		oct.add_tri(tri);
+	}
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
@@ -280,6 +291,41 @@ testscene::~testscene() {
 	puts("got here");
 }
 
+void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
+	if (node == nullptr) {
+		return;
+	}
+
+	else if (node->level == 0) {
+		//glm::mat4 trans = glm::translate(glm::scale(glm::vec3(0.1)), location);
+		double scale = oct.leaf_size * (1 << node->level + 1);
+		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
+		draw_model_lines("unit_cube", trans);
+		//draw_model("unit_cube", trans);
+	}
+
+	else {
+		/*
+		double scale = oct.leaf_size * (1 << node->level + 1);
+		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
+		draw_model_lines("unit_cube", trans);
+		*/
+
+		for (unsigned i = 0; i < 8; i++) {
+			bool x = i&1;
+			bool y = i&2;
+			bool z = i&4;
+
+			glm::vec3 temp = location;
+			temp.x -= (x?1:-1) * oct.leaf_size * (1 << node->level);
+			temp.y -= (y?1:-1) * oct.leaf_size * (1 << node->level);
+			temp.z -= (z?1:-1) * oct.leaf_size * (1 << node->level);
+
+			draw_octree_leaves(node->subnodes[x][y][z], temp);
+		}
+	}
+}
+
 void testscene::render(context& ctx) {
 	//glClearColor(0.7, 0.9, 1, 1);
 	glClearColor(0.1, 0.1, 0.1, 1);
@@ -360,6 +406,9 @@ void testscene::render(context& ctx) {
 		draw_model(v.name, trans);
 		DO_ERROR_CHECK();
 	}
+
+	draw_model("teapot", glm::mat4(1));
+	draw_octree_leaves(oct.root, glm::vec3(0));
 
 	SDL_GL_SwapWindow(ctx.window);
 }
