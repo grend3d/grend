@@ -2,24 +2,29 @@
 
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
+#define ENABLE_SKYBOX 1
 
-attribute vec2 texcoord;
-varying vec2 f_texcoord;
+in vec3 in_Position;
+in vec2 texcoord;
+in vec3 in_Color;
+in vec3 v_normal;
+in vec3 v_tangent;
+in vec3 v_bitangent;
 
-attribute vec3 v_normal;
+out vec3 ex_Color;
+out vec2 f_texcoord;
+
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;
 uniform mat4 v_inv;;
-
-in vec3 in_Position;
-in vec3 in_Color;
-out vec3 ex_Color;
+uniform samplerCube skytexture;
 
 struct lightSource {
 	vec4 position;
 	vec4 diffuse;
 	float const_attenuation, linear_attenuation, quadratic_attenuation;
 	float specular;
+	bool is_active;
 };
 
 struct material {
@@ -27,44 +32,20 @@ struct material {
 	vec4 ambient;
 	vec4 specular;
 	float shininess;
+	float opacity;
 };
 
-const int light_count = 4;
-lightSource lights[light_count];
+const int max_lights = 32;
+uniform lightSource lights[max_lights];
 
 uniform material anmaterial = material(vec4(1.0, 1.0, 1.0, 1.0),
-                               vec4(0),
-                               vec4(1.0),
-                               5);
+                               vec4(0), vec4(1.0), 5, 1.0);
 
 void main(void) {
 	vec4 v_coord = vec4(in_Position, 1.0);
-	vec3 ambient_light = vec3(1);
+	// TODO: make this a uniform
+	vec3 ambient_light = vec3(0.2);
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - m * v_coord));
-
-	lights[0] = lightSource(vec4(8.0, 16.0, -8.0, 1.0),
-	                        vec4(0.8, 0.8, 0.7, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.002,
-	                        1);
-
-	lights[1] = lightSource(vec4(-8.0, 16.0, -8.0, 1.0),
-	                        vec4(1, 0.7, 0.4, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.002,
-	                        1);
-
-	lights[2] = lightSource(vec4(-8, 16.0, 8.0, 1.0),
-	                        vec4(1.0, 1.0, 0.9, 1.0),
-	                        //vec4(0.0, 0.0, 0.0, 0),
-	                        1, 0.0, 0.005,
-	                        1);
-
-	lights[3] = lightSource(vec4( 8, 16.0, 8.0, 1.0),
-	                        vec4(1, 0.5, 0, 1.0),
-	                        //1, 0.00, 0.02);
-	                        0.75, 0.0, 0.05,
-	                        1);
 
 	mat4 mvp = p*v*m;
 	//vec3 total_light = ambient_light;
@@ -73,7 +54,11 @@ void main(void) {
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
 
-	for (int i = 0; i < light_count; i++) {
+	for (int i = 0; i < max_lights; i++) {
+		if (!lights[i].is_active) {
+			continue;
+		}
+
 		vec3 light_dir;
 		float attenuation;
 
@@ -95,18 +80,20 @@ void main(void) {
 
 		vec3 diffuse_reflection = vec3(0.0);
 		vec3 specular_reflection = vec3(0);
+		vec3 env_light = vec3(0);
 
 #if ENABLE_DIFFUSION
 		diffuse_reflection =
 			// diminish contribution from diffuse lighting for a more cartoony look
-			0.5 *
+			//0.5 *
 			attenuation * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
 			* max(0.0, dot(normal_dir, light_dir));
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
 		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0) {
-			specular_reflection = attenuation * vec3(lights[i].specular)
+			specular_reflection = anmaterial.specular.w * attenuation
+				* vec3(lights[i].specular)
 				* vec3(anmaterial.specular)
 				* pow(max(0.0, dot(reflect(-light_dir, normal_dir), view_dir)),
 				      anmaterial.shininess);
