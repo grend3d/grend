@@ -42,9 +42,9 @@ void octree::grow(double size) {
 void octree::add_tri(const glm::vec3 tri[3]) {
 	const glm::vec3& a = tri[0], b = tri[1], c = tri[2];
 
-	glm::vec3 foo = (a + b) / 2.f;
-	glm::vec3 bar = (a + c) / 2.f;
-	glm::vec3 baz = (b + c) / 2.f;
+	glm::vec3 foo  = (a + b) / 2.f;
+	glm::vec3 bar  = (a + c) / 2.f;
+	glm::vec3 baz  = (b + c) / 2.f;
 
 	// XXX: for now just set leaves at the middle of each face
 	set_leaf(foo);
@@ -84,4 +84,28 @@ void octree::set_leaf(glm::vec3 location) {
 		move = move->subnodes[x][y][z];
 	}
 	//puts("set leaf");
+}
+
+uint32_t octree::count_nodes(void) {
+	if (!root) {
+		return 0;
+	}
+
+	return 1 + root->count_nodes();
+}
+
+uint32_t octree::node::count_nodes(void) {
+	uint32_t sum = 0;
+
+	for (unsigned i = 0; i < 8; i++) {
+		node *ptr = subnodes[!!(i&1)][!!(i&2)][!!(i&4)];
+
+		if (ptr == nullptr) {
+			continue;
+		}
+
+		sum += 1 + ptr->count_nodes();
+	}
+
+	return sum;
 }
