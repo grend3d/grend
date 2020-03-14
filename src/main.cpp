@@ -113,6 +113,7 @@ class testscene : public engine {
 			{"smoothsphere", model("assets/obj/smoothsphere.obj")},
 			{"glasssphere",  model("assets/obj/smoothsphere.obj")},
 			{"steelsphere",  model("assets/obj/smoothsphere.obj")},
+			{"earthsphere",  model("assets/obj/smoothsphere.obj")},
 			{"dragon",       model("assets/obj/tests/dragon.obj")},
 			{"maptest",      model("assets/obj/tests/maptest.obj")},
 			{"building",     model("assets/obj/tests/building_test/building_test.obj")},
@@ -128,7 +129,7 @@ class testscene : public engine {
 			"assets/obj/Modular Terrain Hilly/",
 			"assets/obj/Modular Terrain Beach/",
 			*/
-			//"assets/obj/Dungeon Set 2/",
+			"assets/obj/Dungeon Set 2/",
 		};
 
 		// sky box
@@ -167,12 +168,15 @@ testscene::testscene() : engine() {
 	models["monkey"].meshes["Monkey"].material = "Wood";
 	models["glasssphere"].meshes["Sphere:None"].material = "Glass";
 	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
+	models["earthsphere"].meshes["Sphere:None"].material = "Earth";
 
 	for (unsigned i = 0; i < models["smoothteapot"].vertices.size(); i += 3) {
 		auto& verts = models["smoothteapot"].vertices;
 		glm::vec3 tri[3] = {verts[i], verts[i+1], verts[i+2]};
 		oct.add_tri(tri);
 	}
+
+	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
@@ -257,6 +261,7 @@ testscene::testscene() : engine() {
 		.specular = 1.0,
 	});
 
+	/*
 	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
 		.diffuse  = {0.9, 0.9, 1.0, 1.0},
@@ -265,6 +270,7 @@ testscene::testscene() : engine() {
 		.quadratic_attenuation = 0.00f,
 		.specular = 1.0,
 	});
+	*/
 
 	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
 		//SDL_Die("Couldn't bind diffuse_map");

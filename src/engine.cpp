@@ -166,12 +166,24 @@ static std::map<std::string, material> default_materials = {
 				   .shininess = 100,
 				   .opacity = 0.1,
 			   }},
+
+	{"Earth",  {
+				   //.diffuse = {0.2, 0.5, 0.2, 0},
+				   .diffuse = {1, 1, 1, 1},
+				   .ambient = {1, 1, 1, 1},
+				   .specular = {1, 1, 1, 0.5},
+				   .shininess = 10,
+				   .opacity = 1.0,
+
+				   .diffuse_map  = "assets/tex/Earthmap720x360_grid.jpg",
+			   }},
 };
 
 engine::engine() {
 	for (auto& thing : default_materials) {
 		if (!thing.second.diffuse_map.empty()) {
-			diffuse_handles[thing.first] = glman.load_texture(thing.second.diffuse_map);
+			diffuse_handles[thing.first] =
+				glman.load_texture(thing.second.diffuse_map, true /* srgb */);
 		}
 
 		if (!thing.second.specular_map.empty()) {

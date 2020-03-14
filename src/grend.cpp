@@ -35,6 +35,7 @@ gl_manager::gl_manager() {
 	cooked_texcoords.clear();
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
 
 	/*
@@ -134,7 +135,8 @@ void gl_manager::compile_models(model_map& models) {
 			//       like could load all of the textures into a map then iterate over
 			//       the map rather than do this for each map type...
 			if (!mat.second.diffuse_map.empty()) {
-				obj.mat_textures[mat.first] = load_texture(mat.second.diffuse_map);
+				obj.mat_textures[mat.first] =
+					load_texture(mat.second.diffuse_map, true /* srgb */);
 			}
 
 			if (!mat.second.specular_map.empty()) {
@@ -142,11 +144,11 @@ void gl_manager::compile_models(model_map& models) {
 			}
 
 			if (!mat.second.normal_map.empty()) {
-				obj.mat_normal[mat.first]   = load_texture(mat.second.normal_map);
+				obj.mat_normal[mat.first] = load_texture(mat.second.normal_map);
 			}
 
 			if (!mat.second.ambient_occ_map.empty()) {
-				obj.mat_ao[mat.first]       = load_texture(mat.second.ambient_occ_map);
+				obj.mat_ao[mat.first] = load_texture(mat.second.ambient_occ_map);
 			}
 		}
 
@@ -414,7 +416,7 @@ static GLenum surface_gl_format(SDL_Surface *surf) {
 	return GL_RGBA;
 }
 
-gl_manager::rhandle gl_manager::load_texture(std::string filename) {
+gl_manager::rhandle gl_manager::load_texture(std::string filename, bool srgb) {
 	if (texture_cache.find(filename) != texture_cache.end()) {
 		// avoid redundantly loading textures
 		//std::cerr << " > cached texture " << filename << std::endl;
@@ -441,8 +443,9 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename) {
 	DO_ERROR_CHECK();
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D,
-	             0, GL_RGBA, texture->w, texture->h, 0, texformat,
-	             GL_UNSIGNED_BYTE, texture->pixels);
+	             //0, GL_RGBA, texture->w, texture->h, 0, texformat,
+	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, texture->w, texture->h,
+	             0, texformat, GL_UNSIGNED_BYTE, texture->pixels);
 	DO_ERROR_CHECK();
 
 #if ENABLE_MIPMAPS
@@ -488,7 +491,11 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
 
+		/*
 		glTexImage2D(thing.second, 0, GL_RGBA, surf->w, surf->h, 0,
+			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
+			*/
+		glTexImage2D(thing.second, 0, GL_SRGB, surf->w, surf->h, 0,
 			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
 		DO_ERROR_CHECK();
 
