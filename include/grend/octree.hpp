@@ -10,7 +10,7 @@ class octree {
 	public:
 		class node;
 
-		octree(double _leaf_size=0.01 /* meters */) {
+		octree(double _leaf_size=0.02 /* meters */) {
 			leaf_size = _leaf_size;
 		};
 		~octree() {};

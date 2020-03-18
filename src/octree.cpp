@@ -39,6 +39,8 @@ void octree::grow(double size) {
 	}
 }
 
+/*
+// old (stub) function, left here for debugging and comparison
 void octree::add_tri(const glm::vec3 tri[3]) {
 	const glm::vec3& a = tri[0], b = tri[1], c = tri[2];
 
@@ -50,6 +52,50 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 	set_leaf(foo);
 	set_leaf(bar);
 	set_leaf(baz);
+}
+*/
+
+void octree::add_tri(const glm::vec3 tri[3]) {
+	const glm::vec3& a = tri[0], b = tri[1], c = tri[2];
+
+	glm::vec3 plane_normal =
+		glm::normalize(glm::cross(
+			b - a,
+			c - a));
+
+	// direction perpendicular to the base in the triangle's plane
+	glm::vec3 perp = glm::cross(plane_normal, glm::normalize(c - b));
+
+	float la = glm::length((b - a));
+	float lb = glm::length((c - a));
+	float lc = glm::length((c - b));
+
+	// semi-perimeter
+	float s = (la + lb + lc) / 2;
+	// altitude from the BC ("c") side
+	float altitude = 2 * sqrt(s * (s-la) * (s-lb) * (s-lc)) / lc;
+
+	float B = glm::dot(b - a, b - c);
+	float C = glm::dot(c - a, c - b);
+
+	float r1 = glm::sec(B);
+	float r2 = glm::sec(C);
+
+	glm::vec3 basedir = glm::normalize(c - b);
+	float k = lc / altitude;
+
+	for (float i = 0; i < altitude; i += leaf_size) {
+		glm::vec3 center = a - perp*i;
+		set_leaf(center);
+
+		for (float m = 0; m < i*k*r1; m += leaf_size) {
+			set_leaf(center - basedir*m);
+		}
+
+		for (float m = 0; m < i*k*r2; m += leaf_size) {
+			set_leaf(center + basedir*m);
+		}
+	}
 }
 
 // TODO: move to utilities header
