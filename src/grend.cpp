@@ -27,6 +27,9 @@ gl_manager::gl_manager() {
 	// make sure we start with a bound VAO
 	bind_vao(gen_vao());
 
+	// initialize state for quad that fills the screen
+	preload_screenquad();
+
 	cooked_vertices.clear();
 	cooked_normals.clear();
 	cooked_tangents.clear();
@@ -161,28 +164,28 @@ gl_manager::rhandle gl_manager::preload_mesh_vao(compiled_model& obj, compiled_m
 	rhandle ret = bind_vao(gen_vao());
 
 	bind_vbo(cooked_vert_vbo, GL_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_vert_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.vertices_offset);
-	enable_vbo(cooked_vert_vbo);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, obj.vertices_offset);
 
 	bind_vbo(cooked_normal_vbo, GL_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_normal_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.normals_offset);
-	enable_vbo(cooked_normal_vbo);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, obj.normals_offset);
 
 	bind_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_tangent_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.tangents_offset);
-	enable_vbo(cooked_tangent_vbo);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, obj.tangents_offset);
 
 	bind_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_bitangent_vbo.first, 3, GL_FLOAT, GL_FALSE, 0, obj.bitangents_offset);
-	enable_vbo(cooked_bitangent_vbo);
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, obj.bitangents_offset);
 
 	bind_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_texcoord_vbo.first, 2, GL_FLOAT, GL_FALSE, 0, obj.texcoords_offset);
-	enable_vbo(cooked_texcoord_vbo);
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 0, obj.texcoords_offset);
 
 	bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
-	glVertexAttribPointer(cooked_element_vbo.first, 3, GL_UNSIGNED_SHORT, GL_FALSE, 0, mesh.elements_offset);
-	enable_vbo(cooked_element_vbo);
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 3, GL_UNSIGNED_SHORT, GL_FALSE, 0, mesh.elements_offset);
 
 	bind_vao(orig_vao);
 	return ret;
@@ -220,6 +223,31 @@ void gl_manager::bind_cooked_meshes(void) {
 	}
 }
 
+static std::vector<GLfloat> screenquad_data = {
+	-1, -1,  0, 0, 0,
+	 1, -1,  0, 1, 0,
+	 1,  1,  0, 1, 1,
+
+	 1,  1,  0, 1, 1,
+	-1,  1,  0, 0, 1,
+	-1, -1,  0, 0, 0,
+};
+
+void gl_manager::preload_screenquad(void) {
+	screenquad_vbo = gen_vbo();
+	rhandle orig_vao = current_vao;
+	screenquad_vao = bind_vao(gen_vao());
+
+	buffer_vbo(screenquad_vbo, GL_ARRAY_BUFFER, screenquad_data);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
+	                      (void*)(3 * sizeof(float)));
+
+	bind_vao(orig_vao);
+}
+
 void gl_manager::free_objects() {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	glUseProgram(0);
@@ -232,6 +260,11 @@ void gl_manager::free_objects() {
 		// glDetachShader()
 	}
 	*/
+
+	fprintf(stderr, "   - %lu framebuffers\n", framebuffers.size());
+	for (auto& thing : framebuffers) {
+		glDeleteFramebuffers(1, &thing);
+	}
 
 	fprintf(stderr, "   - %lu programs\n", programs.size());
 	for (auto& thing : programs) {
@@ -255,7 +288,6 @@ void gl_manager::free_objects() {
 
 	std::cerr << " # done cleanup" << std::endl;
 }
-#include <GL/glew.h>
 
 void check_errors(int line, const char *func) {
 	GLenum err;
@@ -326,6 +358,43 @@ gl_manager::rhandle gl_manager::gen_program(void) {
 	return {temp, programs.size() - 1};
 }
 
+gl_manager::rhandle gl_manager::gen_framebuffer(void) {
+	GLuint temp;
+	glGenFramebuffers(1, &temp);
+	DO_ERROR_CHECK();
+	framebuffers.push_back(temp);
+	return {temp, framebuffers.size() - 1};
+}
+
+gl_manager::rhandle
+gl_manager::gen_texture_color(unsigned width, unsigned height, GLenum format) {
+	rhandle ret = gen_texture();
+
+	glBindTexture(GL_TEXTURE_2D, ret.first);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
+	             GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	return ret;
+}
+
+gl_manager::rhandle
+gl_manager::gen_texture_depth_stencil(unsigned width, unsigned height,
+                                      GLenum format)
+{
+	rhandle ret = gen_texture();
+
+	glBindTexture(GL_TEXTURE_2D, ret.first);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
+	             GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+	DO_ERROR_CHECK();
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	return ret;
+}
+
 gl_manager::rhandle gl_manager::bind_vao(const gl_manager::rhandle& handle) {
 	current_vao = handle;
 	glBindVertexArray(handle.first);
@@ -341,17 +410,23 @@ gl_manager::bind_vbo(const gl_manager::rhandle& handle, GLuint type) {
 }
 
 gl_manager::rhandle
+gl_manager::bind_framebuffer(const rhandle& handle) {
+	glBindFramebuffer(GL_FRAMEBUFFER, handle.first);
+	DO_ERROR_CHECK();
+	return handle;
+}
+
+void gl_manager::bind_default_framebuffer(void) {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	DO_ERROR_CHECK();
+}
+
+gl_manager::rhandle
 gl_manager::va_pointer(const gl_manager::rhandle& handle,
                        GLuint width,
                        GLuint type)
 {
 	glVertexAttribPointer(handle.first, width, type, GL_FALSE, 0, 0);
-	DO_ERROR_CHECK();
-	return handle;
-}
-
-gl_manager::rhandle gl_manager::enable_vbo(const gl_manager::rhandle& handle) {
-	glEnableVertexAttribArray(handle.first);
 	DO_ERROR_CHECK();
 	return handle;
 }
@@ -386,22 +461,6 @@ gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), GL_STATIC_DRAW);
 	DO_ERROR_CHECK();
 	return handle;
-}
-
-gl_manager::rhandle
-gl_manager::load_vec3f_ab_vattrib(const std::vector<GLfloat>& vec) {
-	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ARRAY_BUFFER, vec)),
-	                  3, GL_FLOAT);
-}
-
-gl_manager::rhandle
-gl_manager::load_vec3f_ab_vattrib(const std::vector<glm::vec3>& vec) {
-	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ARRAY_BUFFER, vec)), 3, GL_FLOAT);
-}
-
-gl_manager::rhandle
-gl_manager::load_vec3us_eab_vattrib(const std::vector<GLushort>& vec) {
-	return va_pointer(enable_vbo(buffer_vbo(gen_vbo(), GL_ELEMENT_ARRAY_BUFFER, vec)), 3, GL_UNSIGNED_SHORT);
 }
 
 static GLenum surface_gl_format(SDL_Surface *surf) {
@@ -536,6 +595,17 @@ gl_manager::load_shader(const std::string filename, GLuint type) {
 	}
 
 	return ret;
+}
+
+gl_manager::rhandle
+gl_manager::fb_attach_texture(GLenum attachment, const rhandle& texture)
+{
+	glBindTexture(GL_TEXTURE_2D, texture.first);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D,
+	                       texture.first, 0);
+	DO_ERROR_CHECK();
+
+	return texture;
 }
 
 // namespace grendx

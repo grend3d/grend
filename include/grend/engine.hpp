@@ -35,6 +35,7 @@ class engine {
 		void draw_mesh_lines(std::string name, glm::mat4 transform);
 		void draw_model(std::string name, glm::mat4 transform);
 		void draw_model_lines(std::string name, glm::mat4 transform);
+		void draw_screenquad(void);
 
 		void set_material(gl_manager::compiled_model& obj, std::string mat_name);
 		void set_default_material(std::string mat_name);

@@ -379,6 +379,13 @@ void engine::draw_model_lines(std::string name, glm::mat4 transform) {
 	}
 }
 
+void engine::draw_screenquad(void) {
+	// NOTE: assumes that the screenquad vbo has been linked in the
+	//       postprocessing shader, and the proper vao set
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	DO_ERROR_CHECK();
+}
+
 bool engine::is_valid_light(int id) {
 	return id < MAX_LIGHTS && id >= 0 && lights[id].is_active;
 }

@@ -137,7 +137,16 @@ class testscene : public engine {
 		gl_manager::rhandle skybox;
 		gl_manager::rhandle skybox_shader;
 
+		// main rendering shader
 		gl_manager::rhandle main_shader;
+
+		// post-processing shader
+		gl_manager::rhandle post_shader;
+
+		// main rendering framebuffer
+		gl_manager::rhandle rend_fb;
+		gl_manager::rhandle rend_tex;
+		gl_manager::rhandle rend_depth;
 
 		// dynamic lights
 		int player_light;
@@ -147,6 +156,7 @@ class testscene : public engine {
 		octree oct;
 };
 
+// TODO: should start thinking about splitting initialization into smaller functions
 testscene::testscene() : engine() {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
@@ -181,9 +191,9 @@ testscene::testscene() : engine() {
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
 
-	skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
+	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
-	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
+	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
 
 	gl_manager::rhandle vertex_shader, fragment_shader;
 	vertex_shader = glman.load_shader("shaders/skybox.vert", GL_VERTEX_SHADER);
@@ -194,7 +204,7 @@ testscene::testscene() : engine() {
 	glAttachShader(skybox_shader.first, fragment_shader.first);
 	DO_ERROR_CHECK();
 
-	glBindAttribLocation(skybox_shader.first, glman.cooked_vert_vbo.first, "v_position");
+	glBindAttribLocation(skybox_shader.first, 0, "v_position");
 	DO_ERROR_CHECK();
 
 	// TODO: function to compile shaders
@@ -206,13 +216,13 @@ testscene::testscene() : engine() {
 		SDL_Die("couldn't link shaders");
 	}
 
-	/*
+#if 0
 	vertex_shader = glman.load_shader("shaders/vertex-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
-	*/
-
+#else
 	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+#endif
 
 	main_shader = glman.gen_program();
 
@@ -222,13 +232,11 @@ testscene::testscene() : engine() {
 
 	// monkey business
 	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertices.size());
-	glBindAttribLocation(main_shader.first, glman.cooked_vert_vbo.first, "in_Position");
-	glBindAttribLocation(main_shader.first, glman.cooked_texcoord_vbo.first, "texcoord");
-	glBindAttribLocation(main_shader.first, glman.cooked_normal_vbo.first, "v_normal");
-	glBindAttribLocation(main_shader.first,
-	                     glman.cooked_tangent_vbo.first, "v_tangent");
-	glBindAttribLocation(main_shader.first,
-	                     glman.cooked_bitangent_vbo.first, "v_bitangent");
+	glBindAttribLocation(main_shader.first, 0, "in_Position");
+	glBindAttribLocation(main_shader.first, 1, "v_normal");
+	glBindAttribLocation(main_shader.first, 2, "v_tangent");
+	glBindAttribLocation(main_shader.first, 3, "v_bitangent");
+	glBindAttribLocation(main_shader.first, 4, "texcoord");
 	DO_ERROR_CHECK();
 
 	int linked;
@@ -239,7 +247,30 @@ testscene::testscene() : engine() {
 		SDL_Die("couldn't link shaders");
 	}
 
+	gl_manager::rhandle orig_vao = glman.current_vao;
+	glman.bind_vao(glman.screenquad_vao);
+	vertex_shader = glman.load_shader("shaders/postprocess.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/postprocess.frag", GL_FRAGMENT_SHADER);
+	post_shader = glman.gen_program();
+
+	glAttachShader(post_shader.first, vertex_shader.first);
+	glAttachShader(post_shader.first, fragment_shader.first);
+	glBindAttribLocation(post_shader.first, 0, "v_position");
+	glBindAttribLocation(post_shader.first, 1, "v_texcoord");
+	DO_ERROR_CHECK();
+
+	//glBindAttribLocation(post_shader.first, glman.screenquad_vbo.first, "screenquad");
+	DO_ERROR_CHECK();
+
+	glLinkProgram(post_shader.first);
+	glGetProgramiv(post_shader.first, GL_LINK_STATUS, &linked);
+
+	if (!linked) {
+		SDL_Die("couldn't link shaders");
+	}
+
 	//glUseProgram(shader.first);
+	glman.bind_vao(orig_vao);
 	set_shader(main_shader);
 	init_lights();
 	// TODO: assert() + logger
@@ -261,7 +292,6 @@ testscene::testscene() : engine() {
 		.specular = 1.0,
 	});
 
-	/*
 	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
 		.diffuse  = {0.9, 0.9, 1.0, 1.0},
@@ -270,7 +300,6 @@ testscene::testscene() : engine() {
 		.quadratic_attenuation = 0.00f,
 		.specular = 1.0,
 	});
-	*/
 
 	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
 		//SDL_Die("Couldn't bind diffuse_map");
@@ -291,6 +320,21 @@ testscene::testscene() : engine() {
 		std::cerr << "Couldn't bind ambient occulsion map" << std::endl;
 		//SDL_Die("Couldn't bind normal_map");
 	}
+
+	rend_fb = glman.gen_framebuffer();
+	glman.bind_framebuffer(rend_fb);
+	rend_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
+	                 glman.gen_texture_color(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	rend_depth = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
+	                 glman.gen_texture_depth_stencil(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glDepthFunc(GL_LESS);
+	DO_ERROR_CHECK();
+
+	glman.bind_default_framebuffer();
+	DO_ERROR_CHECK();
 }
 
 testscene::~testscene() {
@@ -333,6 +377,15 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 }
 
 void testscene::render(context& ctx) {
+	glman.bind_framebuffer(rend_fb);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glDepthFunc(GL_LESS);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		SDL_Die("incomplete!");
+	}
+
 	//glClearColor(0.7, 0.9, 1, 1);
 	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -413,8 +466,32 @@ void testscene::render(context& ctx) {
 		DO_ERROR_CHECK();
 	}
 
+	/*
 	draw_model("teapot", glm::mat4(1));
 	draw_octree_leaves(oct.root, glm::vec3(0));
+	*/
+
+	glman.bind_default_framebuffer();
+	glman.bind_vao(glman.screenquad_vao);
+	set_shader(post_shader);
+
+	glClearColor(0, 0, 0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, rend_tex.first);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, rend_depth.first);
+	glUniform1i(glGetUniformLocation(post_shader.first, "render_fb"), 6);
+	glUniform1i(glGetUniformLocation(post_shader.first, "render_depth"), 7);
+	//glClearColor(1.0, 0, 0, 1.0);
+
+	glDisable(GL_DEPTH_TEST);
+	DO_ERROR_CHECK();
+	draw_screenquad();
+	//glDrawArrays(GL_TRIANGLES, 0, 6);
+	//draw_mesh("unit_cube", glm::mat4(1));
+	DO_ERROR_CHECK();
 
 	SDL_GL_SwapWindow(ctx.window);
 }
@@ -476,10 +553,13 @@ void testscene::input(context& ctx) {
 						int win_x, win_y;
 						SDL_GetWindowSize(ctx.window, &win_x, &win_y);
 						std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
+
+						// TODO: maybe reallocate framebuffers
 						glViewport(0, 0, win_x, win_y);
+						/*
 						projection = glm::perspective(glm::radians(60.f),
 						                              (1.f*win_x)/win_y, 0.1f, 100.f);
-
+													  */
 					}
 					break;
 			}

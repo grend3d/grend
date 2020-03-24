@@ -74,6 +74,8 @@ class gl_manager {
 		rhandle preload_model_vao(compiled_model& mesh);
 		void bind_cooked_meshes(void);
 
+		void preload_screenquad(void);
+
 		cooked_mesh_map  cooked_meshes;
 		cooked_model_map cooked_models;
 
@@ -91,29 +93,32 @@ class gl_manager {
 		rhandle cooked_element_vbo;
 		rhandle cooked_texcoord_vbo;
 
+		rhandle screenquad_vbo;
+		rhandle screenquad_vao;
+
 		rhandle gen_vao(void);
 		rhandle gen_vbo(void);
 		rhandle gen_texture(void);
 		rhandle gen_shader(GLuint type);
 		rhandle gen_program(void);
+		rhandle gen_framebuffer(void);
+
+		rhandle gen_texture_color(unsigned width, unsigned height,
+		                          GLenum format=GL_RGBA);
+		rhandle gen_texture_depth_stencil(unsigned width, unsigned height,
+		                                  GLenum format=GL_DEPTH24_STENCIL8);
 
 		rhandle bind_vao(const rhandle& handle);
 		rhandle bind_vbo(const rhandle& handle, GLuint type);
+		rhandle bind_framebuffer(const rhandle& handle);
+		void    bind_default_framebuffer(void);
 
 		rhandle va_pointer(const rhandle& handle, GLuint width, GLuint type);
-		rhandle enable_vbo(const rhandle& handle);
+		//rhandle enable_vbo(const rhandle& handle);
 
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLfloat>& vec);
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLushort>& vec);
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<glm::vec3>& vec);
-
-		// XXX: yeah it's a bit obfuscated, but this turns a lot of boilerplate
-		//      into just one function call
-		// bind, load and enable vec3(float) attribute array buffer
-		rhandle load_vec3f_ab_vattrib(const std::vector<GLfloat>& vec);
-		rhandle load_vec3f_ab_vattrib(const std::vector<glm::vec3>& vec);
-		// bind, load and enable vec3(unsigned short) attribute element array buffer
-		rhandle load_vec3us_eab_vattrib(const std::vector<GLushort>& vec);
 
 		void free_objects(void);
 
@@ -121,6 +126,7 @@ class gl_manager {
 		rhandle load_texture(std::string filename, bool srgb=false);
 		rhandle load_cubemap(std::string directory, std::string extension=".jpg");
 		rhandle load_shader(std::string filename, GLuint type);
+		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);
 
 		// map of loaded textures by filename
 		std::map<std::string, rhandle> texture_cache;
@@ -130,6 +136,7 @@ class gl_manager {
 		std::vector<GLuint> shaders;
 		std::vector<GLuint> programs;
 		std::vector<GLuint> textures;
+		std::vector<GLuint> framebuffers;
 
 		// frames rendered
 		unsigned frames = 0;

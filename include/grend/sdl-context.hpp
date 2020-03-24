@@ -2,8 +2,12 @@
 
 // premium HD resolution
 // TODO: make screen size configurable
+/*
 #define SCREEN_SIZE_X 1366
 #define SCREEN_SIZE_Y 768
+*/
+#define SCREEN_SIZE_X 1280
+#define SCREEN_SIZE_Y 720
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
