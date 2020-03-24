@@ -13,6 +13,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {0.5, 0.5, 0.5, 1},
 				   .shininess = 15,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map     = "assets/tex/white.png",
 				   .specular_map    = "assets/tex/white.png",
@@ -26,6 +27,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 50,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 			   }},
 
 	{"Grey",   {
@@ -34,6 +36,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {0.0, 0.0, 0.0, 0.05},
 				   .shininess = 15,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 			   }},
 
 	{"Yellow", {
@@ -42,6 +45,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {0.2, 0.2, 0.2, 0.2},
 				   .shininess = 20,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 			   }},
 
 	{"Gravel",  {
@@ -50,6 +54,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 5,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/Gravel.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -87,6 +92,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 100,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   /*
 				   .diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
@@ -106,6 +112,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 1},
 				   .shininess = 3,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/rubberduck-tex/179.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -125,6 +132,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 5,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/rubberduck-tex/165.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -138,6 +146,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.3},
 				   .shininess = 5,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/Boards.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -151,6 +160,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 1,
 				   .opacity = 1,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/dims/Textures/GroundCover.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -165,6 +175,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 100,
 				   .opacity = 0.1,
+				   .refract_idx = 1.5,
 			   }},
 
 	{"Earth",  {
@@ -174,6 +185,7 @@ static std::map<std::string, material> default_materials = {
 				   .specular = {1, 1, 1, 0.5},
 				   .shininess = 10,
 				   .opacity = 1.0,
+				   .refract_idx = 1.5,
 
 				   .diffuse_map  = "assets/tex/Earthmap720x360_grid.jpg",
 			   }},
