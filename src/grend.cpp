@@ -30,12 +30,15 @@ gl_manager::gl_manager() {
 	// initialize state for quad that fills the screen
 	preload_screenquad();
 
+	/*
 	cooked_vertices.clear();
 	cooked_normals.clear();
 	cooked_tangents.clear();
 	cooked_bitangents.clear();
-	cooked_elements.clear();
 	cooked_texcoords.clear();
+	*/
+	cooked_vertprops.clear();
+	cooked_elements.clear();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_FRAMEBUFFER_SRGB);
@@ -57,7 +60,8 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 
 		//foo.elements_size = x.second.faces.size() * sizeof(GLushort);
 		foo.elements_size = x.second.faces.size();
-		foo.elements_offset = reinterpret_cast<void*>(cooked_elements.size() * sizeof(GLushort));
+		foo.elements_offset = reinterpret_cast<void*>
+		                      (cooked_elements.size() * sizeof(GLushort));
 		cooked_elements.insert(cooked_elements.end(), x.second.faces.begin(),
 		                                              x.second.faces.end());
 
@@ -84,42 +88,54 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 	//fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
 }
 
+// TODO: move
+static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[4]) + sizeof(glm::vec2));
+
 void gl_manager::compile_models(model_map& models) {
 	for (const auto& x : models) {
+		const auto& [mod_name, mod] = x;
+
 		std::cerr << " >>> compiling " << x.first << std::endl;
+
+		assert(mod.vertices.size() == mod.normals.size());
+		// TODO: seriously change this to vec2
+		assert(mod.vertices.size() == mod.texcoords.size()/2);
+		assert(mod.vertices.size() == mod.tangents.size());
+		assert(mod.vertices.size() == mod.bitangents.size());
+
+
 		compiled_model obj;
+		obj.vertices_size = mod.vertices.size() * VERTPROP_SIZE;
 
-		obj.vertices_size = x.second.vertices.size() * sizeof(glm::vec3);
-		obj.vertices_offset = reinterpret_cast<void*>(cooked_vertices.size() * sizeof(glm::vec3));
-		cooked_vertices.insert(cooked_vertices.end(), x.second.vertices.begin(),
-		                                              x.second.vertices.end());
-		//fprintf(stderr, " > vertices size %lu\n", cooked_vertices.size());
+		size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
 
-		obj.normals_size = x.second.normals.size() * sizeof(glm::vec3);
-		obj.normals_offset = reinterpret_cast<void*>(cooked_normals.size() * sizeof(glm::vec3));
-		cooked_normals.insert(cooked_normals.end(), x.second.normals.begin(),
-		                                            x.second.normals.end());
-		//fprintf(stderr, " > normals size %lu\n", cooked_normals.size());
+		auto offset_ptr = [] (uintptr_t off) {
+			return reinterpret_cast<void*>(off);
+		};
 
-		obj.tangents_size = x.second.tangents.size() * sizeof(glm::vec3);
-		obj.tangents_offset = reinterpret_cast<void*>(cooked_tangents.size() * sizeof(glm::vec3));
-		cooked_tangents.insert(cooked_tangents.end(), x.second.tangents.begin(),
-		                                              x.second.tangents.end());
-		//fprintf(stderr, " > tangents size %lu\n", cooked_tangents.size());
+		obj.vertices_offset = offset_ptr(offset);
+		obj.normals_offset = offset_ptr(offset + sizeof(glm::vec3[1]));
+		obj.tangents_offset = offset_ptr(offset + sizeof(glm::vec3[2]));
+		obj.bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
+		obj.texcoords_offset = offset_ptr(offset + sizeof(glm::vec3[4]));
 
-		obj.bitangents_size = x.second.bitangents.size() * sizeof(glm::vec3);
-		obj.bitangents_offset = reinterpret_cast<void*>(cooked_bitangents.size() * sizeof(glm::vec3));
-		cooked_bitangents.insert(cooked_bitangents.end(), x.second.bitangents.begin(),
-		                                                  x.second.bitangents.end());
-		//fprintf(stderr, " > bitangents size %lu\n", cooked_bitangents.size());
+		for (unsigned i = 0; i < mod.vertices.size(); i++) {
+			// XXX: glm vectors don't have an interator
+			auto push_vec = [&] (const auto& vec, size_t n) {
+				for (unsigned k = 0; k < n; k++) {
+					cooked_vertprops.push_back(vec[k]);
+				}
+			};
 
+			push_vec(mod.vertices[i], 3);
+			push_vec(mod.normals[i], 3);
+			push_vec(mod.tangents[i], 3);
+			push_vec(mod.bitangents[i], 3);
 
-		obj.texcoords_size = x.second.texcoords.size() * sizeof(GLfloat) * 2;
-		obj.texcoords_offset = reinterpret_cast<void*>(cooked_texcoords.size() * sizeof(GLfloat));
-		cooked_texcoords.insert(cooked_texcoords.end(),
-				x.second.texcoords.begin(),
-				x.second.texcoords.end());
-		//fprintf(stderr, " > texcoords size %lu\n", cooked_texcoords.size());
+			// TODO: texcoords as vec2
+			cooked_vertprops.push_back(mod.texcoords[2*i]);
+			cooked_vertprops.push_back(mod.texcoords[2*i+1]);
+		}
 
 		compile_meshes(x.first, x.second.meshes);
 
@@ -159,33 +175,36 @@ void gl_manager::compile_models(model_map& models) {
 	}
 }
 
-gl_manager::rhandle gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
+gl_manager::rhandle
+gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
 	rhandle orig_vao = current_vao;
 	rhandle ret = bind_vao(gen_vao());
 
-	bind_vbo(cooked_vert_vbo, GL_ARRAY_BUFFER);
+	bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, obj.vertices_offset);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj.vertices_offset);
 
-	bind_vbo(cooked_normal_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, obj.normals_offset);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj.normals_offset);
 
-	bind_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, obj.tangents_offset);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj.tangents_offset);
 
-	bind_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, obj.bitangents_offset);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj.bitangents_offset);
 
-	bind_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 0, obj.texcoords_offset);
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj.texcoords_offset);
 
 	bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
 	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 3, GL_UNSIGNED_SHORT, GL_FALSE, 0, mesh.elements_offset);
+	glVertexAttribPointer(5, 3, GL_UNSIGNED_SHORT, GL_FALSE, 0,
+	                      mesh.elements_offset);
 
 	bind_vao(orig_vao);
 	return ret;
@@ -203,18 +222,10 @@ gl_manager::rhandle gl_manager::preload_model_vao(compiled_model& obj) {
 }
 
 void gl_manager::bind_cooked_meshes(void) {
-	cooked_vert_vbo = gen_vbo();
+	cooked_vertprops_vbo = gen_vbo();
 	cooked_element_vbo = gen_vbo();
-	cooked_normal_vbo = gen_vbo();
-	cooked_tangent_vbo = gen_vbo();
-	cooked_bitangent_vbo = gen_vbo();
-	cooked_texcoord_vbo = gen_vbo();
 
-	buffer_vbo(cooked_vert_vbo, GL_ARRAY_BUFFER, cooked_vertices);
-	buffer_vbo(cooked_normal_vbo, GL_ARRAY_BUFFER, cooked_normals);
-	buffer_vbo(cooked_texcoord_vbo, GL_ARRAY_BUFFER, cooked_texcoords);
-	buffer_vbo(cooked_tangent_vbo, GL_ARRAY_BUFFER, cooked_tangents);
-	buffer_vbo(cooked_bitangent_vbo, GL_ARRAY_BUFFER, cooked_bitangents);
+	buffer_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER, cooked_vertprops);
 	buffer_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 
 	for (auto& x : cooked_models) {

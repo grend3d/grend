@@ -42,12 +42,7 @@ class gl_manager {
 		class compiled_model {
 			public:
 				rhandle vao;
-
 				GLint vertices_size;
-				GLint normals_size;
-				GLint texcoords_size;
-				GLint tangents_size;
-				GLint bitangents_size;
 
 				std::vector<std::string> meshes;
 				// NOTE: duplicating materials here because the model may not be valid
@@ -79,19 +74,26 @@ class gl_manager {
 		cooked_mesh_map  cooked_meshes;
 		cooked_model_map cooked_models;
 
-		std::vector<glm::vec3> cooked_vertices;
+		std::vector<GLfloat> cooked_vertprops;
+		/*
+		std::vector<GLfloat> cooked_vertices;
 		std::vector<glm::vec3> cooked_normals;
 		std::vector<glm::vec3> cooked_tangents;
 		std::vector<glm::vec3> cooked_bitangents;
-		std::vector<GLushort> cooked_elements;
 		std::vector<GLfloat> cooked_texcoords;
+		*/
+		std::vector<GLushort> cooked_elements;
 
+		rhandle cooked_vertprops_vbo;
+		rhandle cooked_element_vbo;
+
+		/*
 		rhandle cooked_vert_vbo;
 		rhandle cooked_normal_vbo;
 		rhandle cooked_tangent_vbo;
 		rhandle cooked_bitangent_vbo;
-		rhandle cooked_element_vbo;
 		rhandle cooked_texcoord_vbo;
+		*/
 
 		rhandle screenquad_vbo;
 		rhandle screenquad_vao;

@@ -231,7 +231,7 @@ testscene::testscene() : engine() {
 	DO_ERROR_CHECK();
 
 	// monkey business
-	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertices.size());
+	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertprops.size());
 	glBindAttribLocation(main_shader.first, 0, "in_Position");
 	glBindAttribLocation(main_shader.first, 1, "v_normal");
 	glBindAttribLocation(main_shader.first, 2, "v_tangent");
