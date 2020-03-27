@@ -98,8 +98,7 @@ void gl_manager::compile_models(model_map& models) {
 		std::cerr << " >>> compiling " << x.first << std::endl;
 
 		assert(mod.vertices.size() == mod.normals.size());
-		// TODO: seriously change this to vec2
-		assert(mod.vertices.size() == mod.texcoords.size()/2);
+		assert(mod.vertices.size() == mod.texcoords.size());
 		assert(mod.vertices.size() == mod.tangents.size());
 		assert(mod.vertices.size() == mod.bitangents.size());
 
@@ -120,21 +119,19 @@ void gl_manager::compile_models(model_map& models) {
 		obj.texcoords_offset = offset_ptr(offset + sizeof(glm::vec3[4]));
 
 		for (unsigned i = 0; i < mod.vertices.size(); i++) {
-			// XXX: glm vectors don't have an interator
-			auto push_vec = [&] (const auto& vec, size_t n) {
-				for (unsigned k = 0; k < n; k++) {
+			// XXX: glm vectors don't have an iterator
+			auto push_vec = [&] (const auto& vec) {
+				for (unsigned k = 0; k < vec.length(); k++) {
 					cooked_vertprops.push_back(vec[k]);
 				}
 			};
 
-			push_vec(mod.vertices[i], 3);
-			push_vec(mod.normals[i], 3);
-			push_vec(mod.tangents[i], 3);
-			push_vec(mod.bitangents[i], 3);
+			push_vec(mod.vertices[i]);
+			push_vec(mod.normals[i]);
+			push_vec(mod.tangents[i]);
+			push_vec(mod.bitangents[i]);
+			push_vec(mod.texcoords[i]);
 
-			// TODO: texcoords as vec2
-			cooked_vertprops.push_back(mod.texcoords[2*i]);
-			cooked_vertprops.push_back(mod.texcoords[2*i+1]);
 		}
 
 		compile_meshes(x.first, x.second.meshes);

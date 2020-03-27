@@ -43,12 +43,11 @@ void model::gen_normals(void) {
 
 void model::gen_texcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
-	texcoords.resize(2*vertices.size());
+	texcoords.resize(vertices.size());
 
 	for (unsigned i = 0; i < vertices.size(); i++) {
 		glm::vec3& foo = vertices[i];
-		texcoords[2*i]   = foo.x;
-		texcoords[2*i+1] = foo.y;
+		texcoords[i] = {foo.x, foo.y};
 	}
 }
 
@@ -63,9 +62,9 @@ void model::gen_tangents(void) {
 		glm::vec3& b = vertices[i+1];
 		glm::vec3& c = vertices[i+2];
 
-		glm::vec2 auv = {texcoords[2*i], texcoords[2*i + 1]};
-		glm::vec2 buv = {texcoords[2*(i+1)], texcoords[2*(i+1) + 1]};
-		glm::vec2 cuv = {texcoords[2*(i+2)], texcoords[2*(i+2) + 1]};
+		glm::vec2 auv = texcoords[i];
+		glm::vec2 buv = texcoords[i+1];
+		glm::vec2 cuv = texcoords[i+2];
 
 		glm::vec3 e1 = b - a, e2 = c - a;
 		glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
@@ -106,7 +105,7 @@ void model::load_object(std::string filename) {
 
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
-	std::vector<GLfloat> texbuf = {};
+	std::vector<glm::vec2> texbuf = {};
 
 	if (!input.good()) {
 		// TODO: exception
@@ -163,9 +162,8 @@ void model::load_object(std::string filename) {
 				meshes[current_mesh].faces.push_back(vertices.size() - 1);
 
 				if (have_texcoords && spec.size() > 1 && !spec[1].empty()) {
-					unsigned buf_index = 2*(std::stoi(spec[1]) - 1);
+					unsigned buf_index = std::stoi(spec[1]) - 1;
 					texcoords.push_back(texbuf[buf_index]);
-					texcoords.push_back(texbuf[buf_index + 1]);
 				}
 
 				if (have_normals && spec.size() > 2 && !spec[2].empty()) {
@@ -192,8 +190,7 @@ void model::load_object(std::string filename) {
 		}
 
 		else if (statement[0] == "vt") {
-			texbuf.push_back(std::stof(statement[1]));
-			texbuf.push_back(std::stof(statement[2]));
+			texbuf.push_back({std::stof(statement[1]), std::stof(statement[2])});
 			have_texcoords = true;
 		}
 	}
@@ -221,7 +218,7 @@ void model::load_object(std::string filename) {
 		// TODO: should handle this
 	}
 
-	if (texcoords.size()/2 != vertices.size()) {
+	if (texcoords.size() != vertices.size()) {
 		std::cerr << " ? mismatched texcoords and vertices: "
 			<< texcoords.size() << ", "
 			<< vertices.size()

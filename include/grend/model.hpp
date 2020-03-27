@@ -53,7 +53,7 @@ class model {
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
-		std::vector<GLfloat>  texcoords;
+		std::vector<glm::vec2> texcoords;
 
 		std::map<std::string, model_submesh> meshes = {};
 		std::map<std::string, material> materials = {};

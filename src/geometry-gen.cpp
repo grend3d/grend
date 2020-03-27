@@ -23,13 +23,13 @@ model generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 			ret.vertices.push_back(glm::vec3(x - spacing, x1+y1, y - spacing));
 			ret.vertices.push_back(glm::vec3(x,           x2+y2, y));
 
-			ret.texcoords.push_back(0); ret.texcoords.push_back(0);
-			ret.texcoords.push_back(1); ret.texcoords.push_back(0);
-			ret.texcoords.push_back(0); ret.texcoords.push_back(1);
+			ret.texcoords.push_back({0, 0});
+			ret.texcoords.push_back({1, 0});
+			ret.texcoords.push_back({0, 1});
 
-			ret.texcoords.push_back(1); ret.texcoords.push_back(1);
-			ret.texcoords.push_back(0); ret.texcoords.push_back(1);
-			ret.texcoords.push_back(1); ret.texcoords.push_back(0);
+			ret.texcoords.push_back({1, 1});
+			ret.texcoords.push_back({0, 1});
+			ret.texcoords.push_back({1, 0});
 
 			for (unsigned k = 0; k < 6; k++) {
 				ret.meshes["default"].faces.push_back(i++);
@@ -99,10 +99,10 @@ model generate_cuboid(float width, float height, float depth) {
 		ret.meshes["default"].faces.push_back(i+3);
 		ret.meshes["default"].faces.push_back(i);
 
-		ret.texcoords.push_back(0); ret.texcoords.push_back(0);
-		ret.texcoords.push_back(1); ret.texcoords.push_back(0);
-		ret.texcoords.push_back(0); ret.texcoords.push_back(1);
-		ret.texcoords.push_back(1); ret.texcoords.push_back(1);
+		ret.texcoords.push_back({0, 0});
+		ret.texcoords.push_back({1, 0});
+		ret.texcoords.push_back({0, 1});
+		ret.texcoords.push_back({1, 0});
 	}
 
 	ret.gen_normals();
