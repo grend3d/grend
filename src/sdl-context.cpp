@@ -41,7 +41,7 @@ context::context(const char *progname) {
 	}
 
 	glcontext = SDL_GL_CreateContext(window);
-	SDL_GL_SetSwapInterval(1);
+	SDL_GL_SetSwapInterval(0);
 
 	if ((glew_status = glewInit()) != GLEW_OK) {
 		SDL_Die("glewInit()");

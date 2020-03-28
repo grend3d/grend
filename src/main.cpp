@@ -26,6 +26,45 @@
 #include <map>
 #include <list>
 
+// TODO: move timing stuff to its own file, maybe have a profiler class...
+#include <unistd.h>
+
+#define SMA_BUFSIZE 32
+static uint32_t frametimes[SMA_BUFSIZE];
+static uint32_t frameptr = 0;
+
+static double fps_sma(uint32_t t) {
+	frametimes[frameptr] = t;
+	frameptr = (frameptr + 1) % SMA_BUFSIZE;
+
+	uint32_t sum = 0;
+	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
+		sum += frametimes[(frameptr + i) % SMA_BUFSIZE];
+	}
+
+	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
+}
+
+static double fps_sma(void) {
+	uint32_t sum = 0;
+	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
+		sum += frametimes[i];
+	}
+
+	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
+}
+
+static std::pair<uint32_t, uint32_t> framems_minmax(void) {
+	uint32_t min = 0xffffffff, max = 0;
+
+	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
+		min = (frametimes[i] < min)? frametimes[i] : min;
+		max = (frametimes[i] > max)? frametimes[i] : max;
+	}
+
+	return {min, max};
+}
+
 using namespace grendx;
 
 model_map load_library(std::string dir) {
@@ -57,9 +96,38 @@ model_map load_library(std::string dir) {
 	return ret;
 }
 
+static model_map test_models = {
+	{"person",       model("assets/obj/low-poly-character-rpg/boy.obj")},
+	{"teapot",       model("assets/obj/teapot.obj")},
+	{"smoothteapot", model("assets/obj/smooth-teapot.obj")},
+	{"monkey",       model("assets/obj/suzanne.obj")},
+	{"smoothmonkey", model("assets/obj/smooth-suzanne.obj")},
+	{"sphere",       model("assets/obj/sphere.obj")},
+	{"smoothsphere", model("assets/obj/smoothsphere.obj")},
+	{"glasssphere",  model("assets/obj/smoothsphere.obj")},
+	{"steelsphere",  model("assets/obj/smoothsphere.obj")},
+	{"earthsphere",  model("assets/obj/smoothsphere.obj")},
+	{"dragon",       model("assets/obj/tests/dragon.obj")},
+	{"maptest",      model("assets/obj/tests/maptest.obj")},
+	{"building",     model("assets/obj/tests/building_test/building_test.obj")},
+	{"unit_cube",        generate_cuboid(1, 1, 1)},
+	{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
+	{"unit_cube_ground", generate_cuboid(1, 1, 1)},
+	{"grid",             generate_grid(-32, -32, 32, 32, 4)},
+};
+
+static std::list<std::string> test_libraries = {
+	/*
+	   "assets/obj/Modular Terrain Cliff/",
+	   "assets/obj/Modular Terrain Hilly/",
+	   "assets/obj/Modular Terrain Beach/",
+	   */
+	"assets/obj/Dungeon Set 2/",
+};
+
 class testscene : public engine {
 	public:
-		testscene();
+		testscene(context& ctx);
 		virtual ~testscene();
 		virtual void render(context& ctx);
 		virtual void logic(context& ctx);
@@ -102,37 +170,9 @@ class testscene : public engine {
 		bool      select_inverted = false;
 
 
-		Uint32 last_frame;
-
 		// models
-		model_map models = {
-			{"person",       model("assets/obj/low-poly-character-rpg/boy.obj")},
-			{"teapot",       model("assets/obj/teapot.obj")},
-			{"smoothteapot", model("assets/obj/smooth-teapot.obj")},
-			{"monkey",       model("assets/obj/suzanne.obj")},
-			{"smoothmonkey", model("assets/obj/smooth-suzanne.obj")},
-			{"sphere",       model("assets/obj/sphere.obj")},
-			{"smoothsphere", model("assets/obj/smoothsphere.obj")},
-			{"glasssphere",  model("assets/obj/smoothsphere.obj")},
-			{"steelsphere",  model("assets/obj/smoothsphere.obj")},
-			{"earthsphere",  model("assets/obj/smoothsphere.obj")},
-			{"dragon",       model("assets/obj/tests/dragon.obj")},
-			{"maptest",      model("assets/obj/tests/maptest.obj")},
-			{"building",     model("assets/obj/tests/building_test/building_test.obj")},
-			{"unit_cube",        generate_cuboid(1, 1, 1)},
-			{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
-			{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-			{"grid",             generate_grid(-32, -32, 32, 32, 4)},
-		};
-
-		std::list<std::string> libraries = {
-			/*
-			"assets/obj/Modular Terrain Cliff/",
-			"assets/obj/Modular Terrain Hilly/",
-			"assets/obj/Modular Terrain Beach/",
-			*/
-			"assets/obj/Dungeon Set 2/",
-		};
+		model_map models = test_models;
+		std::list<std::string> libraries = test_libraries;
 
 		// sky box
 		// TODO: should this be in the engine?
@@ -149,6 +189,26 @@ class testscene : public engine {
 		gl_manager::rhandle rend_fb;
 		gl_manager::rhandle rend_tex;
 		gl_manager::rhandle rend_depth;
+		int rend_x, rend_y; // framebuffer dimensions
+
+		// previous frame info
+		Uint32 last_frame;
+		gl_manager::rhandle last_frame_fb; // same dimensions as rend_fb
+		gl_manager::rhandle last_frame_tex; // same dimensions as rend_fb
+
+		// dynamic resolution scaling
+		void adjust_draw_resolution(void);
+		float dsr_target_ms = 1/60.0 * 1000;
+		float dsr_scale_x = 1.0;
+		float dsr_scale_y = 1.0;
+		float dsr_scale_down = 15.00;
+		float dsr_scale_up = 12.00;
+		float dsr_min_scale = 0.50;
+		float dsr_down_incr = 0.005;
+		float dsr_up_incr = 0.001;
+
+		// (actual) screen size
+		int screen_x, screen_y;
 
 		// dynamic lights
 		int player_light;
@@ -159,16 +219,21 @@ class testscene : public engine {
 
 		// text rendering
 		text_renderer text;
+
+	private:
+
 };
 
 // TODO: should start thinking about splitting initialization into smaller functions
-testscene::testscene() : engine(), text(this) {
+testscene::testscene(context& ctx) : engine(), text(this) {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 0.0, 1.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
 	select_model = models.begin();
+
+	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 
 	for (std::string libname : libraries) {
 		// inserting each library into the models map so that way
@@ -326,12 +391,21 @@ testscene::testscene() : engine(), text(this) {
 		//SDL_Die("Couldn't bind normal_map");
 	}
 
+	// set up the render framebuffer
 	rend_fb = glman.gen_framebuffer();
+	rend_x = screen_x, rend_y = screen_y;
+
 	glman.bind_framebuffer(rend_fb);
 	rend_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                 glman.gen_texture_color(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	                 glman.gen_texture_color(rend_x, rend_y));
 	rend_depth = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
-	                 glman.gen_texture_depth_stencil(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	                 glman.gen_texture_depth_stencil(rend_x, rend_y));
+
+	// and framebuffer holding the previously drawn frame
+	last_frame_fb = glman.gen_framebuffer();
+	glman.bind_framebuffer(last_frame_fb);
+	last_frame_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
+	                       glman.gen_texture_color(rend_x, rend_y));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_FRAMEBUFFER_SRGB);
@@ -383,6 +457,7 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 
 void testscene::render(context& ctx) {
 	glman.bind_framebuffer(rend_fb);
+	glViewport(0, 0, round(rend_x*dsr_scale_x), round(rend_y*dsr_scale_y));
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
@@ -478,6 +553,7 @@ void testscene::render(context& ctx) {
 
 	glman.bind_default_framebuffer();
 	glman.bind_vao(glman.screenquad_vao);
+	glViewport(0, 0, screen_x, screen_y);
 	set_shader(post_shader);
 
 	glClearColor(0, 0, 0, 1.0);
@@ -487,13 +563,32 @@ void testscene::render(context& ctx) {
 	glBindTexture(GL_TEXTURE_2D, rend_tex.first);
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, rend_depth.first);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, last_frame_tex.first);
 	glUniform1i(glGetUniformLocation(post_shader.first, "render_fb"), 6);
 	glUniform1i(glGetUniformLocation(post_shader.first, "render_depth"), 7);
+	glUniform1i(glGetUniformLocation(post_shader.first, "last_frame_fb"), 8);
+
+	// TODO: vec2
+	glUniform1f(glGetUniformLocation(post_shader.first, "scale_x"), dsr_scale_x);
+	glUniform1f(glGetUniformLocation(post_shader.first, "scale_y"), dsr_scale_y);
 	//glClearColor(1.0, 0, 0, 1.0);
 
 	glDisable(GL_DEPTH_TEST);
 	DO_ERROR_CHECK();
 	draw_screenquad();
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_frame_fb.first);
+	glBlitFramebuffer(0, 0, screen_x, screen_y,
+	                  0, 0, rend_x, rend_y,
+	                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	DO_ERROR_CHECK();
+
+	glman.bind_default_framebuffer();
+	text.render({0.0, 0.9, 0},
+			"scale x: " + std::to_string(dsr_scale_x) +
+			", y: " + std::to_string(dsr_scale_y));
 
 	text.render({-0.9, 0.9, 0}, "grend test v0");
 }
@@ -530,6 +625,11 @@ void testscene::input(context& ctx) {
 				case SDLK_e: view_velocity.y = -movement_speed; break;
 				case SDLK_m: in_select_mode = !in_select_mode; break;
 
+				case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
+				case SDLK_RIGHTBRACKET: dsr_scale_x += dsr_down_incr; break;
+				case SDLK_9: dsr_scale_y -= dsr_down_incr; break;
+				case SDLK_0: dsr_scale_y += dsr_down_incr; break;
+
 				case SDLK_ESCAPE: running = false; break;
 			}
 		}
@@ -559,11 +659,11 @@ void testscene::input(context& ctx) {
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 					{
 						int win_x, win_y;
-						SDL_GetWindowSize(ctx.window, &win_x, &win_y);
-						std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
+						SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
+						//std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
 
 						// TODO: maybe reallocate framebuffers
-						glViewport(0, 0, win_x, win_y);
+						//glViewport(0, 0, win_x, win_y);
 						/*
 						projection = glm::perspective(glm::radians(60.f),
 						                              (1.f*win_x)/win_y, 0.1f, 100.f);
@@ -700,6 +800,29 @@ void testscene::logic(context& ctx) {
 	last_frame = cur_ticks;
 
 	view = glm::lookAt(view_position, view_position + view_direction, view_up);
+	adjust_draw_resolution();
+}
+
+void testscene::adjust_draw_resolution(void) {
+	double frametime = 1.0/fps_sma() * 1000;
+
+	if (frametime > dsr_scale_down) {
+		if (dsr_scale_x <= dsr_min_scale) {
+			dsr_scale_y = max(dsr_min_scale, dsr_scale_y - dsr_down_incr);
+
+		} else {
+			dsr_scale_x -= dsr_down_incr;
+		}
+	}
+
+	else if (frametime < dsr_scale_up) {
+		if (dsr_scale_y >= 1.0) {
+			dsr_scale_x = min(1.0, dsr_scale_x + dsr_up_incr);
+
+		} else {
+			dsr_scale_y = min(1.0, dsr_scale_y + dsr_up_incr);
+		}
+	}
 }
 
 void testscene::save_map(std::string name) {
@@ -767,38 +890,9 @@ void testscene::load_map(std::string name) {
 	}
 }
 
-#include <unistd.h>
-
-#define SMA_BUFSIZE 32
-static uint32_t frametimes[SMA_BUFSIZE];
-static uint32_t frameptr = 0;
-
-static double fps_sma(uint32_t t) {
-	frametimes[frameptr] = t;
-	frameptr = (frameptr + 1) % SMA_BUFSIZE;
-
-	uint32_t sum = 0;
-	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
-		sum += frametimes[(frameptr + i) % SMA_BUFSIZE];
-	}
-
-	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
-}
-
-static std::pair<uint32_t, uint32_t> framems_minmax(void) {
-	uint32_t min = 0xffffffff, max = 0;
-
-	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
-		min = (frametimes[i] < min)? frametimes[i] : min;
-		max = (frametimes[i] > max)? frametimes[i] : max;
-	}
-
-	return {min, max};
-}
-
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
-	std::unique_ptr<testscene> scene(new testscene());
+	std::unique_ptr<testscene> scene(new testscene(ctx));
 	float fps = 0;
 
 	while (scene->running) {
@@ -818,9 +912,15 @@ int main(int argc, char *argv[]) {
 				+ "max: " + std::to_string(minmax.second) + ")"
 				;
 
+			fps = fps_sma(SDL_GetTicks() - begin);
 			scene->draw_debug_string(foo);
 			SDL_GL_SwapWindow(ctx.window);
-			fps = fps_sma(SDL_GetTicks() - begin);
+
+			double frametime = 1.f/fps*1000;
+
+			if (frametime < scene->dsr_target_ms) {
+				SDL_Delay(scene->dsr_target_ms - frametime);
+			}
 
 			fflush(stdout);
 		}
