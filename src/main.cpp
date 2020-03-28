@@ -799,6 +799,7 @@ static std::pair<uint32_t, uint32_t> framems_minmax(void) {
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
 	std::unique_ptr<testscene> scene(new testscene());
+	float fps = 0;
 
 	while (scene->running) {
 		uint32_t begin = SDL_GetTicks();
@@ -808,7 +809,6 @@ int main(int argc, char *argv[]) {
 			scene->logic(ctx);
 			scene->render(ctx);
 
-			float fps = fps_sma(SDL_GetTicks() - begin);
 			auto minmax = framems_minmax();
 
 			std::string foo =
@@ -820,6 +820,7 @@ int main(int argc, char *argv[]) {
 
 			scene->draw_debug_string(foo);
 			SDL_GL_SwapWindow(ctx.window);
+			fps = fps_sma(SDL_GetTicks() - begin);
 
 			fflush(stdout);
 		}
