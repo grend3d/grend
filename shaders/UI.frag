@@ -1,12 +1,13 @@
-#version 330 core
+#version 100
 precision highp float;
+precision mediump sampler2D;
+precision mediump samplerCube;
 
-in vec2 f_texcoord;
-out vec4 FragColor;
+varying vec2 f_texcoord;
 
 uniform sampler2D UItex;
 
 void main(void) {
 	vec4 color = texture2D(UItex, f_texcoord);
-	FragColor = color;
+	gl_FragColor = color;
 }

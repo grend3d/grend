@@ -1,8 +1,11 @@
-#version 150
+#version 100
+precision highp float;
+precision mediump sampler2D;
+precision mediump samplerCube;
 
-in vec3 f_texcoord;
+varying vec3 f_texcoord;
 uniform samplerCube skytexture;
 
 void main(void) {
-	gl_FragColor = texture(skytexture, f_texcoord);
+	gl_FragColor = textureCube(skytexture, f_texcoord);
 }

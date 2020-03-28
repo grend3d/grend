@@ -1,18 +1,18 @@
-#version 150
+#version 100
 
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
 
-in vec3 in_Position;
-in vec2 texcoord;
-in vec3 in_Color;
-in vec3 v_normal;
-in vec3 v_tangent;
-in vec3 v_bitangent;
+attribute vec3 in_Position;
+attribute vec2 texcoord;
+attribute vec3 in_Color;
+attribute vec3 v_normal;
+attribute vec3 v_tangent;
+attribute vec3 v_bitangent;
 
-out vec3 ex_Color;
-out vec2 f_texcoord;
+varying vec3 ex_Color;
+varying vec2 f_texcoord;
 
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;

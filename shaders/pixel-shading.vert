@@ -1,5 +1,7 @@
-#version 150
+#version 100
 precision highp float;
+precision mediump sampler2D;
+precision mediump samplerCube;
 
 attribute vec3 in_Position;
 attribute vec2 texcoord;
