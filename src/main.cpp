@@ -6,6 +6,7 @@
 #include <grend/gl_manager.hpp>
 #include <grend/utility.hpp>
 #include <grend/octree.hpp>
+#include <grend/text.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +66,7 @@ class testscene : public engine {
 		virtual void physics(context& ctx);
 		virtual void input(context& ctx);
 
+		void draw_debug_string(std::string str);
 		void save_map(std::string name="save.map");
 		void load_map(std::string name="save.map");
 
@@ -154,10 +156,13 @@ class testscene : public engine {
 		// testing stuff
 		void draw_octree_leaves(octree::node *node, glm::vec3 location);
 		octree oct;
+
+		// text rendering
+		text_renderer text;
 };
 
 // TODO: should start thinking about splitting initialization into smaller functions
-testscene::testscene() : engine() {
+testscene::testscene() : engine(), text(this) {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
@@ -489,11 +494,14 @@ void testscene::render(context& ctx) {
 	glDisable(GL_DEPTH_TEST);
 	DO_ERROR_CHECK();
 	draw_screenquad();
-	//glDrawArrays(GL_TRIANGLES, 0, 6);
-	//draw_mesh("unit_cube", glm::mat4(1));
-	DO_ERROR_CHECK();
 
-	SDL_GL_SwapWindow(ctx.window);
+	text.render({-0.9, 0.9, 0}, "grend test v0");
+}
+
+void testscene::draw_debug_string(std::string str) {
+	glDisable(GL_DEPTH_TEST);
+	text.render({-0.9, -0.9, 0}, str);
+	DO_ERROR_CHECK();
 }
 
 void testscene::input(context& ctx) {
@@ -761,12 +769,11 @@ void testscene::load_map(std::string name) {
 
 #include <unistd.h>
 
-#define SMA_BUFSIZE 16
+#define SMA_BUFSIZE 32
+static uint32_t frametimes[SMA_BUFSIZE];
+static uint32_t frameptr = 0;
 
 static double fps_sma(uint32_t t) {
-	static uint32_t frametimes[SMA_BUFSIZE];
-	static uint32_t frameptr = 0;
-
 	frametimes[frameptr] = t;
 	frameptr = (frameptr + 1) % SMA_BUFSIZE;
 
@@ -778,20 +785,42 @@ static double fps_sma(uint32_t t) {
 	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
 }
 
+static std::pair<uint32_t, uint32_t> framems_minmax(void) {
+	uint32_t min = 0xffffffff, max = 0;
+
+	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
+		min = (frametimes[i] < min)? frametimes[i] : min;
+		max = (frametimes[i] > max)? frametimes[i] : max;
+	}
+
+	return {min, max};
+}
+
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
-	std::unique_ptr<engine> scene(new testscene());
+	std::unique_ptr<testscene> scene(new testscene());
 
 	while (scene->running) {
-		uint32_t a = SDL_GetTicks();
+		uint32_t begin = SDL_GetTicks();
 		scene->input(ctx);
 
 		if (scene->running) {
 			scene->logic(ctx);
 			scene->render(ctx);
 
-			double fps = fps_sma(SDL_GetTicks() - a);
-			printf(" %0.2f FPS (%0.2fms/frame)    \r", fps, 1.f/fps * 1000);
+			float fps = fps_sma(SDL_GetTicks() - begin);
+			auto minmax = framems_minmax();
+
+			std::string foo =
+				std::to_string(fps) + " FPS "
+				+ "(" + std::to_string(1.f/fps * 1000) + "ms/frame) "
+				+ "(min: " + std::to_string(minmax.first) + ", "
+				+ "max: " + std::to_string(minmax.second) + ")"
+				;
+
+			scene->draw_debug_string(foo);
+			SDL_GL_SwapWindow(ctx.window);
+
 			fflush(stdout);
 		}
 	}

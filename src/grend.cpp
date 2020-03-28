@@ -42,6 +42,8 @@ gl_manager::gl_manager() {
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_FRAMEBUFFER_SRGB);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthFunc(GL_LESS);
 
 	/*
@@ -441,10 +443,11 @@ gl_manager::va_pointer(const gl_manager::rhandle& handle,
 
 gl_manager::rhandle gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
                                  GLuint type,
-                                 const std::vector<GLfloat>& vec)
+                                 const std::vector<GLfloat>& vec,
+                                 GLenum usage)
 {
 	bind_vbo(handle, type);
-	glBufferData(type, sizeof(GLfloat) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	glBufferData(type, sizeof(GLfloat) * vec.size(), vec.data(), usage);
 	DO_ERROR_CHECK();
 	return handle;
 }
@@ -452,10 +455,11 @@ gl_manager::rhandle gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 gl_manager::rhandle
 gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
                        GLuint type,
-                       const std::vector<glm::vec3>& vec)
+                       const std::vector<glm::vec3>& vec,
+                       GLenum usage)
 {
 	bind_vbo(handle, type);
-	glBufferData(type, sizeof(glm::vec3) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	glBufferData(type, sizeof(glm::vec3) * vec.size(), vec.data(), usage);
 	DO_ERROR_CHECK();
 	return handle;
 }
@@ -463,15 +467,16 @@ gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 gl_manager::rhandle
 gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
                        GLuint type,
-                       const std::vector<GLushort>& vec)
+                       const std::vector<GLushort>& vec,
+                       GLenum usage)
 {
 	bind_vbo(handle, type);
-	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), GL_STATIC_DRAW);
+	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), usage);
 	DO_ERROR_CHECK();
 	return handle;
 }
 
-static GLenum surface_gl_format(SDL_Surface *surf) {
+GLenum surface_gl_format(SDL_Surface *surf) {
 	switch (surf->format->BytesPerPixel) {
 		case 1: return GL_RED;
 		case 2: return GL_RG;

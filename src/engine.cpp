@@ -450,8 +450,10 @@ void engine::remove_light(int id) {
 }
 
 void engine::set_shader(gl_manager::rhandle& shd) {
-	shader = shd;
-	glUseProgram(shader.first);
+	if (shader != shd) {
+		shader = shd;
+		glUseProgram(shader.first);
+	}
 }
 
 void engine::init_lights(void) {

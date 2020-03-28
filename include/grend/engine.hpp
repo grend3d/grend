@@ -10,6 +10,8 @@
 namespace grendx {
 
 class engine {
+	friend class text_renderer;
+
 	public:
 		struct light {
 			glm::vec4 position;

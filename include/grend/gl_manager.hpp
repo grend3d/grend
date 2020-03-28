@@ -118,9 +118,9 @@ class gl_manager {
 		rhandle va_pointer(const rhandle& handle, GLuint width, GLuint type);
 		//rhandle enable_vbo(const rhandle& handle);
 
-		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLfloat>& vec);
-		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLushort>& vec);
-		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<glm::vec3>& vec);
+		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLfloat>& vec, GLenum usage=GL_STATIC_DRAW);
+		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLushort>& vec, GLenum usage=GL_STATIC_DRAW);
+		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<glm::vec3>& vec, GLenum usage=GL_STATIC_DRAW);
 
 		void free_objects(void);
 
@@ -145,6 +145,7 @@ class gl_manager {
 		rhandle current_vao;
 };
 
+GLenum surface_gl_format(SDL_Surface *surf);
 void check_errors(int line, const char *func);
 #define DO_ERROR_CHECK() \
 	{ check_errors(__LINE__, __func__); }
