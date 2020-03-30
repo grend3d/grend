@@ -27,8 +27,12 @@ context::context(const char *progname) {
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
+	/*
+	// TODO: do I need this for render FB multisampling?
+	//       disabling for now
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	*/
 
 	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 	                          SCREEN_SIZE_X, SCREEN_SIZE_Y,
@@ -41,7 +45,7 @@ context::context(const char *progname) {
 	}
 
 	glcontext = SDL_GL_CreateContext(window);
-	SDL_GL_SetSwapInterval(0);
+	SDL_GL_SetSwapInterval(1);
 
 	if ((glew_status = glewInit()) != GLEW_OK) {
 		SDL_Die("glewInit()");

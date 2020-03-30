@@ -29,7 +29,8 @@
 // TODO: move timing stuff to its own file, maybe have a profiler class...
 #include <unistd.h>
 
-#define SMA_BUFSIZE 32
+#define SMA_BUFSIZE 8
+#define TARGET_FPS 60.0
 static uint32_t frametimes[SMA_BUFSIZE];
 static uint32_t frameptr = 0;
 
@@ -198,14 +199,20 @@ class testscene : public engine {
 
 		// dynamic resolution scaling
 		void adjust_draw_resolution(void);
-		float dsr_target_ms = 1/60.0 * 1000;
+		float dsr_target_ms = 1/TARGET_FPS * 1000;
 		float dsr_scale_x = 1.0;
 		float dsr_scale_y = 1.0;
-		float dsr_scale_down = 15.00;
-		float dsr_scale_up = 12.00;
-		float dsr_min_scale = 0.50;
-		float dsr_down_incr = 0.005;
-		float dsr_up_incr = 0.001;
+		/*
+		// TODO: use this once I figure out how to do vsync
+		float dsr_scale_down = dsr_target_ms * 0.90;
+		float dsr_scale_up = dsr_target_ms * 0.80;
+		*/
+		float dsr_scale_down = dsr_target_ms * 1.1;
+		float dsr_scale_up = dsr_target_ms * 1.03;
+		float dsr_min_scale_x = 0.50;
+		float dsr_min_scale_y = 0.50;
+		float dsr_down_incr = 0.10;
+		float dsr_up_incr = 0.01;
 
 		// (actual) screen size
 		int screen_x, screen_y;
@@ -570,20 +577,29 @@ void testscene::render(context& ctx) {
 	glUniform1i(glGetUniformLocation(post_shader.first, "last_frame_fb"), 8);
 
 	// TODO: vec2
-	glUniform1f(glGetUniformLocation(post_shader.first, "scale_x"), dsr_scale_x);
-	glUniform1f(glGetUniformLocation(post_shader.first, "scale_y"), dsr_scale_y);
+	glUniform1f(glGetUniformLocation(post_shader.first, "scale_x"),
+		(round(dsr_scale_x*rend_x))/rend_x);
+	glUniform1f(glGetUniformLocation(post_shader.first, "scale_y"),
+		(round(dsr_scale_y*rend_y))/rend_y);
+
+	glUniform1f(glGetUniformLocation(post_shader.first, "screen_x"), screen_x);
+	glUniform1f(glGetUniformLocation(post_shader.first, "screen_y"), screen_y);
+
 	//glClearColor(1.0, 0, 0, 1.0);
 
 	glDisable(GL_DEPTH_TEST);
 	DO_ERROR_CHECK();
 	draw_screenquad();
 
+	/*
+	// TODO: this ends up taking 100% CPU while running...
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_frame_fb.first);
 	glBlitFramebuffer(0, 0, screen_x, screen_y,
 	                  0, 0, rend_x, rend_y,
 	                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	DO_ERROR_CHECK();
+	*/
 
 	glman.bind_default_framebuffer();
 	text.render({0.0, 0.9, 0},
@@ -804,14 +820,15 @@ void testscene::logic(context& ctx) {
 }
 
 void testscene::adjust_draw_resolution(void) {
+	// TODO: non-linear adjustment based on frame time
 	double frametime = 1.0/fps_sma() * 1000;
 
 	if (frametime > dsr_scale_down) {
-		if (dsr_scale_x <= dsr_min_scale) {
-			dsr_scale_y = max(dsr_min_scale, dsr_scale_y - dsr_down_incr);
+		if (dsr_scale_x <= dsr_min_scale_x) {
+			dsr_scale_y = max(dsr_min_scale_y, dsr_scale_y - dsr_down_incr);
 
 		} else {
-			dsr_scale_x -= dsr_down_incr;
+			dsr_scale_x = max(dsr_min_scale_x, dsr_scale_x - dsr_down_incr);
 		}
 	}
 
@@ -912,17 +929,22 @@ int main(int argc, char *argv[]) {
 				+ "max: " + std::to_string(minmax.second) + ")"
 				;
 
-			fps = fps_sma(SDL_GetTicks() - begin);
 			scene->draw_debug_string(foo);
 			SDL_GL_SwapWindow(ctx.window);
 
+			uint32_t end = SDL_GetTicks() - begin;
+			fps = fps_sma(end);
+
+			/*
+			// TODO: without vsync
 			double frametime = 1.f/fps*1000;
 
-			if (frametime < scene->dsr_target_ms) {
-				SDL_Delay(scene->dsr_target_ms - frametime);
+			if (end < scene->dsr_target_ms) {
+				SDL_Delay(floor(scene->dsr_target_ms - end));
 			}
+			*/
 
-			fflush(stdout);
+			//fflush(stdout);
 		}
 	}
 
