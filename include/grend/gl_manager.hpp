@@ -15,10 +15,6 @@
 
 namespace grendx {
 
-typedef std::map<std::string, model_submesh> mesh_map;
-typedef std::map<std::string, model> model_map;
-
-
 // TODO: need to split this up somehow
 class gl_manager {
 	public:

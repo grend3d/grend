@@ -123,7 +123,7 @@ static std::list<std::string> test_libraries = {
 	   "assets/obj/Modular Terrain Hilly/",
 	   "assets/obj/Modular Terrain Beach/",
 	   */
-	"assets/obj/Dungeon Set 2/",
+	//"assets/obj/Dungeon Set 2/",
 };
 
 class testscene : public engine {
@@ -233,6 +233,9 @@ class testscene : public engine {
 
 // TODO: should start thinking about splitting initialization into smaller functions
 testscene::testscene(context& ctx) : engine(), text(this) {
+	model_map gltf = load_gltf_models("assets/obj/Duck/glTF/Duck.gltf");
+	models.insert(gltf.begin(), gltf.end());
+
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),

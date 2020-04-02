@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <stdint.h>
+
 namespace grendx {
 
 model::model(std::string filename) {
@@ -53,8 +55,15 @@ void model::gen_texcoords(void) {
 
 void model::gen_tangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
-	tangents.resize(vertices.size(), glm::vec3(0));
-	bitangents.resize(vertices.size(), glm::vec3(0));
+	// allocate a little bit extra to make sure we don't overrun the buffer...
+	// XXX:
+	// TODO: just realized, this should be working with faces, not vertices
+	//       so fix this after gltf stuff is in a workable state
+	//unsigned mod = 3 - vertices.size()%3;
+	unsigned mod = 3;
+
+	tangents.resize(vertices.size() + mod, glm::vec3(0));
+	bitangents.resize(vertices.size() + mod, glm::vec3(0));
 
 	// generate tangents for each triangle
 	for (std::size_t i = 0; i < vertices.size(); i += 3) {
@@ -315,4 +324,271 @@ void model::load_materials(std::string filename) {
 }
 
 // namespace grendx
+}
+
+#define TINYGLTF_IMPLEMENTATION
+//#define TINYGLTF_USE_CPP14
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <tinygltf/tiny_gltf.h>
+
+static inline bool check_index(auto& container, size_t idx) {
+	if (idx >= container.size()) {
+		// TODO: toggle exceptions somehow
+		throw std::out_of_range("check_index()");
+		return false;
+	}
+
+	return true;
+}
+
+static inline bool assert_type(int type, int expected) {
+	if (type != expected) {
+		throw std::invalid_argument(
+			"assert_type(): have " + std::to_string(type)
+			+ ", expected " + std::to_string(expected));
+		return false;
+	}
+
+	return true;
+}
+
+static inline bool assert_nonzero(size_t x) {
+	if (x == 0) {
+		throw std::logic_error("assert_nonzero()");
+		return false;
+	}
+
+	return true;
+}
+
+static auto gltf_material(tinygltf::Model& gltf_model, size_t idx) {
+	check_index(gltf_model.materials, idx);
+	return gltf_model.materials[idx];
+}
+
+static size_t gltf_buff_element_size(int component, int type) {
+	size_t size_component = 0, size_type = 0;
+
+	switch (type) {
+		case TINYGLTF_TYPE_VECTOR:
+		case TINYGLTF_TYPE_SCALAR: size_type = 1; break;
+		case TINYGLTF_TYPE_VEC2: size_type = 2; break;
+		case TINYGLTF_TYPE_VEC3: size_type = 3; break;
+		case TINYGLTF_TYPE_VEC4: size_type = 4; break;
+		case TINYGLTF_TYPE_MATRIX: size_type = 1; /* TODO: check this */ break;
+		case TINYGLTF_TYPE_MAT2: size_type = 2*2; break;
+		case TINYGLTF_TYPE_MAT3: size_type = 3*3; break;
+		case TINYGLTF_TYPE_MAT4: size_type = 4*4; break;
+	}
+
+	switch (component) {
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+		case TINYGLTF_COMPONENT_TYPE_BYTE:
+			size_component = sizeof(GLbyte);
+			break;
+
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+		case TINYGLTF_COMPONENT_TYPE_SHORT:
+			size_component = sizeof(GLushort);
+			break;
+
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+		case TINYGLTF_COMPONENT_TYPE_INT:
+			size_component = sizeof(GLint);
+			break;
+
+		case TINYGLTF_COMPONENT_TYPE_FLOAT:
+			size_component = sizeof(GLfloat);
+			break;
+
+		case TINYGLTF_COMPONENT_TYPE_DOUBLE:
+			size_component = sizeof(GLdouble); 
+			break;
+	}
+
+	return size_component * size_type;
+}
+
+static void *gltf_load_accessor(tinygltf::Model& tgltf_model, int idx) {
+	check_index(tgltf_model.accessors, idx);
+	auto& acc = tgltf_model.accessors[idx];
+
+	size_t elem_size =
+		gltf_buff_element_size(acc.componentType, acc.type);
+	size_t buff_size = acc.count * elem_size;
+	assert_nonzero(elem_size);
+
+	check_index(tgltf_model.bufferViews, acc.bufferView);
+	auto& view = tgltf_model.bufferViews[acc.bufferView];
+	check_index(tgltf_model.buffers, view.buffer);
+	auto& buffer = tgltf_model.buffers[view.buffer];
+
+	std::cerr << "        - acc @ " << idx << std::endl;
+	std::cerr << "        - view @ " << acc.bufferView << std::endl;
+	std::cerr << "        - buffer @ " << view.buffer << std::endl;
+
+	check_index(buffer.data,
+			view.byteOffset + acc.byteOffset + buff_size - 1);
+	return static_cast<void*>(buffer.data.data() + (view.byteOffset + acc.byteOffset));
+};
+
+template<typename T>
+static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
+                               int accessor,
+                               std::vector<T>& vec)
+{
+	check_index(gltf_model.accessors, accessor);
+	auto& acc = gltf_model.accessors[accessor];
+	check_index(gltf_model.bufferViews, acc.bufferView);
+	auto& view = gltf_model.bufferViews[acc.bufferView];
+
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	size_t emsz = view.byteStride
+		? view.byteStride
+		: gltf_buff_element_size(acc.componentType, acc.type);
+
+	for (unsigned i = 0; i < acc.count; i++) {
+		T *em = reinterpret_cast<T*>(datas + i*emsz);
+		vec.push_back(*em);
+	}
+}
+
+grendx::model_map grendx::load_gltf_models(std::string filename) {
+	model_map ret;
+
+	tinygltf::TinyGLTF loader;
+	tinygltf::Model tgltf_model;
+	std::string err;
+	std::string warn;
+
+	bool loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
+
+	if (!loaded) {
+		throw std::logic_error(err);
+	}
+
+	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
+
+	for (auto& mesh : tgltf_model.meshes) {
+		std::cerr << " GLTF > have mesh " << mesh.name << std::endl;
+		std::cerr << "      > primitives: " << std::endl;
+
+		for (size_t i = 0; i < mesh.primitives.size(); i++) {
+			auto& prim = mesh.primitives[i];
+			std::string temp_name = mesh.name + ":" + std::to_string(i);
+
+			std::cerr << "        material: " << prim.material << std::endl;
+			std::cerr << "        indices: " << prim.indices << std::endl;
+			std::cerr << "        mode: " << prim.mode << std::endl;
+
+			// accessor indices
+			int elements = prim.indices;
+			int normals = -1;
+			int position = -1;
+			int texcoord = -1;
+
+			for (auto& attr : prim.attributes) {
+				std::cerr << "        attribute " << attr.first << ": "
+					<< attr.second << std::endl;
+
+				if (attr.first == "NORMAL") {
+					normals = attr.second;
+					std::cerr << "        normal @ " << attr.second << std::endl;
+
+				} else if (attr.first == "POSITION") {
+					position = attr.second;
+					std::cerr << "        vertices @ " << attr.second << std::endl;
+
+				} else if (attr.first == "TEXCOORD_0") {
+					texcoord = attr.second;
+					std::cerr << "        texcoord @ " << attr.second << std::endl;
+				}
+			}
+
+			if (elements >= 0) {
+				check_index(tgltf_model.accessors, elements);
+
+				auto& acc = tgltf_model.accessors[elements];
+				assert_type(acc.type, TINYGLTF_TYPE_SCALAR);
+				assert_type(acc.componentType, 
+					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
+				ret[mesh.name].meshes[temp_name].material = "(null)";
+				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
+				gltf_unpack_buffer(tgltf_model, elements, submesh);
+			}
+
+			if (normals >= 0) {
+				check_index(tgltf_model.accessors, normals);
+
+				gltf_unpack_buffer(tgltf_model, normals, ret[mesh.name].normals);
+				ret[mesh.name].have_normals = true;
+			}
+
+			if (position >= 0) {
+				check_index(tgltf_model.accessors, position);
+
+				auto& acc = tgltf_model.accessors[position];
+				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
+				assert_type(acc.componentType, 
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				auto& view = tgltf_model.bufferViews[acc.bufferView];
+
+				gltf_unpack_buffer(tgltf_model, position, ret[mesh.name].vertices);
+			}
+
+			if (texcoord >= 0) {
+				check_index(tgltf_model.accessors, texcoord);
+
+				auto& acc = tgltf_model.accessors[texcoord];
+				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
+				assert_type(acc.componentType, 
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+				gltf_unpack_buffer(tgltf_model, texcoord, ret[mesh.name].texcoords);
+				ret[mesh.name].have_texcoords = true;
+			}
+		}
+
+		if (!ret[mesh.name].have_normals) {
+			ret[mesh.name].gen_normals();
+		}
+
+		if (!ret[mesh.name].have_texcoords) {
+			ret[mesh.name].gen_texcoords();
+		}
+
+		ret[mesh.name].gen_tangents();
+	}
+
+	std::cerr << "      > accessors: " << std::endl;
+
+	for (auto& acc : tgltf_model.accessors) {
+		std::cerr << "        name: "   << acc.name << std::endl;
+		std::cerr << "        view: "   << acc.bufferView << std::endl;
+		std::cerr << "        offset: " << acc.byteOffset << std::endl;
+		std::cerr << "        component type: " << acc.componentType
+			<< std::endl;
+		std::cerr << "        count: " << acc.count << std::endl;
+		std::cerr << "        type: " << acc.type << std::endl;
+	}
+
+	std::cerr << "      > materials: " << std::endl;
+
+	for (auto& mat : tgltf_model.materials) {
+		std::cerr << "        name: " << mat.name << std::endl;
+		std::cerr << "        base color index: " << mat.pbrMetallicRoughness.baseColorTexture.index << std::endl;
+		std::cerr << "        base color tex: " << mat.pbrMetallicRoughness.baseColorTexture.texCoord << std::endl;
+	}
+
+	if (!err.empty()) {
+		std::cerr << "/!\\ ERROR: " << err << std::endl;
+	}
+
+	if (!warn.empty()) {
+		std::cerr << "/!\\ WARNING: " << warn << std::endl;
+	}
+
+	return ret;
 }

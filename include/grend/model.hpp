@@ -62,5 +62,11 @@ class model {
 		bool have_texcoords = false;
 };
 
+typedef std::map<std::string, model_submesh> mesh_map;
+typedef std::map<std::string, model> model_map;
+
+model_map load_gltf_models(std::string filename);
+// TODO: load scene
+
 // namespace grendx
 }

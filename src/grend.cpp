@@ -101,8 +101,8 @@ void gl_manager::compile_models(model_map& models) {
 
 		assert(mod.vertices.size() == mod.normals.size());
 		assert(mod.vertices.size() == mod.texcoords.size());
-		assert(mod.vertices.size() == mod.tangents.size());
-		assert(mod.vertices.size() == mod.bitangents.size());
+		//assert(mod.vertices.size() == mod.tangents.size());
+		//assert(mod.vertices.size() == mod.bitangents.size());
 
 
 		compiled_model obj;
