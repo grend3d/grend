@@ -727,6 +727,16 @@ void testscene::input(context& ctx) {
 						select_inverted = !select_inverted;
 						break;
 
+					case SDLK_j:
+						// scale down
+						select_transform *= glm::scale(glm::vec3(0.9));
+						break;
+
+					case SDLK_k:
+						// scale up
+						select_transform *= glm::scale(glm::vec3(1/0.9));
+						break;
+
 					case SDLK_r:
 						if (select_model == models.begin()) {
 							select_model = models.end();
