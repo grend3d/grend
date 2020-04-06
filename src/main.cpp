@@ -236,6 +236,12 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	model_map gltf = load_gltf_models("assets/obj/Duck/glTF/Duck.gltf");
 	models.insert(gltf.begin(), gltf.end());
 
+	gltf = load_gltf_models("assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf");
+	models.insert(gltf.begin(), gltf.end());
+
+	gltf = load_gltf_models("assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf");
+	models.insert(gltf.begin(), gltf.end());
+
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),

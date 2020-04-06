@@ -30,13 +30,6 @@ gl_manager::gl_manager() {
 	// initialize state for quad that fills the screen
 	preload_screenquad();
 
-	/*
-	cooked_vertices.clear();
-	cooked_normals.clear();
-	cooked_tangents.clear();
-	cooked_bitangents.clear();
-	cooked_texcoords.clear();
-	*/
 	cooked_vertprops.clear();
 	cooked_elements.clear();
 
@@ -45,14 +38,6 @@ gl_manager::gl_manager() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthFunc(GL_LESS);
-
-	/*
-	// testing texcoord generation
-	glEnable(GL_TEXTURE_GEN_S);
-	glEnable(GL_TEXTURE_GEN_T);
-	glEnable(GL_TEXTURE_GEN_R);
-	glEnable(GL_TEXTURE_GEN_Q);
-	*/
 }
 
 void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
@@ -66,23 +51,6 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 		                      (cooked_elements.size() * sizeof(GLushort));
 		cooked_elements.insert(cooked_elements.end(), x.second.faces.begin(),
 		                                              x.second.faces.end());
-
-		// TODO: fix this to work with per-model material maps
-		/*
-		// check to make sure we have all the materials loaded
-		if (materials.find(x.second.material) == materials.end()) {
-			std::cerr
-				<< "Warning: material \"" << x.second.material
-				<< "\" for mesh " << meshname
-				<< " isn't loaded!"
-				<< std::endl;
-			foo.material = "(null)";
-
-		} else {
-			foo.material = x.second.material;
-		}
-		*/
-
 		foo.material = x.second.material;
 
 		cooked_meshes[meshname] = foo;
@@ -133,7 +101,6 @@ void gl_manager::compile_models(model_map& models) {
 			push_vec(mod.tangents[i]);
 			push_vec(mod.bitangents[i]);
 			push_vec(mod.texcoords[i]);
-
 		}
 
 		compile_meshes(x.first, x.second.meshes);
@@ -152,21 +119,24 @@ void gl_manager::compile_models(model_map& models) {
 			// TODO: is there a less tedious way to do this?
 			//       like could load all of the textures into a map then iterate over
 			//       the map rather than do this for each map type...
-			if (!mat.second.diffuse_map.empty()) {
+			if (mat.second.diffuse_map.loaded()) {
 				obj.mat_textures[mat.first] =
-					load_texture(mat.second.diffuse_map, true /* srgb */);
+					buffer_texture(mat.second.diffuse_map, true /* srgb */);
 			}
 
-			if (!mat.second.specular_map.empty()) {
-				obj.mat_specular[mat.first] = load_texture(mat.second.specular_map);
+			if (mat.second.specular_map.loaded()) {
+				obj.mat_specular[mat.first] =
+					buffer_texture(mat.second.specular_map);
 			}
 
-			if (!mat.second.normal_map.empty()) {
-				obj.mat_normal[mat.first] = load_texture(mat.second.normal_map);
+			if (mat.second.normal_map.loaded()) {
+				obj.mat_normal[mat.first] =
+					buffer_texture(mat.second.normal_map);
 			}
 
-			if (!mat.second.ambient_occ_map.empty()) {
-				obj.mat_ao[mat.first] = load_texture(mat.second.ambient_occ_map);
+			if (mat.second.ambient_occ_map.loaded()) {
+				obj.mat_ao[mat.first] =
+					buffer_texture(mat.second.ambient_occ_map);
 			}
 		}
 
@@ -488,7 +458,21 @@ GLenum surface_gl_format(SDL_Surface *surf) {
 	return GL_RGBA;
 }
 
-gl_manager::rhandle gl_manager::load_texture(std::string filename, bool srgb) {
+GLenum surface_gl_format(const material_texture& tex) {
+	switch (tex.channels) {
+		case 1: return GL_RED;
+		case 2: return GL_RG;
+		case 3: return GL_RGB;
+		case 4: return GL_RGBA;
+		default: break;
+	}
+
+	return GL_RGBA;
+}
+
+gl_manager::rhandle
+gl_manager::buffer_texture(const material_texture& tex, bool srgb) {
+	/*
 	if (texture_cache.find(filename) != texture_cache.end()) {
 		// avoid redundantly loading textures
 		//std::cerr << " > cached texture " << filename << std::endl;
@@ -501,11 +485,12 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename, bool srgb) {
 	if (!texture) {
 		SDL_Die("Couldn't load texture");
 	}
+	*/
 
-	fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
-	        texture->w, texture->h, texture->pitch, texture->format->BytesPerPixel);
+	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
+	        tex.width, tex.height, tex.channels);
 
-	GLenum texformat = surface_gl_format(texture);
+	GLenum texformat = surface_gl_format(tex);
 	/*
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -516,8 +501,8 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename, bool srgb) {
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D,
 	             //0, GL_RGBA, texture->w, texture->h, 0, texformat,
-	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, texture->w, texture->h,
-	             0, texformat, GL_UNSIGNED_BYTE, texture->pixels);
+	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
+	             0, texformat, GL_UNSIGNED_BYTE, tex.pixels.data());
 	DO_ERROR_CHECK();
 
 #if ENABLE_MIPMAPS
@@ -529,9 +514,11 @@ gl_manager::rhandle gl_manager::load_texture(std::string filename, bool srgb) {
 #endif
 	DO_ERROR_CHECK();
 
+	/*
 	SDL_FreeSurface(texture);
 
 	texture_cache[filename] = temp;
+	*/
 	return temp;
 }
 

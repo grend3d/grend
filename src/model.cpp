@@ -1,6 +1,9 @@
 #include <grend/model.hpp>
 #include <grend/utility.hpp>
 
+#include <tinygltf/stb_image.h>
+#include <tinygltf/stb_image_write.h>
+
 #include <vector>
 #include <map>
 #include <string>
@@ -245,6 +248,22 @@ void model::load_object(std::string filename) {
 	}
 }
 
+material_texture::material_texture(std::string filename) {
+	load_texture(filename);
+}
+
+void material_texture::load_texture(std::string filename) {
+	uint8_t *datas = stbi_load(filename.c_str(), &width,
+	                           &height, &channels, 0);
+
+	if (!datas) {
+		throw std::logic_error("Couldn't load material texture " + filename);
+	}
+
+	size_t imgsize = width * height * channels;
+	pixels.insert(pixels.end(), datas, datas + imgsize);
+}
+
 void model::load_materials(std::string filename) {
 	std::ifstream input(filename);
 	std::string current_material = "default";
@@ -256,6 +275,8 @@ void model::load_materials(std::string filename) {
 			<< filename << std::endl;
 		return;
 	}
+
+	stbi_set_flip_vertically_on_load(true);
 
 	while (std::getline(input, line)) {
 		auto statement = split_string(line);
@@ -297,22 +318,30 @@ void model::load_materials(std::string filename) {
 		}
 
 		else if (statement[0] == "map_Kd") {
-			materials[current_material].diffuse_map = base_dir(filename) + statement[1];
+			//materials[current_material].diffuse_map = base_dir(filename) + statement[1];
+			materials[current_material].diffuse_map.
+				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
-			materials[current_material].specular_map = base_dir(filename) + statement[1];
+			//materials[current_material].specular_map = base_dir(filename) + statement[1];
+			materials[current_material].specular_map.
+				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
-			materials[current_material].ambient_occ_map = base_dir(filename) + statement[1];
+			//materials[current_material].ambient_occ_map = base_dir(filename) + statement[1];
+			materials[current_material].ambient_occ_map.
+				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
-			materials[current_material].normal_map = base_dir(filename) + statement[1];
+			//materials[current_material].normal_map = base_dir(filename) + statement[1];
+			materials[current_material].normal_map.
+				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_bump") {
@@ -321,15 +350,13 @@ void model::load_materials(std::string filename) {
 
 		// TODO: other light maps, attributes
 	}
+
+	stbi_set_flip_vertically_on_load(false);
 }
 
 // namespace grendx
 }
 
-#define TINYGLTF_IMPLEMENTATION
-//#define TINYGLTF_USE_CPP14
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <tinygltf/tiny_gltf.h>
 
 static inline bool check_index(auto& container, size_t idx) {
@@ -362,9 +389,19 @@ static inline bool assert_nonzero(size_t x) {
 	return true;
 }
 
-static auto gltf_material(tinygltf::Model& gltf_model, size_t idx) {
+static tinygltf::Material& gltf_material(tinygltf::Model& gltf_model, size_t idx) {
 	check_index(gltf_model.materials, idx);
 	return gltf_model.materials[idx];
+}
+
+static tinygltf::Texture& gltf_texture(tinygltf::Model& gltf_model, size_t idx) {
+	check_index(gltf_model.textures, idx);
+	return gltf_model.textures[idx];
+}
+
+static tinygltf::Image& gltf_image(tinygltf::Model& gltf_model, size_t idx) {
+	check_index(gltf_model.textures, idx);
+	return gltf_model.images[idx];
 }
 
 static size_t gltf_buff_element_size(int component, int type) {
@@ -454,6 +491,77 @@ static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
 	}
 }
 
+static grendx::material_texture
+gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
+	grendx::material_texture ret;
+
+	auto& tex = gltf_texture(gltf_model, tex_idx);
+	std::cerr << "        + texture source: " << tex.source << std::endl;
+
+	auto& img = gltf_image(gltf_model, tex.source);
+	std::cerr << "        + texture image source: " << img.uri << ", "
+		<< img.width << "x" << img.height << ":" << img.component << std::endl;
+
+
+	ret.pixels.insert(ret.pixels.end(),
+			img.image.begin(), img.image.end());
+	ret.width = img.width;
+	ret.height = img.height;
+	ret.channels = img.component;
+	ret.size = ret.width * ret.height * ret.channels;
+
+	return ret;
+}
+
+static void gltf_load_material(tinygltf::Model& gltf_model,
+                               grendx::model& out_model,
+                               int material_idx,
+                               std::string mesh_name)
+{
+	std::string temp_name = mesh_name + ":" + std::to_string(material_idx);
+	auto& mat = gltf_material(gltf_model, material_idx);
+
+	struct grendx::material mod_mat;
+	out_model.meshes[temp_name].material = mat.name;
+
+	auto& pbr = mat.pbrMetallicRoughness;
+	auto& base_color = pbr.baseColorFactor;
+	glm::vec4 mat_diffuse(base_color[0], base_color[1],
+			base_color[2], base_color[3]);
+
+
+	std::cerr << "        + have material " << mat.name << std::endl;
+	std::cerr << "        + base color: "
+		<< mat_diffuse.x << ", " << mat_diffuse.y
+		<< ", " << mat_diffuse.z << ", " << mat_diffuse.w
+		<< std::endl;
+
+	std::cerr << "        + pbr base idx: "
+		<< pbr.baseColorTexture.index << std::endl;
+	std::cerr << "        + normal map idx: "
+		<< mat.normalTexture.index << std::endl;
+	std::cerr << "        + occlusion map idx: "
+		<< mat.occlusionTexture.index << std::endl;
+
+	if (pbr.baseColorTexture.index >= 0) {
+		mod_mat.diffuse_map =
+			gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
+	}
+
+	if (mat.normalTexture.index >= 0) {
+		mod_mat.normal_map =
+			gltf_load_texture(gltf_model, mat.normalTexture.index);
+	}
+
+	if (mat.occlusionTexture.index >= 0) {
+		mod_mat.ambient_occ_map =
+			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
+	}
+
+	mod_mat.diffuse = mat_diffuse;
+	out_model.materials[mat.name] = mod_mat;
+}
+
 grendx::model_map grendx::load_gltf_models(std::string filename) {
 	model_map ret;
 
@@ -482,6 +590,14 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 			std::cerr << "        indices: " << prim.indices << std::endl;
 			std::cerr << "        mode: " << prim.mode << std::endl;
 
+			if (prim.material >= 0) {
+				gltf_load_material(tgltf_model, ret[mesh.name],
+				                   prim.material, mesh.name);
+
+			} else {
+				ret[mesh.name].meshes[temp_name].material = "(null)";
+			}
+
 			// accessor indices
 			int elements = prim.indices;
 			int normals = -1;
@@ -489,21 +605,9 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 			int texcoord = -1;
 
 			for (auto& attr : prim.attributes) {
-				std::cerr << "        attribute " << attr.first << ": "
-					<< attr.second << std::endl;
-
-				if (attr.first == "NORMAL") {
-					normals = attr.second;
-					std::cerr << "        normal @ " << attr.second << std::endl;
-
-				} else if (attr.first == "POSITION") {
-					position = attr.second;
-					std::cerr << "        vertices @ " << attr.second << std::endl;
-
-				} else if (attr.first == "TEXCOORD_0") {
-					texcoord = attr.second;
-					std::cerr << "        texcoord @ " << attr.second << std::endl;
-				}
+				if (attr.first == "NORMAL") normals = attr.second;
+				if (attr.first == "POSITION") position = attr.second;
+				if (attr.first == "TEXCOORD_0") texcoord = attr.second;
 			}
 
 			if (elements >= 0) {
@@ -514,7 +618,6 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
-				ret[mesh.name].meshes[temp_name].material = "(null)";
 				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
 				gltf_unpack_buffer(tgltf_model, elements, submesh);
 			}
@@ -562,6 +665,7 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 		ret[mesh.name].gen_tangents();
 	}
 
+	/*
 	std::cerr << "      > accessors: " << std::endl;
 
 	for (auto& acc : tgltf_model.accessors) {
@@ -581,6 +685,7 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 		std::cerr << "        base color index: " << mat.pbrMetallicRoughness.baseColorTexture.index << std::endl;
 		std::cerr << "        base color tex: " << mat.pbrMetallicRoughness.baseColorTexture.texCoord << std::endl;
 	}
+	*/
 
 	if (!err.empty()) {
 		std::cerr << "/!\\ ERROR: " << err << std::endl;

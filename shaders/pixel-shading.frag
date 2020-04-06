@@ -50,17 +50,13 @@ uniform material anmaterial;
 uniform vec4 lightpos;
 
 void main(void) {
-	// TODO: this flips the normals too...
-	vec2 flipped_texcoord = vec2(f_texcoord.x, 1.0 - f_texcoord.y);
-
-	//vec2 flipped_texcoord = f_texcoord;
-	vec3 normidx = texture2D(normal_map, flipped_texcoord).rgb;
+	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 
 	vec3 ambient_light = vec3(0.2);
 	//vec3 normal_dir = normalize(f_normal);
 	//mat3 TBN = transpose(mat3(f_tangent, f_bitangent, f_normal));
 	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
-	// flipped_texcoord also flips normal maps, so multiply the y component
+	// f_texcoord also flips normal maps, so multiply the y component
 	// by -1 here to flip it
 	vec3 normal_dir = vec3(1, -1, 1) * normalize(normidx * 2.0 - 1.0);
 	normal_dir = normalize(TBN * normal_dir);
@@ -94,7 +90,7 @@ void main(void) {
 		vec3 environment_refraction = vec3(0.0);
 
 #if ENABLE_DIFFUSION
-		float aoidx = texture2D(ambient_occ_map, flipped_texcoord).r;
+		float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
 		diffuse_reflection =
 			// diminish contribution from diffuse lighting for a more cartoony look
 			//0.5 *
@@ -104,7 +100,7 @@ void main(void) {
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
-		float specidx = texture2D(specular_map, flipped_texcoord).r;
+		float specidx = texture2D(specular_map, f_texcoord).r;
 
 		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0.9) {
 			specular_reflection = anmaterial.specular.w * attenuation
@@ -145,11 +141,11 @@ void main(void) {
 
 	vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
 
-	//gl_FragColor = vec4(total_light, 1.0) * mix(texture2D(diffuse_map, flipped_texcoord), texture2D(normal_map, flipped_texcoord), 0.5) * mix(vec4(1.0), unused, 0.00001);
-	//gl_FragColor = vec4(total_light, 1.0) * texture2D(diffuse_map, flipped_texcoord);
+	//gl_FragColor = vec4(total_light, 1.0) * mix(texture2D(diffuse_map, f_texcoord), texture2D(normal_map, f_texcoord), 0.5) * mix(vec4(1.0), unused, 0.00001);
+	//gl_FragColor = vec4(total_light, 1.0) * texture2D(diffuse_map, f_texcoord);
 	//gl_FragColor = vec4((normal_dir+1)/2, 1) + unused;
 
-	vec4 displight = vec4(total_light, 1.0) * texture2D(diffuse_map, flipped_texcoord);
+	vec4 displight = vec4(total_light, 1.0) * texture2D(diffuse_map, f_texcoord);
 	//vec4 displight = vec4(total_light, 1.0);
 
 	//gl_FragColor = mix(dispnorm, displight, 0.25);

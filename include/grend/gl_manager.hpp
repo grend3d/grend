@@ -121,7 +121,7 @@ class gl_manager {
 		void free_objects(void);
 
 		// TODO: unload
-		rhandle load_texture(std::string filename, bool srgb=false);
+		rhandle buffer_texture(const material_texture& tex, bool srgb=false);
 		rhandle load_cubemap(std::string directory, std::string extension=".jpg");
 		rhandle load_shader(std::string filename, GLuint type);
 		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);

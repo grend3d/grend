@@ -15,10 +15,10 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map     = "assets/tex/white.png",
-				   .specular_map    = "assets/tex/white.png",
-				   .normal_map      = "assets/tex/lightblue-normal.png",
-				   .ambient_occ_map = "assets/tex/white.png",
+				   .diffuse_map     = material_texture("assets/tex/white.png"),
+				   .specular_map    = material_texture("assets/tex/white.png"),
+				   .normal_map      = material_texture("assets/tex/lightblue-normal.png"),
+				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
 
 	{"Black",  {
@@ -56,9 +56,9 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = "assets/tex/dims/Textures/Gravel.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Gravel_N.jpg",
+				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Gravel.JPG"),
+				   .specular_map = material_texture("assets/tex/white.png"),
+				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Gravel_N.jpg"),
 
 				   // materials from freepbr.com are way higher quality, but I'm not sure how
 				   // github would feel about hosting a few hundred megabytes to gigabytes of
@@ -101,9 +101,9 @@ static std::map<std::string, material> default_materials = {
 				   .ambient_occ_map = "assets/tex/white.png",
 				   */
 
-				   .diffuse_map  = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png",
-				   .specular_map = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png",
-				   .normal_map   = "assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png",
+				   .diffuse_map  = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png"),
+				   .specular_map = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
+				   .normal_map   = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png"),
 			   }},
 
 	{"Brick",  {
@@ -114,10 +114,10 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = "assets/tex/rubberduck-tex/179.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/rubberduck-tex/179_norm.JPG",
-				   .ambient_occ_map = "assets/tex/white.png",
+				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/179.JPG"),
+				   .specular_map = material_texture("assets/tex/white.png"),
+				   .normal_map   = material_texture("assets/tex/rubberduck-tex/179_norm.JPG"),
+				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 				   /*
 				   .diffuse_map  = "assets/tex/dims/Textures/Chimeny.JPG",
 				   .specular_map = "assets/tex/white.png",
@@ -134,10 +134,10 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = "assets/tex/rubberduck-tex/165.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/rubberduck-tex/165_norm.JPG",
-				   .ambient_occ_map = "assets/tex/white.png",
+				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/165.JPG"),
+				   .specular_map = material_texture("assets/tex/white.png"),
+				   .normal_map   = material_texture("assets/tex/rubberduck-tex/165_norm.JPG"),
+				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
 
 	{"Wood",  {
@@ -148,24 +148,10 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = "assets/tex/dims/Textures/Boards.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Boards_N.jpg",
-				   .ambient_occ_map = "assets/tex/white.png",
-			   }},
-
-	{"Clover",  {
-				   .diffuse = {1, 1, 1, 1},
-				   .ambient = {1, 1, 1, 1},
-				   .specular = {1, 1, 1, 0.5},
-				   .shininess = 1,
-				   .opacity = 1,
-				   .refract_idx = 1.5,
-
-				   .diffuse_map  = "assets/tex/dims/Textures/GroundCover.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/GroundCover_N.jpg",
-				   .ambient_occ_map = "assets/tex/white.png",
+				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Boards.JPG"),
+				   .specular_map = material_texture("assets/tex/white.png"),
+				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
+				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
 
 	{"Glass",  {
@@ -187,27 +173,30 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1.0,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = "assets/tex/Earthmap720x360_grid.jpg",
+				   .diffuse_map  = material_texture("assets/tex/Earthmap720x360_grid.jpg"),
 			   }},
 };
 
 engine::engine() {
 	for (auto& thing : default_materials) {
-		if (!thing.second.diffuse_map.empty()) {
+		if (thing.second.diffuse_map.loaded()) {
 			diffuse_handles[thing.first] =
-				glman.load_texture(thing.second.diffuse_map, true /* srgb */);
+				glman.buffer_texture(thing.second.diffuse_map, true /* srgb */);
 		}
 
-		if (!thing.second.specular_map.empty()) {
-			specular_handles[thing.first] = glman.load_texture(thing.second.specular_map);
+		if (thing.second.specular_map.loaded()) {
+			specular_handles[thing.first] =
+				glman.buffer_texture(thing.second.specular_map);
 		}
 
-		if (!thing.second.normal_map.empty()) {
-			normmap_handles[thing.first] = glman.load_texture(thing.second.normal_map);
+		if (thing.second.normal_map.loaded()) {
+			normmap_handles[thing.first] =
+				glman.buffer_texture(thing.second.normal_map);
 		}
 
-		if (!thing.second.ambient_occ_map.empty()) {
-			aomap_handles[thing.first] = glman.load_texture(thing.second.ambient_occ_map);
+		if (thing.second.ambient_occ_map.loaded()) {
+			aomap_handles[thing.first] =
+				glman.buffer_texture(thing.second.ambient_occ_map);
 		}
 	}
 }
@@ -234,7 +223,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 			mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (!mat.diffuse_map.empty()) {
+	if (mat.diffuse_map.loaded()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
 		glUniform1i(u_diffuse_map, 0);
 
@@ -244,7 +233,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (!mat.specular_map.empty()) {
+	if (mat.specular_map.loaded()) {
 		// TODO: specular maps
 		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
 		glUniform1i(u_specular_map, 1);
@@ -255,7 +244,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE2);
-	if (!mat.normal_map.empty()) {
+	if (mat.normal_map.loaded()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_normal[mat_name].first);
 		glUniform1i(u_normal_map, 2);
 
@@ -265,7 +254,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE3);
-	if (!mat.ambient_occ_map.empty()) {
+	if (mat.ambient_occ_map.loaded()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_ao[mat_name].first);
 		glUniform1i(u_ao_map, 3);
 
@@ -296,28 +285,28 @@ void engine::set_default_material(std::string mat_name) {
 			mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.empty()?
-	                                                 fallback_material
-	                                                 : mat_name].first);
+	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.loaded()?
+													 mat_name
+	                                                 : fallback_material].first);
 	glUniform1i(u_diffuse_map, 0);
 
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.specular_map.empty()?
-	                                                 fallback_material
-	                                                 : mat_name].first);
+	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.specular_map.loaded()?
+													 mat_name
+	                                                 : fallback_material].first);
 	glUniform1i(u_specular_map, 1);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, normmap_handles[mat.normal_map.empty()?
-	                                                 fallback_material
-	                                                 : mat_name].first);
+	glBindTexture(GL_TEXTURE_2D, normmap_handles[mat.normal_map.loaded()?
+													 mat_name
+	                                                 : fallback_material].first);
 	glUniform1i(u_normal_map, 2);
 
 	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, aomap_handles[mat.ambient_occ_map.empty()?
-	                                                 fallback_material
-	                                                 : mat_name].first);
+	glBindTexture(GL_TEXTURE_2D, aomap_handles[mat.ambient_occ_map.loaded()?
+													 mat_name
+	                                                 : fallback_material].first);
 	glUniform1i(u_ao_map, 3);
 }
 

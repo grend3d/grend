@@ -5,7 +5,24 @@
 #include <vector>
 #include <map>
 
+#include <stdint.h>
+
 namespace grendx {
+
+// TODO: need a material cache, having a way to lazily load/unload texture
+//       would be a very good thing
+class material_texture {
+	public:
+		material_texture() { };
+		material_texture(std::string filename);
+		void load_texture(std::string filename);
+		bool loaded(void) const { return channels != 0; };
+
+		int width = 0, height = 0;
+		int channels = 0;
+		size_t size;
+		std::vector<uint8_t> pixels;
+};
 
 struct material {
 	glm::vec4 diffuse;
@@ -17,11 +34,19 @@ struct material {
 
 	// file names of textures
 	// no ambient map, diffuse map serves as both
+	/*
 	std::string diffuse_map = "";
 	std::string specular_map = "";
 	std::string normal_map = "";
 	std::string ambient_occ_map = "";
 	std::string alpha_map = "";
+	*/
+
+	material_texture diffuse_map;
+	material_texture specular_map;
+	material_texture normal_map;
+	material_texture ambient_occ_map;
+	material_texture alpha_map;
 };
 
 class model_submesh {
