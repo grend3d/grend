@@ -11,12 +11,13 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {0.75, 0.75, 0.75, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {0.5, 0.5, 0.5, 1},
-				   .shininess = 15,
+				   .roughness = 0.5,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
 				   .diffuse_map     = material_texture("assets/tex/white.png"),
-				   .specular_map    = material_texture("assets/tex/white.png"),
+				   .metal_roughness_map    = material_texture("assets/tex/white.png"),
 				   .normal_map      = material_texture("assets/tex/lightblue-normal.png"),
 				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
@@ -25,7 +26,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 0.8, 0.2, 1},
 				   .ambient = {1, 0.8, 0.2, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 50,
+				   .roughness = 0.5,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 			   }},
@@ -34,7 +36,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {0.1, 0.1, 0.1, 0.5},
 				   .ambient = {0.1, 0.1, 0.1, 0.2},
 				   .specular = {0.0, 0.0, 0.0, 0.05},
-				   .shininess = 15,
+				   .roughness = 0.75,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 			   }},
@@ -43,7 +46,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {0.01, 0.01, 0.01, 1},
 				   .ambient = {0, 0, 0, 1},
 				   .specular = {0.2, 0.2, 0.2, 0.2},
-				   .shininess = 20,
+				   .roughness = 0.3,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 			   }},
@@ -52,12 +56,13 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 5,
+				   .roughness = 0.8,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
 				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Gravel.JPG"),
-				   .specular_map = material_texture("assets/tex/white.png"),
+				   .metal_roughness_map = material_texture("assets/tex/white.png"),
 				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Gravel_N.jpg"),
 
 				   // materials from freepbr.com are way higher quality, but I'm not sure how
@@ -90,7 +95,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 100,
+				   .roughness = 0.2,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
@@ -102,7 +108,7 @@ static std::map<std::string, material> default_materials = {
 				   */
 
 				   .diffuse_map  = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png"),
-				   .specular_map = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
+				   .metal_roughness_map = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
 				   .normal_map   = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png"),
 			   }},
 
@@ -110,12 +116,13 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 1},
-				   .shininess = 3,
+				   .roughness = 0.9,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
 				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/179.JPG"),
-				   .specular_map = material_texture("assets/tex/white.png"),
+				   .metal_roughness_map = material_texture("assets/tex/white.png"),
 				   .normal_map   = material_texture("assets/tex/rubberduck-tex/179_norm.JPG"),
 				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 				   /*
@@ -130,12 +137,13 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.5},
-				   .shininess = 5,
+				   .roughness = 0.8,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
 				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/165.JPG"),
-				   .specular_map = material_texture("assets/tex/white.png"),
+				   .metal_roughness_map = material_texture("assets/tex/white.png"),
 				   .normal_map   = material_texture("assets/tex/rubberduck-tex/165_norm.JPG"),
 				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
@@ -144,12 +152,13 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.3},
-				   .shininess = 5,
+				   .roughness = 0.7,
+				   .metalness = 0.5,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
 				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Boards.JPG"),
-				   .specular_map = material_texture("assets/tex/white.png"),
+				   .metal_roughness_map = material_texture("assets/tex/white.png"),
 				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
 				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
@@ -159,7 +168,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {0.5, 0.5, 0.5, 0},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.5},
-				   .shininess = 100,
+				   .roughness = 0.05,
+				   .metalness = 0.5,
 				   .opacity = 0.1,
 				   .refract_idx = 1.5,
 			   }},
@@ -169,7 +179,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {1, 1, 1, 0.5},
-				   .shininess = 10,
+				   .roughness = 0.5,
+				   .metalness = 0.5,
 				   .opacity = 1.0,
 				   .refract_idx = 1.5,
 
@@ -184,9 +195,9 @@ engine::engine() {
 				glman.buffer_texture(thing.second.diffuse_map, true /* srgb */);
 		}
 
-		if (thing.second.specular_map.loaded()) {
+		if (thing.second.metal_roughness_map.loaded()) {
 			specular_handles[thing.first] =
-				glman.buffer_texture(thing.second.specular_map);
+				glman.buffer_texture(thing.second.metal_roughness_map);
 		}
 
 		if (thing.second.normal_map.loaded()) {
@@ -211,14 +222,18 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 
 	material& mat = obj.materials[mat_name];
 
+	// TODO: cache uniform locations
+	// TODO: only update changed uniforms
 	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
 			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
 	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
 			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
 	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
 			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
-			mat.shininess);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.roughness"),
+			mat.roughness);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.metalness"),
+			mat.metalness);
 	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
 			mat.opacity);
 
@@ -233,7 +248,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (mat.specular_map.loaded()) {
+	if (mat.metal_roughness_map.loaded()) {
 		// TODO: specular maps
 		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
 		glUniform1i(u_specular_map, 1);
@@ -279,8 +294,10 @@ void engine::set_default_material(std::string mat_name) {
 			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
 	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
 			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.shininess"),
-			mat.shininess);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.roughness"),
+			mat.roughness);
+	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.metalness"),
+			mat.metalness);
 	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
 			mat.opacity);
 
@@ -292,7 +309,7 @@ void engine::set_default_material(std::string mat_name) {
 
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.specular_map.loaded()?
+	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.metal_roughness_map.loaded()?
 													 mat_name
 	                                                 : fallback_material].first);
 	glUniform1i(u_specular_map, 1);
@@ -462,6 +479,7 @@ void engine::init_lights(void) {
 	update_lights();
 }
 
+// TODO: only update changed uniforms
 void engine::sync_light(unsigned id) {
 	if (id >= MAX_LIGHTS) {
 		std::cerr << "/!\\ light " << id << " out of bounds" << std::endl;
@@ -481,9 +499,11 @@ void engine::sync_light(unsigned id) {
 	}) {
 		light_handles[str] = glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
 		DO_ERROR_CHECK();
+		/*
 		if (light_handles[str] == -1) {
 			std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
 		}
+		*/
 	}
 
 	glUniform4fv(light_handles["position"], 1, glm::value_ptr(lights[id].position));

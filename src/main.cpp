@@ -307,7 +307,8 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	fragment_shader = glman.load_shader("shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
 #else
 	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+	//fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+	fragment_shader = glman.load_shader("shaders/pixel-shading-metal-roughness-pbr.frag", GL_FRAGMENT_SHADER);
 #endif
 
 	main_shader = glman.gen_program();
@@ -413,7 +414,7 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 
 	glman.bind_framebuffer(rend_fb);
 	rend_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                 glman.gen_texture_color(rend_x, rend_y));
+	                 glman.gen_texture_color(rend_x, rend_y, GL_RGBA16F));
 	rend_depth = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
 	                 glman.gen_texture_depth_stencil(rend_x, rend_y));
 
@@ -424,7 +425,7 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	                       glman.gen_texture_color(rend_x, rend_y));
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_FRAMEBUFFER_SRGB);
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
 	DO_ERROR_CHECK();
 
@@ -475,7 +476,7 @@ void testscene::render(context& ctx) {
 	glman.bind_framebuffer(rend_fb);
 	glViewport(0, 0, round(rend_x*dsr_scale_x), round(rend_y*dsr_scale_y));
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_FRAMEBUFFER_SRGB);
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -704,6 +705,16 @@ void testscene::input(context& ctx) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_i: load_map(); break;
 					case SDLK_o: save_map(); break;
+
+					case SDLK_g:
+						//select_rotation -= M_PI/4;
+						select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
+						break;
+
+					case SDLK_h:
+						//select_rotation -= M_PI/4;
+						select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
+						break;
 
 					case SDLK_z:
 						//select_rotation -= M_PI/4;

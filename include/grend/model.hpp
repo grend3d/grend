@@ -28,7 +28,8 @@ struct material {
 	glm::vec4 diffuse;
 	glm::vec4 ambient;
 	glm::vec4 specular;
-	GLfloat   shininess = 10;
+	GLfloat   roughness = 0.5;
+	GLfloat   metalness = 0.5;
 	GLfloat   opacity = 1.0;
 	GLfloat   refract_idx = 1.5;
 
@@ -43,10 +44,12 @@ struct material {
 	*/
 
 	material_texture diffuse_map;
-	material_texture specular_map;
+	material_texture metal_roughness_map;
+	//material_texture specular_map;
 	material_texture normal_map;
 	material_texture ambient_occ_map;
-	material_texture alpha_map;
+	// TODO
+	//material_texture alpha_map;
 };
 
 class model_submesh {

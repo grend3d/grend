@@ -34,7 +34,7 @@ gl_manager::gl_manager() {
 	cooked_elements.clear();
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_FRAMEBUFFER_SRGB);
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthFunc(GL_LESS);
@@ -124,9 +124,9 @@ void gl_manager::compile_models(model_map& models) {
 					buffer_texture(mat.second.diffuse_map, true /* srgb */);
 			}
 
-			if (mat.second.specular_map.loaded()) {
+			if (mat.second.metal_roughness_map.loaded()) {
 				obj.mat_specular[mat.first] =
-					buffer_texture(mat.second.specular_map);
+					buffer_texture(mat.second.metal_roughness_map);
 			}
 
 			if (mat.second.normal_map.loaded()) {

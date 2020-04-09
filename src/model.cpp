@@ -291,22 +291,25 @@ void model::load_materials(std::string filename) {
 		}
 
 		else if (statement[0] == "Ka") {
-			materials[current_material].ambient = glm::vec4(std::stof(statement[1]),
-			                                                std::stof(statement[2]),
-			                                                std::stof(statement[3]), 1);
+			materials[current_material].ambient =
+				glm::vec4(std::stof(statement[1]),
+			              std::stof(statement[2]),
+			              std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "Kd") {
-			materials[current_material].diffuse = glm::vec4(std::stof(statement[1]),
-			                                                std::stof(statement[2]),
-			                                                std::stof(statement[3]), 1);
+			materials[current_material].diffuse =
+				glm::vec4(std::stof(statement[1]),
+			              std::stof(statement[2]),
+			              std::stof(statement[3]), 1);
 
 		}
 
 		else if (statement[0] == "Ks") {
-			materials[current_material].specular = glm::vec4(std::stof(statement[1]),
-			                                                 std::stof(statement[2]),
-			                                                 std::stof(statement[3]), 1);
+			materials[current_material].specular =
+				glm::vec4(std::stof(statement[1]),
+			             std::stof(statement[2]),
+			             std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "d") {
@@ -314,7 +317,8 @@ void model::load_materials(std::string filename) {
 		}
 
 		else if (statement[0] == "Ns") {
-			materials[current_material].shininess = std::stof(statement[1]);
+			materials[current_material].roughness =
+				1.f - std::stof(statement[1])/1000.f;
 		}
 
 		else if (statement[0] == "map_Kd") {
@@ -326,7 +330,7 @@ void model::load_materials(std::string filename) {
 		else if (statement[0] == "map_Ns") {
 			// specular map
 			//materials[current_material].specular_map = base_dir(filename) + statement[1];
-			materials[current_material].specular_map.
+			materials[current_material].metal_roughness_map.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
@@ -529,15 +533,22 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	glm::vec4 mat_diffuse(base_color[0], base_color[1],
 			base_color[2], base_color[3]);
 
-
 	std::cerr << "        + have material " << mat.name << std::endl;
 	std::cerr << "        + base color: "
 		<< mat_diffuse.x << ", " << mat_diffuse.y
 		<< ", " << mat_diffuse.z << ", " << mat_diffuse.w
 		<< std::endl;
 
+	std::cerr << "        + pbr roughness: "
+		<< pbr.roughnessFactor << std::endl;
+
+	std::cerr << "        + pbr metallic: "
+		<< pbr.metallicFactor << std::endl;
+
 	std::cerr << "        + pbr base idx: "
 		<< pbr.baseColorTexture.index << std::endl;
+	std::cerr << "        + metal/roughness map idx: "
+		<< pbr.metallicRoughnessTexture.index << std::endl;
 	std::cerr << "        + normal map idx: "
 		<< mat.normalTexture.index << std::endl;
 	std::cerr << "        + occlusion map idx: "
@@ -547,6 +558,12 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		mod_mat.diffuse_map =
 			gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
 	}
+
+	if (pbr.metallicRoughnessTexture.index >= 0) {
+		mod_mat.metal_roughness_map =
+			gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
+	}
+
 
 	if (mat.normalTexture.index >= 0) {
 		mod_mat.normal_map =
@@ -558,6 +575,7 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
 	}
 
+	mod_mat.roughness = pbr.roughnessFactor;
 	mod_mat.diffuse = mat_diffuse;
 	out_model.materials[mat.name] = mod_mat;
 }
