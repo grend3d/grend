@@ -30,6 +30,7 @@ void model::gen_normals(void) {
 
 	for (auto& thing : meshes) {
 		for (unsigned i = 0; i < thing.second.faces.size(); i += 3) {
+			// TODO: bounds check
 			GLushort elms[3] = {
 				thing.second.faces[i],
 				thing.second.faces[i+1],
@@ -50,9 +51,15 @@ void model::gen_texcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
 	texcoords.resize(vertices.size());
 
-	for (unsigned i = 0; i < vertices.size(); i++) {
-		glm::vec3& foo = vertices[i];
-		texcoords[i] = {foo.x, foo.y};
+	for (auto& meshkey : meshes) {
+		auto& mesh = meshkey.second;
+		for (unsigned i = 0; i < mesh.faces.size(); i++) {
+			// TODO: bounds check
+			GLushort elm = mesh.faces[i];
+
+			glm::vec3& foo = vertices[elm];
+			texcoords[elm] = {foo.x, foo.y};
+		}
 	}
 }
 
@@ -69,31 +76,40 @@ void model::gen_tangents(void) {
 	bitangents.resize(vertices.size() + mod, glm::vec3(0));
 
 	// generate tangents for each triangle
-	for (std::size_t i = 0; i < vertices.size(); i += 3) {
-		glm::vec3& a = vertices[i];
-		glm::vec3& b = vertices[i+1];
-		glm::vec3& c = vertices[i+2];
+	for (auto& meshkey : meshes) {
+		auto& mesh = meshkey.second;
 
-		glm::vec2 auv = texcoords[i];
-		glm::vec2 buv = texcoords[i+1];
-		glm::vec2 cuv = texcoords[i+2];
+		for (std::size_t i = 0; i < mesh.faces.size(); i += 3) {
+			// TODO: bounds check
+			GLushort elms[3] = {mesh.faces[i], mesh.faces[i+1], mesh.faces[i+2]};
 
-		glm::vec3 e1 = b - a, e2 = c - a;
-		glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
+			glm::vec3& a = vertices[elms[0]];
+			glm::vec3& b = vertices[elms[1]];
+			glm::vec3& c = vertices[elms[2]];
 
-		glm::vec3 tangent, bitangent;
+			glm::vec2 auv = texcoords[elms[0]];
+			glm::vec2 buv = texcoords[elms[1]];
+			glm::vec2 cuv = texcoords[elms[2]];
 
-		float f = 1.f / (duv1.x * duv2.y - duv2.x * duv1.y);
-		tangent.x = f * (duv2.y * e1.x + duv1.y * e2.x);
-		tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
-		tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
+			glm::vec3 e1 = b - a, e2 = c - a;
+			glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
 
-		bitangent.x = f * (-duv2.x * e1.x + duv1.x * e2.x);
-		bitangent.y = f * (-duv2.x * e1.y + duv1.x * e2.y);
-		bitangent.z = f * (-duv2.x * e1.z + duv1.x * e2.z);
+			glm::vec3 tangent, bitangent;
 
-		tangents[i] = tangents[i+1] = tangents[i+2] = glm::normalize(tangent);
-		bitangents[i] = bitangents[i+1] = bitangents[i+2] = glm::normalize(bitangent);
+			float f = 1.f / (duv1.x * duv2.y - duv2.x * duv1.y);
+			tangent.x = f * (duv2.y * e1.x + duv1.y * e2.x);
+			tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
+			tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
+
+			bitangent.x = f * (-duv2.x * e1.x + duv1.x * e2.x);
+			bitangent.y = f * (-duv2.x * e1.y + duv1.x * e2.y);
+			bitangent.z = f * (-duv2.x * e1.z + duv1.x * e2.z);
+
+			tangents[elms[0]] = tangents[elms[1]] = tangents[elms[2]]
+				= glm::normalize(tangent);
+			bitangents[elms[0]] = bitangents[elms[1]] = bitangents[elms[2]]
+				= glm::normalize(bitangent);
+		}
 	}
 }
 
