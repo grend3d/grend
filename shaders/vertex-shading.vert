@@ -38,8 +38,7 @@ struct material {
 const int max_lights = 32;
 uniform lightSource lights[max_lights];
 
-uniform material anmaterial = material(vec4(1.0, 1.0, 1.0, 1.0),
-                               vec4(0), vec4(1.0), 5, 1.0);
+uniform material anmaterial;
 
 void main(void) {
 	vec4 v_coord = vec4(in_Position, 1.0);
@@ -63,7 +62,7 @@ void main(void) {
 		float attenuation;
 
 		if (lights[i].position.w == 0.0) {
-			attenuation = 1;
+			attenuation = 1.0;
 			light_dir = normalize(vec3(lights[i].position));
 
 		} else {
@@ -91,7 +90,7 @@ void main(void) {
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
-		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0) {
+		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0.0) {
 			specular_reflection = anmaterial.specular.w * attenuation
 				* vec3(lights[i].specular)
 				* vec3(anmaterial.specular)
