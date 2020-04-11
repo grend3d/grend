@@ -179,7 +179,6 @@ void model::load_object(std::string filename) {
 
 		else if (statement[0] == "f") {
 			std::size_t end = statement.size();
-			unsigned elements_added = 0;
 
 			// XXX: we should be checking for buffer ranges here
 			auto load_face_tri = [&] (std::string& statement) {
@@ -379,7 +378,8 @@ void model::load_materials(std::string filename) {
 
 #include <tinygltf/tiny_gltf.h>
 
-static inline bool check_index(auto& container, size_t idx) {
+template <typename T>
+static inline bool check_index(std::vector<T> container, size_t idx) {
 	if (idx >= container.size()) {
 		// TODO: toggle exceptions somehow
 		throw std::out_of_range("check_index()");
@@ -670,7 +670,6 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				auto& view = tgltf_model.bufferViews[acc.bufferView];
 
 				gltf_unpack_buffer(tgltf_model, position, ret[mesh.name].vertices);
 			}

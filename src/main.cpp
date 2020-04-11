@@ -444,7 +444,7 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 
 	else if (node->level == 0) {
 		//glm::mat4 trans = glm::translate(glm::scale(glm::vec3(0.1)), location);
-		double scale = oct.leaf_size * (1 << node->level + 1);
+		double scale = oct.leaf_size * (1 << (node->level + 1));
 		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
 		draw_model_lines("unit_cube", trans);
 		//draw_model("unit_cube", trans);
@@ -684,11 +684,11 @@ void testscene::input(context& ctx) {
 				case SDL_WINDOWEVENT_RESIZED:
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 					{
-						int win_x, win_y;
 						SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 						//std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
 
 						// TODO: maybe reallocate framebuffers
+						//int win_x, win_y;
 						//glViewport(0, 0, win_x, win_y);
 						/*
 						projection = glm::perspective(glm::radians(60.f),
@@ -797,6 +797,7 @@ void testscene::input(context& ctx) {
 	int x, y;
 	int win_x, win_y;
 	Uint32 buttons = SDL_GetMouseState(&x, &y);
+	buttons = buttons; // XXX: make the compiler shut up about the unused variable
 	SDL_GetWindowSize(ctx.window, &win_x, &win_y);
 
 	x = (x > 0)? x : win_x/2;
@@ -838,11 +839,6 @@ void testscene::physics(context& ctx) {
 
 void testscene::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
-	Uint32 ticks_delta = cur_ticks - last_frame;
-
-	float fticks = ticks_delta / 1000.0f;
-	float angle = fticks * glm::radians(-45.f);
-
 	last_frame = cur_ticks;
 
 	view = glm::lookAt(view_position, view_position + view_direction, view_up);

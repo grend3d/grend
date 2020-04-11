@@ -17,8 +17,6 @@ void octree::grow(double size) {
 		return;
 	}
 
-	node *lastroot = root;
-
 	while (size >= leaf_size * (1 << levels)) {
 		for (unsigned i = 0; i < 8; i++) {
 			bool x = i&1;
