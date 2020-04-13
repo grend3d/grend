@@ -189,6 +189,8 @@ static std::map<std::string, material> default_materials = {
 };
 
 engine::engine() {
+	init_lights();
+
 	for (auto& thing : default_materials) {
 		if (thing.second.diffuse_map.loaded()) {
 			diffuse_handles[thing.first] =
@@ -475,8 +477,6 @@ void engine::init_lights(void) {
 		*/
 		lights[i].changed   = true;
 	}
-
-	update_lights();
 }
 
 // TODO: only update changed uniforms

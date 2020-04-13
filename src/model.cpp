@@ -72,8 +72,8 @@ void model::gen_tangents(void) {
 	//unsigned mod = 3 - vertices.size()%3;
 	unsigned mod = 3;
 
-	tangents.resize(vertices.size() + mod, glm::vec3(0));
-	bitangents.resize(vertices.size() + mod, glm::vec3(0));
+	tangents.resize(vertices.size(), glm::vec3(0));
+	bitangents.resize(vertices.size(), glm::vec3(0));
 
 	// generate tangents for each triangle
 	for (auto& meshkey : meshes) {
