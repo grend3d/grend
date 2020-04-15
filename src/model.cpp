@@ -538,6 +538,7 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
                                int material_idx,
                                std::string mesh_name)
 {
+	// TODO: maybe should pass sub-mesh name as an argument
 	std::string temp_name = mesh_name + ":" + std::to_string(material_idx);
 	auto& mat = gltf_material(gltf_model, material_idx);
 
@@ -554,6 +555,8 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		<< mat_diffuse.x << ", " << mat_diffuse.y
 		<< ", " << mat_diffuse.z << ", " << mat_diffuse.w
 		<< std::endl;
+	std::cerr << "        + alphaMode: " << mat.alphaMode << std::endl;
+	std::cerr << "        + alphaCutoff: " << mat.alphaCutoff << std::endl;
 
 	std::cerr << "        + pbr roughness: "
 		<< pbr.roughnessFactor << std::endl;
@@ -591,6 +594,11 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
 	}
 
+	if (mat.alphaMode == "BLEND") {
+		// XXX:
+		mod_mat.opacity = mat.alphaCutoff;
+	}
+
 	mod_mat.roughness = pbr.roughnessFactor;
 	mod_mat.diffuse = mat_diffuse;
 	out_model.materials[mat.name] = mod_mat;
@@ -618,8 +626,9 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 
 		for (size_t i = 0; i < mesh.primitives.size(); i++) {
 			auto& prim = mesh.primitives[i];
-			std::string temp_name = mesh.name + ":" + std::to_string(i);
+			std::string temp_name = mesh.name + ":" + std::to_string(prim.material);
 
+			std::cerr << "        primitive: " << temp_name << std::endl;
 			std::cerr << "        material: " << prim.material << std::endl;
 			std::cerr << "        indices: " << prim.indices << std::endl;
 			std::cerr << "        mode: " << prim.mode << std::endl;
