@@ -661,8 +661,15 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
+				size_t vsize = ret[mesh.name].vertices.size();
 				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
 				gltf_unpack_buffer(tgltf_model, elements, submesh);
+
+				// adjust element indices for vertices already in the model
+				// (model element indices are per-model, seems gltf is per-primitive)
+				for (auto& face : submesh) {
+					face += vsize;
+				}
 			}
 
 			if (normals >= 0) {
