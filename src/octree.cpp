@@ -1,5 +1,7 @@
 #include <grend/octree.hpp>
 #include <math.h>
+#include <algorithm>
+#include <utility>
 
 using namespace grendx;
 
@@ -53,8 +55,43 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 }
 */
 
+/*
+ *        a
+ *        +
+ *       /|\
+ *   lc / | \ lb
+ *     /  |h \
+ *    /   |   \
+ *   +---------+
+ * b     la      c
+ *
+ */
+
 void octree::add_tri(const glm::vec3 tri[3]) {
-	const glm::vec3& a = tri[0], b = tri[1], c = tri[2];
+	// sort vertices so that angle a is opposite from the longest side (la)
+	float dots[3];
+	unsigned idx[3];
+
+	for (unsigned i = 0; i < 3; i++) {
+		dots[i] = glm::length(tri[(i+2)%3] - tri[(i+1)%3]);
+		idx[i] = i;
+	}
+
+	// bubble sort, it's good for tiny N
+	for (bool swapped = true; swapped;) {
+		swapped = false;
+
+		for (unsigned i = 1; i < 3; i++) {
+			if (dots[i-1] < dots[i]) {
+				std::swap(dots[i-1], dots[i]);
+				std::swap(idx[i-1], idx[i]);
+				swapped = true;
+			}
+		}
+	}
+
+	const glm::vec3& a = tri[idx[2]], b = tri[idx[1]], c = tri[idx[0]];
+	//const glm::vec3& a = tri[idx[0]], b = tri[idx[1]], c = tri[idx[2]];
 
 	glm::vec3 plane_normal =
 		glm::normalize(glm::cross(
@@ -62,25 +99,25 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 			c - a));
 
 	// direction perpendicular to the base in the triangle's plane
-	glm::vec3 perp = glm::cross(plane_normal, glm::normalize(c - b));
+	glm::vec3 perp = glm::normalize(glm::cross(plane_normal, glm::normalize(c - b)));
 
-	float la = glm::length((b - a));
+	float la = glm::length((c - b));
 	float lb = glm::length((c - a));
-	float lc = glm::length((c - b));
+	float lc = glm::length((b - a));
 
 	// semi-perimeter
 	float s = (la + lb + lc) / 2;
-	// altitude from the BC ("c") side
-	float altitude = 2 * sqrt(s * (s-la) * (s-lb) * (s-lc)) / lc;
+	// altitude from the BC ("la") side
+	float altitude = 2 * sqrt(s * (s-la) * (s-lb) * (s-lc)) / la;
 
-	float B = glm::dot(b - a, b - c);
-	float C = glm::dot(c - a, c - b);
+	float B = glm::dot(a - b, c - b);
+	float C = glm::dot(a - c, b - c);
 
-	float r1 = glm::sec(B);
-	float r2 = glm::sec(C);
+	float r1 = glm::sec(C);
+	float r2 = glm::sec(B);
 
 	glm::vec3 basedir = glm::normalize(c - b);
-	float k = lc / altitude;
+	float k = la / altitude;
 
 	for (float i = 0; i < altitude; i += leaf_size) {
 		glm::vec3 center = a - perp*i;
@@ -90,9 +127,13 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 			set_leaf(center - basedir*m);
 		}
 
+		/*
+		// ??? don't think the code is doing quite what I thought it does,
+		// but it works without this, so...
 		for (float m = 0; m < i*k*r2; m += leaf_size) {
 			set_leaf(center + basedir*m);
 		}
+		*/
 	}
 }
 
