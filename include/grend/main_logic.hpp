@@ -59,6 +59,11 @@ class testscene : public engine {
 		glm::vec3 view_up = glm::vec3(0, 1, 0);
 		glm::vec3 view_right = glm::vec3(1, 0, 0);
 
+		glm::vec3 player_position = glm::vec3(0); // meters
+		glm::vec3 player_velocity = glm::vec3(0); // m/s
+		glm::vec3 player_move_input = glm::vec3(0);
+		glm::vec3 player_direction = glm::vec3(1, 0, 0);
+
 		struct editor_entry {
 			std::string name;
 			glm::vec3   position;
@@ -73,6 +78,8 @@ class testscene : public engine {
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
 		gl_manager::cooked_model_map::iterator select_model;
+		grendx::scene static_models;
+		octree static_octree;
 
 		bool      in_select_mode = false;
 		glm::vec3 select_position = glm::vec3(0, 0, 0);

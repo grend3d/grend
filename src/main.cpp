@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
 		scene->input(ctx);
 
 		if (scene->running) {
+			scene->physics(ctx);
 			scene->logic(ctx);
 			scene->render(ctx);
 

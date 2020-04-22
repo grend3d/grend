@@ -1,5 +1,6 @@
 #include <grend/model.hpp>
 #include <grend/utility.hpp>
+#include <grend/scene.hpp>
 
 #include <tinygltf/stb_image.h>
 #include <tinygltf/stb_image_write.h>
@@ -376,8 +377,6 @@ void model::load_materials(std::string filename) {
 // namespace grendx
 }
 
-#include <tinygltf/tiny_gltf.h>
-
 template <typename T>
 static inline bool check_index(std::vector<T> container, size_t idx) {
 	if (idx >= container.size()) {
@@ -604,21 +603,8 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	out_model.materials[mat.name] = mod_mat;
 }
 
-grendx::model_map grendx::load_gltf_models(std::string filename) {
+grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 	model_map ret;
-
-	tinygltf::TinyGLTF loader;
-	tinygltf::Model tgltf_model;
-	std::string err;
-	std::string warn;
-
-	bool loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
-
-	if (!loaded) {
-		throw std::logic_error(err);
-	}
-
-	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
 
 	for (auto& mesh : tgltf_model.meshes) {
 		std::cerr << " GLTF > have mesh " << mesh.name << std::endl;
@@ -714,27 +700,58 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 		ret[mesh.name].gen_tangents();
 	}
 
-	/*
-	std::cerr << "      > accessors: " << std::endl;
+	return ret;
+}
 
-	for (auto& acc : tgltf_model.accessors) {
-		std::cerr << "        name: "   << acc.name << std::endl;
-		std::cerr << "        view: "   << acc.bufferView << std::endl;
-		std::cerr << "        offset: " << acc.byteOffset << std::endl;
-		std::cerr << "        component type: " << acc.componentType
-			<< std::endl;
-		std::cerr << "        count: " << acc.count << std::endl;
-		std::cerr << "        type: " << acc.type << std::endl;
+static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
+	grendx::scene ret;
+
+	for (auto& scene : gmod.scenes) {
+		for (int nodeidx : scene.nodes) {
+			auto& node = gmod.nodes[nodeidx];
+			// no mesh, don't load this as an object
+			if (node.mesh < 0) continue;
+
+			auto& mesh = gmod.meshes[node.mesh];
+			glm::mat4 mat;
+
+			if (node.matrix.size() == 16) {
+				mat = glm::make_mat4(node.matrix.data());
+
+			} else {
+				glm::quat rotation = {0, 0, 0, 1};
+				glm::vec3 translation = {0, 0, 0};
+				glm::vec3 scale = {1, 1, 1};
+
+				if (node.rotation.size() == 4)
+					rotation = glm::make_quat(node.rotation.data());
+				if (node.translation.size() == 3)
+					translation = glm::make_vec3(node.translation.data());
+				if (node.scale.size() == 3)
+					scale = glm::make_vec3(node.scale.data());
+
+				mat = glm::translate(translation) * glm::mat4_cast(rotation) * glm::scale(scale);
+			}
+
+			ret.nodes.push_back({mesh.name, mat});
+		}
 	}
 
-	std::cerr << "      > materials: " << std::endl;
+	return ret;
+}
 
-	for (auto& mat : tgltf_model.materials) {
-		std::cerr << "        name: " << mat.name << std::endl;
-		std::cerr << "        base color index: " << mat.pbrMetallicRoughness.baseColorTexture.index << std::endl;
-		std::cerr << "        base color tex: " << mat.pbrMetallicRoughness.baseColorTexture.texCoord << std::endl;
+static tinygltf::Model open_gltf_model(std::string filename) {
+	tinygltf::TinyGLTF loader;
+	tinygltf::Model tgltf_model;
+
+	std::string err;
+	std::string warn;
+
+	bool loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
+
+	if (!loaded) {
+		throw std::logic_error(err);
 	}
-	*/
 
 	if (!err.empty()) {
 		std::cerr << "/!\\ ERROR: " << err << std::endl;
@@ -744,5 +761,20 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 		std::cerr << "/!\\ WARNING: " << warn << std::endl;
 	}
 
-	return ret;
+	return tgltf_model;
+}
+
+grendx::model_map grendx::load_gltf_models(std::string filename) {
+	tinygltf::Model gmod = open_gltf_model(filename);
+	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
+	return load_gltf_models(gmod);
+}
+
+std::pair<grendx::scene, grendx::model_map>
+grendx::load_gltf_scene(std::string filename) {
+	tinygltf::Model gmod = open_gltf_model(filename);
+	grendx::scene scene;
+	grendx::model_map models;
+
+	return {load_gltf_scene_nodes(gmod), load_gltf_models(gmod)};
 }

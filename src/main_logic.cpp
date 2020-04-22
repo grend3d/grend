@@ -8,6 +8,8 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+#include <glm/gtx/rotate_vector.hpp>
+
 using namespace grendx;
 
 model_map load_library(std::string dir) {
@@ -81,6 +83,16 @@ void testscene::load_models(void) {
 	gltf = load_gltf_models("assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf");
 	models.insert(gltf.begin(), gltf.end());
 
+	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
+	static_models = scene;
+	models.insert(gmodels.begin(), gmodels.end());
+		/*
+	gltf = load_gltf_models("assets/obj/tests/test_objects.gltf");
+	models.insert(gltf.begin(), gltf.end());
+	*/
+
+	gltf = load_gltf_models("assets/obj/tests/donut4.gltf");
+	models.insert(gltf.begin(), gltf.end());
 
 	for (std::string libname : libraries) {
 		// inserting each library into the models map so that way
@@ -97,11 +109,23 @@ void testscene::load_models(void) {
 	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
 	models["earthsphere"].meshes["Sphere:None"].material = "Earth";
 
-	for (unsigned i = 0; i < models["smoothteapot"].vertices.size(); i += 3) {
-		auto& verts = models["smoothteapot"].vertices;
-		glm::vec3 tri[3] = {verts[i], verts[i+1], verts[i+2]};
-		oct.add_tri(tri);
+	// TODO: octree for static models
+	/*
+	for (auto& meshkey : models["testbox-mesh"].meshes) {
+		auto& verts = models["testbox-mesh"].vertices;
+		auto& mesh = meshkey.second;
+
+		for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
+			glm::vec3 tri[3] = {
+				verts[mesh.faces[i]],
+				verts[mesh.faces[i+1]],
+				verts[mesh.faces[i+2]]
+			};
+
+			oct.add_tri(tri);
+		}
 	}
+	*/
 
 	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
 
@@ -273,8 +297,8 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
-	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
-	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
+	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
 
 	load_models();
 	load_shaders();
@@ -303,8 +327,8 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 		//glm::mat4 trans = glm::translate(glm::scale(glm::vec3(0.1)), location);
 		double scale = oct.leaf_size * (1 << (node->level + 1));
 		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
-		draw_model_lines("unit_cube", trans);
-		//draw_model("unit_cube", trans);
+		//draw_model_lines("unit_cube", trans);
+		draw_model("unit_cube", trans);
 	}
 
 	else {
@@ -347,14 +371,26 @@ void testscene::render_skybox(context& ctx) {
 }
 
 void testscene::render_static(context& ctx) {
-
+	for (auto& thing : static_models.nodes) {
+		draw_model(thing.name, thing.transform);
+	}
 }
 
 void testscene::render_players(context& ctx) {
+	/*
 	glm::vec3 hpos = glm::vec3(view_direction.x*3 + view_position.x, 0, view_direction.z*3 + view_position.z);
 	glm::mat4 bizz =
 		glm::translate(glm::mat4(1), hpos)
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f));
+	 */
+
+	//glm::vec3 asdf = glm::normalize(glm::cross(player_direction, glm::vec3(0, 1, 0)));
+
+	glm::mat4 bizz =
+		glm::translate(glm::mat4(1), player_position)
+		* glm::orientation(player_direction, glm::vec3(0, 0, 1))
+		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
+		;
 
 	/*
 	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
@@ -363,6 +399,7 @@ void testscene::render_players(context& ctx) {
 
 	set_mvp(glm::mat4(1), view, projection);
 	draw_model("person", bizz);
+	//draw_model_lines("sphere", glm::translate(bizz, {0, 1, 0}));
 	DO_ERROR_CHECK();
 }
 
@@ -483,10 +520,9 @@ void testscene::render(context& ctx) {
 
 	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
 
-	/*
-	draw_model("teapot", glm::mat4(1));
-	draw_octree_leaves(oct.root, glm::vec3(0));
-	*/
+	//draw_model("testbox-mesh", glm::mat4(1));
+	//draw_model("teapot", glm::mat4(1));
+	//draw_octree_leaves(oct.root, glm::vec3(0));
 
 	render_static(ctx);
 	render_players(ctx);
@@ -525,12 +561,21 @@ void testscene::input(context& ctx) {
 
 		else if (ev.type == SDL_KEYDOWN) {
 			switch (ev.key.keysym.sym) {
+				/*
 				case SDLK_w: view_velocity.z =  movement_speed; break;
 				case SDLK_s: view_velocity.z = -movement_speed; break;
 				case SDLK_a: view_velocity.x = -movement_speed; break;
 				case SDLK_d: view_velocity.x =  movement_speed; break;
 				case SDLK_q: view_velocity.y =  movement_speed; break;
 				case SDLK_e: view_velocity.y = -movement_speed; break;
+				*/
+				case SDLK_w: player_move_input.z =  movement_speed; break;
+				case SDLK_s: player_move_input.z = -movement_speed; break;
+				case SDLK_a: player_move_input.x = -movement_speed; break;
+				case SDLK_d: player_move_input.x =  movement_speed; break;
+				case SDLK_q: player_move_input.y =  movement_speed; break;
+				case SDLK_e: player_move_input.y = -movement_speed; break;
+				case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
 				case SDLK_m: in_select_mode = !in_select_mode; break;
 
 				case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
@@ -546,17 +591,20 @@ void testscene::input(context& ctx) {
 			switch (ev.key.keysym.sym) {
 				case SDLK_w:
 				case SDLK_s:
-					view_velocity.z = 0;
+					//view_velocity.z = 0;
+					player_move_input.z = 0;
 					break;
 
 				case SDLK_a:
 				case SDLK_d:
-					view_velocity.x = 0;
+					//view_velocity.x = 0;
+					player_move_input.x = 0;
 					break;
 
 				case SDLK_q:
 				case SDLK_e:
-					view_velocity.y = 0;
+					//view_velocity.y = 0;
+					player_move_input.y = 0;
 					break;
 			}
 		}
@@ -716,14 +764,49 @@ void testscene::input(context& ctx) {
 }
 
 void testscene::physics(context& ctx) {
-	// nothing to do yet
+	float delta = (SDL_GetTicks() - last_frame)/1000.f;
+
+	glm::vec3 rel_view =
+		glm::normalize(glm::vec3(view_direction.x, 0, view_direction.z));
+
+	//player_direction = glm::normalize(glm::vec3(view_direction.x, 0, view_direction.z));
+	//player_position += player_velocityplayer_direction*delta;
+	//player_position += player_velocityplayer_direction*delta;
+	glm::vec3 player_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), rel_view));
+	glm::vec3 player_up    = glm::normalize(glm::cross(rel_view, player_right));
+
+	//glm::vec3 incr = glm::vec3(0);
+	player_velocity = glm::vec3(0);
+	player_velocity += player_move_input.z * rel_view;
+	player_velocity += player_move_input.y * player_up;
+	player_velocity += player_move_input.x * glm::normalize(glm::cross(rel_view, player_up));
+
+	if ((player_position + player_velocity*delta*2.f).y < 0) {
+		player_move_input.y *= -0.5;
+
+	} else if (player_position.y > 0) {
+		player_move_input.y -= 9.81*delta;
+	}
+
+	player_position += player_velocity*delta;
+	glm::vec3 tempdir = glm::normalize(glm::vec3(player_velocity.x, 0, player_velocity.z));
+
+	if (fabs(tempdir.x) > 0 || fabs(tempdir.z) > 0) {
+		player_direction = tempdir;
+	}
+
+	//player_direction = glm::normalize(glm::vec3(player_velocity.x, -0.1*fabs(glm::length(player_velocity)), player_velocity.z));
+	//player_direction = glm::normalize(player_velocity);
 }
 
 void testscene::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	last_frame = cur_ticks;
 
-	view = glm::lookAt(view_position, view_position + view_direction, view_up);
+	//player_direction = view_direction;
+
+	//view = glm::lookAt(view_position, view_position + view_direction, view_up);
+	view = glm::lookAt(player_position - view_direction*5.f, player_position, view_up);
 	adjust_draw_resolution();
 }
 
