@@ -171,6 +171,30 @@ void octree::set_leaf(glm::vec3 location) {
 	//puts("set leaf");
 }
 
+octree::node* octree::get_leaf(glm::vec3 location) {
+	node *ret = nullptr;
+	node *move = root;
+
+	for (unsigned level = levels; move && level--;) {
+		bool x = location.x < 0;
+		bool y = location.y < 0;
+		bool z = location.z < 0;
+
+		if (move->subnodes[x][y][z] == nullptr && level == 0) {
+			ret = move;
+			break;
+		}
+
+		location.x -= (x?-1:1) * leaf_size * (1 << level);
+		location.y -= (y?-1:1) * leaf_size * (1 << level);
+		location.z -= (z?-1:1) * leaf_size * (1 << level);
+
+		move = move->subnodes[x][y][z];
+	}
+
+	return ret;
+}
+
 uint32_t octree::count_nodes(void) {
 	if (!root) {
 		return 0;
@@ -193,4 +217,23 @@ uint32_t octree::node::count_nodes(void) {
 	}
 
 	return sum;
+}
+
+octree::collision octree::collides(glm::vec3 begin, glm::vec3 end) {
+	glm::vec3 line = end - begin;
+	glm::vec3 dir = glm::normalize(line);
+
+	// TODO: more efficient, less crappy
+	for (glm::vec3 temp = {0, 0, 0};
+	     glm::length(temp) < glm::length(line);
+	     temp += dir*(float)leaf_size)
+	{
+		node *pleaf = get_leaf(begin + temp);
+
+		if (pleaf) {
+			return {1, {0, 1, 0}};
+		}
+	}
+
+	return {0, {0, 0, 0}};
 }

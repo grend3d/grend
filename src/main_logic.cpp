@@ -110,22 +110,27 @@ void testscene::load_models(void) {
 	models["earthsphere"].meshes["Sphere:None"].material = "Earth";
 
 	// TODO: octree for static models
-	/*
-	for (auto& meshkey : models["testbox-mesh"].meshes) {
-		auto& verts = models["testbox-mesh"].vertices;
-		auto& mesh = meshkey.second;
+	for (auto& node : static_models.nodes) {
+		for (auto& meshkey : models[node.name].meshes) {
+			auto& verts = models[node.name].vertices;
+			auto& mesh = meshkey.second;
 
-		for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
-			glm::vec3 tri[3] = {
-				verts[mesh.faces[i]],
-				verts[mesh.faces[i+1]],
-				verts[mesh.faces[i+2]]
-			};
+			for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
+				glm::vec3 tri[3] = {
+					verts[mesh.faces[i]],
+					verts[mesh.faces[i+1]],
+					verts[mesh.faces[i+2]]
+				};
 
-			oct.add_tri(tri);
+				for (auto& t : tri) {
+					glm::vec4 m = node.transform * glm::vec4(t, 1);
+					t = glm::vec3(m) / m.w;
+				}
+
+				static_octree.add_tri(tri);
+			}
 		}
 	}
-	*/
 
 	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
 
@@ -523,6 +528,7 @@ void testscene::render(context& ctx) {
 	//draw_model("testbox-mesh", glm::mat4(1));
 	//draw_model("teapot", glm::mat4(1));
 	//draw_octree_leaves(oct.root, glm::vec3(0));
+	//draw_octree_leaves(static_octree.root, glm::vec3(0));
 
 	render_static(ctx);
 	render_players(ctx);
@@ -549,7 +555,7 @@ void testscene::input(context& ctx) {
 
 	float fticks = ticks_delta / 1000.0f;
 
-	const float movement_speed = 5 /* units/s */;
+	const float movement_speed = 10 /* units/s */;
 	const float rotation_speed = 1;
 
 	SDL_Event ev;
@@ -776,20 +782,34 @@ void testscene::physics(context& ctx) {
 	glm::vec3 player_up    = glm::normalize(glm::cross(rel_view, player_right));
 
 	//glm::vec3 incr = glm::vec3(0);
-	player_velocity = glm::vec3(0);
-	player_velocity += player_move_input.z * rel_view;
-	player_velocity += player_move_input.y * player_up;
-	player_velocity += player_move_input.x * glm::normalize(glm::cross(rel_view, player_up));
+	//player_velocity = glm::vec3(0);
+	player_velocity += player_move_input.z *delta* rel_view;
+	player_velocity += player_move_input.y *delta* player_up;
+	player_velocity += player_move_input.x *delta* glm::normalize(glm::cross(rel_view, player_up));
 
+	/*
 	if ((player_position + player_velocity*delta*2.f).y < 0) {
 		player_move_input.y *= -0.5;
 
 	} else if (player_position.y > 0) {
 		player_move_input.y -= 9.81*delta;
 	}
+	*/
+
+	glm::vec3 next_pos = player_position + player_velocity*delta*2.f;
+	auto [collided, normal] = static_octree.collides(player_position, next_pos);
+
+	if (collided) {
+		player_position += normal*(float)static_octree.leaf_size;
+		player_velocity.y *= -0.50;
+
+	} else {
+		player_velocity.y -= 9.81*delta;
+	}
 
 	player_position += player_velocity*delta;
-	glm::vec3 tempdir = glm::normalize(glm::vec3(player_velocity.x, 0, player_velocity.z));
+	glm::vec3 tempdir = glm::normalize(
+		glm::vec3(player_velocity.x, 0, player_velocity.z));
 
 	if (fabs(tempdir.x) > 0 || fabs(tempdir.z) > 0) {
 		player_direction = tempdir;
@@ -802,6 +822,11 @@ void testscene::physics(context& ctx) {
 void testscene::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	last_frame = cur_ticks;
+
+	if (player_position.y < -25) {
+		// TODO: player class, with position set/reset etc
+		player_position = {0, 2, 0};
+	}
 
 	//player_direction = view_direction;
 
