@@ -16,16 +16,16 @@ class octree {
 		typedef std::pair<bool, glm::vec3> collision;
 		class node;
 
-		octree(double _leaf_size=0.02 /* meters */) {
+		octree(double _leaf_size=0.1 /* meters */) {
 			leaf_size = _leaf_size;
 		};
 		~octree() {};
 
 
 		void grow(double size);
-		void add_tri(const glm::vec3 tri[3]);
+		void add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]);
 		void add_model(const model& mod, glm::mat4 transform);
-		void set_leaf(glm::vec3 location);
+		void set_leaf(glm::vec3 location, glm::vec3 normal);
 		node *get_leaf(glm::vec3 location);
 		uint32_t count_nodes(void);
 

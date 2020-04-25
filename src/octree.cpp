@@ -67,7 +67,7 @@ void octree::add_tri(const glm::vec3 tri[3]) {
  *
  */
 
-void octree::add_tri(const glm::vec3 tri[3]) {
+void octree::add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]) {
 	// sort vertices so that angle a is opposite from the longest side (la)
 	float dots[3];
 	unsigned idx[3];
@@ -110,21 +110,22 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 	// altitude from the BC ("la") side
 	float altitude = 2 * sqrt(s * (s-la) * (s-lb) * (s-lc)) / la;
 
-	float B = glm::dot(a - b, c - b);
+	//float B = glm::dot(a - b, c - b);
 	float C = glm::dot(a - c, b - c);
 
 	float r1 = glm::sec(C);
-	float r2 = glm::sec(B);
+	//float r2 = glm::sec(B);
 
 	glm::vec3 basedir = glm::normalize(c - b);
 	float k = la / altitude;
 
+	// TODO: interpolate normals
 	for (float i = 0; i < altitude; i += leaf_size) {
 		glm::vec3 center = a - perp*i;
-		set_leaf(center);
+		set_leaf(center, normals[0]);
 
 		for (float m = 0; m < i*k*r1; m += leaf_size) {
-			set_leaf(center - basedir*m);
+			set_leaf(center - basedir*m, normals[0]);
 		}
 
 		/*
@@ -137,10 +138,44 @@ void octree::add_tri(const glm::vec3 tri[3]) {
 	}
 }
 
+void octree::add_model(const model& mod, glm::mat4 transform) {
+	// TODO: range check on vertices
+	auto& verts = mod.vertices;
+	auto& normals = mod.normals;
+
+	for (auto& [key, mesh] : mod.meshes) {
+		for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
+			glm::vec3 tri[3] = {
+				verts[mesh.faces[i]],
+				verts[mesh.faces[i+1]],
+				verts[mesh.faces[i+2]]
+			};
+
+			glm::vec3 norms[3] = {
+				normals[mesh.faces[i]],
+				normals[mesh.faces[i+1]],
+				normals[mesh.faces[i+2]]
+			};
+
+			for (auto& t : tri) {
+				glm::vec4 m = transform * glm::vec4(t, 1);
+				t = glm::vec3(m) / m.w;
+			}
+
+			for (auto& n : norms) {
+				glm::vec4 m = glm::mat4_cast(glm::quat_cast(transform)) * glm::vec4(n, 1);
+				n = glm::normalize(glm::vec3(m) / m.w);
+			}
+
+			add_tri(tri, norms);
+		}
+	}
+}
+
 // TODO: move to utilities header
 #define max(A, B) (((A) > (B))? (A) : (B))
 
-void octree::set_leaf(glm::vec3 location) {
+void octree::set_leaf(glm::vec3 location, glm::vec3 normal) {
 	// TODO: this probably gets pretty slow, might as well calculate bounding
 	//       boxes for models so the size only needs to be calculated once
 	double maxsize = max(max(fabs(location.x), fabs(location.y)), fabs(location.z));
@@ -161,6 +196,9 @@ void octree::set_leaf(glm::vec3 location) {
 			move->subnodes[x][y][z] = new node;
 			move->subnodes[x][y][z]->level = level;
 		}
+
+		move->normals += normal;
+		move->normal_samples++;
 
 		location.x -= (x?-1:1) * leaf_size * (1 << level);
 		location.y -= (y?-1:1) * leaf_size * (1 << level);
@@ -231,7 +269,8 @@ octree::collision octree::collides(glm::vec3 begin, glm::vec3 end) {
 		node *pleaf = get_leaf(begin + temp);
 
 		if (pleaf) {
-			return {1, {0, 1, 0}};
+			assert(pleaf->normal_samples != 0);
+			return {1, pleaf->normals / (float)pleaf->normal_samples};
 		}
 	}
 

@@ -111,25 +111,7 @@ void testscene::load_models(void) {
 
 	// TODO: octree for static models
 	for (auto& node : static_models.nodes) {
-		for (auto& meshkey : models[node.name].meshes) {
-			auto& verts = models[node.name].vertices;
-			auto& mesh = meshkey.second;
-
-			for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
-				glm::vec3 tri[3] = {
-					verts[mesh.faces[i]],
-					verts[mesh.faces[i+1]],
-					verts[mesh.faces[i+2]]
-				};
-
-				for (auto& t : tri) {
-					glm::vec4 m = node.transform * glm::vec4(t, 1);
-					t = glm::vec3(m) / m.w;
-				}
-
-				static_octree.add_tri(tri);
-			}
-		}
+		static_octree.add_model(models[node.name], node.transform);
 	}
 
 	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
@@ -583,6 +565,7 @@ void testscene::input(context& ctx) {
 				case SDLK_e: player_move_input.y = -movement_speed; break;
 				case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
 				case SDLK_m: in_select_mode = !in_select_mode; break;
+				case SDLK_BACKSPACE: player_position = {0, 0, 0}; break;
 
 				case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
 				case SDLK_RIGHTBRACKET: dsr_scale_x += dsr_down_incr; break;
@@ -796,12 +779,16 @@ void testscene::physics(context& ctx) {
 	}
 	*/
 
-	glm::vec3 next_pos = player_position + player_velocity*delta*2.f;
+	glm::vec3 next_pos = player_position + player_velocity*delta;
 	auto [collided, normal] = static_octree.collides(player_position, next_pos);
 
 	if (collided) {
 		player_position += normal*(float)static_octree.leaf_size;
-		player_velocity.y *= -0.50;
+		//player_velocity.y *= -0.50;
+		//player_velocity.y = normal;
+		//player_velocity = 0.5f * glm::length(player_velocity) * glm::reflect(glm::normalize(player_velocity), normal);
+		player_velocity = glm::reflect(player_velocity, normal) * 0.5f;
+		//player_position += player_velocity*(float)static_octree.leaf_size*2.f;
 
 	} else {
 		player_velocity.y -= 9.81*delta;
