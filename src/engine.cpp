@@ -406,6 +406,37 @@ void engine::draw_screenquad(void) {
 	DO_ERROR_CHECK();
 }
 
+void engine::dqueue_draw_model(std::string name, glm::mat4 transform) {
+	draw_queue.push_back({name, transform});
+}
+
+void engine::dqueue_sort_draws(glm::vec3 camera) {
+	typedef std::pair<std::string, glm::mat4> queue_ent;
+
+	std::sort(draw_queue.begin(), draw_queue.end(),
+		[&] (queue_ent a, queue_ent b) {
+			glm::vec4 ta = a.second * glm::vec4(1);
+			glm::vec4 tb = b.second * glm::vec4(1);
+			glm::vec3 va = glm::vec3(ta) / ta.w;
+			glm::vec3 vb = glm::vec3(tb) / tb.w;
+
+			return glm::distance(camera, va) < glm::distance(camera, vb);
+		});
+}
+
+void engine::dqueue_cull_models(glm::vec3 camera) {
+	// TODO: filter objects that aren't visible, behind the camera
+	//       or occluded by walls etc
+}
+
+void engine::dqueue_flush_draws(void) {
+	for (auto& ent : draw_queue) {
+		draw_model(ent.first, ent.second);
+	}
+
+	draw_queue.clear();
+}
+
 bool engine::is_valid_light(int id) {
 	return id < MAX_LIGHTS && id >= 0 && lights[id].is_active;
 }

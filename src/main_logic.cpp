@@ -359,7 +359,8 @@ void testscene::render_skybox(context& ctx) {
 
 void testscene::render_static(context& ctx) {
 	for (auto& thing : static_models.nodes) {
-		draw_model(thing.name, thing.transform);
+		//draw_model(thing.name, thing.transform);
+		dqueue_draw_model(thing.name, thing.transform);
 	}
 }
 
@@ -385,7 +386,8 @@ void testscene::render_players(context& ctx) {
 			*/
 
 	set_mvp(glm::mat4(1), view, projection);
-	draw_model("person", bizz);
+	//draw_model("person", bizz);
+	dqueue_draw_model("person", bizz);
 	//draw_model_lines("sphere", glm::translate(bizz, {0, 1, 0}));
 	DO_ERROR_CHECK();
 }
@@ -407,7 +409,8 @@ void testscene::render_editor(context& ctx) {
 		if (in_select_mode) {
 			draw_model_lines(v.name, trans);
 		}
-		draw_model(v.name, trans);
+		//draw_model(v.name, trans);
+		dqueue_draw_model(v.name, trans);
 		DO_ERROR_CHECK();
 	}
 }
@@ -515,6 +518,9 @@ void testscene::render(context& ctx) {
 	render_static(ctx);
 	render_players(ctx);
 	render_editor(ctx);
+	dqueue_sort_draws(view_position);
+	dqueue_flush_draws();
+
 	render_postprocess(ctx);
 
 	glman.bind_default_framebuffer();

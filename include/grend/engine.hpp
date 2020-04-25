@@ -4,6 +4,7 @@
 #include <grend/sdl-context.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/model.hpp>
+#include <list>
 
 #define MAX_LIGHTS 32
 
@@ -39,6 +40,11 @@ class engine {
 		void draw_model_lines(std::string name, glm::mat4 transform);
 		void draw_screenquad(void);
 
+		void dqueue_draw_model(std::string name, glm::mat4 transform);
+		void dqueue_sort_draws(glm::vec3 camera);
+		void dqueue_cull_models(glm::vec3 camera);
+		void dqueue_flush_draws(void);
+
 		void set_material(gl_manager::compiled_model& obj, std::string mat_name);
 		void set_default_material(std::string mat_name);
 
@@ -68,6 +74,14 @@ class engine {
 		GLint u_specular_map;
 		GLint u_normal_map;
 		GLint u_ao_map;
+
+		// list of models to draw
+		// TODO: meshes, need to pair materials with meshes though, which
+		//       currently is part of the model classes
+		//       possible solution is to have a global namespace for materials,
+		//       which would be easier to work with probably
+		//       (also might make unintentional dependencies easier though...)
+		std::vector<std::pair<std::string, glm::mat4>> draw_queue;
 
 		std::string fallback_material = "(null)";
 		//std::string fallback_material = "Rock";
