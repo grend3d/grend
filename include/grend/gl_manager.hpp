@@ -127,7 +127,9 @@ class gl_manager {
 		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);
 
 		// map of loaded textures by filename
-		std::map<std::string, rhandle> texture_cache;
+		// TODO: proper hash
+		// TODO: LRU cache
+		std::map<uint32_t, rhandle> texture_cache;
 
 		std::vector<GLuint> vaos;
 		std::vector<GLuint> vbos;

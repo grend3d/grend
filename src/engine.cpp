@@ -52,45 +52,6 @@ static std::map<std::string, material> default_materials = {
 				   .refract_idx = 1.5,
 			   }},
 
-	{"Gravel",  {
-				   .diffuse = {1, 1, 1, 1},
-				   .ambient = {1, 1, 1, 1},
-				   .specular = {1, 1, 1, 1},
-				   .roughness = 0.8,
-				   .metalness = 0.5,
-				   .opacity = 1,
-				   .refract_idx = 1.5,
-
-				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Gravel.JPG"),
-				   .metal_roughness_map = material_texture("assets/tex/white.png"),
-				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Gravel_N.jpg"),
-
-				   // materials from freepbr.com are way higher quality, but I'm not sure how
-				   // github would feel about hosting a few hundred megabytes to gigabytes of
-				   // textures
-
-				   /*
-				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/octostoneAlbedo.png",
-				   .specular_map = "assets/tex/octostone-Unreal-Engine/octostoneMetallic.png",
-				   .normal_map   = "assets/tex/octostone-Unreal-Engine/octostoneNormalc.png",
-				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/octostoneAmbient_Occlusionc.png",
-				   */
-
-				   /*
-				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/256px-octostoneAlbedo.png",
-				   .specular_map = "assets/tex/octostone-Unreal-Engine/256px-octostoneMetallic.png",
-				   .normal_map   = "assets/tex/octostone-Unreal-Engine/256px-octostoneNormalc.png",
-				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/256px-octostoneAmbient_Occlusionc.png",
-				   */
-
-				   /*
-				   .diffuse_map  = "assets/tex/octostone-Unreal-Engine/128px-octostoneAlbedo.png",
-				   .specular_map = "assets/tex/octostone-Unreal-Engine/128px-octostoneMetallic.png",
-				   .normal_map   = "assets/tex/octostone-Unreal-Engine/128px-octostoneNormalc.png",
-				   .ambient_occ_map = "assets/tex/octostone-Unreal-Engine/128px-octostoneAmbient_Occlusionc.png",
-				   */
-			   }},
-
 	{"Steel",  {
 				   .diffuse = {1, 1, 1, 1},
 				   .ambient = {1, 1, 1, 1},
@@ -110,42 +71,6 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse_map  = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png"),
 				   .metal_roughness_map = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
 				   .normal_map   = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png"),
-			   }},
-
-	{"Brick",  {
-				   .diffuse = {1, 1, 1, 1},
-				   .ambient = {1, 1, 1, 1},
-				   .specular = {1, 1, 1, 1},
-				   .roughness = 0.9,
-				   .metalness = 0.5,
-				   .opacity = 1,
-				   .refract_idx = 1.5,
-
-				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/179.JPG"),
-				   .metal_roughness_map = material_texture("assets/tex/white.png"),
-				   .normal_map   = material_texture("assets/tex/rubberduck-tex/179_norm.JPG"),
-				   .ambient_occ_map = material_texture("assets/tex/white.png"),
-				   /*
-				   .diffuse_map  = "assets/tex/dims/Textures/Chimeny.JPG",
-				   .specular_map = "assets/tex/white.png",
-				   .normal_map   = "assets/tex/dims/Textures/Textures_N/Chimeny_N.jpg",
-				   */
-			   }},
-
-
-	{"Rock",  {
-				   .diffuse = {1, 1, 1, 1},
-				   .ambient = {1, 1, 1, 1},
-				   .specular = {1, 1, 1, 0.5},
-				   .roughness = 0.8,
-				   .metalness = 0.5,
-				   .opacity = 1,
-				   .refract_idx = 1.5,
-
-				   .diffuse_map  = material_texture("assets/tex/rubberduck-tex/165.JPG"),
-				   .metal_roughness_map = material_texture("assets/tex/white.png"),
-				   .normal_map   = material_texture("assets/tex/rubberduck-tex/165_norm.JPG"),
-				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
 
 	{"Wood",  {
@@ -240,7 +165,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 			mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (mat.diffuse_map.loaded()) {
+	if (obj.mat_textures.find(mat_name) != obj.mat_textures.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
 		glUniform1i(u_diffuse_map, 0);
 
@@ -250,7 +175,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (mat.metal_roughness_map.loaded()) {
+	if (obj.mat_specular.find(mat_name) != obj.mat_specular.end()) {
 		// TODO: specular maps
 		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
 		glUniform1i(u_specular_map, 1);
@@ -261,7 +186,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE2);
-	if (mat.normal_map.loaded()) {
+	if (obj.mat_normal.find(mat_name) != obj.mat_normal.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_normal[mat_name].first);
 		glUniform1i(u_normal_map, 2);
 
@@ -271,7 +196,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	glActiveTexture(GL_TEXTURE3);
-	if (mat.ambient_occ_map.loaded()) {
+	if (obj.mat_ao.find(mat_name) != obj.mat_ao.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_ao[mat_name].first);
 		glUniform1i(u_ao_map, 3);
 

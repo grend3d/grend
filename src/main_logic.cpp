@@ -56,9 +56,9 @@ static model_map test_models = {
 	{"maptest",      model("assets/obj/tests/maptest.obj")},
 	{"building",     model("assets/obj/tests/building_test/building_test.obj")},
 	{"unit_cube",        generate_cuboid(1, 1, 1)},
-	{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
+	//{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
 	{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-	{"grid",             generate_grid(-32, -32, 32, 32, 4)},
+	//{"grid",             generate_grid(-32, -32, 32, 32, 4)},
 };
 
 static std::list<std::string> test_libraries = {
@@ -103,8 +103,8 @@ void testscene::load_models(void) {
 	}
 
 	models["teapot"].meshes["default:(null)"].material = "Steel";
-	models["grid"].meshes["default"].material = "Gravel";
-	models["monkey"].meshes["Monkey"].material = "Wood";
+	//models["grid"].meshes["default"].material = "Gravel";
+	//models["monkey"].meshes["Monkey"].material = "Wood";
 	models["glasssphere"].meshes["Sphere:None"].material = "Glass";
 	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
 	models["earthsphere"].meshes["Sphere:None"].material = "Earth";

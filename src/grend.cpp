@@ -114,7 +114,8 @@ void gl_manager::compile_models(model_map& models) {
 
 		// copy materials
 		for (const auto& mat : x.second.materials) {
-			obj.materials[mat.first] = mat.second;
+			//obj.materials[mat.first] = mat.second;
+			obj.materials[mat.first].copy_properties(mat.second);
 
 			// TODO: is there a less tedious way to do this?
 			//       like could load all of the textures into a map then iterate over
@@ -470,14 +471,31 @@ GLenum surface_gl_format(const material_texture& tex) {
 	return GL_RGBA;
 }
 
+uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
+	uint32_t ret = 757;
+
+	for (uint8_t c : pixels) {
+		ret = ((ret << 7) + ret + c);
+	}
+
+	return ret;
+}
+
 gl_manager::rhandle
 gl_manager::buffer_texture(const material_texture& tex, bool srgb) {
-	/*
-	if (texture_cache.find(filename) != texture_cache.end()) {
+	uint32_t texhash = dumbhash(tex.pixels);
+
+	if (texture_cache.find(texhash) != texture_cache.end()) {
 		// avoid redundantly loading textures
 		//std::cerr << " > cached texture " << filename << std::endl;
-		return texture_cache[filename];
+		//return texture_cache[filename];
+
+		std::cerr << " > cached texture " << std::hex << texhash
+			<< std::dec << std::endl;
+		return texture_cache[texhash];
 	}
+
+	/*
 	//std::cerr << " > loading texture " << filename << std::endl;
 
 	SDL_Surface *texture = IMG_Load(filename.c_str());
@@ -519,6 +537,7 @@ gl_manager::buffer_texture(const material_texture& tex, bool srgb) {
 
 	texture_cache[filename] = temp;
 	*/
+	texture_cache[texhash] = temp;
 	return temp;
 }
 

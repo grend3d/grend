@@ -277,7 +277,12 @@ void material_texture::load_texture(std::string filename) {
 	}
 
 	size_t imgsize = width * height * channels;
-	pixels.insert(pixels.end(), datas, datas + imgsize);
+	//pixels.insert(pixels.end(), datas, datas + imgsize);
+	for (unsigned i = 0; i < imgsize; i++) {
+		pixels.push_back(datas[i]);
+	}
+
+	stbi_image_free(datas);
 }
 
 void model::load_materials(std::string filename) {

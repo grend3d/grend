@@ -35,23 +35,20 @@ struct material {
 	GLfloat   opacity = 1.0;
 	GLfloat   refract_idx = 1.5;
 
-	// file names of textures
-	// no ambient map, diffuse map serves as both
-	/*
-	std::string diffuse_map = "";
-	std::string specular_map = "";
-	std::string normal_map = "";
-	std::string ambient_occ_map = "";
-	std::string alpha_map = "";
-	*/
+	void copy_properties(const struct material& other) {
+		// copy everything but textures
+		diffuse = other.diffuse;
+		ambient = other.ambient;
+		specular = other.specular;
+		roughness = other.roughness;
+		opacity = other.opacity;
+		refract_idx = other.refract_idx;
+	}
 
 	material_texture diffuse_map;
 	material_texture metal_roughness_map;
-	//material_texture specular_map;
 	material_texture normal_map;
 	material_texture ambient_occ_map;
-	// TODO
-	//material_texture alpha_map;
 };
 
 class model_submesh {
