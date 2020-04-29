@@ -392,6 +392,13 @@ void testscene::render_players(context& ctx) {
 	DO_ERROR_CHECK();
 }
 
+void testscene::render_dynamic(context& ctx) {
+	for (const auto& thing : phys_objs) {
+		glm::mat4 transform = glm::translate(glm::mat4(1), thing.position);
+		dqueue_draw_model(thing.model_name, transform);
+	}
+}
+
 void testscene::render_editor(context& ctx) {
 	if (in_select_mode) {
 		glm::mat4 trans = glm::translate(select_position) * select_transform;
@@ -517,6 +524,7 @@ void testscene::render(context& ctx) {
 
 	render_static(ctx);
 	render_players(ctx);
+	render_dynamic(ctx);
 	render_editor(ctx);
 	dqueue_sort_draws(view_position);
 	dqueue_flush_draws();
@@ -704,6 +712,16 @@ void testscene::handle_player_input(SDL_Event& ev) {
 				break;
 		}
 	}
+
+	else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+		if (ev.button.button == SDL_BUTTON_LEFT) {
+			phys_objs.push_back({
+				"steelsphere",
+				player_position,
+				view_direction*movement_speed,
+			});
+		}
+	}
 }
 
 void testscene::input(context& ctx) {
@@ -817,10 +835,7 @@ void testscene::physics(context& ctx) {
 	if (collided) {
 		player_position += normal*(float)static_octree.leaf_size;
 		//player_velocity.y *= -0.50;
-		//player_velocity.y = normal;
-		//player_velocity = 0.5f * glm::length(player_velocity) * glm::reflect(glm::normalize(player_velocity), normal);
 		player_velocity = glm::reflect(player_velocity, normal) * 0.5f;
-		//player_position += player_velocity*(float)static_octree.leaf_size*2.f;
 
 	} else {
 		player_velocity.y -= 9.81*delta;
@@ -834,6 +849,26 @@ void testscene::physics(context& ctx) {
 		player_direction = tempdir;
 	}
 
+	// TODO: make the player a physics object
+	for (auto& thing : phys_objs) {
+		if (glm::distance(thing.position, player_position) < 1) {
+			thing.velocity += player_velocity;
+		}
+
+		glm::vec3 next_pos = thing.position + thing.velocity*delta;
+		auto [collided, normal] = static_octree.collides(thing.position, next_pos);
+
+		if (collided) {
+			thing.position += normal*(float)static_octree.leaf_size;
+			thing.velocity = glm::reflect(thing.velocity, normal) * 0.5f;
+
+		} else {
+			thing.velocity.y -= 9.81*delta;
+		}
+
+		thing.position += thing.velocity*delta;
+	}
+
 	//player_direction = glm::normalize(glm::vec3(player_velocity.x, -0.1*fabs(glm::length(player_velocity)), player_velocity.z));
 	//player_direction = glm::normalize(player_velocity);
 }
@@ -842,9 +877,16 @@ void testscene::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	last_frame = cur_ticks;
 
+	// XXX: keep things from disappearing into the abyss while I work out physics
 	if (player_position.y < -25) {
 		// TODO: player class, with position set/reset etc
 		player_position = {0, 2, 0};
+	}
+
+	for (auto& thing : phys_objs) {
+		if (thing.position.y < -25) {
+			thing.position = {0, 2, 0};
+		}
 	}
 
 	//player_direction = view_direction;

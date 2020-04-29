@@ -35,6 +35,23 @@ class testscene : public engine {
 		virtual void physics(context& ctx);
 		virtual void input(context& ctx);
 
+		struct physics_object {
+			std::string model_name;
+			glm::vec3 position;
+			glm::vec3 velocity;
+		};
+
+		struct editor_entry {
+			std::string name;
+			glm::vec3   position;
+			// TODO: full rotation
+			glm::mat4   transform;
+			bool        inverted;
+
+			// TODO: might be a good idea to keep track of whether face culling is enabled for
+			//       this model, although that might be better off in the model class itself...
+		};
+
 		// TODO: subclasses or something
 		void handle_player_input(SDL_Event& ev);
 		void handle_editor_input(SDL_Event& ev);
@@ -42,6 +59,7 @@ class testscene : public engine {
 		void render_skybox(context& ctx);
 		void render_static(context& ctx);
 		void render_players(context& ctx);
+		void render_dynamic(context& ctx);
 		void render_editor(context& ctx);
 		void render_postprocess(context& ctx);
 
@@ -68,16 +86,8 @@ class testscene : public engine {
 		glm::vec3 player_move_input = glm::vec3(0);
 		glm::vec3 player_direction = glm::vec3(1, 0, 0);
 
-		struct editor_entry {
-			std::string name;
-			glm::vec3   position;
-			// TODO: full rotation
-			glm::mat4   transform;
-			bool        inverted;
-
-			// TODO: might be a good idea to keep track of whether face culling is enabled for
-			//       this model, although that might be better off in the model class itself...
-		};
+		// physics things
+		std::vector<physics_object> phys_objs;
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
