@@ -37,6 +37,7 @@ struct material {
 
 const int max_lights = 32;
 uniform lightSource lights[max_lights];
+uniform int active_lights;
 
 uniform material anmaterial;
 
@@ -53,11 +54,7 @@ void main(void) {
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
 
-	for (int i = 0; i < max_lights; i++) {
-		if (!lights[i].is_active) {
-			continue;
-		}
-
+	for (int i = 0; i < active_lights && i < max_lights; i++) {
 		vec3 light_dir;
 		float attenuation;
 

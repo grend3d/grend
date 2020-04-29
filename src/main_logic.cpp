@@ -244,7 +244,7 @@ void testscene::init_framebuffers(void) {
 void testscene::init_test_lights(void) {
 	// TODO: assert() + logger
 	player_light = add_light((struct engine::light){
-		.position = {0, 0, 0, 1},
+		.position = {0, 7, 0, 1},
 		.diffuse  = {1.0, 0.9, 0.8, 0.0},
 		.const_attenuation = 0.5f,
 		.linear_attenuation = 0.f,
@@ -253,7 +253,7 @@ void testscene::init_test_lights(void) {
 	});
 
 	add_light((struct engine::light){
-		.position = {-3, 1.5, 1.1, 1},
+		.position = {0, 7, -8, 1},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.const_attenuation = 0.5f,
 		.linear_attenuation = 0.f,
@@ -262,13 +262,24 @@ void testscene::init_test_lights(void) {
 	});
 
 	add_light((struct engine::light){
+		.position = {0, 7, 8, 1},
+		.diffuse  = {1.0, 0.8, 0.5, 1.0},
+		.const_attenuation = 0.5f,
+		.linear_attenuation = 0.f,
+		.quadratic_attenuation = 0.08f,
+		.specular = 1.0,
+	});
+
+	/*
+	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
-		.diffuse  = {0.9, 0.9, 1.0, 1.0},
+		.diffuse  = {0.9, 0.9, 1.0, 0.1},
 		.const_attenuation = 1.f,
 		.linear_attenuation = 0.f,
 		.quadratic_attenuation = 0.00f,
 		.specular = 1.0,
 	});
+	*/
 
 	update_lights();
 }

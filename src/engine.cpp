@@ -363,13 +363,13 @@ void engine::dqueue_flush_draws(void) {
 }
 
 bool engine::is_valid_light(int id) {
-	return id < MAX_LIGHTS && id >= 0 && lights[id].is_active;
+	return id < MAX_LIGHTS && id < (int)active_lights && id >= 0;
 }
 
 int engine::add_light(struct light lit) {
 	int ret = -1;
 
-	// TODO: allocated light bitmap
+	/*
 	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
 		if (!lights[i].is_active) {
 			ret = i;
@@ -381,6 +381,13 @@ int engine::add_light(struct light lit) {
 		lights[ret] = lit;
 		lights[ret].changed = true;
 		lights[ret].is_active = true;
+	}
+	*/
+
+	if (active_lights < MAX_LIGHTS) {
+		ret = active_lights++;
+		lights[ret] = lit;
+		lights[ret].changed = true;
 	}
 
 	return ret;
@@ -405,11 +412,14 @@ int engine::get_light(int id, struct light *lit) {
 	return -1;
 }
 
-
 void engine::remove_light(int id) {
 	if (is_valid_light(id)) {
-		lights[id].is_active = false;
-		lights[id].changed = true;
+		for (unsigned i = id + 1; i < active_lights; i++) {
+			lights[i-1] = lights[i];
+			lights[i-1].changed = true;
+		}
+
+		active_lights--;
 	}
 }
 
@@ -423,14 +433,6 @@ void engine::set_shader(gl_manager::rhandle& shd) {
 void engine::init_lights(void) {
 	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
 		// things should have been set to zero during construction, I'm pretty sure
-		/*
-		lights[i].position = glm::vec4(i, 5, 0, 1);
-		lights[i].diffuse  = glm::vec4(0.5 + i/(float)MAX_LIGHTS/2.f, 1.0, 0.5 + i/(float)MAX_LIGHTS/2.f, 0.0);
-		lights[i].const_attenuation = 1.0f;
-		lights[i].specular = 1.0;
-		lights[i].quadratic_attenuation = 0.02f;
-		lights[i].is_active = true;
-		*/
 		lights[i].changed   = true;
 	}
 }
@@ -475,12 +477,12 @@ void engine::sync_light(unsigned id) {
 	DO_ERROR_CHECK();
 	glUniform1f(light_handles["specular"], lights[id].specular);
 	DO_ERROR_CHECK();
-	glUniform1i(light_handles["is_active"], lights[id].is_active);
-	DO_ERROR_CHECK();
 }
 
 void engine::update_lights(void) {
 	// TODO: sync max light constants
+	glUniform1i(glGetUniformLocation(shader.first, "active_lights"), active_lights);
+
 	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
 		auto& lit = lights[i];
 

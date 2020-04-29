@@ -19,7 +19,6 @@ class engine {
 			glm::vec4 diffuse;
 			float const_attenuation, linear_attenuation, quadratic_attenuation;
 			float specular;
-			bool is_active = false;
 			bool changed = false;
 		};
 
@@ -95,6 +94,7 @@ class engine {
 		//       the engine code and shader code, something to keep in mind
 		//       if/when writing a shader preprocessor language
 		struct light lights[MAX_LIGHTS];
+		unsigned active_lights = 0;
 
 		// TODO: maybe have a bitmap to track changes to lights (so )
 

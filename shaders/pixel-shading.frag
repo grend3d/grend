@@ -32,7 +32,6 @@ struct lightSource {
 	vec4 diffuse;
 	float const_attenuation, linear_attenuation, quadratic_attenuation;
 	float specular;
-	bool is_active;
 };
 
 struct material {
@@ -46,8 +45,9 @@ struct material {
 // TODO: "active lights" count, pack lights[] tightly
 const int max_lights = 32;
 uniform lightSource lights[max_lights];
-uniform material anmaterial;
 uniform vec4 lightpos;
+uniform int active_lights;
+uniform material anmaterial;
 
 void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
@@ -67,11 +67,7 @@ void main(void) {
 	                        anmaterial.diffuse.y * ambient_light.y,
 	                        anmaterial.diffuse.z * ambient_light.z);
 
-	for (int i = 0; i < max_lights; i++) {
-		if (!lights[i].is_active) {
-			continue;
-		}
-
+	for (int i = 0; i < active_lights && i < max_lights; i++) {
 		vec3 light_dir;
 		float attenuation;
 

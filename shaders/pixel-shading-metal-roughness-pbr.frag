@@ -35,7 +35,6 @@ struct lightSource {
 	vec4 diffuse;
 	float const_attenuation, linear_attenuation, quadratic_attenuation;
 	float specular;
-	bool is_active;
 };
 
 struct material {
@@ -50,8 +49,9 @@ struct material {
 // TODO: "active lights" count, pack lights[] tightly
 const int max_lights = 32;
 uniform lightSource lights[max_lights];
-uniform material anmaterial;
+uniform int active_lights;
 uniform vec4 lightpos;
+uniform material anmaterial;
 
 // values and formulas from khronos gltf PBR implementation
 const vec3 dielectric_specular = vec3(0.04);
@@ -152,11 +152,13 @@ void main(void) {
 
 	vec3 total_light = vec3(0);
 
-	for (int i = 0; i < max_lights; i++) {
+	for (int i = 0; i < active_lights && i < max_lights; i++) {
+		/*
 		// TODO: not this
 		if (!lights[i].is_active) {
 			continue;
 		}
+		*/
 
 		vec3 light_vertex = vec3(lights[i].position - f_position);
 		float dist = length(light_vertex);
