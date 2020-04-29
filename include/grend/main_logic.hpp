@@ -35,6 +35,10 @@ class testscene : public engine {
 		virtual void physics(context& ctx);
 		virtual void input(context& ctx);
 
+		// TODO: subclasses or something
+		void handle_player_input(SDL_Event& ev);
+		void handle_editor_input(SDL_Event& ev);
+
 		void render_skybox(context& ctx);
 		void render_static(context& ctx);
 		void render_players(context& ctx);

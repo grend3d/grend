@@ -537,71 +537,187 @@ void testscene::draw_debug_string(std::string str) {
 	DO_ERROR_CHECK();
 }
 
+// TODO: variable configuration ala quake
+static const float movement_speed = 10 /* units/s */;
+static const float rotation_speed = 1;
+
+void testscene::handle_editor_input(SDL_Event& ev) {
+	if (ev.type == SDL_KEYDOWN) {
+		switch (ev.key.keysym.sym) {
+			case SDLK_w: view_velocity.z =  movement_speed; break;
+			case SDLK_s: view_velocity.z = -movement_speed; break;
+			case SDLK_a: view_velocity.x = -movement_speed; break;
+			case SDLK_d: view_velocity.x =  movement_speed; break;
+			case SDLK_q: view_velocity.y =  movement_speed; break;
+			case SDLK_e: view_velocity.y = -movement_speed; break;
+
+			case SDLK_m: in_select_mode = !in_select_mode; break;
+			case SDLK_i: load_map(); break;
+			case SDLK_o: save_map(); break;
+
+			case SDLK_g:
+						 //select_rotation -= M_PI/4;
+						 select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
+						 break;
+
+			case SDLK_h:
+						 //select_rotation -= M_PI/4;
+						 select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
+						 break;
+
+			case SDLK_z:
+						 //select_rotation -= M_PI/4;
+						 select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
+						 break;
+
+			case SDLK_c:
+						 //select_rotation += M_PI/4;
+						 select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
+						 break;
+
+			case SDLK_x:
+						 // flip horizontally (along the X axis)
+						 select_transform *= glm::scale(glm::vec3(-1, 1, 1));
+						 select_inverted = !select_inverted;
+						 break;
+
+			case SDLK_b:
+						 // flip horizontally (along the Z axis)
+						 select_transform *= glm::scale(glm::vec3( 1, 1, -1));
+						 select_inverted = !select_inverted;
+						 break;
+
+			case SDLK_v:
+						 // flip vertically
+						 select_transform *= glm::scale(glm::vec3( 1, -1, 1));
+						 select_inverted = !select_inverted;
+						 break;
+
+			case SDLK_j:
+						 // scale down
+						 select_transform *= glm::scale(glm::vec3(0.9));
+						 break;
+
+			case SDLK_k:
+						 // scale up
+						 select_transform *= glm::scale(glm::vec3(1/0.9));
+						 break;
+
+			case SDLK_r:
+						 if (select_model == glman.cooked_models.begin()) {
+							 select_model = glman.cooked_models.end();
+						 }
+						 select_model--;
+						 break;
+
+			case SDLK_f:
+						 select_model++;
+						 if (select_model == glman.cooked_models.end()) {
+							 select_model = glman.cooked_models.begin();
+						 }
+						 break;
+
+			case SDLK_DELETE:
+						 // undo, basically
+						 if (!dynamic_models.empty()) {
+							 dynamic_models.pop_back();
+						 }
+						 break;
+		}
+	}
+
+	else if (ev.type == SDL_KEYUP) {
+		switch (ev.key.keysym.sym) {
+			case SDLK_w:
+			case SDLK_s:
+				view_velocity.z = 0;
+				break;
+
+			case SDLK_a:
+			case SDLK_d:
+				view_velocity.x = 0;
+				break;
+
+			case SDLK_q:
+			case SDLK_e:
+				view_velocity.y = 0;
+				break;
+		}
+	}
+
+	else if (ev.type == SDL_MOUSEWHEEL) {
+		select_distance -= ev.wheel.y/10.f /* fidelity */;
+	}
+
+	else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+		if (ev.button.button == SDL_BUTTON_LEFT) {
+			dynamic_models.push_back({
+					select_model->first,
+					select_position,
+					select_transform,
+					select_inverted,
+					});
+		}
+	}
+}
+
+void testscene::handle_player_input(SDL_Event& ev) {
+	if (ev.type == SDL_KEYDOWN) {
+		switch (ev.key.keysym.sym) {
+			case SDLK_w: player_move_input.z =  movement_speed; break;
+			case SDLK_s: player_move_input.z = -movement_speed; break;
+			case SDLK_a: player_move_input.x = -movement_speed; break;
+			case SDLK_d: player_move_input.x =  movement_speed; break;
+			case SDLK_q: player_move_input.y =  movement_speed; break;
+			case SDLK_e: player_move_input.y = -movement_speed; break;
+			case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
+			case SDLK_m: in_select_mode = !in_select_mode; break;
+			case SDLK_BACKSPACE: player_position = {0, 0, 0}; break;
+
+			case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
+			case SDLK_RIGHTBRACKET: dsr_scale_x += dsr_down_incr; break;
+			case SDLK_9: dsr_scale_y -= dsr_down_incr; break;
+			case SDLK_0: dsr_scale_y += dsr_down_incr; break;
+
+			case SDLK_ESCAPE: running = false; break;
+		}
+	}
+
+	else if (ev.type == SDL_KEYUP) {
+		switch (ev.key.keysym.sym) {
+			case SDLK_w:
+			case SDLK_s:
+				//view_velocity.z = 0;
+				player_move_input.z = 0;
+				break;
+
+			case SDLK_a:
+			case SDLK_d:
+				//view_velocity.x = 0;
+				player_move_input.x = 0;
+				break;
+
+			case SDLK_q:
+			case SDLK_e:
+				//view_velocity.y = 0;
+				player_move_input.y = 0;
+				break;
+		}
+	}
+}
+
 void testscene::input(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	Uint32 ticks_delta = cur_ticks - last_frame;
 
 	float fticks = ticks_delta / 1000.0f;
 
-	const float movement_speed = 10 /* units/s */;
-	const float rotation_speed = 1;
 
 	SDL_Event ev;
 
 	while (SDL_PollEvent(&ev)) {
 		if (ev.type == SDL_QUIT) {
 			running = false;
-		}
-
-		else if (ev.type == SDL_KEYDOWN) {
-			switch (ev.key.keysym.sym) {
-				/*
-				case SDLK_w: view_velocity.z =  movement_speed; break;
-				case SDLK_s: view_velocity.z = -movement_speed; break;
-				case SDLK_a: view_velocity.x = -movement_speed; break;
-				case SDLK_d: view_velocity.x =  movement_speed; break;
-				case SDLK_q: view_velocity.y =  movement_speed; break;
-				case SDLK_e: view_velocity.y = -movement_speed; break;
-				*/
-				case SDLK_w: player_move_input.z =  movement_speed; break;
-				case SDLK_s: player_move_input.z = -movement_speed; break;
-				case SDLK_a: player_move_input.x = -movement_speed; break;
-				case SDLK_d: player_move_input.x =  movement_speed; break;
-				case SDLK_q: player_move_input.y =  movement_speed; break;
-				case SDLK_e: player_move_input.y = -movement_speed; break;
-				case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
-				case SDLK_m: in_select_mode = !in_select_mode; break;
-				case SDLK_BACKSPACE: player_position = {0, 0, 0}; break;
-
-				case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
-				case SDLK_RIGHTBRACKET: dsr_scale_x += dsr_down_incr; break;
-				case SDLK_9: dsr_scale_y -= dsr_down_incr; break;
-				case SDLK_0: dsr_scale_y += dsr_down_incr; break;
-
-				case SDLK_ESCAPE: running = false; break;
-			}
-		}
-
-		else if (ev.type == SDL_KEYUP) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_w:
-				case SDLK_s:
-					//view_velocity.z = 0;
-					player_move_input.z = 0;
-					break;
-
-				case SDLK_a:
-				case SDLK_d:
-					//view_velocity.x = 0;
-					player_move_input.x = 0;
-					break;
-
-				case SDLK_q:
-				case SDLK_e:
-					//view_velocity.y = 0;
-					player_move_input.y = 0;
-					break;
-			}
 		}
 
 		else if (ev.type == SDL_WINDOWEVENT) {
@@ -624,99 +740,7 @@ void testscene::input(context& ctx) {
 			}
 		}
 
-		// keeping editing commands seperate from the main input handling
-		if (in_select_mode) {
-			if (ev.type == SDL_KEYDOWN) {
-				switch (ev.key.keysym.sym) {
-					case SDLK_i: load_map(); break;
-					case SDLK_o: save_map(); break;
-
-					case SDLK_g:
-						//select_rotation -= M_PI/4;
-						select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
-						break;
-
-					case SDLK_h:
-						//select_rotation -= M_PI/4;
-						select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
-						break;
-
-					case SDLK_z:
-						//select_rotation -= M_PI/4;
-						select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
-						break;
-
-					case SDLK_c:
-						//select_rotation += M_PI/4;
-						select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
-						break;
-
-					case SDLK_x:
-						// flip horizontally (along the X axis)
-						select_transform *= glm::scale(glm::vec3(-1, 1, 1));
-						select_inverted = !select_inverted;
-						break;
-
-					case SDLK_b:
-						// flip horizontally (along the Z axis)
-						select_transform *= glm::scale(glm::vec3( 1, 1, -1));
-						select_inverted = !select_inverted;
-						break;
-
-					case SDLK_v:
-						// flip vertically
-						select_transform *= glm::scale(glm::vec3( 1, -1, 1));
-						select_inverted = !select_inverted;
-						break;
-
-					case SDLK_j:
-						// scale down
-						select_transform *= glm::scale(glm::vec3(0.9));
-						break;
-
-					case SDLK_k:
-						// scale up
-						select_transform *= glm::scale(glm::vec3(1/0.9));
-						break;
-
-					case SDLK_r:
-						if (select_model == glman.cooked_models.begin()) {
-							select_model = glman.cooked_models.end();
-						}
-						select_model--;
-						break;
-
-					case SDLK_f:
-						select_model++;
-						if (select_model == glman.cooked_models.end()) {
-							select_model = glman.cooked_models.begin();
-						}
-						break;
-
-					case SDLK_DELETE:
-						// undo, basically
-						if (!dynamic_models.empty()) {
-							dynamic_models.pop_back();
-						}
-						break;
-				}
-			}
-
-			else if (ev.type == SDL_MOUSEWHEEL) {
-				select_distance -= ev.wheel.y/10.f /* fidelity */;
-			}
-
-			else if (ev.type == SDL_MOUSEBUTTONDOWN) {
-				if (ev.button.button == SDL_BUTTON_LEFT) {
-					dynamic_models.push_back({
-						select_model->first,
-						select_position,
-						select_transform,
-						select_inverted,
-					});
-				}
-			}
-		}
+		in_select_mode? handle_editor_input(ev) : handle_player_input(ev);
 	}
 
 	int x, y;
@@ -745,9 +769,11 @@ void testscene::input(context& ctx) {
 	view_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), view_direction));
 	view_up    = glm::normalize(glm::cross(view_direction, view_right));
 
-	view_position += view_velocity.z * view_direction * fticks;
-	view_position += view_velocity.y * view_up * fticks;
-	view_position += view_velocity.x * glm::normalize(glm::cross(view_direction, view_up)) * fticks;
+	if (in_select_mode) {
+		view_position += view_velocity.z * view_direction * fticks;
+		view_position += view_velocity.y * view_up * fticks;
+		view_position += view_velocity.x * glm::normalize(glm::cross(view_direction, view_up)) * fticks;
+	}
 
 	// TODO: "fidelity" parameter to help align objects
 	float fidelity = 10.f;
@@ -823,8 +849,14 @@ void testscene::logic(context& ctx) {
 
 	//player_direction = view_direction;
 
-	//view = glm::lookAt(view_position, view_position + view_direction, view_up);
-	view = glm::lookAt(player_position - view_direction*5.f, player_position, view_up);
+	if (in_select_mode) {
+		view = glm::lookAt(view_position, view_position + view_direction, view_up);
+
+	} else {
+		view = glm::lookAt(player_position - view_direction*5.f,
+		                   player_position, view_up);
+	}
+
 	adjust_draw_resolution();
 }
 
