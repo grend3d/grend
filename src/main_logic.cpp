@@ -270,16 +270,14 @@ void testscene::init_test_lights(void) {
 		.specular = 1.0,
 	});
 
-	/*
 	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
 		.diffuse  = {0.9, 0.9, 1.0, 0.1},
 		.const_attenuation = 1.f,
 		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.00f,
+		.quadratic_attenuation = 0.01f,
 		.specular = 1.0,
 	});
-	*/
 
 	update_lights();
 }
@@ -296,6 +294,7 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget-tiny/", ".png");
 	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
 
 	load_models();

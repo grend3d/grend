@@ -569,18 +569,46 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
 
-		/*
-		glTexImage2D(thing.second, 0, GL_RGBA, surf->w, surf->h, 0,
-			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
-			*/
 		glTexImage2D(thing.second, 0, GL_SRGB, surf->w, surf->h, 0,
 			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
 		DO_ERROR_CHECK();
 
 		SDL_FreeSurface(surf);
+
+		for (unsigned i = 1; surf; i++) {
+			std::string mipname = directory + "/mip" + std::to_string(i)
+			                      + "-" + thing.first + extension;
+			std::cerr << " > looking for mipmap " << mipname << std::endl;
+			// TODO: change this to stb image
+			surf = IMG_Load(mipname.c_str());
+			if (!surf) break;
+
+			// maybe this?
+			/*
+			if (!surf){
+				glTexParameteri(thing.second, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(thing.second, GL_TEXTURE_MAX_LEVEL, i - 1);
+				DO_ERROR_CHECK();
+				break;
+			}
+			*/
+
+			fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
+				surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
+
+			glTexImage2D(thing.second, i, GL_SRGB, surf->w, surf->h, 0,
+				surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
+			DO_ERROR_CHECK();
+
+			SDL_FreeSurface(surf);
+		}
 	}
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	DO_ERROR_CHECK();
+
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);

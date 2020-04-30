@@ -41,8 +41,12 @@ void main(void) {
 		total_light += aoidx*atten*lum;
 	}
 
-	vec3 env = vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)));
-	total_light += env * (0.15*metallic * (1.0 - roughness));
+	// TODO: some kind of curve
+	vec3 env = vec3(textureLod(skytexture, reflect(-view_dir, normal_dir),
+	                           8.0*roughness));
+	//vec3 env = vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)));
+	//total_light += env * (0.15*metallic * (1.0 - roughness));
+	total_light += env * 0.15*metallic*(1.0-roughness*0.5);
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);

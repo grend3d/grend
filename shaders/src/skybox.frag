@@ -6,5 +6,6 @@ varying vec3 f_texcoord;
 uniform samplerCube skytexture;
 
 void main(void) {
-	gl_FragColor = textureCube(skytexture, f_texcoord);
+	//gl_FragColor = textureCube(skytexture, f_texcoord);
+	gl_FragColor = textureLod(skytexture, f_texcoord, 0);
 }
