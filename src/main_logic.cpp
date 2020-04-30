@@ -123,8 +123,8 @@ void testscene::load_models(void) {
 
 void testscene::load_shaders(void) {
 	gl_manager::rhandle vertex_shader, fragment_shader;
-	vertex_shader = glman.load_shader("shaders/skybox.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/skybox.frag", GL_FRAGMENT_SHADER);
+	vertex_shader = glman.load_shader("shaders/out/skybox.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/out/skybox.frag", GL_FRAGMENT_SHADER);
 	skybox_shader = glman.gen_program();
 
 	glAttachShader(skybox_shader.first, vertex_shader.first);
@@ -140,16 +140,16 @@ void testscene::load_shaders(void) {
 	glGetProgramiv(skybox_shader.first, GL_LINK_STATUS, &linked_2);
 
 	if (!linked_2) {
-		SDL_Die("couldn't link shaders");
+		SDL_Die("couldn't link shaders (skybox)");
 	}
 
 #if 0
-	vertex_shader = glman.load_shader("shaders/vertex-shading.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/vertex-shading.frag", GL_FRAGMENT_SHADER);
+	vertex_shader = glman.load_shader("shaders/out/vertex-shading.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/out/vertex-shading.frag", GL_FRAGMENT_SHADER);
 #else
-	vertex_shader = glman.load_shader("shaders/pixel-shading.vert", GL_VERTEX_SHADER);
+	vertex_shader = glman.load_shader("shaders/out/pixel-shading.vert", GL_VERTEX_SHADER);
 	//fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
-	fragment_shader = glman.load_shader("shaders/pixel-shading-metal-roughness-pbr.frag", GL_FRAGMENT_SHADER);
+	fragment_shader = glman.load_shader("shaders/out/pixel-shading-metal-roughness-pbr.frag", GL_FRAGMENT_SHADER);
 #endif
 
 	main_shader = glman.gen_program();
@@ -172,13 +172,13 @@ void testscene::load_shaders(void) {
 	glGetProgramiv(main_shader.first, GL_LINK_STATUS, &linked);
 
 	if (!linked) {
-		SDL_Die("couldn't link shaders");
+		SDL_Die("couldn't link shaders (shading)");
 	}
 
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
-	vertex_shader = glman.load_shader("shaders/postprocess.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/postprocess.frag", GL_FRAGMENT_SHADER);
+	vertex_shader = glman.load_shader("shaders/out/postprocess.vert", GL_VERTEX_SHADER);
+	fragment_shader = glman.load_shader("shaders/out/postprocess.frag", GL_FRAGMENT_SHADER);
 	post_shader = glman.gen_program();
 
 	glAttachShader(post_shader.first, vertex_shader.first);
@@ -194,7 +194,7 @@ void testscene::load_shaders(void) {
 	glGetProgramiv(post_shader.first, GL_LINK_STATUS, &linked);
 
 	if (!linked) {
-		SDL_Die("couldn't link shaders");
+		SDL_Die("couldn't link shaders (postprocess)");
 	}
 
 	//glUseProgram(shader.first);

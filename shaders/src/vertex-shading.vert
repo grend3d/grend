@@ -1,8 +1,8 @@
-#version 100
-
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
+
+#include <lib/shading-uniforms.glsl>
 
 attribute vec3 in_Position;
 attribute vec2 texcoord;
@@ -13,33 +13,6 @@ attribute vec3 v_bitangent;
 
 varying vec3 ex_Color;
 varying vec2 f_texcoord;
-
-uniform mat4 m, v, p;
-uniform mat3 m_3x3_inv_transp;
-uniform mat4 v_inv;;
-uniform samplerCube skytexture;
-
-struct lightSource {
-	vec4 position;
-	vec4 diffuse;
-	float const_attenuation, linear_attenuation, quadratic_attenuation;
-	float specular;
-	bool is_active;
-};
-
-struct material {
-	vec4 diffuse;
-	vec4 ambient;
-	vec4 specular;
-	float shininess;
-	float opacity;
-};
-
-const int max_lights = 32;
-uniform lightSource lights[max_lights];
-uniform int active_lights;
-
-uniform material anmaterial;
 
 void main(void) {
 	vec4 v_coord = vec4(in_Position, 1.0);
@@ -87,12 +60,12 @@ void main(void) {
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
-		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0.0) {
+		if (anmaterial.metalness > 0.1 && dot(normal_dir, light_dir) >= 0.0) {
 			specular_reflection = anmaterial.specular.w * attenuation
 				* vec3(lights[i].specular)
 				* vec3(anmaterial.specular)
 				* pow(max(0.0, dot(reflect(-light_dir, normal_dir), view_dir)),
-				      anmaterial.shininess);
+				      anmaterial.metalness);
 		}
 #endif
 

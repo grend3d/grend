@@ -1,4 +1,3 @@
-#version 100
 precision highp float;
 precision mediump sampler2D;
 

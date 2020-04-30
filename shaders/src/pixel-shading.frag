@@ -1,53 +1,14 @@
-#version 100
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
-
-varying vec3 f_normal;
-varying vec3 f_tangent;
-varying vec3 f_bitangent;
-varying vec2 f_texcoord;
-varying vec4 f_position;
-varying mat3 TBN;
-
-// light maps
-uniform sampler2D diffuse_map;
-uniform sampler2D specular_map;
-uniform sampler2D normal_map;
-uniform sampler2D ambient_occ_map;
-uniform sampler2D alpha_map;
-uniform samplerCube skytexture;
-
-uniform mat4 m, v, p;
-uniform mat3 m_3x3_inv_transp;
-uniform mat4 v_inv;
 
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
 #define ENABLE_REFRACTION 1
 
-struct lightSource {
-	vec4 position;
-	vec4 diffuse;
-	float const_attenuation, linear_attenuation, quadratic_attenuation;
-	float specular;
-};
-
-struct material {
-	vec4 diffuse;
-	vec4 ambient;
-	vec4 specular;
-	float shininess;
-	float opacity;
-};
-
-// TODO: "active lights" count, pack lights[] tightly
-const int max_lights = 32;
-uniform lightSource lights[max_lights];
-uniform vec4 lightpos;
-uniform int active_lights;
-uniform material anmaterial;
+#include <lib/shading-uniforms.glsl>
+#include <lib/shading-varying.glsl>
 
 void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;

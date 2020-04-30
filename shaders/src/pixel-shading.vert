@@ -1,7 +1,8 @@
-#version 100
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
+
+#include <lib/shading-uniforms.glsl>
 
 attribute vec3 in_Position;
 attribute vec2 texcoord;
@@ -17,10 +18,6 @@ varying vec3 f_bitangent;
 varying vec2 f_texcoord;
 
 varying mat3 TBN;
-
-uniform mat4 m, v, p;
-uniform mat3 m_3x3_inv_transp;
-uniform mat4 v_inv;
 
 void main(void) {
 	f_normal = normalize(v_normal);

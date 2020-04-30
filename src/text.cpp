@@ -27,8 +27,8 @@ text_renderer::text_renderer(engine *eng,
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
-	gl_manager::rhandle vertex_shader = gengine->glman.load_shader("shaders/UI.vert", GL_VERTEX_SHADER);
-	gl_manager::rhandle fragment_shader = gengine->glman.load_shader("shaders/UI.frag", GL_FRAGMENT_SHADER);
+	gl_manager::rhandle vertex_shader = gengine->glman.load_shader("shaders/out/UI.vert", GL_VERTEX_SHADER);
+	gl_manager::rhandle fragment_shader = gengine->glman.load_shader("shaders/out/UI.frag", GL_FRAGMENT_SHADER);
 	text_shader = gengine->glman.gen_program();
 
 	glAttachShader(text_shader.first, vertex_shader.first);
