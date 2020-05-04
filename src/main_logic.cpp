@@ -357,10 +357,12 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 void testscene::render_skybox(context& ctx) {
 	set_shader(skybox_shader);
 	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
 	glDisable(GL_CULL_FACE);
 #endif
+
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
 	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
@@ -468,6 +470,9 @@ void testscene::render_postprocess(context& ctx) {
 
 	glClearColor(0, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, rend_tex.first);
@@ -490,8 +495,6 @@ void testscene::render_postprocess(context& ctx) {
 
 	//glClearColor(1.0, 0, 0, 1.0);
 
-	glDisable(GL_DEPTH_TEST);
-	DO_ERROR_CHECK();
 	draw_screenquad();
 
 	/*
@@ -530,18 +533,20 @@ void testscene::render(context& ctx) {
 	}
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
 
+#if 0
+	// TODO: debug flag to toggle checks like this
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		SDL_Die("incomplete!");
 	}
+#endif
 
 	//glClearColor(0.7, 0.9, 1, 1);
 	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	render_skybox(ctx);
 
 	set_shader(main_shader);
 #ifdef ENABLE_FACE_CULLING
@@ -555,11 +560,6 @@ void testscene::render(context& ctx) {
 
 	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
 
-	//draw_model("testbox-mesh", glm::mat4(1));
-	//draw_model("teapot", glm::mat4(1));
-	//draw_octree_leaves(oct.root, glm::vec3(0));
-	//draw_octree_leaves(static_octree.root, glm::vec3(0));
-
 	set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);
 	render_players(ctx);
@@ -568,6 +568,7 @@ void testscene::render(context& ctx) {
 	dqueue_sort_draws(view_position);
 	dqueue_flush_draws();
 
+	render_skybox(ctx);
 	render_postprocess(ctx);
 
 	glman.bind_default_framebuffer();

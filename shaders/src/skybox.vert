@@ -11,5 +11,6 @@ uniform mat4 m, v_inv, m_3x3_inv_transp;
 
 void main(void) {
 	f_texcoord = v_position;
-	gl_Position = p * v * vec4(v_position, 1.0);
+	vec4 outpos = p * v * vec4(v_position, 1.0);
+	gl_Position = outpos.xyww;
 }
