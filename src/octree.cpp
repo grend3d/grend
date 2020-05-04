@@ -264,13 +264,13 @@ octree::collision octree::collides(glm::vec3 begin, glm::vec3 end) {
 	// TODO: more efficient, less crappy
 	for (glm::vec3 temp = {0, 0, 0};
 	     glm::length(temp) < glm::length(line);
-	     temp += dir*(float)leaf_size)
+	     temp += dir*(float)leaf_size*0.5f)
 	{
 		node *pleaf = get_leaf(begin + temp);
 
 		if (pleaf) {
 			assert(pleaf->normal_samples != 0);
-			return {1, pleaf->normals / (float)pleaf->normal_samples};
+			return {fabs(glm::length(end - temp)), pleaf->normals / (float)pleaf->normal_samples};
 		}
 	}
 

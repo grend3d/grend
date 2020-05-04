@@ -10,6 +10,7 @@
 #include <grend/octree.hpp>
 #include <grend/text.hpp>
 #include <grend/timers.hpp>
+#include <grend/physics.hpp>
 
 #include <tuple>
 #include <vector>
@@ -34,12 +35,6 @@ class testscene : public engine {
 		virtual void logic(context& ctx);
 		virtual void physics(context& ctx);
 		virtual void input(context& ctx);
-
-		struct physics_object {
-			std::string model_name;
-			glm::vec3 position;
-			glm::vec3 velocity;
-		};
 
 		struct editor_entry {
 			std::string name;
@@ -81,19 +76,21 @@ class testscene : public engine {
 		glm::vec3 view_up = glm::vec3(0, 1, 0);
 		glm::vec3 view_right = glm::vec3(1, 0, 0);
 
-		glm::vec3 player_position = glm::vec3(0); // meters
-		glm::vec3 player_velocity = glm::vec3(0); // m/s
+		//glm::vec3 player_position = glm::vec3(0); // meters
+		//glm::vec3 player_velocity = glm::vec3(0); // m/s
+		uint64_t player_phys_id;
 		glm::vec3 player_move_input = glm::vec3(0);
 		glm::vec3 player_direction = glm::vec3(1, 0, 0);
 
 		// physics things
-		std::vector<physics_object> phys_objs;
+		//std::vector<physics_object> phys_objs;
+		imp_physics phys;
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
 		gl_manager::cooked_model_map::iterator select_model;
 		grendx::scene static_models;
-		octree static_octree;
+		//octree static_octree;
 
 		bool      in_select_mode = false;
 		glm::vec3 select_position = glm::vec3(0, 0, 0);

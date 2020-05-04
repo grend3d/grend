@@ -13,7 +13,7 @@ class octree {
 		// // (not yet) 'double' is depth of collision (0 for non-colliding),
 		// 'bool' is whether there's a collision
 		// 'vec3' is the normal for the colliding node
-		typedef std::pair<bool, glm::vec3> collision;
+		typedef std::pair<float, glm::vec3> collision;
 		class node;
 
 		octree(double _leaf_size=0.1 /* meters */) {

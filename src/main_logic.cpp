@@ -111,7 +111,8 @@ void testscene::load_models(void) {
 
 	// TODO: octree for static models
 	for (auto& node : static_models.nodes) {
-		static_octree.add_model(models[node.name], node.transform);
+		//static_octree.add_model(models[node.name], node.transform);
+		phys.add_static_model(node.name, models[node.name], node.transform);
 	}
 
 	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
@@ -302,6 +303,9 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	init_framebuffers();
 	init_test_lights();
 
+	// TODO: fit the player
+	player_phys_id = phys.add_sphere("person", {0, 3, 0}, 1);
+
 	glEnable(GL_DEPTH_TEST);
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
@@ -384,8 +388,17 @@ void testscene::render_players(context& ctx) {
 
 	//glm::vec3 asdf = glm::normalize(glm::cross(player_direction, glm::vec3(0, 1, 0)));
 
+	auto& physobj = phys.objects[player_phys_id];
+
+	glm::vec3 tempdir = glm::normalize(
+		glm::vec3(physobj.velocity.x, 0, physobj.velocity.z));
+
+	if (fabs(tempdir.x) > 0 || fabs(tempdir.z) > 0) {
+		player_direction = tempdir;
+	}
+
 	glm::mat4 bizz =
-		glm::translate(glm::mat4(1), player_position)
+		glm::translate(glm::mat4(1), physobj.position)
 		* glm::orientation(player_direction, glm::vec3(0, 0, 1))
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
 		;
@@ -395,17 +408,32 @@ void testscene::render_players(context& ctx) {
 			1, glm::value_ptr(lfoo));
 			*/
 
-	set_mvp(glm::mat4(1), view, projection);
-	//draw_model("person", bizz);
 	dqueue_draw_model("person", bizz);
+	/*
+	//draw_model("person", bizz);
 	//draw_model_lines("sphere", glm::translate(bizz, {0, 1, 0}));
 	DO_ERROR_CHECK();
+	*/
 }
 
 void testscene::render_dynamic(context& ctx) {
+	/*
 	for (const auto& thing : phys_objs) {
 		glm::mat4 transform = glm::translate(glm::mat4(1), thing.position);
 		dqueue_draw_model(thing.model_name, transform);
+	}
+	*/
+
+	for (const auto& [id, obj] : phys.objects) {
+		if (id == player_phys_id)
+			continue;
+
+		if (obj.type != imp_physics::object::type::Static) {
+			glm::mat4 transform =
+				glm::translate(obj.position) * glm::mat4_cast(obj.rotation);
+
+			dqueue_draw_model(obj.model_name, transform);
+		}
 	}
 }
 
@@ -532,6 +560,7 @@ void testscene::render(context& ctx) {
 	//draw_octree_leaves(oct.root, glm::vec3(0));
 	//draw_octree_leaves(static_octree.root, glm::vec3(0));
 
+	set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);
 	render_players(ctx);
 	render_dynamic(ctx);
@@ -690,7 +719,7 @@ void testscene::handle_player_input(SDL_Event& ev) {
 			case SDLK_e: player_move_input.y = -movement_speed; break;
 			case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
 			case SDLK_m: in_select_mode = !in_select_mode; break;
-			case SDLK_BACKSPACE: player_position = {0, 0, 0}; break;
+			//case SDLK_BACKSPACE: player_position = {0, 2, 0}; break;
 
 			case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
 			case SDLK_RIGHTBRACKET: dsr_scale_x += dsr_down_incr; break;
@@ -725,11 +754,17 @@ void testscene::handle_player_input(SDL_Event& ev) {
 
 	else if (ev.type == SDL_MOUSEBUTTONDOWN) {
 		if (ev.button.button == SDL_BUTTON_LEFT) {
+			/*
 			phys_objs.push_back({
 				"steelsphere",
 				player_position,
 				view_direction*movement_speed,
 			});
+			*/
+
+			uint64_t id = phys.add_sphere("steelsphere", phys.objects[player_phys_id].position, 1);
+			phys.objects[id].velocity = player_direction*movement_speed;
+			// TODO: initial velocity
 		}
 	}
 }
@@ -826,9 +861,21 @@ void testscene::physics(context& ctx) {
 
 	//glm::vec3 incr = glm::vec3(0);
 	//player_velocity = glm::vec3(0);
+
+	glm::vec3 player_force = {0, 0, 0};
+	/*
+	// TODO: some way to add velocity in physics system
 	player_velocity += player_move_input.z *delta* rel_view;
 	player_velocity += player_move_input.y *delta* player_up;
 	player_velocity += player_move_input.x *delta* glm::normalize(glm::cross(rel_view, player_up));
+	*/
+
+	player_force += player_move_input.z * rel_view;
+	player_force += player_move_input.y * player_up;
+	player_force += player_move_input.x * glm::normalize(glm::cross(rel_view, player_up));
+
+	phys.apply_force(player_phys_id, player_force);
+	phys.solve_contraints(delta);
 
 	/*
 	if ((player_position + player_velocity*delta*2.f).y < 0) {
@@ -839,6 +886,7 @@ void testscene::physics(context& ctx) {
 	}
 	*/
 
+	/*
 	glm::vec3 next_pos = player_position + player_velocity*delta;
 	auto [collided, normal] = static_octree.collides(player_position, next_pos);
 
@@ -878,6 +926,7 @@ void testscene::physics(context& ctx) {
 
 		thing.position += thing.velocity*delta;
 	}
+	*/
 
 	//player_direction = glm::normalize(glm::vec3(player_velocity.x, -0.1*fabs(glm::length(player_velocity)), player_velocity.z));
 	//player_direction = glm::normalize(player_velocity);
@@ -888,16 +937,22 @@ void testscene::logic(context& ctx) {
 	last_frame = cur_ticks;
 
 	// XXX: keep things from disappearing into the abyss while I work out physics
+	/*
 	if (player_position.y < -25) {
 		// TODO: player class, with position set/reset etc
 		player_position = {0, 2, 0};
 	}
+	*/
 
+	/*
 	for (auto& thing : phys_objs) {
 		if (thing.position.y < -25) {
 			thing.position = {0, 2, 0};
 		}
 	}
+	*/
+
+	glm::vec3 player_position = phys.objects[player_phys_id].position;
 
 	//player_direction = view_direction;
 
