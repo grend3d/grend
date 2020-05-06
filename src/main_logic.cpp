@@ -247,36 +247,36 @@ void testscene::init_test_lights(void) {
 	player_light = add_light((struct engine::light){
 		.position = {0, 7, 0, 1},
 		.diffuse  = {1.0, 0.9, 0.8, 0.0},
-		.const_attenuation = 0.5f,
+		.const_attenuation = 0.0f,
 		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.05f,
+		.quadratic_attenuation = 0.01f,
 		.specular = 1.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 7, -8, 1},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
-		.const_attenuation = 0.5f,
+		.const_attenuation = 0.0f,
 		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.08f,
+		.quadratic_attenuation = 0.01f,
 		.specular = 1.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 7, 8, 1},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
-		.const_attenuation = 0.5f,
+		.const_attenuation = 0.0f,
 		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.08f,
+		.quadratic_attenuation = 0.01f,
 		.specular = 1.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
 		.diffuse  = {0.9, 0.9, 1.0, 0.1},
-		.const_attenuation = 1.f,
+		.const_attenuation = 0.f,
 		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.01f,
+		.quadratic_attenuation = 0.001f,
 		.specular = 1.0,
 	});
 
@@ -559,6 +559,8 @@ void testscene::render(context& ctx) {
 	DO_ERROR_CHECK();
 
 	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
+	glUniform1f(glGetUniformLocation(shader.first, "time_ms"),
+	                                 SDL_GetTicks() * 1.f);
 
 	set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);

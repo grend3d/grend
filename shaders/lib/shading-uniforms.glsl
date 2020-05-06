@@ -34,3 +34,5 @@ const int max_lights = 32;
 uniform lightSource lights[max_lights];
 uniform int active_lights;
 uniform material anmaterial;
+
+uniform float time_ms;
