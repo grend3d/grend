@@ -32,7 +32,7 @@ void model::gen_normals(void) {
 	for (auto& thing : meshes) {
 		for (unsigned i = 0; i < thing.second.faces.size(); i += 3) {
 			// TODO: bounds check
-			GLushort elms[3] = {
+			GLuint elms[3] = {
 				thing.second.faces[i],
 				thing.second.faces[i+1],
 				thing.second.faces[i+2]
@@ -56,7 +56,7 @@ void model::gen_texcoords(void) {
 		auto& mesh = meshkey.second;
 		for (unsigned i = 0; i < mesh.faces.size(); i++) {
 			// TODO: bounds check
-			GLushort elm = mesh.faces[i];
+			GLuint elm = mesh.faces[i];
 
 			glm::vec3& foo = vertices[elm];
 			texcoords[elm] = {foo.x, foo.y};
@@ -82,7 +82,7 @@ void model::gen_tangents(void) {
 
 		for (std::size_t i = 0; i+2 < mesh.faces.size(); i += 3) {
 			// TODO: bounds check
-			GLushort elms[3] = {mesh.faces[i], mesh.faces[i+1], mesh.faces[i+2]};
+			GLuint elms[3] = {mesh.faces[i], mesh.faces[i+1], mesh.faces[i+2]};
 
 			glm::vec3& a = vertices[elms[0]];
 			glm::vec3& b = vertices[elms[1]];
@@ -515,6 +515,27 @@ static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
 	}
 }
 
+static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
+                                       int accessor,
+                                       std::vector<GLuint>& vec)
+{
+	check_index(gltf_model.accessors, accessor);
+	auto& acc = gltf_model.accessors[accessor];
+	check_index(gltf_model.bufferViews, acc.bufferView);
+	auto& view = gltf_model.bufferViews[acc.bufferView];
+
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	size_t emsz = view.byteStride
+		? view.byteStride
+		: gltf_buff_element_size(acc.componentType, acc.type);
+
+	for (unsigned i = 0; i < acc.count; i++) {
+		//T *em = reinterpret_cast<T*>(datas + i*emsz);
+		GLushort *em = reinterpret_cast<GLushort*>(datas + i*emsz);
+		vec.push_back((GLuint)*em);
+	}
+}
+
 static grendx::material_texture
 gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 	grendx::material_texture ret;
@@ -654,7 +675,12 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 				size_t vsize = ret[mesh.name].vertices.size();
 				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
-				gltf_unpack_buffer(tgltf_model, elements, submesh);
+				//gltf_unpack_buffer(tgltf_model, elements, submesh);
+				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+					gltf_unpack_ushort_to_uint(tgltf_model, elements, submesh);
+				} else {
+					gltf_unpack_buffer(tgltf_model, elements, submesh);
+				}
 
 				// adjust element indices for vertices already in the model
 				// (model element indices are per-model, seems gltf is per-primitive)

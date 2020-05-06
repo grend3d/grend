@@ -54,7 +54,7 @@ struct material {
 class model_submesh {
 	public:
 		std::string material = "(null)";
-		std::vector<GLushort> faces;
+		std::vector<GLuint> faces;
 };
 
 class model {

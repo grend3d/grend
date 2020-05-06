@@ -287,7 +287,7 @@ void engine::draw_mesh(std::string name, const struct draw_attributes *attr) {
 
 	glman.set_face_order(attr->face_order);
 	glman.bind_vao(foo.vao);
-	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_INT, foo.elements_offset);
 	DO_ERROR_CHECK();
 }
 
@@ -300,7 +300,7 @@ void engine::draw_mesh_lines(std::string name, const struct draw_attributes *att
 	glman.bind_vao(foo.vao);
 
 #ifdef NO_GLPOLYMODE
-	glDrawElements(GL_LINE_LOOP, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	glDrawElements(GL_LINE_LOOP, foo.elements_size, GL_UNSIGNED_INT, foo.elements_offset);
 
 #else
 	// TODO: keep track of face culling state in this class
@@ -310,7 +310,7 @@ void engine::draw_mesh_lines(std::string name, const struct draw_attributes *att
 #endif
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_INT, foo.elements_offset);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 #ifdef ENABLE_FACE_CULLING

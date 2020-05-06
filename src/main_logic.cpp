@@ -102,6 +102,7 @@ void game_state::load_models(void) {
 
 	std::cerr << "loading test objects" << std::endl;
 	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
+	//auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/Sponza/Sponza.gltf");
 	static_models = scene;
 	models.insert(gmodels.begin(), gmodels.end());
 		/*

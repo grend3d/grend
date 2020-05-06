@@ -51,7 +51,7 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 		//foo.elements_size = x.second.faces.size() * sizeof(GLushort);
 		foo.elements_size = x.second.faces.size();
 		foo.elements_offset = reinterpret_cast<void*>
-		                      (cooked_elements.size() * sizeof(GLushort));
+		                      (cooked_elements.size() * sizeof(GLuint));
 		cooked_elements.insert(cooked_elements.end(), x.second.faces.begin(),
 		                                              x.second.faces.end());
 		foo.material = x.second.material;
@@ -176,7 +176,7 @@ gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
 
 	bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
 	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 3, GL_UNSIGNED_SHORT, GL_FALSE, 0,
+	glVertexAttribPointer(5, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
 	                      mesh.elements_offset);
 
 	bind_vao(orig_vao);
@@ -460,6 +460,18 @@ gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
 {
 	bind_vbo(handle, type);
 	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), usage);
+	DO_ERROR_CHECK();
+	return handle;
+}
+
+gl_manager::rhandle
+gl_manager::buffer_vbo(const gl_manager::rhandle& handle,
+                       GLuint type,
+                       const std::vector<GLuint>& vec,
+                       GLenum usage)
+{
+	bind_vbo(handle, type);
+	glBufferData(type, sizeof(GLuint) * vec.size(), vec.data(), usage);
 	DO_ERROR_CHECK();
 	return handle;
 }

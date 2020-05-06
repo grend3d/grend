@@ -73,7 +73,7 @@ class gl_manager {
 		cooked_model_map cooked_models;
 
 		std::vector<GLfloat> cooked_vertprops;
-		std::vector<GLushort> cooked_elements;
+		std::vector<GLuint> cooked_elements;
 
 		rhandle cooked_vertprops_vbo;
 		rhandle cooked_element_vbo;
@@ -102,6 +102,7 @@ class gl_manager {
 
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLfloat>& vec, GLenum usage=GL_STATIC_DRAW);
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLushort>& vec, GLenum usage=GL_STATIC_DRAW);
+		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<GLuint>& vec, GLenum usage=GL_STATIC_DRAW);
 		rhandle buffer_vbo(const rhandle& handle, GLuint type, const std::vector<glm::vec3>& vec, GLenum usage=GL_STATIC_DRAW);
 
 		void free_objects(void);
