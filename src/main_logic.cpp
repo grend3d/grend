@@ -10,6 +10,11 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLEW
+#include <imgui/imgui.h>
+#include <imgui/examples/imgui_impl_sdl.h>
+#include <imgui/examples/imgui_impl_opengl3.h>
+
 using namespace grendx;
 
 model_map load_library(std::string dir) {
@@ -283,6 +288,17 @@ void testscene::init_test_lights(void) {
 	update_lights();
 }
 
+void testscene::init_imgui(context& ctx) {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL2_InitForOpenGL(ctx.window, ctx.glcontext);
+	// TODO: make the glsl version here depend on GL version/the string in
+	//       shaders/version.glsl
+	ImGui_ImplOpenGL3_Init("#version 130");
+}
+
 // TODO: should start thinking about splitting initialization into smaller functions
 testscene::testscene(context& ctx) : engine(), text(this) {
 	projection = glm::perspective(glm::radians(60.f),
@@ -302,6 +318,7 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	load_shaders();
 	init_framebuffers();
 	init_test_lights();
+	init_imgui(ctx);
 
 	// TODO: fit the player
 	player_phys_id = phys.add_sphere("person", {0, 3, 0}, 1);
@@ -462,6 +479,93 @@ void testscene::render_editor(context& ctx) {
 	}
 }
 
+static void menubar() {
+	static bool demo_window = false;
+	static int mode = 0;
+	static float snap_threshold = 0.1;
+
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Open", "CTRL+O")) {}
+			if (ImGui::MenuItem("Save", "CTRL+S")) {}
+			if (ImGui::MenuItem("Save As", "Shift+CTRL+S")) {}
+			if (ImGui::MenuItem("Close", "CTRL+O")) {}
+
+			ImGui::Separator();
+			if (ImGui::BeginMenu("Import")) {
+				if (ImGui::MenuItem("Import .obj model")) {}
+				if (ImGui::MenuItem("Import .gltf models")) {}
+				if (ImGui::MenuItem("Import .gltf scene")) {}
+				if (ImGui::MenuItem("Import .map scene")) {}
+				if (ImGui::MenuItem("Load .gltf scene as current")) {}
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Reload shaders")) {}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Edit")) {
+			if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
+			if (ImGui::MenuItem("Redo", "CTRL+Y")) {}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Reset+Regenerate physics", "CTRL+P")) {}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("asdf", "CTRL+V")) {}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Tools")) {
+			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Add object", "CTRL+B")) {}
+			if (ImGui::MenuItem("Scale object", "CTRL+L")) {}
+			ImGui::InputFloat("Snap threshold", &snap_threshold,
+			                  0.01f, 1.0f, "%.2f");
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Bake lighting", "CTRL+B")) {}
+			if (ImGui::MenuItem("Generate environment light probes", "CTRL+L")) {}
+			if (ImGui::MenuItem("Generate IBL cubemaps", "Shift-CTRL+L")) {}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Mode")) {
+			ImGui::RadioButton("Map editor", &mode, 0);
+			ImGui::RadioButton("Lighting editor", &mode, 1);
+			ImGui::RadioButton("Physics editor", &mode, 2);
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Debug")) {
+			ImGui::MenuItem("Dear ImGui demo window", NULL, &demo_window);
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMainMenuBar();
+	}
+
+	if (demo_window) {
+		ImGui::ShowDemoWindow(&demo_window);
+	}
+}
+
+void testscene::render_imgui(context& ctx) {
+	menubar();
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 void testscene::render_postprocess(context& ctx) {
 	glman.bind_default_framebuffer();
 	glman.bind_vao(glman.screenquad_vao);
@@ -579,6 +683,10 @@ void testscene::render(context& ctx) {
 			", y: " + std::to_string(dsr_scale_y));
 
 	text.render({-0.9, 0.9, 0}, "grend test v0");
+
+	if (in_select_mode) {
+		render_imgui(ctx);
+	}
 }
 
 void testscene::draw_debug_string(std::string str) {
@@ -592,121 +700,128 @@ static const float movement_speed = 10 /* units/s */;
 static const float rotation_speed = 1;
 
 void testscene::handle_editor_input(SDL_Event& ev) {
-	if (ev.type == SDL_KEYDOWN) {
-		switch (ev.key.keysym.sym) {
-			case SDLK_w: view_velocity.z =  movement_speed; break;
-			case SDLK_s: view_velocity.z = -movement_speed; break;
-			case SDLK_a: view_velocity.x = -movement_speed; break;
-			case SDLK_d: view_velocity.x =  movement_speed; break;
-			case SDLK_q: view_velocity.y =  movement_speed; break;
-			case SDLK_e: view_velocity.y = -movement_speed; break;
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui_ImplSDL2_ProcessEvent(&ev);
 
-			case SDLK_m: in_select_mode = !in_select_mode; break;
-			case SDLK_i: load_map(); break;
-			case SDLK_o: save_map(); break;
+	if (!io.WantCaptureKeyboard) {
+		if (ev.type == SDL_KEYDOWN) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_w: view_velocity.z =  movement_speed; break;
+				case SDLK_s: view_velocity.z = -movement_speed; break;
+				case SDLK_a: view_velocity.x = -movement_speed; break;
+				case SDLK_d: view_velocity.x =  movement_speed; break;
+				case SDLK_q: view_velocity.y =  movement_speed; break;
+				case SDLK_e: view_velocity.y = -movement_speed; break;
 
-			case SDLK_g:
-						 //select_rotation -= M_PI/4;
-						 select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
-						 break;
+				case SDLK_m: in_select_mode = !in_select_mode; break;
+				case SDLK_i: load_map(); break;
+				case SDLK_o: save_map(); break;
 
-			case SDLK_h:
-						 //select_rotation -= M_PI/4;
-						 select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
-						 break;
+				case SDLK_g:
+					//select_rotation -= M_PI/4;
+					select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
+					break;
 
-			case SDLK_z:
-						 //select_rotation -= M_PI/4;
-						 select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
-						 break;
+				case SDLK_h:
+					//select_rotation -= M_PI/4;
+					select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
+					break;
 
-			case SDLK_c:
-						 //select_rotation += M_PI/4;
-						 select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
-						 break;
+				case SDLK_z:
+					//select_rotation -= M_PI/4;
+					select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
+					break;
 
-			case SDLK_x:
-						 // flip horizontally (along the X axis)
-						 select_transform *= glm::scale(glm::vec3(-1, 1, 1));
-						 select_inverted = !select_inverted;
-						 break;
+				case SDLK_c:
+					//select_rotation += M_PI/4;
+					select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
+					break;
 
-			case SDLK_b:
-						 // flip horizontally (along the Z axis)
-						 select_transform *= glm::scale(glm::vec3( 1, 1, -1));
-						 select_inverted = !select_inverted;
-						 break;
+				case SDLK_x:
+					// flip horizontally (along the X axis)
+					select_transform *= glm::scale(glm::vec3(-1, 1, 1));
+					select_inverted = !select_inverted;
+					break;
 
-			case SDLK_v:
-						 // flip vertically
-						 select_transform *= glm::scale(glm::vec3( 1, -1, 1));
-						 select_inverted = !select_inverted;
-						 break;
+				case SDLK_b:
+					// flip horizontally (along the Z axis)
+					select_transform *= glm::scale(glm::vec3( 1, 1, -1));
+					select_inverted = !select_inverted;
+					break;
 
-			case SDLK_j:
-						 // scale down
-						 select_transform *= glm::scale(glm::vec3(0.9));
-						 break;
+				case SDLK_v:
+					// flip vertically
+					select_transform *= glm::scale(glm::vec3( 1, -1, 1));
+					select_inverted = !select_inverted;
+					break;
 
-			case SDLK_k:
-						 // scale up
-						 select_transform *= glm::scale(glm::vec3(1/0.9));
-						 break;
+				case SDLK_j:
+					// scale down
+					select_transform *= glm::scale(glm::vec3(0.9));
+					break;
 
-			case SDLK_r:
-						 if (select_model == glman.cooked_models.begin()) {
-							 select_model = glman.cooked_models.end();
-						 }
-						 select_model--;
-						 break;
+				case SDLK_k:
+					// scale up
+					select_transform *= glm::scale(glm::vec3(1/0.9));
+					break;
 
-			case SDLK_f:
-						 select_model++;
-						 if (select_model == glman.cooked_models.end()) {
-							 select_model = glman.cooked_models.begin();
-						 }
-						 break;
+				case SDLK_r:
+					if (select_model == glman.cooked_models.begin()) {
+					    select_model = glman.cooked_models.end();
+					}
+					select_model--;
+					break;
 
-			case SDLK_DELETE:
-						 // undo, basically
-						 if (!dynamic_models.empty()) {
-							 dynamic_models.pop_back();
-						 }
-						 break;
+				case SDLK_f:
+					select_model++;
+					if (select_model == glman.cooked_models.end()) {
+					    select_model = glman.cooked_models.begin();
+					}
+					break;
+
+				case SDLK_DELETE:
+					// undo, basically
+					if (!dynamic_models.empty()) {
+					    dynamic_models.pop_back();
+					}
+					break;
+			}
+		}
+
+		else if (ev.type == SDL_KEYUP) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_w:
+				case SDLK_s:
+					view_velocity.z = 0;
+					break;
+
+				case SDLK_a:
+				case SDLK_d:
+					view_velocity.x = 0;
+					break;
+
+				case SDLK_q:
+				case SDLK_e:
+					view_velocity.y = 0;
+					break;
+			}
 		}
 	}
 
-	else if (ev.type == SDL_KEYUP) {
-		switch (ev.key.keysym.sym) {
-			case SDLK_w:
-			case SDLK_s:
-				view_velocity.z = 0;
-				break;
-
-			case SDLK_a:
-			case SDLK_d:
-				view_velocity.x = 0;
-				break;
-
-			case SDLK_q:
-			case SDLK_e:
-				view_velocity.y = 0;
-				break;
+	if (!io.WantCaptureMouse) {
+		if (ev.type == SDL_MOUSEWHEEL) {
+			select_distance -= ev.wheel.y/10.f /* fidelity */;
 		}
-	}
 
-	else if (ev.type == SDL_MOUSEWHEEL) {
-		select_distance -= ev.wheel.y/10.f /* fidelity */;
-	}
-
-	else if (ev.type == SDL_MOUSEBUTTONDOWN) {
-		if (ev.button.button == SDL_BUTTON_LEFT) {
-			dynamic_models.push_back({
-					select_model->first,
-					select_position,
-					select_transform,
-					select_inverted,
-					});
+		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+			if (ev.button.button == SDL_BUTTON_LEFT) {
+				dynamic_models.push_back({
+						select_model->first,
+						select_position,
+						select_transform,
+						select_inverted,
+						});
+			}
 		}
 	}
 }
@@ -968,6 +1083,12 @@ void testscene::logic(context& ctx) {
 	}
 
 	adjust_draw_resolution();
+
+	if (in_select_mode) {
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(ctx.window);
+		ImGui::NewFrame();
+	}
 }
 
 void testscene::adjust_draw_resolution(void) {

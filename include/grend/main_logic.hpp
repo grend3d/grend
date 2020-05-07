@@ -57,11 +57,13 @@ class testscene : public engine {
 		void render_dynamic(context& ctx);
 		void render_editor(context& ctx);
 		void render_postprocess(context& ctx);
+		void render_imgui(context& ctx);
 
 		void load_models(void);
 		void load_shaders(void);
 		void init_framebuffers(void);
 		void init_test_lights(void);
+		void init_imgui(context& ctx);
 
 		void draw_debug_string(std::string str);
 		void save_map(std::string name="save.map");

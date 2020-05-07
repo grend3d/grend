@@ -1,11 +1,17 @@
+DIMGUI_SRC = $(wildcard libs/imgui/*.cpp) \
+			 libs/imgui/examples/imgui_impl_opengl3.cpp \
+			 libs/imgui/examples/imgui_impl_sdl.cpp
+DIMGUI_INCLUDES = -I./libs/imgui
+
 SRC  = $(wildcard src/*.cpp)
-OBJ  = $(SRC:.cpp=.o)
+OBJ  = $(DIMGUI_SRC:.cpp=.o) $(SRC:.cpp=.o)
 DEPS = $(SRC:.cpp=.d)
+
 
 SHADER_SRC = $(wildcard shaders/src/*.vert) $(wildcard shaders/src/*.frag)
 SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
 
-INCLUDES = -I./include -I./libs/
+INCLUDES = -I./include -I./libs/ $(DIMGUI_INCLUDES)
 
 CXXFLAGS += `sdl2-config --cflags --libs` -lSDL2_image -lSDL2_ttf -lGL -lGLEW \
             $(INCLUDES) \
@@ -14,7 +20,7 @@ CXXFLAGS += `sdl2-config --cflags --libs` -lSDL2_image -lSDL2_ttf -lGL -lGLEW \
 
 all: shaders grend-test
 grend-test: $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OBJ) -o $@
+	$(CXX) $(OBJ) -o $@ $(CXXFLAGS)
 
 -include $(DEPS)
 
