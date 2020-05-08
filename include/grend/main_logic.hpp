@@ -29,12 +29,14 @@ namespace grendx {
 
 class camera {
 	public:
-		glm::vec3 position;
-		glm::vec3 velocity;
-		glm::vec3 direction;
+		glm::vec3 position = glm::vec3(0);
+		glm::vec3 velocity = glm::vec3(0);
+		glm::vec3 direction = glm::vec3(0, 0, 1);
 
-		glm::vec3 up;
-		glm::vec3 right;
+		glm::vec3 right = glm::vec3(1, 0, 0);
+		glm::vec3 up = glm::vec3(0, 1, 0);
+
+		void set_direction(glm::vec3 dir);
 };
 
 class game_editor {
@@ -60,12 +62,13 @@ class game_editor {
 
 		void update_models(engine *renderer);
 		void set_mode(enum mode newmode) { mode = newmode; };
-		void handle_editor_input(engine *renderer, SDL_Event& ev);
+		void handle_editor_input(engine *renderer, context& ctx, SDL_Event& ev);
 		// TODO: rename 'engine' to 'renderer' or something
 		void render_imgui(engine *renderer, context& ctx);
 		void render_editor(engine *renderer, context& ctx);
 		void save_map(std::string name="save.map");
 		void load_map(std::string name="save.map");
+		void logic(context& ctx, float delta);
 
 		enum mode mode = mode::Inactive;
 		glm::vec3 edit_position = glm::vec3(0, 0, 0);
@@ -73,12 +76,18 @@ class game_editor {
 		float     edit_distance = 5;
 		// this keeps track of the current face order after flipping along an axis
 		bool      edit_inverted = false;
+		bool      enable_cam_movement = true;
+		camera    cam;
+
+		float movement_speed = 10.f;
+		float fidelity = 10.f;
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
 		gl_manager::cooked_model_map::const_iterator edit_model;
 
 	private:
+		void menubar(void);
 		void map_models(engine *renderer, context& ctx);
 };
 
@@ -112,6 +121,7 @@ class game_state : public engine {
 
 		glm::mat4 projection, view;
 
+		/*
 		// TODO: replace this with camera class
 		glm::vec3 view_position = glm::vec3(0, 0, 0);
 		glm::vec3 view_velocity;
@@ -119,6 +129,10 @@ class game_state : public engine {
 		glm::vec3 view_direction = glm::vec3(0, 0, -1);
 		glm::vec3 view_up = glm::vec3(0, 1, 0);
 		glm::vec3 view_right = glm::vec3(1, 0, 0);
+		*/
+
+		camera player_cam;
+		camera *current_cam = &player_cam;
 
 		//glm::vec3 player_position = glm::vec3(0); // meters
 		//glm::vec3 player_velocity = glm::vec3(0); // m/s

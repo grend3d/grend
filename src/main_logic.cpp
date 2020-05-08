@@ -17,6 +17,12 @@
 
 using namespace grendx;
 
+void camera::set_direction(glm::vec3 dir) {
+	direction = glm::normalize(dir);
+	right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), direction));
+	up    = glm::normalize(glm::cross(direction, right));
+}
+
 model_map load_library(std::string dir) {
 	model_map ret;
 	struct dirent *dirent;
@@ -562,7 +568,8 @@ void game_state::render(context& ctx) {
 	render_dynamic(ctx);
 	editor.render_editor(this, ctx);
 
-	dqueue_sort_draws(view_position);
+	assert(current_cam != nullptr);
+	dqueue_sort_draws(current_cam->position);
 	dqueue_flush_draws();
 
 	render_skybox(ctx);
@@ -660,10 +667,7 @@ void game_state::handle_player_input(SDL_Event& ev) {
 void game_state::input(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	Uint32 ticks_delta = cur_ticks - last_frame;
-
 	float fticks = ticks_delta / 1000.0f;
-
-
 	SDL_Event ev;
 
 	while (SDL_PollEvent(&ev)) {
@@ -677,8 +681,6 @@ void game_state::input(context& ctx) {
 				case SDL_WINDOWEVENT_SIZE_CHANGED:
 					{
 						SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
-						//std::cerr << " * resized window: " << win_x << ", " << win_y << std::endl;
-
 						// TODO: maybe reallocate framebuffers
 						//int win_x, win_y;
 						//glViewport(0, 0, win_x, win_y);
@@ -692,11 +694,10 @@ void game_state::input(context& ctx) {
 		}
 
 		if (editor.mode != game_editor::mode::Inactive) {
-			editor.handle_editor_input(this, ev);
+			editor.handle_editor_input(this, ctx, ev);
 		} else {
 			handle_player_input(ev);
 		}
-		//in_select_mode? handle_editor_input(ev) : handle_player_input(ev);
 	}
 
 	int x, y;
@@ -715,150 +716,48 @@ void game_state::input(context& ctx) {
 	float rel_x = ((float)x - center_x) / center_x;
 	float rel_y = ((float)y - center_y) / center_y;
 
-	// adjust view
-	view_direction = glm::normalize(glm::vec3(
+	player_cam.set_direction(glm::vec3(
 		rotation_speed * sin(rel_x*2*M_PI),
 		rotation_speed * sin(-rel_y*M_PI/2.f),
 		rotation_speed * -cos(rel_x*2*M_PI)
 	));
-
-	view_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), view_direction));
-	view_up    = glm::normalize(glm::cross(view_direction, view_right));
-
-	// TODO: "fidelity" parameter to help align objects
-	float fidelity = 10.f;
-	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
-
 }
 
 void game_state::physics(context& ctx) {
 	float delta = (SDL_GetTicks() - last_frame)/1000.f;
 
 	glm::vec3 rel_view =
-		glm::normalize(glm::vec3(view_direction.x, 0, view_direction.z));
+		glm::normalize(glm::vec3(player_cam.direction.x, 0,
+		                         player_cam.direction.z));
 
-	//player_direction = glm::normalize(glm::vec3(view_direction.x, 0, view_direction.z));
-	//player_position += player_velocityplayer_direction*delta;
-	//player_position += player_velocityplayer_direction*delta;
 	glm::vec3 player_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), rel_view));
 	glm::vec3 player_up    = glm::normalize(glm::cross(rel_view, player_right));
 
-	//glm::vec3 incr = glm::vec3(0);
-	//player_velocity = glm::vec3(0);
-
 	glm::vec3 player_force = {0, 0, 0};
-	/*
-	// TODO: some way to add velocity in physics system
-	player_velocity += player_move_input.z *delta* rel_view;
-	player_velocity += player_move_input.y *delta* player_up;
-	player_velocity += player_move_input.x *delta* glm::normalize(glm::cross(rel_view, player_up));
-	*/
-
 	player_force += player_move_input.z * rel_view;
 	player_force += player_move_input.y * player_up;
 	player_force += player_move_input.x * glm::normalize(glm::cross(rel_view, player_up));
 
 	phys.apply_force(player_phys_id, player_force);
 	phys.solve_contraints(delta);
-
-	/*
-	if ((player_position + player_velocity*delta*2.f).y < 0) {
-		player_move_input.y *= -0.5;
-
-	} else if (player_position.y > 0) {
-		player_move_input.y -= 9.81*delta;
-	}
-	*/
-
-	/*
-	glm::vec3 next_pos = player_position + player_velocity*delta;
-	auto [collided, normal] = static_octree.collides(player_position, next_pos);
-
-	if (collided) {
-		player_position += normal*(float)static_octree.leaf_size;
-		//player_velocity.y *= -0.50;
-		player_velocity = glm::reflect(player_velocity, normal) * 0.5f;
-
-	} else {
-		player_velocity.y -= 9.81*delta;
-	}
-
-	player_position += player_velocity*delta;
-	glm::vec3 tempdir = glm::normalize(
-		glm::vec3(player_velocity.x, 0, player_velocity.z));
-
-	if (fabs(tempdir.x) > 0 || fabs(tempdir.z) > 0) {
-		player_direction = tempdir;
-	}
-
-	// TODO: make the player a physics object
-	for (auto& thing : phys_objs) {
-		if (glm::distance(thing.position, player_position) < 1) {
-			thing.velocity += player_velocity;
-		}
-
-		glm::vec3 next_pos = thing.position + thing.velocity*delta;
-		auto [collided, normal] = static_octree.collides(thing.position, next_pos);
-
-		if (collided) {
-			thing.position += normal*(float)static_octree.leaf_size;
-			thing.velocity = glm::reflect(thing.velocity, normal) * 0.5f;
-
-		} else {
-			thing.velocity.y -= 9.81*delta;
-		}
-
-		thing.position += thing.velocity*delta;
-	}
-	*/
-
-	//player_direction = glm::normalize(glm::vec3(player_velocity.x, -0.1*fabs(glm::length(player_velocity)), player_velocity.z));
-	//player_direction = glm::normalize(player_velocity);
 }
 
 void game_state::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
+	Uint32 ticks_delta = cur_ticks - last_frame;
+	float fticks = ticks_delta / 1000.0f;
 	last_frame = cur_ticks;
 
-	// XXX: keep things from disappearing into the abyss while I work out physics
-	/*
-	if (player_position.y < -25) {
-		// TODO: player class, with position set/reset etc
-		player_position = {0, 2, 0};
-	}
-	*/
-
-	/*
-	for (auto& thing : phys_objs) {
-		if (thing.position.y < -25) {
-			thing.position = {0, 2, 0};
-		}
-	}
-	*/
+	editor.logic(ctx, fticks);
+	current_cam = editor.mode? &editor.cam : &player_cam;
 
 	glm::vec3 player_position = phys.objects[player_phys_id].position;
+	player_cam.position = player_position - player_cam.direction*5.f;
 
-	//player_direction = view_direction;
-
-	/*
-	if (in_select_mode) {
-		view = glm::lookAt(view_position, view_position + view_direction, view_up);
-
-	} else {
-		view = glm::lookAt(player_position - view_direction*5.f,
-		                   player_position, view_up);
-	}
-	*/
-
-	// TODO: editor camera
-	if (editor.mode == game_editor::mode::Inactive) {
-		view = glm::lookAt(player_position - view_direction*5.f,
-		                   player_position, view_up);
-
-	} else {
-		view = glm::lookAt(view_position, view_position + view_direction, view_up);
-
-	}
+	assert(current_cam != nullptr);
+	view = glm::lookAt(current_cam->position,
+	                   current_cam->position + current_cam->direction,
+	                   current_cam->up);
 
 	adjust_draw_resolution();
 }
