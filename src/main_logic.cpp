@@ -75,7 +75,7 @@ static std::list<std::string> test_libraries = {
 	//"assets/obj/Dungeon Set 2/",
 };
 
-void testscene::load_models(void) {
+void game_state::load_models(void) {
 	model_map models = test_models;
 	std::list<std::string> libraries = test_libraries;
 
@@ -124,10 +124,10 @@ void testscene::load_models(void) {
 
 	glman.compile_models(models);
 	glman.bind_cooked_meshes();
-	select_model = glman.cooked_models.begin();
+	editor.update_models(this);
 }
 
-void testscene::load_shaders(void) {
+void game_state::load_shaders(void) {
 	gl_manager::rhandle vertex_shader, fragment_shader;
 	vertex_shader = glman.load_shader("shaders/out/skybox.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/out/skybox.frag", GL_FRAGMENT_SHADER);
@@ -229,7 +229,7 @@ void testscene::load_shaders(void) {
 	}
 }
 
-void testscene::init_framebuffers(void) {
+void game_state::init_framebuffers(void) {
 	// set up the render framebuffer
 	rend_fb = glman.gen_framebuffer();
 	rend_x = screen_x, rend_y = screen_y;
@@ -247,7 +247,7 @@ void testscene::init_framebuffers(void) {
 	                       glman.gen_texture_color(rend_x, rend_y));
 }
 
-void testscene::init_test_lights(void) {
+void game_state::init_test_lights(void) {
 	// TODO: assert() + logger
 	player_light = add_light((struct engine::light){
 		.position = {0, 7, 0, 1},
@@ -288,7 +288,7 @@ void testscene::init_test_lights(void) {
 	update_lights();
 }
 
-void testscene::init_imgui(context& ctx) {
+void game_state::init_imgui(context& ctx) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -300,7 +300,7 @@ void testscene::init_imgui(context& ctx) {
 }
 
 // TODO: should start thinking about splitting initialization into smaller functions
-testscene::testscene(context& ctx) : engine(), text(this) {
+game_state::game_state(context& ctx) : engine(), text(this) {
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
@@ -332,11 +332,11 @@ testscene::testscene(context& ctx) : engine(), text(this) {
 	DO_ERROR_CHECK();
 }
 
-testscene::~testscene() {
+game_state::~game_state() {
 	puts("got here");
 }
 
-void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
+void game_state::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 	if (node == nullptr) {
 		return;
 	}
@@ -371,7 +371,7 @@ void testscene::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 	}
 }
 
-void testscene::render_skybox(context& ctx) {
+void game_state::render_skybox(context& ctx) {
 	set_shader(skybox_shader);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LEQUAL);
@@ -390,14 +390,14 @@ void testscene::render_skybox(context& ctx) {
 	glDepthMask(GL_TRUE);
 }
 
-void testscene::render_static(context& ctx) {
+void game_state::render_static(context& ctx) {
 	for (auto& thing : static_models.nodes) {
 		//draw_model(thing.name, thing.transform);
 		dqueue_draw_model(thing.name, thing.transform);
 	}
 }
 
-void testscene::render_players(context& ctx) {
+void game_state::render_players(context& ctx) {
 	/*
 	glm::vec3 hpos = glm::vec3(view_direction.x*3 + view_position.x, 0, view_direction.z*3 + view_position.z);
 	glm::mat4 bizz =
@@ -435,7 +435,7 @@ void testscene::render_players(context& ctx) {
 	*/
 }
 
-void testscene::render_dynamic(context& ctx) {
+void game_state::render_dynamic(context& ctx) {
 	/*
 	for (const auto& thing : phys_objs) {
 		glm::mat4 transform = glm::translate(glm::mat4(1), thing.position);
@@ -456,117 +456,7 @@ void testscene::render_dynamic(context& ctx) {
 	}
 }
 
-void testscene::render_editor(context& ctx) {
-	if (in_select_mode) {
-		glm::mat4 trans = glm::translate(select_position) * select_transform;
-
-		glFrontFace(select_inverted? GL_CW : GL_CCW);
-		draw_model_lines(select_model->first, trans);
-		draw_model(select_model->first, trans);
-	}
-	DO_ERROR_CHECK();
-
-	for (auto& v : dynamic_models) {
-		glm::mat4 trans = glm::translate(v.position) * v.transform;
-
-		glFrontFace(v.inverted? GL_CW : GL_CCW);
-		if (in_select_mode) {
-			draw_model_lines(v.name, trans);
-		}
-		//draw_model(v.name, trans);
-		dqueue_draw_model(v.name, trans);
-		DO_ERROR_CHECK();
-	}
-}
-
-static void menubar() {
-	static bool demo_window = false;
-	static int mode = 0;
-	static float snap_threshold = 0.1;
-
-	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("Open", "CTRL+O")) {}
-			if (ImGui::MenuItem("Save", "CTRL+S")) {}
-			if (ImGui::MenuItem("Save As", "Shift+CTRL+S")) {}
-			if (ImGui::MenuItem("Close", "CTRL+O")) {}
-
-			ImGui::Separator();
-			if (ImGui::BeginMenu("Import")) {
-				if (ImGui::MenuItem("Import .obj model")) {}
-				if (ImGui::MenuItem("Import .gltf models")) {}
-				if (ImGui::MenuItem("Import .gltf scene")) {}
-				if (ImGui::MenuItem("Import .map scene")) {}
-				if (ImGui::MenuItem("Load .gltf scene as current")) {}
-				ImGui::EndMenu();
-			}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders")) {}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Edit")) {
-			if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-			if (ImGui::MenuItem("Redo", "CTRL+Y")) {}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Reset+Regenerate physics", "CTRL+P")) {}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("asdf", "CTRL+V")) {}
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Tools")) {
-			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Add object", "CTRL+B")) {}
-			if (ImGui::MenuItem("Scale object", "CTRL+L")) {}
-			ImGui::InputFloat("Snap threshold", &snap_threshold,
-			                  0.01f, 1.0f, "%.2f");
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Bake lighting", "CTRL+B")) {}
-			if (ImGui::MenuItem("Generate environment light probes", "CTRL+L")) {}
-			if (ImGui::MenuItem("Generate IBL cubemaps", "Shift-CTRL+L")) {}
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Mode")) {
-			ImGui::RadioButton("Map editor", &mode, 0);
-			ImGui::RadioButton("Lighting editor", &mode, 1);
-			ImGui::RadioButton("Physics editor", &mode, 2);
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Debug")) {
-			ImGui::MenuItem("Dear ImGui demo window", NULL, &demo_window);
-			ImGui::EndMenu();
-		}
-
-		ImGui::EndMainMenuBar();
-	}
-
-	if (demo_window) {
-		ImGui::ShowDemoWindow(&demo_window);
-	}
-}
-
-void testscene::render_imgui(context& ctx) {
-	menubar();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void testscene::render_postprocess(context& ctx) {
+void game_state::render_postprocess(context& ctx) {
 	glman.bind_default_framebuffer();
 	glman.bind_vao(glman.screenquad_vao);
 	glViewport(0, 0, screen_x, screen_y);
@@ -613,7 +503,7 @@ void testscene::render_postprocess(context& ctx) {
 }
 
 /*
-void testscene::update_dynamic_lights(context& ctx) {
+void game_state::update_dynamic_lights(context& ctx) {
 	// light that follows the player
 	float asdf = 0.5*(SDL_GetTicks()/1000.f);
 	glm::vec4 lfoo = glm::vec4(15*cos(asdf), 5, 15*sin(asdf), 1.f);
@@ -628,7 +518,7 @@ void testscene::update_dynamic_lights(context& ctx) {
 }
 */
 
-void testscene::render(context& ctx) {
+void game_state::render(context& ctx) {
 	// TODO: if postprocessing enabled, do this, otherwise just keep
 	//       the default framebuffer
 	{
@@ -670,7 +560,8 @@ void testscene::render(context& ctx) {
 	render_static(ctx);
 	render_players(ctx);
 	render_dynamic(ctx);
-	render_editor(ctx);
+	editor.render_editor(this, ctx);
+
 	dqueue_sort_draws(view_position);
 	dqueue_flush_draws();
 
@@ -684,12 +575,17 @@ void testscene::render(context& ctx) {
 
 	text.render({-0.9, 0.9, 0}, "grend test v0");
 
+	/*
 	if (in_select_mode) {
 		render_imgui(ctx);
 	}
+	*/
+	if (editor.mode != game_editor::mode::Inactive) {
+		editor.render_imgui(this, ctx);
+	}
 }
 
-void testscene::draw_debug_string(std::string str) {
+void game_state::draw_debug_string(std::string str) {
 	glDisable(GL_DEPTH_TEST);
 	text.render({-0.9, -0.9, 0}, str);
 	DO_ERROR_CHECK();
@@ -699,134 +595,7 @@ void testscene::draw_debug_string(std::string str) {
 static const float movement_speed = 10 /* units/s */;
 static const float rotation_speed = 1;
 
-void testscene::handle_editor_input(SDL_Event& ev) {
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui_ImplSDL2_ProcessEvent(&ev);
-
-	if (!io.WantCaptureKeyboard) {
-		if (ev.type == SDL_KEYDOWN) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_w: view_velocity.z =  movement_speed; break;
-				case SDLK_s: view_velocity.z = -movement_speed; break;
-				case SDLK_a: view_velocity.x = -movement_speed; break;
-				case SDLK_d: view_velocity.x =  movement_speed; break;
-				case SDLK_q: view_velocity.y =  movement_speed; break;
-				case SDLK_e: view_velocity.y = -movement_speed; break;
-
-				case SDLK_m: in_select_mode = !in_select_mode; break;
-				case SDLK_i: load_map(); break;
-				case SDLK_o: save_map(); break;
-
-				case SDLK_g:
-					//select_rotation -= M_PI/4;
-					select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
-					break;
-
-				case SDLK_h:
-					//select_rotation -= M_PI/4;
-					select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
-					break;
-
-				case SDLK_z:
-					//select_rotation -= M_PI/4;
-					select_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
-					break;
-
-				case SDLK_c:
-					//select_rotation += M_PI/4;
-					select_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
-					break;
-
-				case SDLK_x:
-					// flip horizontally (along the X axis)
-					select_transform *= glm::scale(glm::vec3(-1, 1, 1));
-					select_inverted = !select_inverted;
-					break;
-
-				case SDLK_b:
-					// flip horizontally (along the Z axis)
-					select_transform *= glm::scale(glm::vec3( 1, 1, -1));
-					select_inverted = !select_inverted;
-					break;
-
-				case SDLK_v:
-					// flip vertically
-					select_transform *= glm::scale(glm::vec3( 1, -1, 1));
-					select_inverted = !select_inverted;
-					break;
-
-				case SDLK_j:
-					// scale down
-					select_transform *= glm::scale(glm::vec3(0.9));
-					break;
-
-				case SDLK_k:
-					// scale up
-					select_transform *= glm::scale(glm::vec3(1/0.9));
-					break;
-
-				case SDLK_r:
-					if (select_model == glman.cooked_models.begin()) {
-					    select_model = glman.cooked_models.end();
-					}
-					select_model--;
-					break;
-
-				case SDLK_f:
-					select_model++;
-					if (select_model == glman.cooked_models.end()) {
-					    select_model = glman.cooked_models.begin();
-					}
-					break;
-
-				case SDLK_DELETE:
-					// undo, basically
-					if (!dynamic_models.empty()) {
-					    dynamic_models.pop_back();
-					}
-					break;
-			}
-		}
-
-		else if (ev.type == SDL_KEYUP) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_w:
-				case SDLK_s:
-					view_velocity.z = 0;
-					break;
-
-				case SDLK_a:
-				case SDLK_d:
-					view_velocity.x = 0;
-					break;
-
-				case SDLK_q:
-				case SDLK_e:
-					view_velocity.y = 0;
-					break;
-			}
-		}
-	}
-
-	if (!io.WantCaptureMouse) {
-		if (ev.type == SDL_MOUSEWHEEL) {
-			select_distance -= ev.wheel.y/10.f /* fidelity */;
-		}
-
-		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
-			if (ev.button.button == SDL_BUTTON_LEFT) {
-				dynamic_models.push_back({
-						select_model->first,
-						select_position,
-						select_transform,
-						select_inverted,
-						});
-			}
-		}
-	}
-}
-
-void testscene::handle_player_input(SDL_Event& ev) {
+void game_state::handle_player_input(SDL_Event& ev) {
 	if (ev.type == SDL_KEYDOWN) {
 		switch (ev.key.keysym.sym) {
 			case SDLK_w: player_move_input.z =  movement_speed; break;
@@ -836,7 +605,8 @@ void testscene::handle_player_input(SDL_Event& ev) {
 			case SDLK_q: player_move_input.y =  movement_speed; break;
 			case SDLK_e: player_move_input.y = -movement_speed; break;
 			case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
-			case SDLK_m: in_select_mode = !in_select_mode; break;
+			//case SDLK_m: in_select_mode = !in_select_mode; break;
+			case SDLK_m: editor.set_mode(game_editor::mode::Map); break;
 			//case SDLK_BACKSPACE: player_position = {0, 2, 0}; break;
 
 			case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;
@@ -887,7 +657,7 @@ void testscene::handle_player_input(SDL_Event& ev) {
 	}
 }
 
-void testscene::input(context& ctx) {
+void game_state::input(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	Uint32 ticks_delta = cur_ticks - last_frame;
 
@@ -921,7 +691,12 @@ void testscene::input(context& ctx) {
 			}
 		}
 
-		in_select_mode? handle_editor_input(ev) : handle_player_input(ev);
+		if (editor.mode != game_editor::mode::Inactive) {
+			editor.handle_editor_input(this, ev);
+		} else {
+			handle_player_input(ev);
+		}
+		//in_select_mode? handle_editor_input(ev) : handle_player_input(ev);
 	}
 
 	int x, y;
@@ -950,22 +725,13 @@ void testscene::input(context& ctx) {
 	view_right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), view_direction));
 	view_up    = glm::normalize(glm::cross(view_direction, view_right));
 
-	if (in_select_mode) {
-		view_position += view_velocity.z * view_direction * fticks;
-		view_position += view_velocity.y * view_up * fticks;
-		view_position += view_velocity.x * glm::normalize(glm::cross(view_direction, view_up)) * fticks;
-	}
-
 	// TODO: "fidelity" parameter to help align objects
 	float fidelity = 10.f;
 	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
 
-	select_position = glm::vec3(align(view_direction.x*select_distance + view_position.x),
-	                            align(view_direction.y*select_distance + view_position.y),
-	                            align(view_direction.z*select_distance + view_position.z));
 }
 
-void testscene::physics(context& ctx) {
+void game_state::physics(context& ctx) {
 	float delta = (SDL_GetTicks() - last_frame)/1000.f;
 
 	glm::vec3 rel_view =
@@ -1050,7 +816,7 @@ void testscene::physics(context& ctx) {
 	//player_direction = glm::normalize(player_velocity);
 }
 
-void testscene::logic(context& ctx) {
+void game_state::logic(context& ctx) {
 	Uint32 cur_ticks = SDL_GetTicks();
 	last_frame = cur_ticks;
 
@@ -1074,6 +840,7 @@ void testscene::logic(context& ctx) {
 
 	//player_direction = view_direction;
 
+	/*
 	if (in_select_mode) {
 		view = glm::lookAt(view_position, view_position + view_direction, view_up);
 
@@ -1081,17 +848,22 @@ void testscene::logic(context& ctx) {
 		view = glm::lookAt(player_position - view_direction*5.f,
 		                   player_position, view_up);
 	}
+	*/
+
+	// TODO: editor camera
+	if (editor.mode == game_editor::mode::Inactive) {
+		view = glm::lookAt(player_position - view_direction*5.f,
+		                   player_position, view_up);
+
+	} else {
+		view = glm::lookAt(view_position, view_position + view_direction, view_up);
+
+	}
 
 	adjust_draw_resolution();
-
-	if (in_select_mode) {
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(ctx.window);
-		ImGui::NewFrame();
-	}
 }
 
-void testscene::adjust_draw_resolution(void) {
+void game_state::adjust_draw_resolution(void) {
 	// TODO: non-linear adjustment based on frame time
 	double frametime = 1.0/frame_timer.average() * 1000;
 
@@ -1113,71 +885,3 @@ void testscene::adjust_draw_resolution(void) {
 		}
 	}
 }
-
-void testscene::save_map(std::string name) {
-	std::ofstream foo(name);
-	std::cerr << "saving map " << name << std::endl;
-
-	if (!foo.good()) {
-		std::cerr << "couldn't open save file" << name << std::endl;
-		return;
-	}
-
-	foo << "### test scene save file" << std::endl;
-
-	/*
-	for (std::string& lib : libraries) {
-		foo << "library\t" << lib << std::endl;
-	}
-	*/
-
-	for (auto& v : dynamic_models) {
-		foo << "entity\t" << v.name << "\t"
-			<< v.position.x << "," << v.position.y << "," << v.position.z << "\t";
-
-		for (unsigned y = 0; y < 4; y++) {
-			for (unsigned x = 0; x < 4; x++) {
-				foo << v.transform[y][x] << ",";
-			}
-		}
-
-		foo << "\t" << v.inverted;
-		foo << std::endl;
-	}
-}
-
-void testscene::load_map(std::string name) {
-	std::ifstream foo(name);
-	std::cerr << "loading map " << name << std::endl;
-
-	if (!foo.good()) {
-		std::cerr << "couldn't open save file" << name << std::endl;
-		return;
-	}
-
-	std::string line;
-	while (std::getline(foo, line)) {
-		auto statement = split_string(line, '\t');
-		if (line[0] == '#' || line[0] == '\n') {
-			continue;
-		}
-
-		if (statement[0] == "entity" && statement.size() >= 5) {
-			auto posvec = split_string(statement[2], ',');
-			auto matvec = split_string(statement[3], ',');
-
-			editor_entry v;
-			v.name = statement[1];
-			v.position = glm::vec3(std::stof(posvec[0]), std::stof(posvec[1]), std::stof(posvec[2]));
-			v.inverted = std::stoi(statement[4]);
-
-			for (unsigned i = 0; i < 16; i++) {
-				v.transform[i/4][i%4] = std::stof(matvec[i]);
-			}
-
-			dynamic_models.push_back(v);
-			std::cerr << "# loaded a " << v.name << std::endl;
-		}
-	}
-}
-

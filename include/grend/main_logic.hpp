@@ -27,14 +27,25 @@
 
 namespace grendx {
 
-class testscene : public engine {
+class camera {
 	public:
-		testscene(context& ctx);
-		virtual ~testscene();
-		virtual void render(context& ctx);
-		virtual void logic(context& ctx);
-		virtual void physics(context& ctx);
-		virtual void input(context& ctx);
+		glm::vec3 position;
+		glm::vec3 velocity;
+		glm::vec3 direction;
+
+		glm::vec3 up;
+		glm::vec3 right;
+};
+
+class game_editor {
+	public:
+		enum mode {
+			Inactive,
+			Map,
+			Lighting,
+			Physics,
+			AI,
+		};
 
 		struct editor_entry {
 			std::string name;
@@ -47,17 +58,49 @@ class testscene : public engine {
 			//       this model, although that might be better off in the model class itself...
 		};
 
+		void update_models(engine *renderer);
+		void set_mode(enum mode newmode) { mode = newmode; };
+		void handle_editor_input(engine *renderer, SDL_Event& ev);
+		// TODO: rename 'engine' to 'renderer' or something
+		void render_imgui(engine *renderer, context& ctx);
+		void render_editor(engine *renderer, context& ctx);
+		void save_map(std::string name="save.map");
+		void load_map(std::string name="save.map");
+
+		enum mode mode = mode::Inactive;
+		glm::vec3 edit_position = glm::vec3(0, 0, 0);
+		glm::mat4 edit_transform = glm::mat4(1);
+		float     edit_distance = 5;
+		// this keeps track of the current face order after flipping along an axis
+		bool      edit_inverted = false;
+
+		// Map editing things
+		std::vector<editor_entry> dynamic_models;
+		gl_manager::cooked_model_map::const_iterator edit_model;
+
+	private:
+		void map_models(engine *renderer, context& ctx);
+};
+
+class game_state : public engine {
+	friend class game_editor;
+
+	public:
+		game_state(context& ctx);
+		virtual ~game_state();
+		virtual void render(context& ctx);
+		virtual void logic(context& ctx);
+		virtual void physics(context& ctx);
+		virtual void input(context& ctx);
+
 		// TODO: subclasses or something
 		void handle_player_input(SDL_Event& ev);
-		void handle_editor_input(SDL_Event& ev);
 
 		void render_skybox(context& ctx);
 		void render_static(context& ctx);
 		void render_players(context& ctx);
 		void render_dynamic(context& ctx);
-		void render_editor(context& ctx);
 		void render_postprocess(context& ctx);
-		void render_imgui(context& ctx);
 
 		void load_models(void);
 		void load_shaders(void);
@@ -66,11 +109,10 @@ class testscene : public engine {
 		void init_imgui(context& ctx);
 
 		void draw_debug_string(std::string str);
-		void save_map(std::string name="save.map");
-		void load_map(std::string name="save.map");
 
 		glm::mat4 projection, view;
 
+		// TODO: replace this with camera class
 		glm::vec3 view_position = glm::vec3(0, 0, 0);
 		glm::vec3 view_velocity;
 
@@ -83,23 +125,13 @@ class testscene : public engine {
 		uint64_t player_phys_id;
 		glm::vec3 player_move_input = glm::vec3(0);
 		glm::vec3 player_direction = glm::vec3(1, 0, 0);
+		grendx::scene static_models;
+
+		game_editor editor;
 
 		// physics things
 		//std::vector<physics_object> phys_objs;
 		imp_physics phys;
-
-		// Map editing things
-		std::vector<editor_entry> dynamic_models;
-		gl_manager::cooked_model_map::iterator select_model;
-		grendx::scene static_models;
-		//octree static_octree;
-
-		bool      in_select_mode = false;
-		glm::vec3 select_position = glm::vec3(0, 0, 0);
-		glm::mat4 select_transform = glm::mat4(1);
-		float     select_distance = 5;
-		// this keeps track of the current face order after flipping along an axis
-		bool      select_inverted = false;
 
 		// sky box
 		// TODO: should this be in the engine?

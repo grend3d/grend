@@ -12,7 +12,7 @@ using namespace grendx;
 
 int main(int argc, char *argv[]) {
 	context ctx("grend test");
-	std::unique_ptr<testscene> scene(new testscene(ctx));
+	std::unique_ptr<game_state> scene(new game_state(ctx));
 
 	while (scene->running) {
 		//uint32_t begin = SDL_GetTicks();

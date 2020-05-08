@@ -60,15 +60,17 @@ class engine {
 		void remove_light(int id);
 
 		void set_shader(gl_manager::rhandle& shd);
-
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
+
+		const gl_manager& get_glman(void){ return glman; };
 
 		bool running = true;
 
 	protected:
 		gl_manager::rhandle shader;
 		gl_manager glman;
+
 		GLint u_diffuse_map;
 		GLint u_specular_map;
 		GLint u_normal_map;
