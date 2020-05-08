@@ -70,7 +70,7 @@ class game_editor {
 		void load_map(std::string name="save.map");
 		void logic(context& ctx, float delta);
 
-		enum mode mode = mode::Inactive;
+		int mode = mode::Inactive;
 		glm::vec3 edit_position = glm::vec3(0, 0, 0);
 		glm::mat4 edit_transform = glm::mat4(1);
 		float     edit_distance = 5;

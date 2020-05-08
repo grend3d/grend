@@ -67,6 +67,14 @@ class engine {
 
 		bool running = true;
 
+		// TODO: make an accessor function for this, for debug drawing in the
+		//       editor
+		// TODO: need to keep the max number of lights synced between
+		//       the engine code and shader code, something to keep in mind
+		//       if/when writing a shader preprocessor language
+		unsigned active_lights = 0;
+		struct light lights[MAX_LIGHTS];
+
 	protected:
 		gl_manager::rhandle shader;
 		gl_manager glman;
@@ -91,18 +99,7 @@ class engine {
 		std::map<std::string, gl_manager::rhandle> specular_handles;
 		std::map<std::string, gl_manager::rhandle> normmap_handles;
 		std::map<std::string, gl_manager::rhandle> aomap_handles;
-
-		// TODO: need to keep the max number of lights synced between
-		//       the engine code and shader code, something to keep in mind
-		//       if/when writing a shader preprocessor language
-		struct light lights[MAX_LIGHTS];
-		unsigned active_lights = 0;
-
-		// TODO: maybe have a bitmap to track changes to lights (so )
-
 };
-
-
 
 // namespace grendx
 }
