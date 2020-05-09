@@ -89,6 +89,7 @@ class game_editor {
 	private:
 		void menubar(void);
 		void map_models(engine *renderer, context& ctx);
+		void map_window(engine *renderer, context& ctx);
 };
 
 class game_state : public engine {
