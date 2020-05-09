@@ -450,11 +450,7 @@ void engine::sync_light(unsigned id) {
 	std::string locstr = "lights[" + std::to_string(id) + "]";
 	std::map<std::string, GLint> light_handles;
 
-	for (std::string str : {
-			"position", "diffuse", "const_attenuation",
-			"linear_attenuation", "quadratic_attenuation",
-			"specular", "is_active"
-	}) {
+	for (std::string str : { "position", "diffuse", "radius", "intensity" }) {
 		light_handles[str] = glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
 		DO_ERROR_CHECK();
 		/*
@@ -469,13 +465,9 @@ void engine::sync_light(unsigned id) {
 	glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(lights[id].diffuse));
 	DO_ERROR_CHECK();
 
-	glUniform1f(light_handles["const_attenuation"], lights[id].const_attenuation);
+	glUniform1f(light_handles["radius"], lights[id].radius);
 	DO_ERROR_CHECK();
-	glUniform1f(light_handles["linear_attenuation"], lights[id].linear_attenuation);
-	DO_ERROR_CHECK();
-	glUniform1f(light_handles["quadratic_attenuation"], lights[id].quadratic_attenuation);
-	DO_ERROR_CHECK();
-	glUniform1f(light_handles["specular"], lights[id].specular);
+	glUniform1f(light_handles["intensity"], lights[id].intensity);
 	DO_ERROR_CHECK();
 }
 

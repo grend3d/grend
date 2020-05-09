@@ -3,6 +3,7 @@
 #define ENABLE_SKYBOX 1
 
 #include <lib/shading-uniforms.glsl>
+#include <lib/attenuation.glsl>
 
 attribute vec3 in_Position;
 attribute vec2 texcoord;
@@ -17,7 +18,7 @@ varying vec2 f_texcoord;
 void main(void) {
 	vec4 v_coord = vec4(in_Position, 1.0);
 	// TODO: make this a uniform
-	vec3 ambient_light = vec3(0.2);
+	vec3 ambient_light = vec3(0.0);
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - m * v_coord));
 
 	mat4 mvp = p*v*m;
@@ -29,23 +30,13 @@ void main(void) {
 
 	for (int i = 0; i < active_lights && i < max_lights; i++) {
 		vec3 light_dir;
-		float attenuation;
+		float lum = attenuation(i, v_coord);
 
-		if (lights[i].position.w == 0.0) {
-			attenuation = 1.0;
-			light_dir = normalize(vec3(lights[i].position));
-
-		} else {
-			vec3 light_vertex = vec3(lights[i].position - m * v_coord);
-			float distance = length(light_vertex);
-			attenuation = 1.0 / (lights[i].const_attenuation
-			                     + lights[i].linear_attenuation * distance
-			                     + lights[i].quadratic_attenuation * distance * distance);
-
-			//attenuation = mix(1, attenuation, lights[i].position.w)
-			light_dir = normalize(light_vertex);
-			//light_dir = normalize(vec3(lights[i].position));
-		}
+		float dist = distance(lights[i].position, m*v_coord);
+		light_dir = mix(normalize(vec3(lights[i].position)),
+		                normalize(vec3(lights[i].position - m * v_coord)),
+		                lights[i].position.w);
+		//light_dir = normalize(vec3(lights[i].position - m * v_coord));
 
 		vec3 diffuse_reflection = vec3(0.0);
 		vec3 specular_reflection = vec3(0);
@@ -53,16 +44,13 @@ void main(void) {
 
 #if ENABLE_DIFFUSION
 		diffuse_reflection =
-			// diminish contribution from diffuse lighting for a more cartoony look
-			//0.5 *
-			attenuation * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
+			lum * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
 			* max(0.0, dot(normal_dir, light_dir));
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
 		if (anmaterial.metalness > 0.1 && dot(normal_dir, light_dir) >= 0.0) {
-			specular_reflection = anmaterial.specular.w * attenuation
-				* vec3(lights[i].specular)
+			specular_reflection = lum * anmaterial.specular.w
 				* vec3(anmaterial.specular)
 				* pow(max(0.0, dot(reflect(-light_dir, normal_dir), view_dir)),
 				      anmaterial.metalness);

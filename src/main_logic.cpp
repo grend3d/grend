@@ -160,7 +160,7 @@ void game_state::load_shaders(void) {
 	fragment_shader = glman.load_shader("shaders/out/vertex-shading.frag", GL_FRAGMENT_SHADER);
 #else
 	vertex_shader = glman.load_shader("shaders/out/pixel-shading.vert", GL_VERTEX_SHADER);
-	//fragment_shader = glman.load_shader("shaders/pixel-shading.frag", GL_FRAGMENT_SHADER);
+	//fragment_shader = glman.load_shader("shaders/out/pixel-shading.frag", GL_FRAGMENT_SHADER);
 	fragment_shader = glman.load_shader("shaders/out/pixel-shading-metal-roughness-pbr.frag", GL_FRAGMENT_SHADER);
 #endif
 
@@ -258,37 +258,29 @@ void game_state::init_test_lights(void) {
 	player_light = add_light((struct engine::light){
 		.position = {0, 7, 0, 1},
 		.diffuse  = {1.0, 0.9, 0.8, 0.0},
-		.const_attenuation = 0.0f,
-		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.01f,
-		.specular = 1.0,
+		.radius = 0.2,
+		.intensity = 100.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 7, -8, 1},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
-		.const_attenuation = 0.0f,
-		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.01f,
-		.specular = 1.0,
+		.radius = 0.2,
+		.intensity = 100.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 7, 8, 1},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
-		.const_attenuation = 0.0f,
-		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.01f,
-		.specular = 1.0,
+		.radius = 0.2,
+		.intensity = 100.0,
 	});
 
 	add_light((struct engine::light){
 		.position = {0, 30, 50, 0},
 		.diffuse  = {0.9, 0.9, 1.0, 0.1},
-		.const_attenuation = 0.f,
-		.linear_attenuation = 0.f,
-		.quadratic_attenuation = 0.001f,
-		.specular = 1.0,
+		.radius = 3.0,
+		.intensity = 100.0,
 	});
 
 	update_lights();

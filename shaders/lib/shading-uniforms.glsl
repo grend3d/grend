@@ -3,8 +3,8 @@
 struct lightSource {
 	vec4 position;
 	vec4 diffuse;
-	float const_attenuation, linear_attenuation, quadratic_attenuation;
-	float specular;
+	float intensity;
+	float radius;
 };
 
 struct material {

@@ -17,8 +17,8 @@ class engine {
 		struct light {
 			glm::vec4 position;
 			glm::vec4 diffuse;
-			float const_attenuation, linear_attenuation, quadratic_attenuation;
-			float specular;
+			float radius;
+			float intensity;
 			bool changed = false;
 		};
 

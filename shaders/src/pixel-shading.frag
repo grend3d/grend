@@ -9,11 +9,12 @@ precision mediump samplerCube;
 
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
+#include <lib/attenuation.glsl>
 
 void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 
-	vec3 ambient_light = vec3(0.2);
+	vec3 ambient_light = vec3(0.0);
 	//vec3 normal_dir = normalize(f_normal);
 	//mat3 TBN = transpose(mat3(f_tangent, f_bitangent, f_normal));
 	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
@@ -30,15 +31,10 @@ void main(void) {
 
 	for (int i = 0; i < active_lights && i < max_lights; i++) {
 		vec3 light_dir;
-		float attenuation;
+		float lum = attenuation(i, f_position);
 
 		vec3 light_vertex = vec3(lights[i].position - f_position);
 		float distance = length(light_vertex);
-		attenuation = 1.0 / (lights[i].const_attenuation
-							 + lights[i].linear_attenuation * distance
-							 + lights[i].quadratic_attenuation * distance * distance);
-
-		attenuation = mix(1.0, attenuation, lights[i].position.w);
 		light_dir = normalize(light_vertex / distance);
 
 		vec3 diffuse_reflection = vec3(0.0);
@@ -52,19 +48,18 @@ void main(void) {
 			// diminish contribution from diffuse lighting for a more cartoony look
 			//0.5 *
 			aoidx * anmaterial.diffuse.w *
-			attenuation * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
+			lum * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
 			* max(0.0, dot(normal_dir, light_dir));
 #endif
 
 #if ENABLE_SPECULAR_HIGHLIGHTS
 		float specidx = texture2D(specular_map, f_texcoord).r;
 
-		if (anmaterial.shininess > 0.1 && dot(normal_dir, light_dir) >= 0.9) {
-			specular_reflection = anmaterial.specular.w * attenuation
-				* vec3(lights[i].specular)
+		if (anmaterial.metalness > 0.1 && dot(normal_dir, light_dir) >= 0.9) {
+			specular_reflection = anmaterial.specular.w * lum
 				* vec3(anmaterial.specular)
 				* pow(max(0.0, dot(reflect(-light_dir, normal_dir), view_dir)),
-				      anmaterial.shininess * (length(specidx) + 1.0));
+				      anmaterial.metalness * (length(specidx) + 1.0));
 		}
 
 		specular_reflection *= specidx;
@@ -74,7 +69,7 @@ void main(void) {
 #if ENABLE_SKYBOX
 		vec3 env_light
 			= vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)))
-			* anmaterial.shininess/1000.0 * specidx;
+			* anmaterial.metalness/1000.0 * specidx;
 			//* 0.1
 			;
 #endif

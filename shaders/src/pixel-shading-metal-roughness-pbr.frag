@@ -38,10 +38,11 @@ void main(void) {
 		vec3 lum = mrp_lighting(i, mvp, f_position, view_dir,
 		                        albedo, normal_dir, metallic, roughness);
 
-		total_light += aoidx*atten*lum;
+		total_light += lum*atten*aoidx;
 	}
 
 	// TODO: some kind of curve
+	// TODO: s/8.0/max LOD/
 	vec3 env = vec3(textureLod(skytexture, reflect(-view_dir, normal_dir),
 	                           8.0*roughness));
 	//vec3 env = vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)));
