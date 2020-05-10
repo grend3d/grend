@@ -608,7 +608,7 @@ void game_state::handle_player_input(SDL_Event& ev) {
 			case SDLK_e: player_move_input.y = -movement_speed; break;
 			case SDLK_SPACE: player_move_input.y += 5 /* m/s */; break;
 			//case SDLK_m: in_select_mode = !in_select_mode; break;
-			case SDLK_m: editor.set_mode(game_editor::mode::Map); break;
+			case SDLK_m: editor.set_mode(game_editor::mode::View); break;
 			//case SDLK_BACKSPACE: player_position = {0, 2, 0}; break;
 
 			case SDLK_LEFTBRACKET: dsr_scale_x -= dsr_down_incr; break;

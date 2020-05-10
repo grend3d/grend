@@ -301,7 +301,18 @@ void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
 	set_m(transform);
 	glman.bind_vao(foo.vao);
 
-	glDrawElements(GL_LINES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	// TODO: keep track of face culling state in this class
+#ifdef ENABLE_FACE_CULLING
+	glDisable(GL_CULL_FACE);
+#endif
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+#ifdef ENABLE_FACE_CULLING
+	glEnable(GL_CULL_FACE);
+#endif
 }
 
 void engine::draw_model(std::string name, glm::mat4 transform) {
@@ -421,6 +432,15 @@ void engine::remove_light(int id) {
 
 		active_lights--;
 	}
+}
+
+float engine::light_extent(int id, float threshold) {
+	if (is_valid_light(id)) {
+		auto& lit = lights[id];
+		return lit.radius * (sqrt(lit.intensity/threshold) - 1);
+	}
+
+	return 0.0;
 }
 
 void engine::set_shader(gl_manager::rhandle& shd) {

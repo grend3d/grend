@@ -43,10 +43,10 @@ class game_editor {
 	public:
 		enum mode {
 			Inactive,
-			Map,
-			Lighting,
-			Physics,
-			AI,
+			View,
+			AddObject,
+			AddLight,
+			Select,
 		};
 
 		struct editor_entry {
@@ -76,13 +76,13 @@ class game_editor {
 		float     edit_distance = 5;
 		// this keeps track of the current face order after flipping along an axis
 		bool      edit_inverted = false;
-		bool      enable_cam_movement = true;
-		camera    cam;
 
+		camera cam;
 		int selected_light = -1;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
+		float light_threshold = 0.03;
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;

@@ -159,12 +159,30 @@ void game_editor::handle_editor_input(engine *renderer,
 
 		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
 			if (ev.button.button == SDL_BUTTON_LEFT) {
-				dynamic_models.push_back({
-					edit_model->first,
-					edit_position,
-					edit_transform,
-					edit_inverted,
-				});
+				switch (mode) {
+					case mode::AddObject:
+						dynamic_models.push_back({
+							edit_model->first,
+							edit_position,
+							edit_transform,
+							edit_inverted,
+						});
+						set_mode(mode::View);
+						break;
+
+					case mode::AddLight:
+						selected_light = renderer->add_light((struct engine::light) {
+							.position = glm::vec4(edit_position, 1.0),
+							// TODO: set before placing
+							.diffuse = glm::vec4(1),
+							.radius = 1.f,
+							.intensity = 50.f,
+						});
+						set_mode(mode::View);
+
+					default:
+						break;
+				}
 			}
 		}
 
@@ -233,6 +251,8 @@ void game_editor::menubar(void) {
 			ImGui::SliderFloat("Movement speed", &movement_speed,
 			                  1.f, 100.f, "%.1f");
 			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
+			ImGui::SliderFloat("Light threshold", &light_threshold,
+			                   0.001, 1.f);
 
 			ImGui::EndMenu();
 		}
@@ -261,6 +281,10 @@ void game_editor::menubar(void) {
 			ImGui::MenuItem("Dear ImGui demo window", NULL, &demo_window);
 			ImGui::EndMenu();
 		}
+
+		ImGui::Combo("[mode]", &mode,
+			"Exit editor\0" "View\0" "Add object\0" "Add light\0" "Select\0"
+			"\0");
 
 		ImGui::EndMainMenuBar();
 	}
@@ -322,22 +346,26 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::SliderFloat("directional", &renderer->lights[i].position.w,
 			                   0.f, 1.f);
 
+			renderer->draw_model_lines("smoothsphere",
+				glm::translate(glm::vec3(renderer->lights[i].position))
+				* glm::scale(glm::vec3(
+					renderer->light_extent(i, light_threshold))));
+
 			renderer->lights[i].changed = true;
 		}
 		ImGui::NextColumn();
-
-
 	}
+
 	ImGui::Columns(1);
 	ImGui::Separator();
 
 	if (ImGui::Button("Add Light")) {
-
+		set_mode(mode::AddLight);
 	}
 
 	ImGui::SameLine();
 	if (ImGui::Button("Delete Light")) {
-
+		renderer->remove_light(selected_light);
 	}
 
 	ImGui::End();
@@ -360,13 +388,6 @@ void game_editor::render_editor(engine *renderer, context& ctx) {
 		ImGui::NewFrame();
 
 		if (show_map_window) {
-			glm::mat4 trans = glm::translate(edit_position) * edit_transform;
-
-			glFrontFace(edit_inverted? GL_CW : GL_CCW);
-			renderer->draw_model_lines(edit_model->first, trans);
-			renderer->draw_model(edit_model->first, trans);
-			DO_ERROR_CHECK();
-
 			map_window(renderer, ctx);
 		}
 
@@ -383,6 +404,23 @@ void game_editor::render_editor(engine *renderer, context& ctx) {
 			}
 
 			lights_window(renderer, ctx);
+		}
+
+		if (mode == mode::AddObject) {
+			glm::mat4 trans = glm::translate(edit_position) * edit_transform;
+
+			glFrontFace(edit_inverted? GL_CW : GL_CCW);
+			renderer->draw_model_lines(edit_model->first, trans);
+			renderer->draw_model(edit_model->first, trans);
+			DO_ERROR_CHECK();
+		}
+
+		if (mode == mode::AddLight) {
+			glm::mat4 trans =
+				glm::translate(edit_position)
+				// TODO: keep scale state
+				* glm::scale(glm::vec3(1));
+			renderer->dqueue_draw_model("smoothsphere", trans);
 		}
 	}
 
