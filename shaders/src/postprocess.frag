@@ -12,6 +12,7 @@ uniform float screen_y;
 
 uniform float scale_x;
 uniform float scale_y;
+uniform float exposure;
 
 
 // http://filmicworlds.com/blog/filmic-tonemapping-operators/
@@ -45,7 +46,7 @@ void main(void) {
 
 	//gl_FragColor = vec4(gamma_correct(color.rgb), 1.0);
 	//gl_FragColor = vec4(reinhard_hdr(color.rgb, 1.0), 1.0);
-	gl_FragColor = vec4(reinhard_hdr_modified(color.rgb, 1.0), 1.0);
+	gl_FragColor = vec4(reinhard_hdr_modified(color.rgb, exposure), 1.0);
 	//gl_FragColor = vec4(linear_hdr(color.rgb, 2.0), 1.0);
 	//gl_FragColor = color;
 }

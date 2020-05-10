@@ -485,7 +485,8 @@ void game_state::render_postprocess(context& ctx) {
 	glUniform1f(glGetUniformLocation(post_shader.first, "screen_x"), screen_x);
 	glUniform1f(glGetUniformLocation(post_shader.first, "screen_y"), screen_y);
 
-	//glClearColor(1.0, 0, 0, 1.0);
+	// TODO: some sort of global variable lookup
+	glUniform1f(glGetUniformLocation(post_shader.first, "exposure"), editor.exposure);
 
 	draw_screenquad();
 

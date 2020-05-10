@@ -81,6 +81,7 @@ class game_editor {
 
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
+		float exposure = 1.f;
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;

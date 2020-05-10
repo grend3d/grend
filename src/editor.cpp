@@ -231,14 +231,11 @@ void game_editor::menubar(void) {
 		}
 
 		if (ImGui::BeginMenu("Options")) {
-			// TODO: exposure
-			float dummy;
-
-			ImGui::InputFloat("Snap increment", &fidelity,
+			ImGui::SliderFloat("Snap increment", &fidelity,
 			                  0.5f, 50.f, "%.1f");
-			ImGui::InputFloat("Movement speed", &movement_speed,
+			ImGui::SliderFloat("Movement speed", &movement_speed,
 			                  1.f, 100.f, "%.1f");
-			ImGui::InputFloat("Exposure (tonemapping)", &dummy, 0.1, 1.f);
+			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
 
 			ImGui::EndMenu();
 		}
