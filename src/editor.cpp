@@ -241,6 +241,11 @@ void game_editor::menubar(void) {
 		}
 
 		if (ImGui::BeginMenu("Tools")) {
+			if (ImGui::MenuItem("Objects editor", "o"))
+				show_map_window = true;
+			if (ImGui::MenuItem("Lights editor", "l"))
+				show_lights_window = true;
+
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
 			ImGui::Separator();
@@ -252,13 +257,6 @@ void game_editor::menubar(void) {
 			if (ImGui::MenuItem("Generate environment light probes", "CTRL+L")) {}
 			if (ImGui::MenuItem("Generate IBL cubemaps", "Shift-CTRL+L")) {}
 
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Mode")) {
-			ImGui::RadioButton("Map editor", &mode, mode::Map);
-			ImGui::RadioButton("Lighting editor", &mode, mode::Lighting);
-			ImGui::RadioButton("Physics editor", &mode, mode::Physics);
 			ImGui::EndMenu();
 		}
 
@@ -287,7 +285,7 @@ void game_editor::render_imgui(engine *renderer, context& ctx) {
 void game_editor::map_window(engine *renderer, context& ctx) {
 	glm::vec3 dummy;
 
-	ImGui::Begin("edit objects");
+	ImGui::Begin("Objects", &show_map_window);
 	ImGui::Text("Object properties");
 
 	ImGui::Columns(4, NULL, false);
@@ -300,6 +298,51 @@ void game_editor::map_window(engine *renderer, context& ctx) {
 	ImGui::InputFloat3("position", glm::value_ptr(edit_position));
 	ImGui::InputFloat3("scale", glm::value_ptr(dummy));
 	ImGui::InputFloat3("rotation (degrees)", glm::value_ptr(dummy));
+	ImGui::End();
+}
+
+void game_editor::lights_window(engine *renderer, context& ctx) {
+	ImGui::Begin("Lights", &show_lights_window);
+	ImGui::Columns(2);
+
+	for (int i = 0; i < renderer->active_lights; i++) {
+		std::string name = "Light " + std::to_string(i);
+
+		if (ImGui::Selectable(name.c_str(), selected_light == i)) {
+			// TODO: maybe not this
+			selected_light = i;
+		}
+
+		ImGui::NextColumn();
+		ImGui::InputFloat3("position", glm::value_ptr(renderer->lights[i].position));
+
+		if (selected_light == i) {
+			ImGui::ColorEdit4("color", glm::value_ptr(renderer->lights[i].diffuse));
+			ImGui::SliderFloat("intensity", &renderer->lights[i].intensity,
+			                   0.f, 1000.f);
+			ImGui::SliderFloat("radius", &renderer->lights[i].radius,
+			                   0.01f, 10.f);
+			ImGui::SliderFloat("directional", &renderer->lights[i].position.w,
+			                   0.f, 1.f);
+
+			renderer->lights[i].changed = true;
+		}
+		ImGui::NextColumn();
+
+
+	}
+	ImGui::Columns(1);
+	ImGui::Separator();
+
+	if (ImGui::Button("Add Light")) {
+
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Delete Light")) {
+
+	}
+
 	ImGui::End();
 }
 
@@ -318,25 +361,31 @@ void game_editor::render_editor(engine *renderer, context& ctx) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(ctx.window);
 		ImGui::NewFrame();
-	}
 
-	if (mode == mode::Map) {
-		glm::mat4 trans = glm::translate(edit_position) * edit_transform;
+		if (show_map_window) {
+			glm::mat4 trans = glm::translate(edit_position) * edit_transform;
 
-		glFrontFace(edit_inverted? GL_CW : GL_CCW);
-		renderer->draw_model_lines(edit_model->first, trans);
-		renderer->draw_model(edit_model->first, trans);
-		DO_ERROR_CHECK();
+			glFrontFace(edit_inverted? GL_CW : GL_CCW);
+			renderer->draw_model_lines(edit_model->first, trans);
+			renderer->draw_model(edit_model->first, trans);
+			DO_ERROR_CHECK();
 
-		map_window(renderer, ctx);
+			map_window(renderer, ctx);
+		}
 
-	} else if (mode == mode::Lighting) {
-		for (unsigned i = 0; i < renderer->active_lights; i++) {
-			// TODO: don't directly access lights here
-			auto& v = renderer->lights[i];
+		if (show_lights_window) {
+			for (unsigned i = 0; i < renderer->active_lights; i++) {
+				// TODO: don't directly access lights here
+				auto& v = renderer->lights[i];
 
-			glm::mat4 trans = glm::translate(glm::vec3(v.position));
-			renderer->dqueue_draw_model("smoothsphere", trans);
+				glm::mat4 trans =
+					glm::translate(glm::vec3(v.position))
+					* glm::scale(glm::vec3(renderer->lights[i].radius));
+
+				renderer->dqueue_draw_model("smoothsphere", trans);
+			}
+
+			lights_window(renderer, ctx);
 		}
 	}
 

@@ -542,6 +542,8 @@ void game_state::render(context& ctx) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	set_shader(main_shader);
+	update_lights();
+
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
 	glEnable(GL_CULL_FACE);

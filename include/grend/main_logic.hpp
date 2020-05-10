@@ -79,6 +79,7 @@ class game_editor {
 		bool      enable_cam_movement = true;
 		camera    cam;
 
+		int selected_light = -1;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
@@ -91,6 +92,10 @@ class game_editor {
 		void menubar(void);
 		void map_models(engine *renderer, context& ctx);
 		void map_window(engine *renderer, context& ctx);
+		void lights_window(engine *renderer, context& ctx);
+
+		bool show_map_window = true;
+		bool show_lights_window = false;
 };
 
 class game_state : public engine {
