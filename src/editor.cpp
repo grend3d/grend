@@ -103,10 +103,6 @@ void game_editor::handle_editor_input(engine *renderer,
 					    dynamic_models.pop_back();
 					}
 					break;
-
-				case SDLK_TAB:
-					enable_cam_movement = !enable_cam_movement;
-					break;
 			}
 		}
 
@@ -131,12 +127,13 @@ void game_editor::handle_editor_input(engine *renderer,
 	}
 
 	if (!io.WantCaptureMouse) {
-		if (enable_cam_movement) {
+		int x, y;
+		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
+
+		if (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) {
 			// TODO: generic functions to do SO(3) rotation (does glm do it?
 			//       probably, also maybe should be quarternions...)
-			int x, y;
 			int win_x, win_y;
-			Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
 			SDL_GetWindowSize(ctx.window, &win_x, &win_y);
 
 			x = (x > 0)? x : win_x/2;
