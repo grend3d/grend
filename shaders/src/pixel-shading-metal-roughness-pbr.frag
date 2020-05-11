@@ -18,7 +18,9 @@ void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 	vec3 ambient_light = vec3(0.1);
 	// TODO: normal mapping still borked
-	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
+	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
+	vec3 normal_dir = vec3(1, -1, 1) * normalize(normidx * 2.0 - 1.0);
+	normal_dir = normalize(TBN * normal_dir);
 
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
 	mat4 mvp = p*v*m;

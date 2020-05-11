@@ -99,8 +99,10 @@ vec3 mrp_lighting(int i, mat4 mvp, vec4 pos, vec3 view,
 	vec3 ca = c_diff(base, metallic);
 	vec3 fa_diff = f_diffuse(Fa, c_diff(base, metallic));
 	vec3 fa_spec = f_specular(Fa, G(a, normal, light_dir, view),
-			D(a, normal, half_dir));
+			D(a, normal, half_dir))
+			* vec3(lights[i].diffuse);
 	fa_spec = f_thing(fa_spec, normal, light_dir, view);
 
-	return fa_diff + 0.5*fa_spec;
+	return PI*max(0.0, dot(normal, light_dir)) * (fa_diff+ 0.5*fa_spec);
+	//return fa_diff + 0.5*fa_spec;
 }
