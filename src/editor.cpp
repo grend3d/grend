@@ -37,50 +37,50 @@ void game_editor::handle_editor_input(engine *renderer,
 
 				case SDLK_g:
 					//edit_rotation -= M_PI/4;
-					edit_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
+					entbuf.transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
 					break;
 
 				case SDLK_h:
 					//edit_rotation -= M_PI/4;
-					edit_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
+					entbuf.transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
 					break;
 
 				case SDLK_z:
 					//edit_rotation -= M_PI/4;
-					edit_transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
+					entbuf.transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
 					break;
 
 				case SDLK_c:
 					//edit_rotation += M_PI/4;
-					edit_transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
+					entbuf.transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
 					break;
 
 				case SDLK_x:
 					// flip horizontally (along the X axis)
-					edit_transform *= glm::scale(glm::vec3(-1, 1, 1));
-					edit_inverted = !edit_inverted;
+					entbuf.transform *= glm::scale(glm::vec3(-1, 1, 1));
+					entbuf.inverted = !entbuf.inverted;
 					break;
 
 				case SDLK_b:
 					// flip horizontally (along the Z axis)
-					edit_transform *= glm::scale(glm::vec3( 1, 1, -1));
-					edit_inverted = !edit_inverted;
+					entbuf.transform *= glm::scale(glm::vec3( 1, 1, -1));
+					entbuf.inverted = !entbuf.inverted;
 					break;
 
 				case SDLK_v:
 					// flip vertically
-					edit_transform *= glm::scale(glm::vec3( 1, -1, 1));
-					edit_inverted = !edit_inverted;
+					entbuf.transform *= glm::scale(glm::vec3( 1, -1, 1));
+					entbuf.inverted = !entbuf.inverted;
 					break;
 
 				case SDLK_j:
 					// scale down
-					edit_transform *= glm::scale(glm::vec3(0.9));
+					entbuf.transform *= glm::scale(glm::vec3(0.9));
 					break;
 
 				case SDLK_k:
 					// scale up
-					edit_transform *= glm::scale(glm::vec3(1/0.9));
+					entbuf.transform *= glm::scale(glm::vec3(1/0.9));
 					break;
 
 				case SDLK_r:
@@ -161,18 +161,24 @@ void game_editor::handle_editor_input(engine *renderer,
 			if (ev.button.button == SDL_BUTTON_LEFT) {
 				switch (mode) {
 					case mode::AddObject:
+						/*
 						dynamic_models.push_back({
 							edit_model->first,
 							edit_position,
 							edit_transform,
 							edit_inverted,
 						});
+						*/
+
+						selected_object = dynamic_models.size();
+						entbuf.name = edit_model->first;
+						dynamic_models.push_back(entbuf);
 						set_mode(mode::View);
 						break;
 
 					case mode::AddLight:
 						selected_light = renderer->add_light((struct engine::light) {
-							.position = glm::vec4(edit_position, 1.0),
+							.position = glm::vec4(entbuf.position, 1.0),
 							// TODO: set before placing
 							.diffuse = glm::vec4(1),
 							.radius = 1.f,
@@ -188,7 +194,7 @@ void game_editor::handle_editor_input(engine *renderer,
 
 		// TODO: snap to increments
 		auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
-		edit_position = glm::vec3(
+		entbuf.position = glm::vec3(
 			align(cam.direction.x*edit_distance + cam.position.x),
 			align(cam.direction.y*edit_distance + cam.position.y),
 			align(cam.direction.z*edit_distance + cam.position.z));
@@ -303,22 +309,87 @@ void game_editor::render_imgui(engine *renderer, context& ctx) {
 	}
 }
 
-void game_editor::map_window(engine *renderer, context& ctx) {
-	glm::vec3 dummy;
-
+void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) {
 	ImGui::Begin("Objects", &show_map_window);
-	ImGui::Text("Object properties");
+	ImGui::Columns(2);
 
-	ImGui::Columns(4, NULL, false);
+	/*
+	ImGui::Text("Object properties");
+	ImGui::NextColumn();
+
 	for (auto& s : {"X", "Y", "Z"}) {
 		ImGui::Text(s);
+		ImGui::SameLine();
+	}
+	ImGui::NextColumn();
+	*/
+
+	for (int i = 0; i < (int)dynamic_models.size(); i++) {
+		auto& ent = dynamic_models[i];
+
+		ImGui::Separator();
+		std::string name = "Editor object " + std::to_string(i);
+		if (ImGui::Selectable(name.c_str(), selected_object == i)) {
+			selected_object = i;
+		}
+
+		ImGui::NextColumn();
+		ImGui::Text(ent.name.c_str());
+
+		if (selected_object == i) {
+			renderer->draw_model_lines(ent.name,
+				glm::translate(ent.position)
+				* ent.transform
+				* glm::scale(glm::vec3(1.05)));
+
+			ImGui::InputFloat3("position", glm::value_ptr(ent.position));
+			ImGui::InputFloat3("scale", glm::value_ptr(ent.scale));
+			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(ent.rotation));
+		}
 		ImGui::NextColumn();
 	}
-	ImGui::Columns(1);
 
-	ImGui::InputFloat3("position", glm::value_ptr(edit_position));
-	ImGui::InputFloat3("scale", glm::value_ptr(dummy));
-	ImGui::InputFloat3("rotation (degrees)", glm::value_ptr(dummy));
+	for (auto& [id, obj] : phys->objects) {
+		// XXX: use negative numbers to differentiate physics from editor objects
+		int transid = -id - 0x8000;
+		std::string name = "Physics object " + std::to_string(id);
+
+		ImGui::Separator();
+		if (ImGui::Selectable(name.c_str(), selected_object == transid)) {
+			selected_object = transid;
+		}
+
+		ImGui::NextColumn();
+		ImGui::Text(obj.model_name.c_str());
+
+		if (selected_object == transid) {
+			renderer->draw_model_lines(obj.model_name,
+				glm::translate(obj.position)
+				* glm::scale(glm::vec3(1.05)));
+
+			ImGui::InputFloat3("position", glm::value_ptr(obj.position));
+			ImGui::InputFloat3("velocity", glm::value_ptr(obj.velocity));
+			//ImGui::InputFloat3("acceleration", glm::value_ptr(obj.acceleration));
+			//ImGui::InputFloat3("scale", glm::value_ptr(obj.scale));
+			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(obj.rotation));
+		}
+		ImGui::NextColumn();
+	}
+
+	ImGui::Columns(1);
+	ImGui::Separator();
+
+	if (ImGui::Button("Add Object")) {
+		set_mode(mode::AddObject);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Delete Object")) {
+		if (selected_object > 0 && selected_object < (int)dynamic_models.size()) {
+			dynamic_models.erase(dynamic_models.begin() + selected_object);
+		}
+	}
+
 	ImGui::End();
 }
 
@@ -326,9 +397,10 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 	ImGui::Begin("Lights", &show_lights_window);
 	ImGui::Columns(2);
 
-	for (int i = 0; i < renderer->active_lights; i++) {
+	for (int i = 0; i < (int)renderer->active_lights; i++) {
 		std::string name = "Light " + std::to_string(i);
 
+		ImGui::Separator();
 		if (ImGui::Selectable(name.c_str(), selected_light == i)) {
 			// TODO: maybe not this
 			selected_light = i;
@@ -381,14 +453,17 @@ void game_editor::map_models(engine *renderer, context& ctx) {
 	}
 }
 
-void game_editor::render_editor(engine *renderer, context& ctx) {
+void game_editor::render_editor(engine *renderer,
+                                imp_physics *phys,
+                                context& ctx)
+{
 	if (mode != mode::Inactive) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(ctx.window);
 		ImGui::NewFrame();
 
 		if (show_map_window) {
-			map_window(renderer, ctx);
+			map_window(renderer, phys, ctx);
 		}
 
 		if (show_lights_window) {
@@ -407,9 +482,9 @@ void game_editor::render_editor(engine *renderer, context& ctx) {
 		}
 
 		if (mode == mode::AddObject) {
-			glm::mat4 trans = glm::translate(edit_position) * edit_transform;
+			glm::mat4 trans = glm::translate(entbuf.position) * entbuf.transform;
 
-			glFrontFace(edit_inverted? GL_CW : GL_CCW);
+			glFrontFace(entbuf.inverted? GL_CW : GL_CCW);
 			renderer->draw_model_lines(edit_model->first, trans);
 			renderer->draw_model(edit_model->first, trans);
 			DO_ERROR_CHECK();
@@ -417,7 +492,7 @@ void game_editor::render_editor(engine *renderer, context& ctx) {
 
 		if (mode == mode::AddLight) {
 			glm::mat4 trans =
-				glm::translate(edit_position)
+				glm::translate(entbuf.position)
 				// TODO: keep scale state
 				* glm::scale(glm::vec3(1));
 			renderer->dqueue_draw_model("smoothsphere", trans);

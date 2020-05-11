@@ -52,9 +52,14 @@ class game_editor {
 		struct editor_entry {
 			std::string name;
 			glm::vec3   position;
+			// TODO: make this a function
+			glm::mat4   transform = glm::mat4(1);
+			glm::vec3   scale = {1, 1, 1};
 			// TODO: full rotation
-			glm::mat4   transform;
-			bool        inverted;
+			glm::quat   rotation = {0, 0, 0, 1};
+
+			bool        inverted = false;
+			bool        cull_backfaces = true;
 
 			// TODO: might be a good idea to keep track of whether face culling is enabled for
 			//       this model, although that might be better off in the model class itself...
@@ -65,20 +70,25 @@ class game_editor {
 		void handle_editor_input(engine *renderer, context& ctx, SDL_Event& ev);
 		// TODO: rename 'engine' to 'renderer' or something
 		void render_imgui(engine *renderer, context& ctx);
-		void render_editor(engine *renderer, context& ctx);
+		void render_editor(engine *renderer, imp_physics *phys, context& ctx);
 		void save_map(std::string name="save.map");
 		void load_map(std::string name="save.map");
 		void logic(context& ctx, float delta);
 
 		int mode = mode::Inactive;
+		/*
 		glm::vec3 edit_position = glm::vec3(0, 0, 0);
 		glm::mat4 edit_transform = glm::mat4(1);
-		float     edit_distance = 5;
 		// this keeps track of the current face order after flipping along an axis
 		bool      edit_inverted = false;
+		*/
+
+		float edit_distance = 5;
+		editor_entry entbuf;
 
 		camera cam;
 		int selected_light = -1;
+		int selected_object = -1;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
@@ -91,7 +101,7 @@ class game_editor {
 	private:
 		void menubar(void);
 		void map_models(engine *renderer, context& ctx);
-		void map_window(engine *renderer, context& ctx);
+		void map_window(engine *renderer, imp_physics *phys, context& ctx);
 		void lights_window(engine *renderer, context& ctx);
 
 		bool show_map_window = true;

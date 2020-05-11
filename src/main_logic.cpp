@@ -561,7 +561,7 @@ void game_state::render(context& ctx) {
 	render_static(ctx);
 	render_players(ctx);
 	render_dynamic(ctx);
-	editor.render_editor(this, ctx);
+	editor.render_editor(this, &phys, ctx);
 
 	assert(current_cam != nullptr);
 	dqueue_sort_draws(current_cam->position);
