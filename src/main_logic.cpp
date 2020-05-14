@@ -733,7 +733,7 @@ void game_state::physics(context& ctx) {
 	player_force += player_move_input.y * player_up;
 	player_force += player_move_input.x * glm::normalize(glm::cross(rel_view, player_up));
 
-	phys.apply_force(player_phys_id, player_force);
+	phys.set_acceleration(player_phys_id, player_force);
 	phys.solve_contraints(delta);
 }
 

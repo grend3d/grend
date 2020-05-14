@@ -269,8 +269,20 @@ octree::collision octree::collides(glm::vec3 begin, glm::vec3 end) {
 		node *pleaf = get_leaf(begin + temp);
 
 		if (pleaf) {
+			auto align = [&] (float x) { return floor(x / leaf_size)*leaf_size; };
+			float center_offset = leaf_size*0.5;
+
+			glm::vec3 center = {
+				align(temp.x) + center_offset,
+				align(temp.y) + center_offset,
+				align(temp.z) + center_offset,
+			};
+
 			assert(pleaf->normal_samples != 0);
-			return {fabs(glm::length(end - temp)), pleaf->normals / (float)pleaf->normal_samples};
+			return {
+				center_offset - glm::dot(center, temp)*glm::distance(center, temp),
+				pleaf->normals / (float)pleaf->normal_samples
+			};
 		}
 	}
 

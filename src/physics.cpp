@@ -25,6 +25,8 @@ uint64_t imp_physics::add_sphere(std::string modname, glm::vec3 pos, double r)
 	objects[ret].type = object::type::Sphere;
 	objects[ret].sphere.radius = r;
 	objects[ret].position = pos;
+	// TODO: mass parameter
+	objects[ret].inverse_mass = 1;
 
 	return ret;
 }
@@ -55,8 +57,8 @@ void imp_physics::remove(uint64_t id) {
 
 }
 
-void imp_physics::apply_force(uint64_t id, glm::vec3 force) {
-	objects[id].velocity += force*(1/60.f);
+void imp_physics::set_acceleration(uint64_t id, glm::vec3 accel) {
+	objects[id].acceleration = accel;
 }
 
 std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
@@ -80,25 +82,32 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 }
 
 void imp_physics::solve_contraints(float delta) {
+	/*
 	for (auto& [id, obj] : objects) {
 		apply_force(id, {0, -9.81, 0});
 	}
+	*/
 
-	for (unsigned i = 0; i < 5; i++) {
+	for (unsigned i = 0; i < 1; i++) {
 		const auto& collisions = find_collisions(delta);
 
 		for (const auto& x : collisions) {
 			auto& obj = objects[x.a];
 
-			obj.velocity = glm::reflect(obj.velocity, x.normal)*0.5f;
-			obj.position += x.normal*(float)static_geom.leaf_size*0.5f;
-			//obj.position += x.normal*x.depth*(float)static_geom.leaf_size*0.5f;
-			//obj.position += x.normal*x.depth*0.2f;
+			obj.velocity = glm::reflect(obj.velocity, x.normal);
+			//obj.position += x.normal*(float)static_geom.leaf_size*0.01f;
+			obj.position += x.normal*x.depth;
+			//obj.position += x.normal*x.depth*static_geom.leaf_size;
 		}
 	}
 
 	for (auto& [id, obj] : objects) {
-		obj.position += obj.velocity * delta;
+		float d = pow(obj.drag_s, delta);
+
+		//obj.position += obj.velocity * delta;
+		obj.position += obj.velocity*delta + obj.acceleration*((delta*delta)/2);
+		obj.velocity += obj.acceleration*delta + glm::vec3(0, -15, 0)*delta;
+		obj.velocity *= powf(0.5, delta);
 
 		if (obj.position.y < -25) {
 			// XXX: prevent objects from disappearing into the void

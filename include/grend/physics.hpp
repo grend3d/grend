@@ -40,8 +40,12 @@ class imp_physics {
 				std::string model_name;
 				glm::vec3 position = {0, 0, 0};
 				glm::vec3 velocity = {0, 0, 0};
+				glm::vec3 acceleration = {0, 0, 0};
 				glm::vec3 angular_velocity = {0, 0, 0};
 				glm::quat rotation = {0, 0, 0, 0};
+				float inverse_mass = 0;
+				float drag_s = 0.9;
+				float gravity = -15.f;
 		};
 
 		struct collision {
@@ -65,7 +69,7 @@ class imp_physics {
 		std::map<std::string, uint64_t> add_model_mesh_boxes(model& mod);
 		void remove(uint64_t id);
 
-		void apply_force(uint64_t id, glm::vec3 force);
+		void set_acceleration(uint64_t id, glm::vec3 accel);
 
 		std::list<collision> find_collisions(float delta);
 		void solve_contraints(float delta);
