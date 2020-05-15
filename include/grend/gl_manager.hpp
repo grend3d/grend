@@ -71,26 +71,10 @@ class gl_manager {
 		cooked_model_map cooked_models;
 
 		std::vector<GLfloat> cooked_vertprops;
-		/*
-		std::vector<GLfloat> cooked_vertices;
-		std::vector<glm::vec3> cooked_normals;
-		std::vector<glm::vec3> cooked_tangents;
-		std::vector<glm::vec3> cooked_bitangents;
-		std::vector<GLfloat> cooked_texcoords;
-		*/
 		std::vector<GLushort> cooked_elements;
 
 		rhandle cooked_vertprops_vbo;
 		rhandle cooked_element_vbo;
-
-		/*
-		rhandle cooked_vert_vbo;
-		rhandle cooked_normal_vbo;
-		rhandle cooked_tangent_vbo;
-		rhandle cooked_bitangent_vbo;
-		rhandle cooked_texcoord_vbo;
-		*/
-
 		rhandle screenquad_vbo;
 		rhandle screenquad_vao;
 
