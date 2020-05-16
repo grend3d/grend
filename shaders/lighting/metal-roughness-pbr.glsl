@@ -80,19 +80,18 @@ vec3 f_diffuse(vec3 F, vec3 c_diff) {
 	return (1.0 - F) * (c_diff / PI);
 }
 
-vec3 mrp_lighting(int i, mat4 mvp, vec4 pos, vec3 view,
+vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
                   vec3 albedo, vec3 normal, float metallic, float roughness)
 {
 	float a = alpha(roughness);
-	vec3 light_vertex = vec3(lights[i].position - pos);
+	vec3 light_vertex = vec3(light_pos - pos);
 	float dist = length(light_vertex);
 
 	vec3 light_dir = normalize(light_vertex / dist);
-	//vec3 light_dir = normalize(light_vertex);
 	vec3 half_dir = normalize(light_dir + view);
 
-	vec3 base = anmaterial.diffuse.w *
-		vec3(lights[i].diffuse)*vec3(anmaterial.diffuse)
+	vec3 base = anmaterial.diffuse.w * light_color.w
+		* vec3(light_color)*vec3(anmaterial.diffuse)
 		* albedo;
 
 	vec3 Fa = F(f_0(base, metallic), view, half_dir);
@@ -100,7 +99,7 @@ vec3 mrp_lighting(int i, mat4 mvp, vec4 pos, vec3 view,
 	vec3 fa_diff = f_diffuse(Fa, c_diff(base, metallic));
 	vec3 fa_spec = f_specular(Fa, G(a, normal, light_dir, view),
 			D(a, normal, half_dir))
-			* vec3(lights[i].diffuse);
+			* vec3(light_color) * light_color.w;
 	fa_spec = f_thing(fa_spec, normal, light_dir, view);
 
 	return PI*max(0.0, dot(normal, light_dir)) * (fa_diff+ 0.5*fa_spec);

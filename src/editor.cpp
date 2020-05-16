@@ -176,15 +176,43 @@ void game_editor::handle_editor_input(engine *renderer,
 						set_mode(mode::View);
 						break;
 
-					case mode::AddLight:
-						selected_light = renderer->add_light((struct engine::light) {
-							.position = glm::vec4(entbuf.position, 1.0),
-							// TODO: set before placing
-							.diffuse = glm::vec4(1),
-							.radius = 1.f,
-							.intensity = 50.f,
-						});
+					case mode::AddPointLight:
+						selected_light =
+							renderer->add_light((struct engine::point_light) {
+								.position = glm::vec4(entbuf.position, 1.0),
+								// TODO: set before placing
+								.diffuse = glm::vec4(1),
+								.radius = 1.f,
+								.intensity = 50.f,
+							});
 						set_mode(mode::View);
+						break;
+
+					case mode::AddSpotLight:
+						selected_light =
+							renderer->add_light((struct engine::spot_light) {
+								.position = glm::vec4(entbuf.position, 1.0),
+								// TODO: set before placing
+								.diffuse = glm::vec4(1),
+								.direction = {0, 1, 0},
+								.radius = 1.f,
+								.intensity = 50.f,
+								.angle = 0.5f,
+							});
+						set_mode(mode::View);
+						break;
+
+					case mode::AddDirectionalLight:
+						selected_light =
+							renderer->add_light((struct engine::directional_light) {
+								.position = glm::vec4(entbuf.position, 1.0),
+								// TODO: set before placing
+								.diffuse = glm::vec4(1),
+								.direction = {0, 1, 0},
+								.intensity = 50.f,
+							});
+						set_mode(mode::View);
+						break;
 
 					default:
 						break;
@@ -289,7 +317,9 @@ void game_editor::menubar(void) {
 		}
 
 		ImGui::Combo("[mode]", &mode,
-			"Exit editor\0" "View\0" "Add object\0" "Add light\0" "Select\0"
+			"Exit editor\0" "View\0" "Add object\0"
+			"Add point light\0" "Add spot light\0" "Add directional light\0"
+			"Select\0"
 			"\0");
 
 		ImGui::EndMainMenuBar();
@@ -397,47 +427,106 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 	ImGui::Begin("Lights", &show_lights_window);
 	ImGui::Columns(2);
 
-	for (int i = 0; i < (int)renderer->active_lights; i++) {
-		std::string name = "Light " + std::to_string(i);
+	for (auto& [id, light] : renderer->point_lights) {
+		std::string name = "Point light " + std::to_string(id);
 
 		ImGui::Separator();
-		if (ImGui::Selectable(name.c_str(), selected_light == i)) {
-			// TODO: maybe not this
-			selected_light = i;
+		if (ImGui::Selectable(name.c_str(), selected_light == (int)id)) {
+			selected_light = id;
 		}
 
 		ImGui::NextColumn();
-		ImGui::InputFloat3("position", glm::value_ptr(renderer->lights[i].position));
+		ImGui::InputFloat3("position", glm::value_ptr(light.position));
 
-		if (selected_light == i) {
-			ImGui::ColorEdit4("color", glm::value_ptr(renderer->lights[i].diffuse));
-			ImGui::SliderFloat("intensity", &renderer->lights[i].intensity,
-			                   0.f, 1000.f);
-			ImGui::SliderFloat("radius", &renderer->lights[i].radius,
-			                   0.01f, 10.f);
-			ImGui::SliderFloat("directional", &renderer->lights[i].position.w,
-			                   0.f, 1.f);
+		if (selected_light == (int)id) {
+			ImGui::ColorEdit4("color", glm::value_ptr(light.diffuse));
+			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
+			ImGui::SliderFloat("radius", &light.radius, 0.01f, 3.f);
 
 			renderer->draw_model_lines("smoothsphere",
-				glm::translate(glm::vec3(renderer->lights[i].position))
-				* glm::scale(glm::vec3(
-					renderer->light_extent(i, light_threshold))));
-
-			renderer->lights[i].changed = true;
+				glm::translate(glm::vec3(light.position))
+				* glm::scale(glm::vec3(light_extent(&light, light_threshold))));
 		}
+
 		ImGui::NextColumn();
 	}
+
+	for (auto& [id, light] : renderer->spot_lights) {
+		std::string name = "Spot light " + std::to_string(id);
+
+		ImGui::Separator();
+		if (ImGui::Selectable(name.c_str(), selected_light == (int)id)) {
+			selected_light = id;
+		}
+
+		ImGui::NextColumn();
+		ImGui::InputFloat3("position", glm::value_ptr(light.position));
+
+		if (selected_light == (int)id) {
+			ImGui::ColorEdit4("color", glm::value_ptr(light.diffuse));
+			// TODO: normalize, better representation
+			ImGui::SliderFloat3("direction", glm::value_ptr(light.direction),
+				-1.f, 1.f);
+			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
+			ImGui::SliderFloat("radius", &light.radius, 0.01f, 3.f);
+			ImGui::SliderFloat("angle", &light.angle, 0.0f, 1.f);
+
+			/*
+			renderer->draw_model_lines("smoothsphere",
+				glm::translate(glm::vec3(light.position))
+				* glm::scale(glm::vec3(light_extent(&light, light_threshold))));
+				*/
+		}
+
+		ImGui::NextColumn();
+	}
+
+	for (auto& [id, light] : renderer->directional_lights) {
+		std::string name = "directional light " + std::to_string(id);
+
+		ImGui::Separator();
+		if (ImGui::Selectable(name.c_str(), selected_light == (int)id)) {
+			selected_light = id;
+		}
+
+		ImGui::NextColumn();
+		ImGui::InputFloat3("position", glm::value_ptr(light.position));
+
+		if (selected_light == (int)id) {
+			ImGui::ColorEdit4("color", glm::value_ptr(light.diffuse));
+			// TODO: normalize, better representation
+			ImGui::SliderFloat3("direction", glm::value_ptr(light.direction),
+				-1.f, 1.f);
+			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
+
+			renderer->draw_model_lines("smoothsphere",
+				glm::translate(glm::vec3(light.position)));
+		}
+
+		ImGui::NextColumn();
+	}
+
 
 	ImGui::Columns(1);
 	ImGui::Separator();
 
-	if (ImGui::Button("Add Light")) {
-		set_mode(mode::AddLight);
+	if (ImGui::Button("Add Point Light")) {
+		set_mode(mode::AddPointLight);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Add Spot Light")) {
+		set_mode(mode::AddSpotLight);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Add Directional Light")) {
+		set_mode(mode::AddDirectionalLight);
 	}
 
 	ImGui::SameLine();
 	if (ImGui::Button("Delete Light")) {
-		renderer->remove_light(selected_light);
+		renderer->free_light(selected_light);
 	}
 
 	ImGui::End();
@@ -467,13 +556,10 @@ void game_editor::render_editor(engine *renderer,
 		}
 
 		if (show_lights_window) {
-			for (unsigned i = 0; i < renderer->active_lights; i++) {
-				// TODO: don't directly access lights here
-				auto& v = renderer->lights[i];
-
+			for (const auto& [id, plit] : renderer->point_lights) {
 				glm::mat4 trans =
-					glm::translate(glm::vec3(v.position))
-					* glm::scale(glm::vec3(renderer->lights[i].radius));
+					glm::translate(glm::vec3(plit.position))
+					* glm::scale(glm::vec3(plit.radius));
 
 				renderer->dqueue_draw_model("smoothsphere", trans);
 			}
@@ -490,7 +576,22 @@ void game_editor::render_editor(engine *renderer,
 			DO_ERROR_CHECK();
 		}
 
-		if (mode == mode::AddLight) {
+		if (mode == mode::AddPointLight) {
+			glm::mat4 trans =
+				glm::translate(entbuf.position)
+				// TODO: keep scale state
+				* glm::scale(glm::vec3(1));
+			renderer->dqueue_draw_model("smoothsphere", trans);
+
+		// TODO: cone here
+		} else if (mode == mode::AddSpotLight) {
+			glm::mat4 trans =
+				glm::translate(entbuf.position)
+				// TODO: keep scale state
+				* glm::scale(glm::vec3(1));
+			renderer->dqueue_draw_model("smoothsphere", trans);
+
+		} else if (mode == mode::AddDirectionalLight) {
 			glm::mat4 trans =
 				glm::translate(entbuf.position)
 				// TODO: keep scale state

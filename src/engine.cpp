@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <grend/utility.hpp>
 
 using namespace grendx;
 
@@ -114,8 +115,6 @@ static std::map<std::string, material> default_materials = {
 };
 
 engine::engine() {
-	init_lights();
-
 	for (auto& thing : default_materials) {
 		if (thing.second.diffuse_map.loaded()) {
 			diffuse_handles[thing.first] =
@@ -373,27 +372,42 @@ void engine::dqueue_flush_draws(void) {
 	draw_queue.clear();
 }
 
-bool engine::is_valid_light(int id) {
-	return id < MAX_LIGHTS && id < (int)active_lights && id >= 0;
+bool engine::is_valid_light(uint32_t id) {
+	//return id < MAX_LIGHTS && id < (int)active_lights && id >= 0;
+	return id && id <= light_ids && (
+		point_lights.find(id) != point_lights.end()
+		|| spot_lights.find(id) != spot_lights.end()
+		|| directional_lights.find(id) != directional_lights.end()
+	);
 }
 
+uint32_t engine::add_light(struct point_light lit) {
+	uint32_t ret = alloc_light();
+	point_lights[ret] = lit;
+	return ret;
+}
+
+uint32_t engine::add_light(struct spot_light lit) {
+	uint32_t ret = alloc_light();
+	spot_lights[ret] = lit;
+	return ret;
+}
+
+uint32_t engine::add_light(struct directional_light lit) {
+	uint32_t ret = alloc_light();
+	directional_lights[ret] = lit;
+	return ret;
+}
+
+void engine::free_light(uint32_t id) {
+	point_lights.erase(id);
+	spot_lights.erase(id);
+	directional_lights.erase(id);
+}
+
+/*
 int engine::add_light(struct light lit) {
 	int ret = -1;
-
-	/*
-	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
-		if (!lights[i].is_active) {
-			ret = i;
-			break;
-		}
-	}
-
-	if (ret >= 0) {
-		lights[ret] = lit;
-		lights[ret].changed = true;
-		lights[ret].is_active = true;
-	}
-	*/
 
 	if (active_lights < MAX_LIGHTS) {
 		ret = active_lights++;
@@ -433,15 +447,7 @@ void engine::remove_light(int id) {
 		active_lights--;
 	}
 }
-
-float engine::light_extent(int id, float threshold) {
-	if (is_valid_light(id)) {
-		auto& lit = lights[id];
-		return lit.radius * (sqrt(lit.intensity/threshold) - 1);
-	}
-
-	return 0.0;
-}
+*/
 
 void engine::set_shader(gl_manager::rhandle& shd) {
 	if (shader != shd) {
@@ -450,57 +456,137 @@ void engine::set_shader(gl_manager::rhandle& shd) {
 	}
 }
 
-void engine::init_lights(void) {
-	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
-		// things should have been set to zero during construction, I'm pretty sure
-		lights[i].changed   = true;
+// TODO: only update changed uniforms
+void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
+	size_t active = min(MAX_LIGHTS, lights.size());
+	glUniform1i(glGetUniformLocation(shader.first, "active_point_lights"), active);
+
+	for (size_t i = 0; i < active; i++) {
+		// TODO: check light index
+		const auto& light = point_lights[lights[i]];
+
+		// TODO: cache uniform locations (good idea: add a caching layer to glman)
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "point_lights[" + std::to_string(i) + "]";
+		std::map<std::string, GLint> light_handles;
+
+		for (std::string str : { "position", "diffuse", "radius", "intensity" }) {
+			light_handles[str] =
+				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
+			/*
+			   if (light_handles[str] == -1) {
+			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
+			   }
+			   */
+		}
+
+		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
+		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
+		glUniform1f(light_handles["radius"], light.radius);
+		glUniform1f(light_handles["intensity"], light.intensity);
 	}
 }
 
-// TODO: only update changed uniforms
-void engine::sync_light(unsigned id) {
-	if (id >= MAX_LIGHTS) {
-		std::cerr << "/!\\ light " << id << " out of bounds" << std::endl;
-		return;
-	}
+void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
+	size_t active = min(MAX_LIGHTS, lights.size());
+	glUniform1i(glGetUniformLocation(shader.first, "active_spot_lights"), active);
 
-	// TODO: cache uniform locations (good idea: add a caching layer to glman)
-	// TODO: also updating all these uniforms can't be very efficient for a lot of
-	//       moving point lights... maybe look into how uniform buffer objects work
-	std::string locstr = "lights[" + std::to_string(id) + "]";
-	std::map<std::string, GLint> light_handles;
+	for (size_t i = 0; i < active; i++) {
+		// TODO: check light index
+		const auto& light = spot_lights[lights[i]];
 
-	for (std::string str : { "position", "diffuse", "radius", "intensity" }) {
-		light_handles[str] = glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
-		DO_ERROR_CHECK();
-		/*
-		if (light_handles[str] == -1) {
-			std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
+		// TODO: cache uniform locations (good idea: add a caching layer to glman)
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
+		std::map<std::string, GLint> light_handles;
+
+		for (std::string str : {
+				"position", "diffuse", "direction",
+				"radius", "intensity", "angle"
+		}) {
+			light_handles[str] =
+				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
+			/*
+			   if (light_handles[str] == -1) {
+			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
+			   }
+			   */
 		}
-		*/
+
+		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
+		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
+		glUniform3fv(light_handles["direction"], 1, glm::value_ptr(light.direction));
+		glUniform1f(light_handles["radius"], light.radius);
+		glUniform1f(light_handles["intensity"], light.intensity);
+		glUniform1f(light_handles["angle"], light.angle);
+	}
+}
+
+void engine::sync_directional_lights(const std::vector<uint32_t>& lights) {
+	size_t active = min(MAX_LIGHTS, lights.size());
+	glUniform1i(glGetUniformLocation(shader.first, "active_directional_lights"),
+		active);
+
+	for (size_t i = 0; i < active; i++) {
+		// TODO: check light index
+		const auto& light = directional_lights[lights[i]];
+
+		// TODO: cache uniform locations (good idea: add a caching layer to glman)
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
+		std::map<std::string, GLint> light_handles;
+
+		for (std::string str : { "position", "diffuse", "direction", "intensity" }) {
+			light_handles[str] =
+				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
+			/*
+			   if (light_handles[str] == -1) {
+			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
+			   }
+			   */
+		}
+
+		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
+		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
+		glUniform3fv(light_handles["direction"], 1, glm::value_ptr(light.direction));
+		glUniform1f(light_handles["intensity"], light.intensity);
+	}
+}
+
+void engine::compile_lights(void) {
+	active_lights.point.clear();
+	active_lights.spot.clear();
+	active_lights.directional.clear();
+
+	for (auto& [id, lit] : point_lights) {
+		active_lights.point.push_back(id);
 	}
 
-	glUniform4fv(light_handles["position"], 1, glm::value_ptr(lights[id].position));
-	DO_ERROR_CHECK();
-	glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(lights[id].diffuse));
-	DO_ERROR_CHECK();
+	for (auto& [id, lit] : spot_lights) {
+		active_lights.spot.push_back(id);
+	}
 
-	glUniform1f(light_handles["radius"], lights[id].radius);
-	DO_ERROR_CHECK();
-	glUniform1f(light_handles["intensity"], lights[id].intensity);
-	DO_ERROR_CHECK();
+	for (auto& [id, lit] : directional_lights) {
+		active_lights.directional.push_back(id);
+	}
 }
 
 void engine::update_lights(void) {
-	// TODO: sync max light constants
-	glUniform1i(glGetUniformLocation(shader.first, "active_lights"), active_lights);
+	compile_lights();
+	sync_point_lights(active_lights.point);
+	sync_spot_lights(active_lights.spot);
+	sync_directional_lights(active_lights.directional);
+	DO_ERROR_CHECK();
+}
 
-	for (unsigned i = 0; i < MAX_LIGHTS; i++) {
-		auto& lit = lights[i];
-
-		if (lit.changed) {
-			sync_light(i);
-			lit.changed = false;
-		}
+float grendx::light_extent(struct engine::point_light *p, float threshold) {
+	if (p) {
+		//auto& lit = lights[id];
+		return p->radius * (sqrt((p->intensity * p->diffuse.w)/threshold) - 1);
 	}
+
+	return 0.0;
 }

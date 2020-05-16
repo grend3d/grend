@@ -4,11 +4,13 @@
 
 namespace grendx {
 
-static inline double min(double a, double b) {
+template<typename A, typename B>
+static inline A min(A a, B b) {
 	return (a < b)? a : b;
 }
 
-static inline double max(double a, double b) {
+template<typename A, typename B>
+static inline A max(A a, B b) {
 	return (a > b)? a : b;
 }
 

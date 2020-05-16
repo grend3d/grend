@@ -35,9 +35,29 @@ void main(void) {
 
 	vec3 total_light = vec3(0);
 
-	for (int i = 0; i < active_lights && i < max_lights; i++) {
-		float atten = attenuation(i, f_position);
-		vec3 lum = mrp_lighting(i, mvp, f_position, view_dir,
+	for (int i = 0; i < active_point_lights; i++) {
+		float atten = point_attenuation(i, vec3(f_position));
+		vec3 lum = mrp_lighting(point_lights[i].position, point_lights[i].diffuse, 
+		                        vec3(f_position), view_dir,
+		                        albedo, normal_dir, metallic, roughness);
+
+		total_light += lum*atten*aoidx;
+	}
+
+	for (int i = 0; i < active_spot_lights; i++) {
+		float atten = spot_attenuation(i, vec3(f_position));
+		vec3 lum = mrp_lighting(spot_lights[i].position, spot_lights[i].diffuse, 
+		                        vec3(f_position), view_dir,
+		                        albedo, normal_dir, metallic, roughness);
+
+		total_light += lum*atten*aoidx;
+	}
+
+	for (int i = 0; i < active_directional_lights; i++) {
+		float atten = directional_attenuation(i, vec3(f_position));
+		vec3 lum = mrp_lighting(directional_lights[i].position,
+		                        directional_lights[i].diffuse, 
+		                        vec3(f_position), view_dir,
 		                        albedo, normal_dir, metallic, roughness);
 
 		total_light += lum*atten*aoidx;

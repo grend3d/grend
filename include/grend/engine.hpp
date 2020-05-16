@@ -6,7 +6,9 @@
 #include <grend/model.hpp>
 #include <list>
 
-#define MAX_LIGHTS 32
+#include <stdint.h>
+
+static const size_t MAX_LIGHTS = 16;
 
 namespace grendx {
 
@@ -14,12 +16,33 @@ class engine {
 	friend class text_renderer;
 
 	public:
-		struct light {
-			glm::vec4 position;
+		struct point_light {
+			glm::vec3 position;
 			glm::vec4 diffuse;
 			float radius;
 			float intensity;
-			bool changed = false;
+			// TODO: shadowmap texture/state here 
+			bool changed = true;
+		};
+
+		struct spot_light {
+			glm::vec3 position;
+			glm::vec4 diffuse;
+			glm::vec3 direction;
+			float radius; // bulb radius
+			float intensity;
+			float angle;
+			// TODO: shadowmap texture/state here
+			bool changed = true;
+		};
+
+		struct directional_light {
+			glm::vec3 position;
+			glm::vec4 diffuse;
+			glm::vec3 direction;
+			float intensity;
+			// TODO: shadowmap texture/state here
+			bool changed = true;
 		};
 
 		engine();
@@ -49,16 +72,27 @@ class engine {
 
 		// init_lights() will need to be called after the shader is bound
 		// (in whatever subclasses the engine)
-		void init_lights(void);
-		void sync_light(unsigned id);
+		//void init_lights(void);
+		void compile_lights(void);
 		void update_lights(void);
+		void sync_point_lights(const std::vector<uint32_t>& lights);
+		void sync_spot_lights(const std::vector<uint32_t>& lights);
+		void sync_directional_lights(const std::vector<uint32_t>& lights);
 
-		bool is_valid_light(int id);
+		bool is_valid_light(uint32_t id);
+		uint32_t alloc_light(void) { return ++light_ids; };
+		void free_light(uint32_t id);
+
+		uint32_t add_light(struct point_light lit);
+		uint32_t add_light(struct spot_light lit);
+		uint32_t add_light(struct directional_light lit);
+
+		/*
 		int add_light(struct light lit);
 		int set_light(int id, struct light lit);
 		int get_light(int id, struct light *lit);
 		void remove_light(int id);
-		float light_extent(int id, float threshold=0.03);
+		*/
 
 		void set_shader(gl_manager::rhandle& shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
@@ -73,8 +107,21 @@ class engine {
 		// TODO: need to keep the max number of lights synced between
 		//       the engine code and shader code, something to keep in mind
 		//       if/when writing a shader preprocessor language
-		unsigned active_lights = 0;
-		struct light lights[MAX_LIGHTS];
+		//unsigned active_lights = 0;
+		//struct light lights[MAX_LIGHTS];
+
+		// map light IDs to light structures
+		uint32_t light_ids = 0;
+		struct std::map<uint32_t, struct point_light> point_lights;
+		struct std::map<uint32_t, struct spot_light> spot_lights;
+		struct std::map<uint32_t, struct directional_light> directional_lights;
+
+		struct {
+			// index into light struct maps
+			std::vector<uint32_t> point;
+			std::vector<uint32_t> spot;
+			std::vector<uint32_t> directional;
+		} active_lights;
 
 	protected:
 		gl_manager::rhandle shader;
@@ -101,6 +148,9 @@ class engine {
 		std::map<std::string, gl_manager::rhandle> normmap_handles;
 		std::map<std::string, gl_manager::rhandle> aomap_handles;
 };
+
+float light_extent(struct engine::point_light *p, float threshold=0.03);
+float light_extent(struct engine::spot_light *s, float threshold=0.03);
 
 // namespace grendx
 }

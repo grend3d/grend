@@ -1,10 +1,29 @@
 #pragma once
 
-struct lightSource {
-	vec4 position;
+struct point_light {
+	vec3 position;
 	vec4 diffuse;
 	float intensity;
 	float radius;
+	samplerCube shadowmap;
+};
+
+struct spot_light {
+	vec3 position;
+	vec4 diffuse;
+	vec3 direction;
+	float intensity;
+	float radius; // bulb radius
+	float angle;
+	sampler2D shadowmap;
+};
+
+struct directional_light {
+	vec3 position;
+	vec4 diffuse;
+	vec3 direction;
+	float intensity;
+	sampler2D shadowmap;
 };
 
 struct material {
@@ -30,9 +49,15 @@ uniform mat3 m_3x3_inv_transp;
 uniform mat4 v_inv;
 
 // TODO: "active lights" count, pack lights[] tightly
-const int max_lights = 32;
-uniform lightSource lights[max_lights];
-uniform int active_lights;
+const int max_lights = 16;
+uniform point_light point_lights[max_lights];
+uniform spot_light spot_lights[max_lights];
+uniform directional_light directional_lights[max_lights];
+
+uniform int active_point_lights;
+uniform int active_spot_lights;
+uniform int active_directional_lights;
+
 uniform material anmaterial;
 
 uniform float time_ms;

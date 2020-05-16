@@ -45,7 +45,9 @@ class game_editor {
 			Inactive,
 			View,
 			AddObject,
-			AddLight,
+			AddPointLight,
+			AddSpotLight,
+			AddDirectionalLight,
 			Select,
 		};
 

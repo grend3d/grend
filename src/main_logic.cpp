@@ -255,35 +255,35 @@ void game_state::init_framebuffers(void) {
 
 void game_state::init_test_lights(void) {
 	// TODO: assert() + logger
-	player_light = add_light((struct engine::light){
-		.position = {0, 7, 0, 1},
-		.diffuse  = {1.0, 0.9, 0.8, 0.0},
-		.radius = 0.2,
-		.intensity = 100.0,
-	});
-
-	add_light((struct engine::light){
-		.position = {0, 7, -8, 1},
+	player_light = add_light((struct engine::point_light){
+		.position = {0, 7, -8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
 		.intensity = 100.0,
 	});
 
-	add_light((struct engine::light){
-		.position = {0, 7, 8, 1},
+	add_light((struct engine::point_light){
+		.position = {0, 7, 8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
 		.intensity = 100.0,
 	});
 
-	add_light((struct engine::light){
-		.position = {0, 30, 50, 0},
+	add_light((struct engine::spot_light){
+		.position = {0, 7, 0},
+		.diffuse  = {1.0, 0.9, 0.8, 1.0},
+		.direction = {0, 1, 0},
+		.radius = 0.2,
+		.intensity = 100.0,
+		.angle = 0.7,
+	});
+
+	add_light((struct engine::directional_light){
+		.position = {0, 30, 50},
 		.diffuse  = {0.9, 0.9, 1.0, 0.1},
-		.radius = 3.0,
+		.direction = {0, 0, 1},
 		.intensity = 100.0,
 	});
-
-	update_lights();
 }
 
 void game_state::init_imgui(context& ctx) {
