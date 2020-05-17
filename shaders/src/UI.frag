@@ -1,12 +1,18 @@
+#define FRAGMENT_SHADER
+
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-varying vec2 f_texcoord;
+#include <lib/compat.glsl>
+
+in vec2 f_texcoord;
+out vec4 gl_FragColor;
 
 uniform sampler2D UItex;
 
 void main(void) {
 	vec4 color = texture2D(UItex, f_texcoord);
-	gl_FragColor = color;
+	//gl_FragColor = color;
+	FRAG_COLOR = color;
 }

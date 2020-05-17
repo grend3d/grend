@@ -9,9 +9,9 @@
 #define SCREEN_SIZE_X 1280
 #define SCREEN_SIZE_Y 720
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <grend/opengl-includes.hpp>
 
 namespace grendx {

@@ -1,3 +1,5 @@
+#define FRAGMENT_SHADER
+
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
@@ -9,9 +11,11 @@ precision mediump samplerCube;
 #define ENABLE_SKYBOX 1
 #define ENABLE_REFRACTION 1
 
+#include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>
+#include <lib/tonemapping.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 
 void main(void) {
@@ -83,8 +87,10 @@ void main(void) {
 	total_light += ref_light;
 #endif
 
+	// apply tonemapping here if there's no postprocessing step afterwards
+	total_light = EARLY_TONEMAP(total_light, 1.0);
+	FRAG_COLOR = vec4(total_light, 1.0);
+
 	vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
-	vec4 displight = vec4(total_light, 1.0);
-	gl_FragColor = displight;
 	//gl_FragColor = dispnorm;
 }

@@ -3,7 +3,7 @@
 #include <grend/gl_manager.hpp>
 #include <grend/sdl-context.hpp>
 #include <grend/engine.hpp>
-#include <SDL2/SDL_ttf.h>
+#include <SDL_ttf.h>
 
 namespace grendx {
 

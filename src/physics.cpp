@@ -23,7 +23,7 @@ uint64_t imp_physics::add_sphere(std::string modname, glm::vec3 pos, double r)
 	objects[ret].id = ret;
 	objects[ret].model_name = modname;
 	objects[ret].type = object::type::Sphere;
-	objects[ret].sphere.radius = r;
+	objects[ret].usphere.radius = r;
 	objects[ret].position = pos;
 	// TODO: mass parameter
 	objects[ret].inverse_mass = 1;

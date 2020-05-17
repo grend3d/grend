@@ -1,5 +1,5 @@
 #include <grend/text.hpp>
-#include <SDL2/SDL_ttf.h>
+#include <SDL_ttf.h>
 #include <iostream>
 
 using namespace grendx;
@@ -8,6 +8,8 @@ text_renderer::text_renderer(engine *eng,
                              const char *font, int size)
 	: gengine(eng)
 {
+	// XXX: TODO asdf remove
+	return;
 	assert(gengine != nullptr);
 
 	if ((ttf = TTF_OpenFont(font, size)) == nullptr) {

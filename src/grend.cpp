@@ -1,5 +1,8 @@
 #include <grend/gl_manager.hpp>
 
+#include <tinygltf/stb_image.h>
+#include <tinygltf/stb_image_write.h>
+
 #include <string>
 #include <vector>
 #include <map>
@@ -471,6 +474,18 @@ GLenum surface_gl_format(const material_texture& tex) {
 	return GL_RGBA;
 }
 
+GLenum surface_gl_format(int channels) {
+	switch (channels) {
+		case 1: return GL_RED;
+		case 2: return GL_RG;
+		case 3: return GL_RGB;
+		case 4: return GL_RGBA;
+		default: break;
+	}
+
+	return GL_RGBA;
+}
+
 uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	uint32_t ret = 757;
 
@@ -516,11 +531,20 @@ gl_manager::buffer_texture(const material_texture& tex, bool srgb) {
 	rhandle temp = gen_texture();
 	glBindTexture(GL_TEXTURE_2D, temp.first);
 	DO_ERROR_CHECK();
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+#ifdef NO_FORMAT_CONVERSION
+	// TODO: fallback SRBG conversion
 	glTexImage2D(GL_TEXTURE_2D,
-	             //0, GL_RGBA, texture->w, texture->h, 0, texformat,
+	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
+	             0, texformat, tex.width, tex.height,
+	             0, texformat, GL_UNSIGNED_BYTE, tex.pixels.data());
+
+#else
+	glTexImage2D(GL_TEXTURE_2D,
 	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 	             0, texformat, GL_UNSIGNED_BYTE, tex.pixels.data());
+#endif
+
 	DO_ERROR_CHECK();
 
 #if ENABLE_MIPMAPS
@@ -558,29 +582,45 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 		{"posz", GL_TEXTURE_CUBE_MAP_POSITIVE_Z}
 	};
 
+	std::cerr << __func__ << ": hi" << std::endl;
+
 	for (const auto& thing : dirmap) {
 		std::string fname = directory + "/" + thing.first + extension;
-		SDL_Surface *surf = IMG_Load(fname.c_str());
+		//SDL_Surface *surf = IMG_Load(fname.c_str());
+		int width, height, channels;
+		uint8_t *surf = stbi_load(fname.c_str(), &width, &height, &channels, 0);
+		std::cerr << __func__ << ": loaded a " << fname << std::endl;
 
 		if (!surf) {
 			SDL_Die("couldn't load cubemap texture");
 		}
 
 		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
-	        surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
+	        width, height, 0, channels);
 
-		glTexImage2D(thing.second, 0, GL_SRGB, surf->w, surf->h, 0,
-			surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
+		GLenum texformat = surface_gl_format(channels);
+
+#ifdef NO_FORMAT_CONVERSION
+		// TODO: fallback srgb conversion
+		glTexImage2D(thing.second, 0, texformat, width, height, 0,
+			texformat, GL_UNSIGNED_BYTE, surf);
+#else
+		glTexImage2D(thing.second, 0, GL_SRGB, width, height, 0,
+			texformat, GL_UNSIGNED_BYTE, surf);
+#endif
 		DO_ERROR_CHECK();
 
-		SDL_FreeSurface(surf);
+		//SDL_FreeSurface(surf);
+		stbi_image_free(surf);
 
 		for (unsigned i = 1; surf; i++) {
 			std::string mipname = directory + "/mip" + std::to_string(i)
 			                      + "-" + thing.first + extension;
 			std::cerr << " > looking for mipmap " << mipname << std::endl;
+
 			// TODO: change this to stb image
-			surf = IMG_Load(mipname.c_str());
+			//surf = IMG_Load(mipname.c_str());
+			surf = stbi_load(mipname.c_str(), &width, &height, &channels, 0);
 			if (!surf) break;
 
 			// maybe this?
@@ -594,13 +634,22 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 			*/
 
 			fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
-				surf->w, surf->h, surf->pitch, surf->format->BytesPerPixel);
+				width, height, 0, channels);
 
-			glTexImage2D(thing.second, i, GL_SRGB, surf->w, surf->h, 0,
-				surface_gl_format(surf), GL_UNSIGNED_BYTE, surf->pixels);
+
+			GLenum texformat = surface_gl_format(channels);
+#ifdef NO_FORMAT_CONVERSION
+			// again, SRGB fallback, also maybe have a function to init textures
+			glTexImage2D(thing.second, i, texformat, width, height, 0,
+				texformat, GL_UNSIGNED_BYTE, surf);
+#else
+			glTexImage2D(thing.second, i, GL_SRGB, width, height, 0,
+				texformat, GL_UNSIGNED_BYTE, surf);
+#endif
+
 			DO_ERROR_CHECK();
 
-			SDL_FreeSurface(surf);
+			stbi_image_free(surf);
 		}
 	}
 
@@ -609,9 +658,11 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 	DO_ERROR_CHECK();
 
 	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+#if GLSL_VERSION >= 130
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+#endif
 	DO_ERROR_CHECK();
 
 	return tex;
@@ -619,6 +670,9 @@ gl_manager::load_cubemap(std::string directory, std::string extension) {
 
 gl_manager::rhandle
 gl_manager::load_shader(const std::string filename, GLuint type) {
+	std::cerr << __func__ << ": " << __LINE__ << ": loading "
+	          << filename << std::endl;
+
 	std::string source = load_file(filename);
 	const char *temp = source.c_str();
 	int compiled;
@@ -638,7 +692,9 @@ gl_manager::load_shader(const std::string filename, GLuint type) {
 		shader_log = new char[max_length];
 		glGetShaderInfoLog(ret.first, max_length, &max_length, shader_log);
 
-		throw std::logic_error(filename + ": " + shader_log);
+		std::string err = (filename + ": " + shader_log);
+		SDL_Die(err.c_str());
+		//throw std::logic_error(filename + ": " + shader_log);
 	}
 
 	return ret;

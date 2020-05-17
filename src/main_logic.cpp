@@ -85,15 +85,22 @@ void game_state::load_models(void) {
 	model_map models = test_models;
 	std::list<std::string> libraries = test_libraries;
 
+	model_map gltf;
+	/*
+	std::cerr << "loading duck" << std::endl;
 	model_map gltf = load_gltf_models("assets/obj/Duck/glTF/Duck.gltf");
 	models.insert(gltf.begin(), gltf.end());
 
+	std::cerr << "loading morphcube" << std::endl;
 	gltf = load_gltf_models("assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf");
 	models.insert(gltf.begin(), gltf.end());
+	*/
 
+	std::cerr << "loading helmet" << std::endl;
 	gltf = load_gltf_models("assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf");
 	models.insert(gltf.begin(), gltf.end());
 
+	std::cerr << "loading test objects" << std::endl;
 	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
 	static_models = scene;
 	models.insert(gmodels.begin(), gmodels.end());
@@ -102,6 +109,7 @@ void game_state::load_models(void) {
 	models.insert(gltf.begin(), gltf.end());
 	*/
 
+	std::cerr << "loading donut" << std::endl;
 	gltf = load_gltf_models("assets/obj/tests/donut4.gltf");
 	models.insert(gltf.begin(), gltf.end());
 
@@ -134,11 +142,14 @@ void game_state::load_models(void) {
 }
 
 void game_state::load_shaders(void) {
+	std::cerr << "loading shaders" << std::endl;
+
 	gl_manager::rhandle vertex_shader, fragment_shader;
 	vertex_shader = glman.load_shader("shaders/out/skybox.vert", GL_VERTEX_SHADER);
 	fragment_shader = glman.load_shader("shaders/out/skybox.frag", GL_FRAGMENT_SHADER);
 	skybox_shader = glman.gen_program();
 
+	std::cerr << "asdf" << std::endl;
 	glAttachShader(skybox_shader.first, vertex_shader.first);
 	glAttachShader(skybox_shader.first, fragment_shader.first);
 	DO_ERROR_CHECK();
@@ -154,6 +165,8 @@ void game_state::load_shaders(void) {
 	if (!linked_2) {
 		SDL_Die("couldn't link shaders (skybox)");
 	}
+
+	std::cerr << "loaded skybox shader" << std::endl;
 
 #if 0
 	vertex_shader = glman.load_shader("shaders/out/vertex-shading.vert", GL_VERTEX_SHADER);
@@ -187,6 +200,8 @@ void game_state::load_shaders(void) {
 		SDL_Die("couldn't link shaders (shading)");
 	}
 
+	std::cerr << "loaded main shader" << std::endl;
+
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
 	vertex_shader = glman.load_shader("shaders/out/postprocess.vert", GL_VERTEX_SHADER);
@@ -208,6 +223,8 @@ void game_state::load_shaders(void) {
 	if (!linked) {
 		SDL_Die("couldn't link shaders (postprocess)");
 	}
+
+	std::cerr << "loaded postprocess shader" << std::endl;
 
 	//glUseProgram(shader.first);
 	glman.bind_vao(orig_vao);
@@ -294,29 +311,45 @@ void game_state::init_imgui(context& ctx) {
 	ImGui_ImplSDL2_InitForOpenGL(ctx.window, ctx.glcontext);
 	// TODO: make the glsl version here depend on GL version/the string in
 	//       shaders/version.glsl
-	ImGui_ImplOpenGL3_Init("#version 130");
+	//ImGui_ImplOpenGL3_Init("#version 130");
+	//ImGui_ImplOpenGL3_Init("#version 300 es");
+	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
 // TODO: should start thinking about splitting initialization into smaller functions
 game_state::game_state(context& ctx) : engine(), text(this) {
+//game_state::game_state(context& ctx) : engine() {
+	std::cerr << "got to game_state::game_state()" << std::endl;
 	projection = glm::perspective(glm::radians(60.f),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 0.0, 1.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
 
+#ifdef __EMSCRIPTEN__
+	screen_x = SCREEN_SIZE_X;
+	screen_y = SCREEN_SIZE_Y;
+	std::cerr << "also got here" << std::endl;
+#else
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
+#endif
 
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	std::cerr << "loaded cubemap" << std::endl;
 	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget-tiny/", ".png");
 	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
 
 	load_models();
+	std::cerr << "loaded models" << std::endl;
 	load_shaders();
+	std::cerr << "loaded shaders" << std::endl;
 	init_framebuffers();
+	std::cerr << "initialized framebuffers" << std::endl;
 	init_test_lights();
+	std::cerr << "initialized lights" << std::endl;
 	init_imgui(ctx);
+	std::cerr << "loaded all the stuff" << std::endl;
 
 	// TODO: fit the player
 	player_phys_id = phys.add_sphere("person", {0, 3, 0}, 1);
@@ -518,16 +551,17 @@ void game_state::update_dynamic_lights(context& ctx) {
 */
 
 void game_state::render(context& ctx) {
-	// TODO: if postprocessing enabled, do this, otherwise just keep
-	//       the default framebuffer
-	{
-		glman.bind_framebuffer(rend_fb);
-		glViewport(0, 0, round(rend_x*dsr_scale_x), round(rend_y*dsr_scale_y));
-	}
+#ifdef NO_POSTPROCESSING
+	glman.bind_default_framebuffer();
+	glViewport(0, 0, screen_x, screen_y);
+
+#else
+	glman.bind_framebuffer(rend_fb);
+	glViewport(0, 0, round(rend_x*dsr_scale_x), round(rend_y*dsr_scale_y));
+#endif
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
-	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
 
 #if 0
@@ -568,28 +602,29 @@ void game_state::render(context& ctx) {
 	dqueue_flush_draws();
 
 	render_skybox(ctx);
-	render_postprocess(ctx);
 
+#ifndef NO_POSTPROCESSING
+	render_postprocess(ctx);
 	glman.bind_default_framebuffer();
+#endif
+
+	/*
 	text.render({0.0, 0.9, 0},
 			"scale x: " + std::to_string(dsr_scale_x) +
 			", y: " + std::to_string(dsr_scale_y));
+			*/
 
-	text.render({-0.9, 0.9, 0}, "grend test v0");
+	//text.render({-0.9, 0.9, 0}, "grend test v0");
 
-	/*
-	if (in_select_mode) {
-		render_imgui(ctx);
-	}
-	*/
 	if (editor.mode != game_editor::mode::Inactive) {
 		editor.render_imgui(this, ctx);
 	}
 }
 
 void game_state::draw_debug_string(std::string str) {
+	return;
 	glDisable(GL_DEPTH_TEST);
-	text.render({-0.9, -0.9, 0}, str);
+	//text.render({-0.9, -0.9, 0}, str);
 	DO_ERROR_CHECK();
 }
 

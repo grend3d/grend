@@ -1,9 +1,13 @@
+#define VERTEX_SHADER
+
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-attribute vec3 v_position;
-varying vec3 f_texcoord;
+#include <lib/compat.glsl>
+
+in vec3 v_position;
+out vec3 f_texcoord;
 uniform mat4 p, v;
 
 // unused, here to prevent errors when setting undefined uniforms

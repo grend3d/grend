@@ -1,3 +1,5 @@
+#define FRAGMENT_SHADER
+
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
@@ -7,6 +9,7 @@ precision mediump samplerCube;
 #define ENABLE_SKYBOX 1
 #define ENABLE_REFRACTION 1
 
+#include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>

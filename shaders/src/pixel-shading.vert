@@ -1,23 +1,19 @@
+#define VERTEX_SHADER
+
 precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-#include <lib/shading-uniforms.glsl>
+#include <lib/compat.glsl>
+#include <lib/shading-varying.glsl>
 
-attribute vec3 in_Position;
-attribute vec2 texcoord;
-attribute vec3 v_normal;
-attribute vec3 v_tangent;
-attribute vec3 v_bitangent;
+in vec3 in_Position;
+in vec2 texcoord;
+in vec3 v_normal;
+in vec3 v_tangent;
+in vec3 v_bitangent;
 
-// exports to the fragment shader
-varying vec4 f_position;
-varying vec3 f_normal;
-varying vec3 f_tangent;
-varying vec3 f_bitangent;
-varying vec2 f_texcoord;
-
-varying mat3 TBN;
+uniform mat4 m, v, p;
 
 void main(void) {
 	f_normal = normalize(v_normal);

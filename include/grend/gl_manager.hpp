@@ -129,8 +129,14 @@ class gl_manager {
 
 GLenum surface_gl_format(SDL_Surface *surf);
 void check_errors(int line, const char *func);
+
+#ifdef NO_ERROR_CHECK
+#define DO_ERROR_CHECK() /* asdf */
+
+#else
 #define DO_ERROR_CHECK() \
 	{ check_errors(__LINE__, __func__); }
+#endif
 
 // namespace grendx
 }

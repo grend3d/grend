@@ -83,9 +83,13 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = material_texture("assets/tex/dims/Textures/Boards.JPG"),
+				   .diffuse_map = material_texture("assets/tex/white.png"),
+				   //.diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
+				   //.diffuse_map  = material_texture("assets/tex/dims/Textures/Boards.JPG"),
 				   .metal_roughness_map = material_texture("assets/tex/white.png"),
-				   .normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
+				   //.normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
+				   .normal_map = material_texture("assets/tex/white.png"),
+				   //.normal_map   = "assets/tex/rubberduck-tex/199_norm.JPG",
 				   .ambient_occ_map = material_texture("assets/tex/white.png"),
 			   }},
 
@@ -110,12 +114,16 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1.0,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map  = material_texture("assets/tex/Earthmap720x360_grid.jpg"),
+				   //.diffuse_map  = material_texture("assets/tex/Earthmap720x360_grid.jpg"),
+				   .diffuse_map = material_texture("assets/tex/white.png"),
 			   }},
 };
 
 engine::engine() {
 	for (auto& thing : default_materials) {
+		std::cerr << __func__ << ": loading materials for "
+			<< thing.first << std::endl;
+
 		if (thing.second.diffuse_map.loaded()) {
 			diffuse_handles[thing.first] =
 				glman.buffer_texture(thing.second.diffuse_map, true /* srgb */);
@@ -136,6 +144,8 @@ engine::engine() {
 				glman.buffer_texture(thing.second.ambient_occ_map);
 		}
 	}
+
+	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
 void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name) {
@@ -300,6 +310,10 @@ void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
 	set_m(transform);
 	glman.bind_vao(foo.vao);
 
+#ifdef NO_GLPOLYMODE
+	glDrawElements(GL_LINE_LOOP, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+
+#else
 	// TODO: keep track of face culling state in this class
 #ifdef ENABLE_FACE_CULLING
 	glDisable(GL_CULL_FACE);
@@ -311,6 +325,7 @@ void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
 
 #ifdef ENABLE_FACE_CULLING
 	glEnable(GL_CULL_FACE);
+#endif
 #endif
 }
 

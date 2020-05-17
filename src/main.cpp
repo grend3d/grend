@@ -10,52 +10,57 @@
 
 using namespace grendx;
 
-int main(int argc, char *argv[]) {
-	context ctx("grend test");
-	std::unique_ptr<game_state> scene(new game_state(ctx));
+context ctx("grend test");
+game_state *gscene = nullptr;
 
-	while (scene->running) {
-		//uint32_t begin = SDL_GetTicks();
-		scene->frame_timer.start();
-		scene->input(ctx);
+int render_step(double time, void *data) {
+	gscene->frame_timer.start();
+	gscene->input(ctx);
 
-		if (scene->running) {
-			scene->physics(ctx);
-			scene->logic(ctx);
-			scene->render(ctx);
+	if (gscene->running) {
+		gscene->physics(ctx);
+		gscene->logic(ctx);
+		gscene->render(ctx);
 
-			//auto minmax = framems_minmax();
-			std::pair<float, float> minmax = {0, 0}; // TODO: implementation
-			float fps = scene->frame_timer.average();
+		//auto minmax = framems_minmax();
+		std::pair<float, float> minmax = {0, 0}; // TODO: implementation
+		float fps = gscene->frame_timer.average();
 
-			std::string foo =
-				std::to_string(fps) + " FPS "
-				+ "(" + std::to_string(1.f/fps * 1000) + "ms/frame) "
-				+ "(min: " + std::to_string(minmax.first) + ", "
-				+ "max: " + std::to_string(minmax.second) + ")"
-				;
+		std::string foo =
+			std::to_string(fps) + " FPS "
+			+ "(" + std::to_string(1.f/fps * 1000) + "ms/frame) "
+			+ "(min: " + std::to_string(minmax.first) + ", "
+			+ "max: " + std::to_string(minmax.second) + ")"
+			;
 
-			scene->draw_debug_string(foo);
-			SDL_GL_SwapWindow(ctx.window);
-			scene->frame_timer.stop();
-
-			/*
-			uint32_t end = SDL_GetTicks() - begin;
-			fps = fps_sma(end);
-			*/
-
-			/*
-			// TODO: without vsync
-			double frametime = 1.f/fps*1000;
-
-			if (end < scene->dsr_target_ms) {
-				SDL_Delay(floor(scene->dsr_target_ms - end));
-			}
-			*/
-
-			//fflush(stdout);
-		}
+		gscene->draw_debug_string(foo);
+		SDL_GL_SwapWindow(ctx.window);
+		gscene->frame_timer.stop();
 	}
+
+	return gscene->running;
+}
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
+int main(int argc, char *argv[]) {
+	std::cerr << "entering main()" << std::endl;
+	std::cerr << "started SDL context" << std::endl;
+	std::cerr << "have game state" << std::endl;
+
+	gscene = new game_state(ctx);
+
+#ifdef __EMSCRIPTEN__
+	emscripten_request_animation_frame_loop(&render_step, nullptr);
+
+#else
+	while (gscene->running) {
+		render_step(0, nullptr);
+	}
+#endif
 
 	return 0;
 }

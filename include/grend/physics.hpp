@@ -35,7 +35,7 @@ class imp_physics {
 				uint64_t id;
 
 				enum type type;
-				union { struct sphere sphere; struct box box; };
+				union { struct sphere usphere; struct box ubox; };
 
 				std::string model_name;
 				glm::vec3 position = {0, 0, 0};
