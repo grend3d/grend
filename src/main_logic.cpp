@@ -320,8 +320,13 @@ void game_state::init_imgui(context& ctx) {
 game_state::game_state(context& ctx) : engine(), text(this) {
 //game_state::game_state(context& ctx) : engine() {
 	std::cerr << "got to game_state::game_state()" << std::endl;
-	projection = glm::perspective(glm::radians(60.f),
+
+	float fov_x = 100.f;
+	float fov_y = (fov_x * SCREEN_SIZE_Y)/(float)SCREEN_SIZE_X;
+
+	projection = glm::perspective(glm::radians(fov_y),
 	                             (1.f*SCREEN_SIZE_X)/SCREEN_SIZE_Y, 0.1f, 100.f);
+
 	view = glm::lookAt(glm::vec3(0.0, 0.0, 0.0),
 	                   glm::vec3(0.0, 0.0, 1.0),
 	                   glm::vec3(0.0, 1.0, 0.0));
