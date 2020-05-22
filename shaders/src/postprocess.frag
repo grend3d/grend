@@ -3,22 +3,14 @@
 precision highp float;
 precision mediump sampler2D;
 
+#include <lib/postprocessing-uniforms.glsl>
 #include <lib/compat.glsl>
 #include <lib/tonemapping.glsl>
+#if SOFT_ANTIALIASING
+#include <lib/psaa.glsl>
+#endif
 
 in vec2 f_texcoord;
-
-uniform sampler2D render_fb;
-uniform sampler2D last_frame_fb;
-uniform sampler2D render_depth;
-
-uniform float screen_x;
-uniform float screen_y;
-
-uniform float scale_x;
-uniform float scale_y;
-uniform float exposure;
-
 
 void main(void) {
 	vec2 scaled_texcoord = vec2(scale_x, scale_y) * f_texcoord;
@@ -27,10 +19,11 @@ void main(void) {
 	vec4 color = texture2D(render_fb, scaled_texcoord);
 	vec4 last_color = texture2D(last_frame_fb, f_texcoord);
 
-	//gl_FragColor = vec4(gamma_correct(color.rgb), 1.0);
-	//gl_FragColor = vec4(reinhard_hdr(color.rgb, 1.0), 1.0);
-	//gl_FragColor = vec4(reinhard_hdr_modified(color.rgb, exposure), 1.0);
+	//TODO: should tonemapping just be done at the end of shading no matter what?
+#ifdef SOFT_ANTIALIASING
+	FRAG_COLOR = psaa(scaled_texcoord);
+#else
 	FRAG_COLOR = vec4(reinhard_hdr_modified(color.rgb, exposure), 1.0);
-	//gl_FragColor = vec4(linear_hdr(color.rgb, 2.0), 1.0);
-	//gl_FragColor = color;
+#endif
+
 }

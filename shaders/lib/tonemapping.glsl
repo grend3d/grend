@@ -22,7 +22,7 @@ vec3 gamma_correct(vec3 color) {
 	return pow(color, vec3(1.0/2.2));
 }
 
-#ifdef NO_POSTPROCESSING
+#if defined(NO_POSTPROCESSING) || defined(SOFT_ANTIALIASING)
 #define EARLY_TONEMAP(color, exposure) (reinhard_hdr_modified(color, exposure))
 #else
 #define EARLY_TONEMAP(color, exposure) color;

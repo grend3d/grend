@@ -523,6 +523,9 @@ void game_state::render_postprocess(context& ctx) {
 	glUniform1f(glGetUniformLocation(post_shader.first, "screen_x"), screen_x);
 	glUniform1f(glGetUniformLocation(post_shader.first, "screen_y"), screen_y);
 
+	glUniform1f(glGetUniformLocation(post_shader.first, "rend_x"), rend_x);
+	glUniform1f(glGetUniformLocation(post_shader.first, "rend_y"), rend_y);
+
 	// TODO: some sort of global variable lookup
 	glUniform1f(glGetUniformLocation(post_shader.first, "exposure"), editor.exposure);
 
