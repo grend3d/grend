@@ -32,8 +32,8 @@ void game_editor::handle_editor_input(engine *renderer,
 
 				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
 				case SDLK_m: mode = mode::Inactive; break;
-				case SDLK_i: load_map(); break;
-				case SDLK_o: save_map(); break;
+				case SDLK_i: load_map(renderer); break;
+				case SDLK_o: save_map(renderer); break;
 
 				case SDLK_g:
 					//edit_rotation -= M_PI/4;
@@ -214,6 +214,14 @@ void game_editor::handle_editor_input(engine *renderer,
 						set_mode(mode::View);
 						break;
 
+					case mode::AddReflectionProbe:
+						renderer->add_reflection_probe((struct engine::reflection_probe) {
+							.position = entbuf.position,
+							.changed = true,
+						});
+						set_mode(mode::View);
+						break;
+
 					default:
 						break;
 				}
@@ -319,6 +327,7 @@ void game_editor::menubar(void) {
 		ImGui::Combo("[mode]", &mode,
 			"Exit editor\0" "View\0" "Add object\0"
 			"Add point light\0" "Add spot light\0" "Add directional light\0"
+			"Add reflection probe\0"
 			"Select\0"
 			"\0");
 
@@ -597,13 +606,17 @@ void game_editor::render_editor(engine *renderer,
 				// TODO: keep scale state
 				* glm::scale(glm::vec3(1));
 			renderer->dqueue_draw_model("smoothsphere", trans);
+
+		} else if (mode == mode::AddReflectionProbe) {
+			glm::mat4 trans = glm::translate(entbuf.position);
+			renderer->dqueue_draw_model("smoothsphere", trans);
 		}
 	}
 
 	map_models(renderer, ctx);
 }
 
-void game_editor::load_map(std::string name) {
+void game_editor::load_map(engine *renderer, std::string name) {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 
@@ -635,10 +648,22 @@ void game_editor::load_map(std::string name) {
 			dynamic_models.push_back(v);
 			std::cerr << "# loaded a " << v.name << std::endl;
 		}
+
+		if (statement[0] == "reflection_probe" && statement.size() == 2) {
+			auto posvec = split_string(statement[1], ',');
+			glm::vec3 pos(std::stof(posvec[0]),
+			              std::stof(posvec[1]),
+			              std::stof(posvec[2]));
+
+			renderer->add_reflection_probe((struct engine::reflection_probe) {
+				.position = pos,
+				.changed = true,
+			});
+		}
 	}
 }
 
-void game_editor::save_map(std::string name) {
+void game_editor::save_map(engine *renderer, std::string name) {
 	std::ofstream foo(name);
 	std::cerr << "saving map " << name << std::endl;
 
@@ -667,5 +692,11 @@ void game_editor::save_map(std::string name) {
 
 		foo << "\t" << v.inverted;
 		foo << std::endl;
+	}
+
+	for (auto& p : renderer->ref_probes) {
+		foo << "reflection_probe\t"
+		    << p.position.x << "," << p.position.y << "," << p.position.z
+		    << std::endl;
 	}
 }

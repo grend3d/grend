@@ -108,6 +108,8 @@ class gl_manager {
 		rhandle buffer_texture(const material_texture& tex, bool srgb=false);
 		rhandle load_cubemap(std::string directory, std::string extension=".jpg");
 		rhandle load_shader(std::string filename, GLuint type);
+		rhandle load_program(std::string vert, std::string frag);
+		rhandle link_program(rhandle program);
 		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);
 
 		// map of loaded textures by filename

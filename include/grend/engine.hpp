@@ -4,7 +4,11 @@
 #include <grend/sdl-context.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/model.hpp>
+#include <grend/texture-atlas.hpp>
+#include <grend/quadtree.hpp>
+
 #include <list>
+#include <memory>
 
 #include <stdint.h>
 
@@ -21,7 +25,7 @@ class engine {
 			glm::vec4 diffuse;
 			float radius;
 			float intensity;
-			// TODO: shadowmap texture/state here 
+			quadtree::node_id shadow_map[2];
 			bool changed = true;
 		};
 
@@ -32,7 +36,7 @@ class engine {
 			float radius; // bulb radius
 			float intensity;
 			float angle;
-			// TODO: shadowmap texture/state here
+			quadtree::node_id shadow_map;
 			bool changed = true;
 		};
 
@@ -41,7 +45,13 @@ class engine {
 			glm::vec4 diffuse;
 			glm::vec3 direction;
 			float intensity;
-			// TODO: shadowmap texture/state here
+			quadtree::node_id shadow_map;
+			bool changed = true;
+		};
+
+		struct reflection_probe {
+			glm::vec3 position;
+			quadtree::node_id parabaloid[2];
 			bool changed = true;
 		};
 
@@ -86,6 +96,15 @@ class engine {
 		uint32_t add_light(struct point_light lit);
 		uint32_t add_light(struct spot_light lit);
 		uint32_t add_light(struct directional_light lit);
+		uint32_t add_reflection_probe(struct reflection_probe ref);
+
+		void set_shader(gl_manager::rhandle& shd);
+		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
+		void set_m(glm::mat4 mod);
+		const gl_manager& get_glman(void){ return glman; };
+
+		bool running = true;
+
 
 		/*
 		int add_light(struct light lit);
@@ -93,14 +112,6 @@ class engine {
 		int get_light(int id, struct light *lit);
 		void remove_light(int id);
 		*/
-
-		void set_shader(gl_manager::rhandle& shd);
-		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
-		void set_m(glm::mat4 mod);
-
-		const gl_manager& get_glman(void){ return glman; };
-
-		bool running = true;
 
 		// TODO: make an accessor function for this, for debug drawing in the
 		//       editor
@@ -122,6 +133,10 @@ class engine {
 			std::vector<uint32_t> spot;
 			std::vector<uint32_t> directional;
 		} active_lights;
+
+		std::vector<struct reflection_probe> ref_probes;
+		std::unique_ptr<atlas> reflection_atlas;
+		std::unique_ptr<atlas> shadow_atlas;
 
 	protected:
 		gl_manager::rhandle shader;

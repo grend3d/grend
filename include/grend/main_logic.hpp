@@ -48,6 +48,7 @@ class game_editor {
 			AddPointLight,
 			AddSpotLight,
 			AddDirectionalLight,
+			AddReflectionProbe,
 			Select,
 		};
 
@@ -73,8 +74,8 @@ class game_editor {
 		// TODO: rename 'engine' to 'renderer' or something
 		void render_imgui(engine *renderer, context& ctx);
 		void render_editor(engine *renderer, imp_physics *phys, context& ctx);
-		void save_map(std::string name="save.map");
-		void load_map(std::string name="save.map");
+		void save_map(engine *renderer, std::string name="save.map");
+		void load_map(engine *renderer, std::string name="save.map");
 		void logic(context& ctx, float delta);
 
 		int mode = mode::Inactive;
@@ -124,6 +125,9 @@ class game_state : public engine {
 		// TODO: subclasses or something
 		void handle_player_input(SDL_Event& ev);
 
+		// TODO: move some rendering stuff into the engine code
+		void render_light_maps(context& ctx);
+		void render_light_info(context& ctx);
 		void render_skybox(context& ctx);
 		void render_static(context& ctx);
 		void render_players(context& ctx);
@@ -176,6 +180,10 @@ class game_state : public engine {
 
 		// post-processing shader
 		gl_manager::rhandle post_shader;
+
+		// debug shaders for light/reflection probes
+		gl_manager::rhandle refprobe_shader;
+		gl_manager::rhandle lightprobe_shader;
 
 		// main rendering framebuffer
 		gl_manager::rhandle rend_fb;

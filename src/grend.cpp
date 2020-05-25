@@ -700,9 +700,47 @@ gl_manager::load_shader(const std::string filename, GLuint type) {
 	return ret;
 }
 
+gl_manager::rhandle gl_manager::load_program(std::string vert, std::string frag) {
+	rhandle vertsh, fragsh, prog;
+
+	vertsh = load_shader(vert, GL_VERTEX_SHADER);
+	fragsh = load_shader(frag, GL_FRAGMENT_SHADER);
+	prog = gen_program();
+
+	glAttachShader(prog.first, vertsh.first);
+	glAttachShader(prog.first, fragsh.first);
+	DO_ERROR_CHECK();
+
+	return prog;
+}
+
+gl_manager::rhandle gl_manager::link_program(rhandle program) {
+	int linked;
+
+	glLinkProgram(program.first);
+	glGetProgramiv(program.first, GL_LINK_STATUS, &linked);
+
+	if (!linked) {
+		int max_length;
+		char *prog_log;
+
+		glGetProgramiv(program.first, GL_INFO_LOG_LENGTH, &max_length);
+		prog_log = new char[max_length];
+		glGetProgramInfoLog(program.first, max_length, &max_length, prog_log);
+
+		std::string err = (std::string)"error linking program: " + prog_log;
+		delete prog_log;
+
+		SDL_Die(err.c_str());
+	}
+
+	return program;
+}
+
 gl_manager::rhandle
 gl_manager::fb_attach_texture(GLenum attachment, const rhandle& texture)
 {
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture.first);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D,
 	                       texture.first, 0);

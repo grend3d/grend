@@ -145,6 +145,9 @@ engine::engine() {
 		}
 	}
 
+	reflection_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048));
+	shadow_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048));
+
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
@@ -418,6 +421,15 @@ void engine::free_light(uint32_t id) {
 	point_lights.erase(id);
 	spot_lights.erase(id);
 	directional_lights.erase(id);
+}
+
+uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
+	// TODO: configurable/deduced dimensions
+	ref.parabaloid[0] = reflection_atlas->tree.alloc(128);
+	ref.parabaloid[1] = reflection_atlas->tree.alloc(128);
+	ref_probes.push_back(ref);
+
+	return ref_probes.size() - 1;
 }
 
 /*

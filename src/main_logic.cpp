@@ -143,86 +143,62 @@ void game_state::load_models(void) {
 
 void game_state::load_shaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-
-	gl_manager::rhandle vertex_shader, fragment_shader;
-	vertex_shader = glman.load_shader("shaders/out/skybox.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/out/skybox.frag", GL_FRAGMENT_SHADER);
-	skybox_shader = glman.gen_program();
-
-	std::cerr << "asdf" << std::endl;
-	glAttachShader(skybox_shader.first, vertex_shader.first);
-	glAttachShader(skybox_shader.first, fragment_shader.first);
-	DO_ERROR_CHECK();
+	skybox_shader = glman.load_program(
+		"shaders/out/skybox.vert",
+		"shaders/out/skybox.frag"
+	);
 
 	glBindAttribLocation(skybox_shader.first, 0, "v_position");
-	DO_ERROR_CHECK();
-
-	// TODO: function to compile shaders
-	int linked_2;
-	glLinkProgram(skybox_shader.first);
-	glGetProgramiv(skybox_shader.first, GL_LINK_STATUS, &linked_2);
-
-	if (!linked_2) {
-		SDL_Die("couldn't link shaders (skybox)");
-	}
-
+	glman.link_program(skybox_shader);
 	std::cerr << "loaded skybox shader" << std::endl;
 
 #if 0
-	vertex_shader = glman.load_shader("shaders/out/vertex-shading.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/out/vertex-shading.frag", GL_FRAGMENT_SHADER);
+	main_shader = glman.load_program(
+		"shaders/out/vertex-shading.vert",
+		"shaders/out/vertex-shading.frag"
+	);
 #else
-	vertex_shader = glman.load_shader("shaders/out/pixel-shading.vert", GL_VERTEX_SHADER);
-	//fragment_shader = glman.load_shader("shaders/out/pixel-shading.frag", GL_FRAGMENT_SHADER);
-	fragment_shader = glman.load_shader("shaders/out/pixel-shading-metal-roughness-pbr.frag", GL_FRAGMENT_SHADER);
+	main_shader = glman.load_program(
+		"shaders/out/pixel-shading.vert",
+		//"shaders/out/pixel-shading.frag",
+		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
+	);
 #endif
 
-	main_shader = glman.gen_program();
-
-	glAttachShader(main_shader.first, vertex_shader.first);
-	glAttachShader(main_shader.first, fragment_shader.first);
-	DO_ERROR_CHECK();
-
-	// monkey business
-	fprintf(stderr, " # have %lu vertices\n", glman.cooked_vertprops.size());
 	glBindAttribLocation(main_shader.first, 0, "in_Position");
 	glBindAttribLocation(main_shader.first, 1, "v_normal");
 	glBindAttribLocation(main_shader.first, 2, "v_tangent");
 	glBindAttribLocation(main_shader.first, 3, "v_bitangent");
 	glBindAttribLocation(main_shader.first, 4, "texcoord");
-	DO_ERROR_CHECK();
-
-	int linked;
-	glLinkProgram(main_shader.first);
-	glGetProgramiv(main_shader.first, GL_LINK_STATUS, &linked);
-
-	if (!linked) {
-		SDL_Die("couldn't link shaders (shading)");
-	}
-
+	glman.link_program(main_shader);
 	std::cerr << "loaded main shader" << std::endl;
+
+	refprobe_shader = glman.load_program(
+		"shaders/out/ref_probe_debug.vert",
+		"shaders/out/ref_probe_debug.frag"
+	);
+
+	glBindAttribLocation(refprobe_shader.first, 0, "in_Position");
+	glBindAttribLocation(refprobe_shader.first, 1, "v_normal");
+	glBindAttribLocation(refprobe_shader.first, 2, "v_tangent");
+	glBindAttribLocation(refprobe_shader.first, 3, "v_bitangent");
+	glBindAttribLocation(refprobe_shader.first, 4, "texcoord");
+	glman.link_program(refprobe_shader);
+
+	std::cerr << "loaded refprobe shader" << std::endl;
 
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
-	vertex_shader = glman.load_shader("shaders/out/postprocess.vert", GL_VERTEX_SHADER);
-	fragment_shader = glman.load_shader("shaders/out/postprocess.frag", GL_FRAGMENT_SHADER);
-	post_shader = glman.gen_program();
 
-	glAttachShader(post_shader.first, vertex_shader.first);
-	glAttachShader(post_shader.first, fragment_shader.first);
+	post_shader = glman.load_program(
+		"shaders/out/postprocess.vert",
+		"shaders/out/postprocess.frag"
+	);
+
 	glBindAttribLocation(post_shader.first, 0, "v_position");
 	glBindAttribLocation(post_shader.first, 1, "v_texcoord");
 	DO_ERROR_CHECK();
-
-	//glBindAttribLocation(post_shader.first, glman.screenquad_vbo.first, "screenquad");
-	DO_ERROR_CHECK();
-
-	glLinkProgram(post_shader.first);
-	glGetProgramiv(post_shader.first, GL_LINK_STATUS, &linked);
-
-	if (!linked) {
-		SDL_Die("couldn't link shaders (postprocess)");
-	}
+	glman.link_program(post_shader);
 
 	std::cerr << "loaded postprocess shader" << std::endl;
 
@@ -426,6 +402,117 @@ void game_state::render_skybox(context& ctx) {
 	glDepthMask(GL_TRUE);
 }
 
+void game_state::render_light_maps(context& ctx) {
+	set_shader(main_shader);
+	update_lights();
+
+	glEnable(GL_SCISSOR_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+
+	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
+	glUniform1f(glGetUniformLocation(shader.first, "time_ms"),
+	                                 SDL_GetTicks() * 1.f);
+
+	float fov_x = 175.f;
+	//float fov_y = (fov_x * SCREEN_SIZE_Y)/(float)SCREEN_SIZE_X;
+	//float fov_y = (fov_x * 256.0)/256.0;
+	float fov_y = fov_x;
+
+	glm::mat4 view;
+
+	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 20.f);
+
+	for (auto& probe : ref_probes) {
+
+		reflection_atlas->bind_atlas_fb(probe.parabaloid[0]);
+
+		view = glm::lookAt(probe.position,
+	                       probe.position + glm::vec3(0, 0, -1),
+	                       glm::vec3(0, 1, 0));
+		set_mvp(glm::mat4(1), view, projection);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			SDL_Die("incomplete!");
+		}
+
+		glClearColor(0.0, 0.0, 1, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		DO_ERROR_CHECK();
+
+		render_static(ctx);
+		render_players(ctx);
+		render_dynamic(ctx);
+		DO_ERROR_CHECK();
+		dqueue_sort_draws(probe.position);
+		dqueue_flush_draws();
+		DO_ERROR_CHECK();
+
+		reflection_atlas->bind_atlas_fb(probe.parabaloid[1]);
+		view = glm::lookAt(probe.position,
+	                       probe.position + glm::vec3(0, 0, 1),
+	                       glm::vec3(0, 1, 0));
+		set_mvp(glm::mat4(1), view, projection);
+
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			SDL_Die("incomplete!");
+		}
+
+		glClearColor(1, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		DO_ERROR_CHECK();
+
+		render_static(ctx);
+		render_players(ctx);
+		render_dynamic(ctx);
+		DO_ERROR_CHECK();
+		dqueue_sort_draws(probe.position);
+		dqueue_flush_draws();
+		DO_ERROR_CHECK();
+	}
+}
+
+void game_state::render_light_info(context& ctx) {
+	set_shader(refprobe_shader);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, reflection_atlas->color_tex.first);
+	glUniform1i(glGetUniformLocation(shader.first, "reflection_atlas"), 0);
+	set_mvp(glm::mat4(1), view, projection);
+
+	for (auto& probe : ref_probes) {
+		/*
+		glm::mat3 p0 = reflection_atlas->tex_matrix(probe.parabaloid[0]);
+		glm::mat3 p1 = reflection_atlas->tex_matrix(probe.parabaloid[1]);
+		*/
+
+		glm::vec3 p0 = reflection_atlas->tex_vector(probe.parabaloid[0]);
+		glm::vec3 p1 = reflection_atlas->tex_vector(probe.parabaloid[1]);
+
+		/*
+		glUniformMatrix3fv(glGetUniformLocation(shader.first, "parabaloid[0]"),
+			1, GL_FALSE, glm::value_ptr(p0));
+		glUniformMatrix3fv(glGetUniformLocation(shader.first, "parabaloid[1]"),
+			1, GL_FALSE, glm::value_ptr(p1));
+			*/
+		glUniform3fv(glGetUniformLocation(shader.first, "parabaloid[0]"),
+			1, glm::value_ptr(p0));
+		glUniform3fv(glGetUniformLocation(shader.first, "parabaloid[1]"),
+			1, glm::value_ptr(p1));
+		DO_ERROR_CHECK();
+
+		glm::mat4 trans = glm::translate(probe.position);
+		draw_mesh("smoothsphere.Sphere:None", trans);
+	}
+
+	/*
+	glActiveTexture(GL_TEXTURE9);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	*/
+}
+
 void game_state::render_static(context& ctx) {
 	for (auto& thing : static_models.nodes) {
 		//draw_model(thing.name, thing.transform);
@@ -559,13 +646,20 @@ void game_state::update_dynamic_lights(context& ctx) {
 */
 
 void game_state::render(context& ctx) {
+	render_light_maps(ctx);
+
 #ifdef NO_POSTPROCESSING
 	glman.bind_default_framebuffer();
 	glViewport(0, 0, screen_x, screen_y);
 
 #else
 	glman.bind_framebuffer(rend_fb);
-	glViewport(0, 0, round(rend_x*dsr_scale_x), round(rend_y*dsr_scale_y));
+	GLsizei width = round(rend_x*dsr_scale_x);
+	GLsizei height = round(rend_y*dsr_scale_y);
+	glViewport(0, 0, width, height);
+	glScissor(0, 0, width, height);
+
+	glEnable(GL_SCISSOR_TEST);
 #endif
 
 	glEnable(GL_DEPTH_TEST);
@@ -582,6 +676,8 @@ void game_state::render(context& ctx) {
 	//glClearColor(0.7, 0.9, 1, 1);
 	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	render_light_info(ctx);
 
 	set_shader(main_shader);
 	update_lights();
@@ -612,6 +708,7 @@ void game_state::render(context& ctx) {
 	render_skybox(ctx);
 
 #ifndef NO_POSTPROCESSING
+	glDisable(GL_SCISSOR_TEST);
 	render_postprocess(ctx);
 	glman.bind_default_framebuffer();
 #endif
