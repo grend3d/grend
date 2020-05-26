@@ -181,9 +181,12 @@ class game_state : public engine {
 		// post-processing shader
 		gl_manager::rhandle post_shader;
 
-		// debug shaders for light/reflection probes
+		// simplified lighting probes for calculating reflection/shadow maps
 		gl_manager::rhandle refprobe_shader;
 		gl_manager::rhandle lightprobe_shader;
+
+		// debug shaders for light/reflection probes
+		gl_manager::rhandle refprobe_debug;
 
 		// main rendering framebuffer
 		gl_manager::rhandle rend_fb;

@@ -339,7 +339,11 @@ gl_manager::rhandle gl_manager::gen_program(void) {
 	GLuint temp = glCreateProgram();
 	DO_ERROR_CHECK();
 	programs.push_back(temp);
-	return {temp, programs.size() - 1};
+
+	rhandle ret = {temp, programs.size() - 1};
+	shader_objs.push_back(shader(ret));
+
+	return ret;
 }
 
 gl_manager::rhandle gl_manager::gen_framebuffer(void) {
@@ -747,6 +751,14 @@ gl_manager::fb_attach_texture(GLenum attachment, const rhandle& texture)
 	DO_ERROR_CHECK();
 
 	return texture;
+}
+
+const gl_manager::shader& gl_manager::get_shader_obj(rhandle& handle) {
+	assert(handle.second >= 0
+	       && handle.second < programs.size()
+	       && handle.second < shader_objs.size());
+
+	return shader_objs[handle.second];
 }
 
 // namespace grendx

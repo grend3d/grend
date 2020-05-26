@@ -160,62 +160,57 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	}
 
 	material& mat = obj.materials[mat_name];
+	auto shader_obj = glman.get_shader_obj(shader);
 
-	// TODO: cache uniform locations
-	// TODO: only update changed uniforms
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
-			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
-			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
-			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.roughness"),
-			mat.roughness);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.metalness"),
-			mat.metalness);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
-			mat.opacity);
+	shader_obj.set("anmaterial.diffuse", mat.diffuse);
+	shader_obj.set("anmaterial.ambient", mat.ambient);
+	shader_obj.set("anmaterial.specular", mat.specular);
+	shader_obj.set("anmaterial.roughness", mat.roughness);
+	shader_obj.set("anmaterial.metalness", mat.metalness);
+	shader_obj.set("anmaterial.opacity", mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	if (obj.mat_textures.find(mat_name) != obj.mat_textures.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
-		glUniform1i(u_diffuse_map, 0);
+		shader_obj.set("diffuse_map", 0);
 
 	} else {
 		glBindTexture(GL_TEXTURE_2D, diffuse_handles[fallback_material].first);
-		glUniform1i(u_diffuse_map, 0);
+		shader_obj.set("diffuse_map", 0);
 	}
 
 	glActiveTexture(GL_TEXTURE1);
 	if (obj.mat_specular.find(mat_name) != obj.mat_specular.end()) {
 		// TODO: specular maps
 		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
-		glUniform1i(u_specular_map, 1);
+		shader_obj.set("specular_map", 1);
 
 	} else {
 		glBindTexture(GL_TEXTURE_2D, specular_handles[fallback_material].first);
-		glUniform1i(u_specular_map, 1);
+		shader_obj.set("specular_map", 1);
 	}
 
 	glActiveTexture(GL_TEXTURE2);
 	if (obj.mat_normal.find(mat_name) != obj.mat_normal.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_normal[mat_name].first);
-		glUniform1i(u_normal_map, 2);
+		shader_obj.set("normal_map", 2);
 
 	} else {
 		glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
-		glUniform1i(u_normal_map, 2);
+		shader_obj.set("normal_map", 2);
 	}
 
 	glActiveTexture(GL_TEXTURE3);
 	if (obj.mat_ao.find(mat_name) != obj.mat_ao.end()) {
 		glBindTexture(GL_TEXTURE_2D, obj.mat_ao[mat_name].first);
-		glUniform1i(u_ao_map, 3);
+		shader_obj.set("ambient_occ_map", 3);
 
 	} else {
 		glBindTexture(GL_TEXTURE_2D, aomap_handles[fallback_material].first);
-		glUniform1i(u_ao_map, 3);
+		shader_obj.set("ambient_occ_map", 3);
 	}
+
+	DO_ERROR_CHECK();
 }
 
 void engine::set_default_material(std::string mat_name) {
@@ -226,58 +221,48 @@ void engine::set_default_material(std::string mat_name) {
 	}
 
 	material& mat = default_materials[mat_name];
+	auto shader_obj = glman.get_shader_obj(shader);
 
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.diffuse"),
-			mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, mat.diffuse.w);
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.ambient"),
-			mat.ambient.x, mat.ambient.y, mat.ambient.z, mat.ambient.w);
-	glUniform4f(glGetUniformLocation(shader.first, "anmaterial.specular"),
-			mat.specular.x, mat.specular.y, mat.specular.z, mat.specular.w);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.roughness"),
-			mat.roughness);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.metalness"),
-			mat.metalness);
-	glUniform1f(glGetUniformLocation(shader.first, "anmaterial.opacity"),
-			mat.opacity);
+	shader_obj.set("anmaterial.diffuse", mat.diffuse);
+	shader_obj.set("anmaterial.ambient", mat.ambient);
+	shader_obj.set("anmaterial.specular", mat.specular);
+	shader_obj.set("anmaterial.roughness", mat.roughness);
+	shader_obj.set("anmaterial.metalness", mat.metalness);
+	shader_obj.set("anmaterial.opacity", mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.loaded()?
-													 mat_name
-	                                                 : fallback_material].first);
-	glUniform1i(u_diffuse_map, 0);
-
+	                                             mat_name
+	                                             : fallback_material].first);
+	shader_obj.set("diffuse_map", 0);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.metal_roughness_map.loaded()?
-													 mat_name
-	                                                 : fallback_material].first);
-	glUniform1i(u_specular_map, 1);
+	                                              mat_name
+	                                              : fallback_material].first);
+	shader_obj.set("specular_map", 1);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, normmap_handles[mat.normal_map.loaded()?
-													 mat_name
-	                                                 : fallback_material].first);
-	glUniform1i(u_normal_map, 2);
+	                                             mat_name
+	                                             : fallback_material].first);
+	shader_obj.set("normal_map", 2);
 
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, aomap_handles[mat.ambient_occ_map.loaded()?
-													 mat_name
-	                                                 : fallback_material].first);
-	glUniform1i(u_ao_map, 3);
+	                                           mat_name
+	                                           : fallback_material].first);
+	shader_obj.set("ambient_occ_map", 3);
 }
 
 void engine::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	glm::mat4 v_inv = glm::inverse(view);
+	auto shader_obj = glman.get_shader_obj(shader);
 
 	set_m(mod);
-
-	glUniformMatrix4fv(glGetUniformLocation(shader.first, "v"),
-			1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(glGetUniformLocation(shader.first, "p"),
-			1, GL_FALSE, glm::value_ptr(projection));
-
-	glUniformMatrix4fv(glGetUniformLocation(shader.first, "v_inv"),
-			1, GL_FALSE, glm::value_ptr(v_inv));
+	shader_obj.set("v", view);
+	shader_obj.set("p", projection);
+	shader_obj.set("v_inv", v_inv);
 }
 
 static glm::mat4 model_to_world(glm::mat4 model) {
@@ -289,21 +274,20 @@ static glm::mat4 model_to_world(glm::mat4 model) {
 
 void engine::set_m(glm::mat4 mod) {
 	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(mod)));
+	auto shader_obj = glman.get_shader_obj(shader);
 
-	glUniformMatrix4fv(glGetUniformLocation(shader.first, "m"),
-			1, GL_FALSE, glm::value_ptr(mod));
-	glUniformMatrix3fv(glGetUniformLocation(shader.first, "m_3x3_inv_transp"),
-			1, GL_FALSE, glm::value_ptr(m_3x3_inv_transp));
+	shader_obj.set("m", mod);
+	shader_obj.set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
 
 void engine::draw_mesh(std::string name, glm::mat4 transform) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 	set_m(transform);
-	DO_ERROR_CHECK();
 
 	glman.bind_vao(foo.vao);
 	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
+	DO_ERROR_CHECK();
 }
 
 // TODO: overload of this that takes a material
@@ -432,50 +416,6 @@ uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
 	return ref_probes.size() - 1;
 }
 
-/*
-int engine::add_light(struct light lit) {
-	int ret = -1;
-
-	if (active_lights < MAX_LIGHTS) {
-		ret = active_lights++;
-		lights[ret] = lit;
-		lights[ret].changed = true;
-	}
-
-	return ret;
-}
-
-int engine::set_light(int id, struct light lit) {
-	if (is_valid_light(id)) {
-		lights[id] = lit;
-		lights[id].changed = true;
-		return id;
-	}
-
-	return -1;
-}
-
-int engine::get_light(int id, struct light *lit) {
-	if (is_valid_light(id)) {
-		*lit = lights[id];
-		return id;
-	}
-
-	return -1;
-}
-
-void engine::remove_light(int id) {
-	if (is_valid_light(id)) {
-		for (unsigned i = id + 1; i < active_lights; i++) {
-			lights[i-1] = lights[i];
-			lights[i-1].changed = true;
-		}
-
-		active_lights--;
-	}
-}
-*/
-
 void engine::set_shader(gl_manager::rhandle& shd) {
 	if (shader != shd) {
 		shader = shd;
@@ -485,101 +425,61 @@ void engine::set_shader(gl_manager::rhandle& shd) {
 
 // TODO: only update changed uniforms
 void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
+	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
-	glUniform1i(glGetUniformLocation(shader.first, "active_point_lights"), active);
+
+	shader_obj.set("active_point_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
 		const auto& light = point_lights[lights[i]];
 
-		// TODO: cache uniform locations (good idea: add a caching layer to glman)
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "point_lights[" + std::to_string(i) + "]";
-		std::map<std::string, GLint> light_handles;
 
-		for (std::string str : { "position", "diffuse", "radius", "intensity" }) {
-			light_handles[str] =
-				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
-			/*
-			   if (light_handles[str] == -1) {
-			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
-			   }
-			   */
-		}
-
-		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
-		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
-		glUniform1f(light_handles["radius"], light.radius);
-		glUniform1f(light_handles["intensity"], light.intensity);
+		shader_obj.set(locstr + ".position",  light.position);
+		shader_obj.set(locstr + ".diffuse",   light.diffuse);
+		shader_obj.set(locstr + ".radius",    light.radius);
+		shader_obj.set(locstr + ".intensity", light.intensity);
 	}
 }
 
 void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
+	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
-	glUniform1i(glGetUniformLocation(shader.first, "active_spot_lights"), active);
+
+	shader_obj.set("active_spot_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
 		const auto& light = spot_lights[lights[i]];
-
-		// TODO: cache uniform locations (good idea: add a caching layer to glman)
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
-		std::map<std::string, GLint> light_handles;
 
-		for (std::string str : {
-				"position", "diffuse", "direction",
-				"radius", "intensity", "angle"
-		}) {
-			light_handles[str] =
-				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
-			/*
-			   if (light_handles[str] == -1) {
-			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
-			   }
-			   */
-		}
-
-		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
-		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
-		glUniform3fv(light_handles["direction"], 1, glm::value_ptr(light.direction));
-		glUniform1f(light_handles["radius"], light.radius);
-		glUniform1f(light_handles["intensity"], light.intensity);
-		glUniform1f(light_handles["angle"], light.angle);
+		shader_obj.set(locstr + ".position",  light.position);
+		shader_obj.set(locstr + ".diffuse",   light.diffuse);
+		shader_obj.set(locstr + ".direction", light.direction);
+		shader_obj.set(locstr + ".radius",    light.radius);
+		shader_obj.set(locstr + ".intensity", light.intensity);
+		shader_obj.set(locstr + ".angle",     light.angle);
 	}
 }
 
 void engine::sync_directional_lights(const std::vector<uint32_t>& lights) {
+	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
-	glUniform1i(glGetUniformLocation(shader.first, "active_directional_lights"),
-		active);
+
+	shader_obj.set("active_directional_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
 		const auto& light = directional_lights[lights[i]];
-
-		// TODO: cache uniform locations (good idea: add a caching layer to glman)
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
-		std::map<std::string, GLint> light_handles;
 
-		for (std::string str : { "position", "diffuse", "direction", "intensity" }) {
-			light_handles[str] =
-				glGetUniformLocation(shader.first, (locstr + "." + str).c_str());
-			/*
-			   if (light_handles[str] == -1) {
-			   std::cerr << "/!\\ couldn't find " + locstr + "." + str << std::endl;
-			   }
-			   */
-		}
-
-		glUniform3fv(light_handles["position"], 1, glm::value_ptr(light.position));
-		glUniform4fv(light_handles["diffuse"], 1, glm::value_ptr(light.diffuse));
-		glUniform3fv(light_handles["direction"], 1, glm::value_ptr(light.direction));
-		glUniform1f(light_handles["intensity"], light.intensity);
+		shader_obj.set(locstr + ".position",  light.position);
+		shader_obj.set(locstr + ".diffuse",   light.diffuse);
+		shader_obj.set(locstr + ".direction", light.direction);
+		shader_obj.set(locstr + ".intensity", light.intensity);
 	}
 }
 

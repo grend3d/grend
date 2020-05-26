@@ -174,8 +174,8 @@ void game_state::load_shaders(void) {
 	std::cerr << "loaded main shader" << std::endl;
 
 	refprobe_shader = glman.load_program(
-		"shaders/out/ref_probe_debug.vert",
-		"shaders/out/ref_probe_debug.frag"
+		"shaders/out/ref_probe.vert",
+		"shaders/out/ref_probe.frag"
 	);
 
 	glBindAttribLocation(refprobe_shader.first, 0, "in_Position");
@@ -184,8 +184,20 @@ void game_state::load_shaders(void) {
 	glBindAttribLocation(refprobe_shader.first, 3, "v_bitangent");
 	glBindAttribLocation(refprobe_shader.first, 4, "texcoord");
 	glman.link_program(refprobe_shader);
-
 	std::cerr << "loaded refprobe shader" << std::endl;
+
+	refprobe_debug = glman.load_program(
+		"shaders/out/ref_probe_debug.vert",
+		"shaders/out/ref_probe_debug.frag"
+	);
+
+	glBindAttribLocation(refprobe_debug.first, 0, "in_Position");
+	glBindAttribLocation(refprobe_debug.first, 1, "v_normal");
+	glBindAttribLocation(refprobe_debug.first, 2, "v_tangent");
+	glBindAttribLocation(refprobe_debug.first, 3, "v_bitangent");
+	glBindAttribLocation(refprobe_debug.first, 4, "texcoord");
+	glman.link_program(refprobe_debug);
+	std::cerr << "loaded refprobe debug shader" << std::endl;
 
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
@@ -205,27 +217,6 @@ void game_state::load_shaders(void) {
 	//glUseProgram(shader.first);
 	glman.bind_vao(orig_vao);
 	set_shader(main_shader);
-
-	// TODO: shader class with uniform location class
-	if ((u_diffuse_map = glGetUniformLocation(shader.first, "diffuse_map")) == -1) {
-		//SDL_Die("Couldn't bind diffuse_map");
-		std::cerr << "Couldn't bind diffuse map" << std::endl;
-	}
-
-	if ((u_specular_map = glGetUniformLocation(shader.first, "specular_map")) == -1) {
-		std::cerr << "Couldn't bind specular map" << std::endl;
-		//SDL_Die("Couldn't bind specular_map");
-	}
-
-	if ((u_normal_map = glGetUniformLocation(shader.first, "normal_map")) == -1) {
-		std::cerr << "Couldn't bind normal map" << std::endl;
-		//SDL_Die("Couldn't bind normal_map");
-	}
-
-	if ((u_ao_map = glGetUniformLocation(shader.first, "ambient_occ_map")) == -1) {
-		std::cerr << "Couldn't bind ambient occulsion map" << std::endl;
-		//SDL_Die("Couldn't bind normal_map");
-	}
 }
 
 void game_state::init_framebuffers(void) {
@@ -392,10 +383,13 @@ void game_state::render_skybox(context& ctx) {
 	glDisable(GL_CULL_FACE);
 #endif
 
+	auto shader_obj = glman.get_shader_obj(shader);
+
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
-	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
+	shader_obj.set("skytexture", 4);
 	DO_ERROR_CHECK();
+
 	set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
 	//draw_model("unit_cube", glm::mat4(1));
 	draw_mesh("unit_cube.default", glm::mat4(0));
@@ -403,7 +397,7 @@ void game_state::render_skybox(context& ctx) {
 }
 
 void game_state::render_light_maps(context& ctx) {
-	set_shader(main_shader);
+	set_shader(refprobe_shader);
 	update_lights();
 
 	glEnable(GL_SCISSOR_TEST);
@@ -411,21 +405,18 @@ void game_state::render_light_maps(context& ctx) {
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
-	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
-	glUniform1f(glGetUniformLocation(shader.first, "time_ms"),
-	                                 SDL_GetTicks() * 1.f);
+	auto shader_obj = glman.get_shader_obj(shader);
+	shader_obj.set("skytexture", 4);
+	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 
 	float fov_x = 175.f;
-	//float fov_y = (fov_x * SCREEN_SIZE_Y)/(float)SCREEN_SIZE_X;
 	//float fov_y = (fov_x * 256.0)/256.0;
 	float fov_y = fov_x;
 
 	glm::mat4 view;
-
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 20.f);
 
 	for (auto& probe : ref_probes) {
-
 		reflection_atlas->bind_atlas_fb(probe.parabaloid[0]);
 
 		view = glm::lookAt(probe.position,
@@ -475,42 +466,25 @@ void game_state::render_light_maps(context& ctx) {
 }
 
 void game_state::render_light_info(context& ctx) {
-	set_shader(refprobe_shader);
+	set_shader(refprobe_debug);
+	auto shader_obj = glman.get_shader_obj(shader);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, reflection_atlas->color_tex.first);
-	glUniform1i(glGetUniformLocation(shader.first, "reflection_atlas"), 0);
+	shader_obj.set("reflection_atlas", 0);
 	set_mvp(glm::mat4(1), view, projection);
 
 	for (auto& probe : ref_probes) {
-		/*
-		glm::mat3 p0 = reflection_atlas->tex_matrix(probe.parabaloid[0]);
-		glm::mat3 p1 = reflection_atlas->tex_matrix(probe.parabaloid[1]);
-		*/
-
 		glm::vec3 p0 = reflection_atlas->tex_vector(probe.parabaloid[0]);
 		glm::vec3 p1 = reflection_atlas->tex_vector(probe.parabaloid[1]);
 
-		/*
-		glUniformMatrix3fv(glGetUniformLocation(shader.first, "parabaloid[0]"),
-			1, GL_FALSE, glm::value_ptr(p0));
-		glUniformMatrix3fv(glGetUniformLocation(shader.first, "parabaloid[1]"),
-			1, GL_FALSE, glm::value_ptr(p1));
-			*/
-		glUniform3fv(glGetUniformLocation(shader.first, "parabaloid[0]"),
-			1, glm::value_ptr(p0));
-		glUniform3fv(glGetUniformLocation(shader.first, "parabaloid[1]"),
-			1, glm::value_ptr(p1));
+		shader_obj.set("parabaloid[0]", p0);
+		shader_obj.set("parabaloid[1]", p1);
 		DO_ERROR_CHECK();
 
 		glm::mat4 trans = glm::translate(probe.position);
 		draw_mesh("smoothsphere.Sphere:None", trans);
 	}
-
-	/*
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	*/
 }
 
 void game_state::render_static(context& ctx) {
@@ -521,15 +495,6 @@ void game_state::render_static(context& ctx) {
 }
 
 void game_state::render_players(context& ctx) {
-	/*
-	glm::vec3 hpos = glm::vec3(view_direction.x*3 + view_position.x, 0, view_direction.z*3 + view_position.z);
-	glm::mat4 bizz =
-		glm::translate(glm::mat4(1), hpos)
-		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f));
-	 */
-
-	//glm::vec3 asdf = glm::normalize(glm::cross(player_direction, glm::vec3(0, 1, 0)));
-
 	auto& physobj = phys.objects[player_phys_id];
 
 	glm::vec3 tempdir = glm::normalize(
@@ -545,27 +510,10 @@ void game_state::render_players(context& ctx) {
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
 		;
 
-	/*
-	glUniform4fv(glGetUniformLocation(shader.first, "lightpos"),
-			1, glm::value_ptr(lfoo));
-			*/
-
 	dqueue_draw_model("person", bizz);
-	/*
-	//draw_model("person", bizz);
-	//draw_model_lines("sphere", glm::translate(bizz, {0, 1, 0}));
-	DO_ERROR_CHECK();
-	*/
 }
 
 void game_state::render_dynamic(context& ctx) {
-	/*
-	for (const auto& thing : phys_objs) {
-		glm::mat4 transform = glm::translate(glm::mat4(1), thing.position);
-		dqueue_draw_model(thing.model_name, transform);
-	}
-	*/
-
 	for (const auto& [id, obj] : phys.objects) {
 		if (id == player_phys_id)
 			continue;
@@ -584,6 +532,8 @@ void game_state::render_postprocess(context& ctx) {
 	glman.bind_vao(glman.screenquad_vao);
 	glViewport(0, 0, screen_x, screen_y);
 	set_shader(post_shader);
+	// TODO: should the shader_obj be automatically set the same way 'shader' is...
+	auto shader_obj = glman.get_shader_obj(shader);
 
 	glClearColor(0, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -597,29 +547,24 @@ void game_state::render_postprocess(context& ctx) {
 	glBindTexture(GL_TEXTURE_2D, rend_depth.first);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, last_frame_tex.first);
-	glUniform1i(glGetUniformLocation(post_shader.first, "render_fb"), 6);
-	glUniform1i(glGetUniformLocation(post_shader.first, "render_depth"), 7);
-	glUniform1i(glGetUniformLocation(post_shader.first, "last_frame_fb"), 8);
 
-	// TODO: vec2
-	glUniform1f(glGetUniformLocation(post_shader.first, "scale_x"),
-		(round(dsr_scale_x*rend_x))/rend_x);
-	glUniform1f(glGetUniformLocation(post_shader.first, "scale_y"),
-		(round(dsr_scale_y*rend_y))/rend_y);
+	shader_obj.set("render_fb", 6);
+	shader_obj.set("render_depth", 7);
+	shader_obj.set("last_frame_fb", 8);
+	shader_obj.set("scale_x", (round(dsr_scale_x*rend_x))/rend_x);
+	shader_obj.set("scale_y", (round(dsr_scale_y*rend_y))/rend_y);
+	shader_obj.set("screen_x", screen_x);
+	shader_obj.set("screen_y", screen_y);
+	shader_obj.set("rend_x", rend_x);
+	shader_obj.set("rend_y", rend_y);
+	shader_obj.set("exposure", editor.exposure);
 
-	glUniform1f(glGetUniformLocation(post_shader.first, "screen_x"), screen_x);
-	glUniform1f(glGetUniformLocation(post_shader.first, "screen_y"), screen_y);
-
-	glUniform1f(glGetUniformLocation(post_shader.first, "rend_x"), rend_x);
-	glUniform1f(glGetUniformLocation(post_shader.first, "rend_y"), rend_y);
-
-	// TODO: some sort of global variable lookup
-	glUniform1f(glGetUniformLocation(post_shader.first, "exposure"), editor.exposure);
-
+	DO_ERROR_CHECK();
 	draw_screenquad();
 
 	/*
 	// TODO: this ends up taking 100% CPU while running...
+	// TODO: why not swap rend/last framebuffers...?
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_frame_fb.first);
 	glBlitFramebuffer(0, 0, screen_x, screen_y,
@@ -681,6 +626,7 @@ void game_state::render(context& ctx) {
 
 	set_shader(main_shader);
 	update_lights();
+	auto shader_obj = glman.get_shader_obj(shader);
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
@@ -691,9 +637,8 @@ void game_state::render(context& ctx) {
 #endif
 	DO_ERROR_CHECK();
 
-	glUniform1i(glGetUniformLocation(shader.first, "skytexture"), 4);
-	glUniform1f(glGetUniformLocation(shader.first, "time_ms"),
-	                                 SDL_GetTicks() * 1.f);
+	shader_obj.set("skytexture", 4);
+	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 
 	set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);

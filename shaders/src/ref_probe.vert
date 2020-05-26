@@ -18,7 +18,7 @@ uniform mat4 m, v, p;
 void main(void) {
 	f_normal = normalize(v_normal);
 	f_texcoord = texcoord;
-	f_position = m * vec4(in_Position, 1);
+	f_position = m * vec4(in_Position, 1.0);
 
-	gl_Position = p*v * f_position;
+	gl_Position = p*v*m * vec4(in_Position, 1.0);
 }

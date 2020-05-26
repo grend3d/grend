@@ -18,6 +18,8 @@ namespace grendx {
 // TODO: need to split this up somehow
 class gl_manager {
 	public:
+		class shader;
+
 		gl_manager();
 		~gl_manager() { free_objects(); };
 
@@ -112,6 +114,8 @@ class gl_manager {
 		rhandle link_program(rhandle program);
 		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);
 
+		const shader& get_shader_obj(rhandle& handle);
+
 		// map of loaded textures by filename
 		// TODO: proper hash
 		// TODO: LRU cache
@@ -124,9 +128,43 @@ class gl_manager {
 		std::vector<GLuint> textures;
 		std::vector<GLuint> framebuffers;
 
+		std::vector<shader> shader_objs;
+
 		// frames rendered
 		unsigned frames = 0;
 		rhandle current_vao;
+};
+
+class gl_manager::shader {
+	public:
+		shader(gl_manager::rhandle& han) { handle = han; };
+
+		void set(std::string uniform, GLint i);
+		void set(std::string uniform, GLfloat f);
+		void set(std::string uniform, glm::vec2 v2);
+		void set(std::string uniform, glm::vec3 v3);
+		void set(std::string uniform, glm::vec4 v4);
+		void set(std::string uniform, glm::mat3 m3);
+		void set(std::string uniform, glm::mat4 m4);
+
+		GLint lookup(std::string uniform);
+		bool cached(std::string uniform);
+
+		std::map<std::string, GLint> uniforms;
+		// XXX: little bit redundant for caching values, but there
+		//      should only be 10s of shader programs at most, and being
+		//      strongly-typed is better than some union thing
+		struct {
+			std::map<GLint, GLint>     ints;
+			std::map<GLint, GLfloat>   floats;
+			std::map<GLint, glm::vec2> vec2s;
+			std::map<GLint, glm::vec3> vec3s;
+			std::map<GLint, glm::vec4> vec4s;
+			std::map<GLint, glm::mat3> mat3s;
+			std::map<GLint, glm::mat4> mat4s;
+		} cache;
+
+		gl_manager::rhandle handle;
 };
 
 GLenum surface_gl_format(SDL_Surface *surf);
