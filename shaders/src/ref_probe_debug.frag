@@ -16,30 +16,41 @@ precision mediump samplerCube;
 #include <lib/shading-varying.glsl>
 
 uniform sampler2D reflection_atlas;
-uniform vec3 parabaloid[2];
+uniform vec3 cubeface[6];
 
-vec4 textureAtlasParabaloid(vec3 p[2], vec3 dir) {
-	//vec3 p_uv = parabaloid[p_idx] * vec3(reflect(-view_dir, f_normal).xz, 1.0);
-	//vec3 p_uv = parabaloid[p_idx] * clamp(vec3(f_normal.xz, 1.0), 0.0, 1.0);
-	//vec3 adj_norm = pow((dir + 1.0)/2.0, vec3(2.0));
-	vec3 adj_norm = clamp((dir + 1.0)/2.0, 0.0, 1.0);
-	int p_idx = int(round(adj_norm.z));
-	vec2 adjx = vec2(adj_norm.x, 1.0 - adj_norm.x);
+vec4 textureAtlasCubemap(vec3 cube[6], vec3 dir) {
+	vec3 adj = clamp((normalize(dir) + 1.0)/2.0, 0.0, 1.0);
+	vec3 ab = abs(dir);
+	vec2 f_uv;
+	int face;
+
+	if (ab.z >= ab.x && ab.z >= ab.y) {
+		face = (adj.z > 0.5)? 5 : 2;
+		f_uv = vec2((adj.z < 0.5)? adj.x : (1.0 - adj.x), adj.y);
+
+	} else if (ab.y >= ab.x) {
+		face = (adj.y > 0.5)? 4 : 1;
+		f_uv = vec2((adj.y > 0.5)? adj.x : (1.0 - adj.x), adj.z);
+
+	} else {
+		face = (adj.x > 0.5)? 3 : 0;
+		f_uv = vec2((adj.x > 0.5)? adj.z : (1.0 - adj.z), adj.y);
+	}
 
 	vec2 p_uv = vec2(
-		p[p_idx].z * adjx[p_idx] + p[p_idx].x,
-		p[p_idx].z * adj_norm.y + p[p_idx].y
+		cubeface[face].z * f_uv.x + cubeface[face].x,
+		cubeface[face].z * f_uv.y + cubeface[face].y
 	);
 
-	return texture2D(reflection_atlas, p_uv.xy);
+	return texture2D(reflection_atlas, p_uv);
 }
 
 void main(void) {
 #if 1
-	FRAG_COLOR = vec4(textureAtlasParabaloid(parabaloid, f_normal).rgb, 1.0);
+	FRAG_COLOR = vec4(textureAtlasCubemap(cubeface, f_normal).rgb, 1.0);
 #else
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
 	vec3 env = reflect(-view_dir, f_normal);
-	FRAG_COLOR = vec4(textureAtlasParabaloid(parabaloid, env).rgb, 1.0);
+	FRAG_COLOR = vec4(textureAtlasCubemap(cubeface, env).rgb, 1.0);
 #endif
 }

@@ -20,5 +20,5 @@ void main(void) {
 	f_texcoord = texcoord;
 	f_position = m * vec4(in_Position, 1.0);
 
-	gl_Position = p*v*m * vec4(in_Position, 1.0);
+	gl_Position = p*v*f_position;
 }

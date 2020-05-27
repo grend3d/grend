@@ -396,6 +396,30 @@ void game_state::render_skybox(context& ctx) {
 	glDepthMask(GL_TRUE);
 }
 
+static const glm::vec3 cube_dirs[] = {
+	// negative X, Y, Z
+	{-1,  0,  0},
+	{ 0, -1,  0},
+	{ 0,  0, -1},
+
+	// positive X, Y, Z
+	{ 1,  0,  0},
+	{ 0,  1,  0},
+	{ 0,  0,  1},
+};
+
+static const glm::vec3 cube_up[] = {
+	// negative X, Y, Z
+	{ 0,  1,  0},
+	{ 0,  0,  1},
+	{ 0,  1,  0},
+
+	// positive X, Y, Z
+	{ 0,  1,  0},
+	{ 0,  0,  1},
+	{ 0,  1,  0},
+};
+
 void game_state::render_light_maps(context& ctx) {
 	set_shader(refprobe_shader);
 	update_lights();
@@ -409,7 +433,7 @@ void game_state::render_light_maps(context& ctx) {
 	shader_obj.set("skytexture", 4);
 	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 
-	float fov_x = 175.f;
+	float fov_x = 90.f;
 	//float fov_y = (fov_x * 256.0)/256.0;
 	float fov_y = fov_x;
 
@@ -417,51 +441,33 @@ void game_state::render_light_maps(context& ctx) {
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 20.f);
 
 	for (auto& probe : ref_probes) {
-		reflection_atlas->bind_atlas_fb(probe.parabaloid[0]);
+		for (unsigned i = 0; i < 6; i++) {
+			reflection_atlas->bind_atlas_fb(probe.faces[i]);
 
-		view = glm::lookAt(probe.position,
-	                       probe.position + glm::vec3(0, 0, -1),
-	                       glm::vec3(0, 1, 0));
-		set_mvp(glm::mat4(1), view, projection);
+			view = glm::lookAt(probe.position - cube_dirs[i],
+					probe.position,
+					cube_up[i]);
+			set_mvp(glm::mat4(1), view, projection);
 
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			SDL_Die("incomplete!");
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+				SDL_Die("incomplete!");
+			}
+
+			glm::vec3 bugc = (cube_dirs[i] + glm::vec3(1)) / glm::vec3(2);
+
+			glClearColor(bugc.x, bugc.y, bugc.z, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			DO_ERROR_CHECK();
+
+			render_static(ctx);
+			render_players(ctx);
+			render_dynamic(ctx);
+			DO_ERROR_CHECK();
+			dqueue_sort_draws(probe.position);
+			dqueue_flush_draws();
+			DO_ERROR_CHECK();
+
 		}
-
-		glClearColor(0.0, 0.0, 1, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		DO_ERROR_CHECK();
-
-		render_static(ctx);
-		render_players(ctx);
-		render_dynamic(ctx);
-		DO_ERROR_CHECK();
-		dqueue_sort_draws(probe.position);
-		dqueue_flush_draws();
-		DO_ERROR_CHECK();
-
-		reflection_atlas->bind_atlas_fb(probe.parabaloid[1]);
-		view = glm::lookAt(probe.position,
-	                       probe.position + glm::vec3(0, 0, 1),
-	                       glm::vec3(0, 1, 0));
-		set_mvp(glm::mat4(1), view, projection);
-
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			SDL_Die("incomplete!");
-		}
-
-		glClearColor(1, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		DO_ERROR_CHECK();
-
-		render_static(ctx);
-		render_players(ctx);
-		render_dynamic(ctx);
-		DO_ERROR_CHECK();
-		dqueue_sort_draws(probe.position);
-		dqueue_flush_draws();
-		DO_ERROR_CHECK();
 	}
 }
 
@@ -475,12 +481,13 @@ void game_state::render_light_info(context& ctx) {
 	set_mvp(glm::mat4(1), view, projection);
 
 	for (auto& probe : ref_probes) {
-		glm::vec3 p0 = reflection_atlas->tex_vector(probe.parabaloid[0]);
-		glm::vec3 p1 = reflection_atlas->tex_vector(probe.parabaloid[1]);
+		for (unsigned i = 0; i < 6; i++) {
+			glm::vec3 facevec = reflection_atlas->tex_vector(probe.faces[i]);
+			std::string locstr = "cubeface[" + std::to_string(i) + "]";
 
-		shader_obj.set("parabaloid[0]", p0);
-		shader_obj.set("parabaloid[1]", p1);
-		DO_ERROR_CHECK();
+			shader_obj.set(locstr, facevec);
+			DO_ERROR_CHECK();
+		}
 
 		glm::mat4 trans = glm::translate(probe.position);
 		draw_mesh("smoothsphere.Sphere:None", trans);

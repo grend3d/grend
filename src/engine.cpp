@@ -409,10 +409,11 @@ void engine::free_light(uint32_t id) {
 
 uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
 	// TODO: configurable/deduced dimensions
-	ref.parabaloid[0] = reflection_atlas->tree.alloc(128);
-	ref.parabaloid[1] = reflection_atlas->tree.alloc(128);
-	ref_probes.push_back(ref);
+	for (unsigned i = 0; i < 6; i++) {
+		ref.faces[i] = reflection_atlas->tree.alloc(128);
+	}
 
+	ref_probes.push_back(ref);
 	return ref_probes.size() - 1;
 }
 

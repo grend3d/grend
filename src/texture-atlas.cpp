@@ -12,7 +12,7 @@ atlas::atlas(gl_manager& man, size_t dimension, enum mode m)
 
 	if (m == mode::Color) {
 		color_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-				glman.gen_texture_color(dimension, dimension));
+				glman.gen_texture_color(dimension, dimension, GL_RGBA16F));
 	}
 
 	depth_tex = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT, 

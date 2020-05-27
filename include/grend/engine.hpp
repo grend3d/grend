@@ -49,9 +49,22 @@ class engine {
 			bool changed = true;
 		};
 
+		// TODO: revisit parabolic maps at some point, but for now they're
+		//       not ideal:
+		//       - transformation of vertices means that depth information is lost,
+		//         so rendering is less efficient and depth maps can't be generated
+		//         the simple way
+		//       - storage is not actually much lower, similar quality parabolic
+		//         maps are the same or larger than cubemaps, lots of wasted space
+		//         in the rendered images (roughly a circle of usable data per side,
+		//         which means a ratio of around PI/4 of the space is actually used)
+		//       - with MRTs rendering the faces is a non-issue, the thing can be
+		//         rendered in one shot, real-time reflections can just be disabled
+		//         on gles2 (and the platforms that gles2 would be used for probably
+		//         can't handle rendering real-time reflections to begin with anyway)
 		struct reflection_probe {
 			glm::vec3 position;
-			quadtree::node_id parabaloid[2];
+			quadtree::node_id faces[6];
 			bool changed = true;
 		};
 
