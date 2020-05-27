@@ -67,13 +67,14 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	// TODO: some kind of curve
+	//float a = alpha(roughness);
+	float a = roughness;
 	// TODO: s/8.0/max LOD/
-	vec3 env = vec3(textureLod(skytexture, reflect(-view_dir, normal_dir),
-	                           8.0*roughness));
-	//vec3 env = vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)));
-	//total_light += env * (0.15*metallic * (1.0 - roughness));
-	total_light += env * 0.15*metallic*(1.0-roughness*0.5);
+	vec3 refdir = reflect(-view_dir, normal_dir);
+	vec3 env = vec3(textureLod(skytexture, refdir, 8.0*a));
+	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
+
+	total_light += 0.5 * (1.0 - a) * env * Fb;
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);
@@ -91,6 +92,6 @@ void main(void) {
 	total_light = EARLY_TONEMAP(total_light, 1.0);
 	FRAG_COLOR = vec4(total_light, 1.0);
 
-	vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
+	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
 	//gl_FragColor = dispnorm;
 }
