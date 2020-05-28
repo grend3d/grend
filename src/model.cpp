@@ -80,7 +80,7 @@ void model::gen_tangents(void) {
 	for (auto& meshkey : meshes) {
 		auto& mesh = meshkey.second;
 
-		for (std::size_t i = 0; i < mesh.faces.size(); i += 3) {
+		for (std::size_t i = 0; i+2 < mesh.faces.size(); i += 3) {
 			// TODO: bounds check
 			GLushort elms[3] = {mesh.faces[i], mesh.faces[i+1], mesh.faces[i+2]};
 

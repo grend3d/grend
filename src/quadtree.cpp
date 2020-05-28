@@ -179,6 +179,10 @@ quadtree::node::node(unsigned nx, unsigned ny, unsigned sz, node *p) {
 	parent = p;
 	
 	max_free = sz/2;
+
+	for (unsigned i = 0; i < 4; i++) {
+		subnodes[!!(i&1)][!!(i&2)] = nullptr;
+	}
 }
 
 bool quadtree::node::is_leaf(void) {

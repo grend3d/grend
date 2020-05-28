@@ -63,7 +63,7 @@ class quadtree::node {
 		unsigned max_free;
 
 		node *parent = nullptr;
-		node *subnodes[2][2] = {0};
+		node *subnodes[2][2];
 		bool pinned = false;;
 
 		quadtree::node_id id;

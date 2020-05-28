@@ -39,9 +39,14 @@ class octree {
 
 class octree::node {
 	public:
+		node() {
+			for (unsigned i = 0; i < 8; i++) {
+				subnodes[!!(i&1)][!!(i&2)][!!(i&4)] = nullptr;
+			}
+		}
 		uint32_t count_nodes(void);
 		node *subnodes[2][2][2]; /* [x][y][z] */
-		unsigned level;
+		unsigned level = 0;
 
 		glm::vec3 normals = {0, 0, 0};
 		size_t normal_samples = 0;
