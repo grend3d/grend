@@ -15,17 +15,10 @@ precision mediump samplerCube;
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>
+#include <lib/shadows.glsl>
 #include <lib/tonemapping.glsl>
 #include <lib/atlas_cubemap.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
-
-float near = 0.1;
-float far = 100.0;
-
-float linear_depth(float depth) {
-	float z = depth * 2.0 - 1.0;
-	return (2.0 * near * far) / (far + near - z * (far - near)) / far;
-}
 
 void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
@@ -50,22 +43,18 @@ void main(void) {
 
 	for (int i = 0; i < active_point_lights; i++) {
 		float atten = point_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(point_lights[i].position, point_lights[i].diffuse, 
-		                        vec3(f_position), view_dir,
-		                        albedo, normal_dir, metallic, roughness);
+		float shadow = point_shadow(i, vec3(f_position));
 
-		vec3 light_vertex = point_lights[i].position - vec3(f_position);
-		vec3 light_dir = normalize(light_vertex);
-		vec4 depth = textureCubeAtlas(shadowmap_atlas,
-		                              point_lights[i].shadowmap, -light_dir);
+		vec3 lum =
+			mix(vec3(0.0),
+			    mrp_lighting(point_lights[i].position, point_lights[i].diffuse, 
+		                     vec3(f_position), view_dir,
+		                     albedo, normal_dir, metallic, roughness),
+				shadow);
 
-		float d = linear_depth(depth.r) * 100.0;
-		float shadow = ((d + 0.1) > length(light_vertex))? 1.0 : 0.0;
-
-		total_light += lum*atten*aoidx*shadow;
+		total_light += lum*atten*aoidx;
 	}
 
-/*
 	for (int i = 0; i < active_spot_lights; i++) {
 		float atten = spot_attenuation(i, vec3(f_position));
 		vec3 lum = mrp_lighting(spot_lights[i].position, spot_lights[i].diffuse, 
@@ -93,7 +82,6 @@ void main(void) {
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
 
 	total_light += 0.5 * (1.0 - a) * env * Fb;
-*/
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);
