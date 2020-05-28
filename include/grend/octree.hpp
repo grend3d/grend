@@ -40,7 +40,7 @@ class octree {
 class octree::node {
 	public:
 		uint32_t count_nodes(void);
-		node *subnodes[2][2][2] = {0}; /* [x][y][z] */
+		node *subnodes[2][2][2]; /* [x][y][z] */
 		unsigned level;
 
 		glm::vec3 normals = {0, 0, 0};

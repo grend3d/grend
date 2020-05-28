@@ -146,7 +146,7 @@ engine::engine() {
 	}
 
 	reflection_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048));
-	shadow_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048));
+	shadow_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048, atlas::mode::Depth));
 
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
@@ -386,18 +386,25 @@ bool engine::is_valid_light(uint32_t id) {
 uint32_t engine::add_light(struct point_light lit) {
 	uint32_t ret = alloc_light();
 	point_lights[ret] = lit;
+
+	for (unsigned i = 0; i < 6; i++) {
+		point_lights[ret].shadowmap[i] = shadow_atlas->tree.alloc(256);
+	}
+
 	return ret;
 }
 
 uint32_t engine::add_light(struct spot_light lit) {
 	uint32_t ret = alloc_light();
 	spot_lights[ret] = lit;
+	spot_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
 	return ret;
 }
 
 uint32_t engine::add_light(struct directional_light lit) {
 	uint32_t ret = alloc_light();
 	directional_lights[ret] = lit;
+	spot_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
 	return ret;
 }
 
@@ -443,6 +450,11 @@ void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
 		shader_obj.set(locstr + ".diffuse",   light.diffuse);
 		shader_obj.set(locstr + ".radius",    light.radius);
 		shader_obj.set(locstr + ".intensity", light.intensity);
+
+		for (unsigned k = 0; k < 6; k++) {
+			std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
+			shader_obj.set(sloc, shadow_atlas->tex_vector(light.shadowmap[k]));
+		}
 	}
 }
 

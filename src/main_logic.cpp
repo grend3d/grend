@@ -199,6 +199,14 @@ void game_state::load_shaders(void) {
 	glman.link_program(refprobe_debug);
 	std::cerr << "loaded refprobe debug shader" << std::endl;
 
+	shadow_shader = glman.load_program(
+		"shaders/out/depth.vert",
+		"shaders/out/depth.frag"
+	);
+	glBindAttribLocation(shadow_shader.first, 0, "v_position");
+	glman.link_program(shadow_shader);
+	std::cerr << "loaded depth (shadow) shader" << std::endl;
+
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
 
@@ -243,14 +251,14 @@ void game_state::init_test_lights(void) {
 		.position = {0, 7, -8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
-		.intensity = 100.0,
+		.intensity = 500.0,
 	});
 
 	add_light((struct engine::point_light){
 		.position = {0, 7, 8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
-		.intensity = 100.0,
+		.intensity = 500.0,
 	});
 
 	add_light((struct engine::spot_light){
@@ -438,7 +446,7 @@ void game_state::render_light_maps(context& ctx) {
 	float fov_y = fov_x;
 
 	glm::mat4 view;
-	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 20.f);
+	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 100.f);
 
 	for (auto& probe : ref_probes) {
 		for (unsigned i = 0; i < 6; i++) {
@@ -449,9 +457,11 @@ void game_state::render_light_maps(context& ctx) {
 					cube_up[i]);
 			set_mvp(glm::mat4(1), view, projection);
 
+			/*
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 				SDL_Die("incomplete!");
 			}
+			*/
 
 			glm::vec3 bugc = (cube_dirs[i] + glm::vec3(1)) / glm::vec3(2);
 
@@ -466,7 +476,28 @@ void game_state::render_light_maps(context& ctx) {
 			dqueue_sort_draws(probe.position);
 			dqueue_flush_draws();
 			DO_ERROR_CHECK();
+		}
+	}
 
+	set_shader(shadow_shader);
+	shader_obj = glman.get_shader_obj(shader);
+
+	for (auto& [id, plit] : point_lights) {
+		for (unsigned i = 0; i < 6; i++) {
+			shadow_atlas->bind_atlas_fb(plit.shadowmap[i]);
+
+			view = glm::lookAt(plit.position - cube_dirs[i],
+					plit.position,
+					cube_up[i]);
+			set_mvp(glm::mat4(1), view, projection);
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+			render_static(ctx);
+			render_players(ctx);
+			render_dynamic(ctx);
+			dqueue_sort_draws(plit.position);
+			dqueue_flush_draws();
+			DO_ERROR_CHECK();
 		}
 	}
 }
@@ -644,6 +675,13 @@ void game_state::render(context& ctx) {
 #endif
 	DO_ERROR_CHECK();
 
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, reflection_atlas->color_tex.first);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, shadow_atlas->depth_tex.first);
+
+	shader_obj.set("reflection_atlas", 6);
+	shader_obj.set("shadowmap_atlas", 7);
 	shader_obj.set("skytexture", 4);
 	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 

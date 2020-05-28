@@ -25,7 +25,7 @@ class engine {
 			glm::vec4 diffuse;
 			float radius;
 			float intensity;
-			quadtree::node_id shadow_map[2];
+			quadtree::node_id shadowmap[6];
 			bool changed = true;
 		};
 
@@ -36,7 +36,7 @@ class engine {
 			float radius; // bulb radius
 			float intensity;
 			float angle;
-			quadtree::node_id shadow_map;
+			quadtree::node_id shadowmap;
 			bool changed = true;
 		};
 
@@ -45,7 +45,7 @@ class engine {
 			glm::vec4 diffuse;
 			glm::vec3 direction;
 			float intensity;
-			quadtree::node_id shadow_map;
+			quadtree::node_id shadowmap;
 			bool changed = true;
 		};
 

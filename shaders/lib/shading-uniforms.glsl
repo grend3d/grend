@@ -6,6 +6,7 @@ struct point_light {
 	float intensity;
 	float radius;
 	//samplerCube shadowmap;
+	vec3 shadowmap[6];
 };
 
 struct spot_light {
@@ -16,6 +17,7 @@ struct spot_light {
 	float radius; // bulb radius
 	float angle;
 	//sampler2D shadowmap;
+	vec3 shadowmap;
 };
 
 struct directional_light {
@@ -24,6 +26,7 @@ struct directional_light {
 	vec3 direction;
 	float intensity;
 	//sampler2D shadowmap;
+	vec3 shadowmap;
 };
 
 struct material {
@@ -43,6 +46,9 @@ uniform sampler2D normal_map;
 uniform sampler2D ambient_occ_map;
 uniform sampler2D alpha_map;
 uniform samplerCube skytexture;
+
+uniform sampler2D shadowmap_atlas;
+uniform sampler2D reflection_atlas;
 
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;

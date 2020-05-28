@@ -187,6 +187,8 @@ void octree::set_leaf(glm::vec3 location, glm::vec3 normal) {
 
 	node *move = root;
 	for (unsigned level = levels; level--;) {
+		assert(move != nullptr);
+
 		//printf("%u: %f, %f, %f\n\n", level, location.x, location.y, location.z);
 		bool x = location.x < 0;
 		bool y = location.y < 0;

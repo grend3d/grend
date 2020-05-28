@@ -184,6 +184,7 @@ class game_state : public engine {
 		// simplified lighting probes for calculating reflection/shadow maps
 		gl_manager::rhandle refprobe_shader;
 		gl_manager::rhandle lightprobe_shader;
+		gl_manager::rhandle shadow_shader;
 
 		// debug shaders for light/reflection probes
 		gl_manager::rhandle refprobe_debug;
