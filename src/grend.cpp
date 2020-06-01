@@ -399,13 +399,23 @@ gl_manager::bind_vbo(const gl_manager::rhandle& handle, GLuint type) {
 
 gl_manager::rhandle
 gl_manager::bind_framebuffer(const rhandle& handle) {
+	if (handle == current_fb) {
+		return current_fb;
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, handle.first);
+	current_fb = handle;
 	DO_ERROR_CHECK();
 	return handle;
 }
 
 void gl_manager::bind_default_framebuffer(void) {
+	if (current_fb == rhandle(0, 0)) {
+		return;
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	current_fb = {0, 0};
 	DO_ERROR_CHECK();
 }
 

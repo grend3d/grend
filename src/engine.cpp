@@ -475,6 +475,7 @@ void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
 		shader_obj.set(locstr + ".radius",    light.radius);
 		shader_obj.set(locstr + ".intensity", light.intensity);
 		shader_obj.set(locstr + ".angle",     light.angle);
+		shader_obj.set(locstr + ".shadowmap", shadow_atlas->tex_vector(light.shadowmap));
 	}
 }
 

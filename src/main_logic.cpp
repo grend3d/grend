@@ -500,6 +500,30 @@ void game_state::render_light_maps(context& ctx) {
 			DO_ERROR_CHECK();
 		}
 	}
+
+	for (auto& [id, slit] : spot_lights) {
+		shadow_atlas->bind_atlas_fb(slit.shadowmap);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		//glm::vec3 right = glm::vec3(slit.direction.y, slit.direction.z, slit.direction.x);
+		//glm::vec3 up = glm::normalize(glm::cross(slit.direction, right));
+		glm::vec3 up = glm::vec3(0, 0, 1);
+		view = glm::lookAt(slit.position,
+		                   slit.position - slit.direction,
+		                   up);
+
+		// TODO: adjust perspective to spot light angle
+		// float angle = acos(slit.angle);
+		projection = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
+		set_mvp(glm::mat4(1), view, projection);
+
+		render_static(ctx);
+		render_players(ctx);
+		render_dynamic(ctx);
+		dqueue_sort_draws(slit.position);
+		dqueue_flush_draws();
+		DO_ERROR_CHECK();
+	}
 }
 
 void game_state::render_light_info(context& ctx) {
@@ -629,7 +653,13 @@ void game_state::update_dynamic_lights(context& ctx) {
 */
 
 void game_state::render(context& ctx) {
-	render_light_maps(ctx);
+	// XXX: my machine can't actually render the scene 24+ times per frame
+	//      lol, need some optimization
+	// TODO: MRTs for cube maps, only update maps in-frustum
+	static unsigned counter = 0;
+	if ((counter++ % 240) == 0) {
+		render_light_maps(ctx);
+	}
 
 #ifdef NO_POSTPROCESSING
 	glman.bind_default_framebuffer();
