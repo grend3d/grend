@@ -133,6 +133,7 @@ class gl_manager {
 		// frames rendered
 		unsigned frames = 0;
 		rhandle current_vao;
+		rhandle current_fb;
 };
 
 class gl_manager::shader {
