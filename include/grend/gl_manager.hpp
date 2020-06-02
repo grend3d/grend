@@ -115,6 +115,7 @@ class gl_manager {
 		rhandle fb_attach_texture(GLenum attachment, const rhandle& texture);
 
 		const shader& get_shader_obj(rhandle& handle);
+		void set_face_order(GLenum face_order);
 
 		// map of loaded textures by filename
 		// TODO: proper hash
@@ -132,8 +133,11 @@ class gl_manager {
 
 		// frames rendered
 		unsigned frames = 0;
+
+		// current state
 		rhandle current_vao;
 		rhandle current_fb;
+		GLenum  current_face_order;
 };
 
 class gl_manager::shader {

@@ -11,6 +11,7 @@ class scene {
 		struct node {
 			std::string name;
 			glm::mat4 transform;
+			bool inverted = false;
 		};
 
 		std::vector<struct node> nodes;

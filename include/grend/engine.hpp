@@ -79,13 +79,23 @@ class engine {
 		virtual void physics(context& ctx) = 0;
 		virtual void input(context& ctx) = 0;
 
-		void draw_mesh(std::string name, glm::mat4 transform);
-		void draw_mesh_lines(std::string name, glm::mat4 transform);
-		void draw_model(std::string name, glm::mat4 transform);
-		void draw_model_lines(std::string name, glm::mat4 transform);
+		struct draw_attributes {
+			std::string name;
+			glm::mat4 transform;
+			GLenum face_order = GL_CCW;
+			bool cull_faces = true;
+		};
+
+		void draw_mesh(std::string mesh, const struct draw_attributes *attr);
+		void draw_mesh_lines(std::string mesh, const struct draw_attributes *attr);
+		void draw_model(const struct draw_attributes *attr);
+		void draw_model(struct draw_attributes attr);
+		void draw_model_lines(const struct draw_attributes *attr);
+		void draw_model_lines(struct draw_attributes attr);
 		void draw_screenquad(void);
 
-		void dqueue_draw_model(std::string name, glm::mat4 transform);
+		void dqueue_draw_model(const struct draw_attributes *attr);
+		void dqueue_draw_model(struct draw_attributes attr);
 		void dqueue_sort_draws(glm::vec3 camera);
 		void dqueue_cull_models(glm::vec3 camera);
 		void dqueue_flush_draws(void);
@@ -166,7 +176,8 @@ class engine {
 		//       possible solution is to have a global namespace for materials,
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
-		std::vector<std::pair<std::string, glm::mat4>> draw_queue;
+		//std::vector<std::pair<std::string, glm::mat4>> draw_queue;
+		std::vector<draw_attributes> draw_queue;
 
 		std::string fallback_material = "(null)";
 		//std::string fallback_material = "Rock";

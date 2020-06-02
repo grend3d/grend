@@ -771,5 +771,12 @@ const gl_manager::shader& gl_manager::get_shader_obj(rhandle& handle) {
 	return shader_objs[handle.second];
 }
 
+void gl_manager::set_face_order(GLenum face_order) {
+	if (face_order != current_face_order) {
+		current_face_order = face_order;
+		glFrontFace(face_order);
+	}
+}
+
 // namespace grendx
 }

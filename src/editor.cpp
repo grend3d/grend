@@ -376,10 +376,12 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 		ImGui::Text(ent.name.c_str());
 
 		if (selected_object == i) {
-			renderer->draw_model_lines(ent.name,
-				glm::translate(ent.position)
-				* ent.transform
-				* glm::scale(glm::vec3(1.05)));
+			renderer->draw_model_lines({
+				.name = ent.name,
+				.transform = glm::translate(ent.position)
+					* ent.transform
+					* glm::scale(glm::vec3(1.05)),
+			});
 
 			ImGui::InputFloat3("position", glm::value_ptr(ent.position));
 			ImGui::InputFloat3("scale", glm::value_ptr(ent.scale));
@@ -402,9 +404,11 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 		ImGui::Text(obj.model_name.c_str());
 
 		if (selected_object == transid) {
-			renderer->draw_model_lines(obj.model_name,
-				glm::translate(obj.position)
-				* glm::scale(glm::vec3(1.05)));
+			renderer->draw_model_lines({
+				.name = obj.model_name,
+				.transform = glm::translate(obj.position)
+					* glm::scale(glm::vec3(1.05)),
+			});
 
 			ImGui::InputFloat3("position", glm::value_ptr(obj.position));
 			ImGui::InputFloat3("velocity", glm::value_ptr(obj.velocity));
@@ -452,9 +456,11 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
 			ImGui::SliderFloat("radius", &light.radius, 0.01f, 3.f);
 
-			renderer->draw_model_lines("smoothsphere",
-				glm::translate(glm::vec3(light.position))
-				* glm::scale(glm::vec3(light_extent(&light, light_threshold))));
+			renderer->draw_model_lines({
+				.name = "smoothsphere",
+				.transform = glm::translate(glm::vec3(light.position))
+					* glm::scale(glm::vec3(light_extent(&light, light_threshold))),
+			});
 		}
 
 		ImGui::NextColumn();
@@ -508,8 +514,10 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 				-1.f, 1.f);
 			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
 
-			renderer->draw_model_lines("smoothsphere",
-				glm::translate(glm::vec3(light.position)));
+			renderer->draw_model_lines({
+				.name = "smoothsphere",
+				.transform = glm::translate(glm::vec3(light.position))
+			});
 		}
 
 		ImGui::NextColumn();
@@ -545,8 +553,14 @@ void game_editor::map_models(engine *renderer, context& ctx) {
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
 
-		glFrontFace(v.inverted? GL_CW : GL_CCW);
-		renderer->dqueue_draw_model(v.name, trans);
+		//glFrontFace(v.inverted? GL_CW : GL_CCW);
+		renderer->dqueue_draw_model({
+			.name = v.name,
+			.transform = trans,
+			.face_order = v.inverted? GL_CW : GL_CCW,
+			.cull_faces = true,
+		});
+
 		DO_ERROR_CHECK();
 	}
 }
@@ -566,50 +580,59 @@ void game_editor::render_editor(engine *renderer,
 
 		if (show_lights_window) {
 			for (const auto& [id, plit] : renderer->point_lights) {
-				glm::mat4 trans =
-					glm::translate(glm::vec3(plit.position))
-					* glm::scale(glm::vec3(plit.radius));
-
-				renderer->dqueue_draw_model("smoothsphere", trans);
+				renderer->dqueue_draw_model({
+					.name = "smoothsphere",
+					.transform = glm::translate(glm::vec3(plit.position))
+						* glm::scale(glm::vec3(plit.radius)),
+				});
 			}
 
 			lights_window(renderer, ctx);
 		}
 
 		if (mode == mode::AddObject) {
-			glm::mat4 trans = glm::translate(entbuf.position) * entbuf.transform;
+			struct engine::draw_attributes attrs = {
+				.name = edit_model->first,
+				.transform = glm::translate(entbuf.position) * entbuf.transform,
+			};
 
 			glFrontFace(entbuf.inverted? GL_CW : GL_CCW);
-			renderer->draw_model_lines(edit_model->first, trans);
-			renderer->draw_model(edit_model->first, trans);
+			renderer->draw_model_lines(&attrs);
+			renderer->draw_model(&attrs);
 			DO_ERROR_CHECK();
 		}
 
 		if (mode == mode::AddPointLight) {
-			glm::mat4 trans =
-				glm::translate(entbuf.position)
-				// TODO: keep scale state
-				* glm::scale(glm::vec3(1));
-			renderer->dqueue_draw_model("smoothsphere", trans);
+			renderer->dqueue_draw_model({
+				.name = "smoothsphere",
+				.transform = 
+					glm::translate(entbuf.position)
+					// TODO: keep scale state
+					* glm::scale(glm::vec3(1)),
+			});
 
 		// TODO: cone here
 		} else if (mode == mode::AddSpotLight) {
-			glm::mat4 trans =
-				glm::translate(entbuf.position)
-				// TODO: keep scale state
-				* glm::scale(glm::vec3(1));
-			renderer->dqueue_draw_model("smoothsphere", trans);
+			renderer->dqueue_draw_model({
+				.name = "smoothsphere",
+				.transform = glm::translate(entbuf.position)
+					// TODO: keep scale state
+					* glm::scale(glm::vec3(1)),
+			});
 
 		} else if (mode == mode::AddDirectionalLight) {
-			glm::mat4 trans =
-				glm::translate(entbuf.position)
-				// TODO: keep scale state
-				* glm::scale(glm::vec3(1));
-			renderer->dqueue_draw_model("smoothsphere", trans);
+			renderer->dqueue_draw_model({
+				.name = "smoothsphere",
+				.transform = glm::translate(entbuf.position)
+					// TODO: keep scale state
+					* glm::scale(glm::vec3(1)),
+			});
 
 		} else if (mode == mode::AddReflectionProbe) {
-			glm::mat4 trans = glm::translate(entbuf.position);
-			renderer->dqueue_draw_model("smoothsphere", trans);
+			renderer->dqueue_draw_model({
+				.name = "smoothsphere",
+				.transform = glm::translate(entbuf.position),
+			});
 		}
 	}
 

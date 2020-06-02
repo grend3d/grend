@@ -357,7 +357,8 @@ void game_state::draw_octree_leaves(octree::node *node, glm::vec3 location) {
 		double scale = oct.leaf_size * (1 << (node->level + 1));
 		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
 		//draw_model_lines("unit_cube", trans);
-		draw_model("unit_cube", trans);
+		//draw_model("unit_cube", trans);
+		draw_model({ "unit_cube", trans });
 	}
 
 	else {
@@ -400,7 +401,12 @@ void game_state::render_skybox(context& ctx) {
 
 	set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
 	//draw_model("unit_cube", glm::mat4(1));
-	draw_mesh("unit_cube.default", glm::mat4(0));
+	//draw_mesh("unit_cube.default", glm::mat4(0));
+	struct draw_attributes attrs = {
+		.name = "unit_cube",
+		.transform = glm::mat4(0),
+	};
+	draw_mesh("unit_cube.default", &attrs);
 	glDepthMask(GL_TRUE);
 }
 
@@ -544,15 +550,22 @@ void game_state::render_light_info(context& ctx) {
 			DO_ERROR_CHECK();
 		}
 
-		glm::mat4 trans = glm::translate(probe.position);
-		draw_mesh("smoothsphere.Sphere:None", trans);
+		struct engine::draw_attributes foo = {
+			.name = "smoothsphere",
+			.transform = glm::translate(probe.position),
+		};
+		draw_mesh("smoothsphere.Sphere:None", &foo);
 	}
 }
 
 void game_state::render_static(context& ctx) {
 	for (auto& thing : static_models.nodes) {
 		//draw_model(thing.name, thing.transform);
-		dqueue_draw_model(thing.name, thing.transform);
+		dqueue_draw_model({
+			.name = thing.name,
+			.transform = thing.transform,
+			.face_order = thing.inverted? GL_CW : GL_CCW,
+		});
 	}
 }
 
@@ -572,7 +585,7 @@ void game_state::render_players(context& ctx) {
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
 		;
 
-	dqueue_draw_model("person", bizz);
+	dqueue_draw_model({ "person", bizz });
 }
 
 void game_state::render_dynamic(context& ctx) {
@@ -584,7 +597,7 @@ void game_state::render_dynamic(context& ctx) {
 			glm::mat4 transform =
 				glm::translate(obj.position) * glm::mat4_cast(obj.rotation);
 
-			dqueue_draw_model(obj.model_name, transform);
+			dqueue_draw_model({ obj.model_name, transform });
 		}
 	}
 }

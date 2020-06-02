@@ -280,21 +280,23 @@ void engine::set_m(glm::mat4 mod) {
 	shader_obj.set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
 
-void engine::draw_mesh(std::string name, glm::mat4 transform) {
+void engine::draw_mesh(std::string name, const struct draw_attributes *attr) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
-	set_m(transform);
+	set_m(attr->transform);
 
+	glman.set_face_order(attr->face_order);
 	glman.bind_vao(foo.vao);
 	glDrawElements(GL_TRIANGLES, foo.elements_size, GL_UNSIGNED_SHORT, foo.elements_offset);
 	DO_ERROR_CHECK();
 }
 
 // TODO: overload of this that takes a material
-void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
+void engine::draw_mesh_lines(std::string name, const struct draw_attributes *attr) {
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 
-	set_m(transform);
+	set_m(attr->transform);
+	glman.set_face_order(attr->face_order);
 	glman.bind_vao(foo.vao);
 
 #ifdef NO_GLPOLYMODE
@@ -302,6 +304,7 @@ void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
 
 #else
 	// TODO: keep track of face culling state in this class
+	// TODO: actually, keep a cache of enabled flags in the gl_manager class
 #ifdef ENABLE_FACE_CULLING
 	glDisable(GL_CULL_FACE);
 #endif
@@ -316,24 +319,32 @@ void engine::draw_mesh_lines(std::string name, glm::mat4 transform) {
 #endif
 }
 
-void engine::draw_model(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_model& obj = glman.cooked_models[name];
+void engine::draw_model(const struct draw_attributes *attr) {
+	gl_manager::compiled_model& obj = glman.cooked_models[attr->name];
 
 	for (std::string& name : obj.meshes) {
 		set_material(obj, glman.cooked_meshes[name].material);
-		draw_mesh(name, transform);
+		draw_mesh(name, attr);
 	}
 }
 
-void engine::draw_model_lines(std::string name, glm::mat4 transform) {
-	gl_manager::compiled_model& obj = glman.cooked_models[name];
+void engine::draw_model(struct draw_attributes attr) {
+	draw_model(attr);
+}
+
+void engine::draw_model_lines(const struct draw_attributes *attr) {
+	gl_manager::compiled_model& obj = glman.cooked_models[attr->name];
 	// TODO: need a set_material() function to handle stuff
 	//       and we need to explicitly set a material
 
 	set_default_material("(null)");
 	for (std::string& name : obj.meshes) {
-		draw_mesh_lines(name, transform);
+		draw_mesh_lines(name, attr);
 	}
+}
+
+void engine::draw_model_lines(struct draw_attributes attr) {
+	draw_model_lines(&attr);
 }
 
 void engine::draw_screenquad(void) {
@@ -343,17 +354,19 @@ void engine::draw_screenquad(void) {
 	DO_ERROR_CHECK();
 }
 
-void engine::dqueue_draw_model(std::string name, glm::mat4 transform) {
-	draw_queue.push_back({name, transform});
+void engine::dqueue_draw_model(const struct draw_attributes *attr) {
+	draw_queue.push_back(*attr);
+}
+
+void engine::dqueue_draw_model(struct draw_attributes attr) {
+	dqueue_draw_model(&attr);
 }
 
 void engine::dqueue_sort_draws(glm::vec3 camera) {
-	typedef std::pair<std::string, glm::mat4> queue_ent;
-
 	std::sort(draw_queue.begin(), draw_queue.end(),
-		[&] (queue_ent a, queue_ent b) {
-			glm::vec4 ta = a.second * glm::vec4(1);
-			glm::vec4 tb = b.second * glm::vec4(1);
+		[&] (struct draw_attributes a, struct draw_attributes b) {
+			glm::vec4 ta = a.transform * glm::vec4(1);
+			glm::vec4 tb = b.transform * glm::vec4(1);
 			glm::vec3 va = glm::vec3(ta) / ta.w;
 			glm::vec3 vb = glm::vec3(tb) / tb.w;
 
@@ -368,7 +381,7 @@ void engine::dqueue_cull_models(glm::vec3 camera) {
 
 void engine::dqueue_flush_draws(void) {
 	for (auto& ent : draw_queue) {
-		draw_model(ent.first, ent.second);
+		draw_model(&ent);
 	}
 
 	draw_queue.clear();

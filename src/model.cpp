@@ -719,6 +719,7 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 
 			auto& mesh = gmod.meshes[node.mesh];
 			glm::mat4 mat;
+			bool inverted = false;
 
 			if (node.matrix.size() == 16) {
 				mat = glm::make_mat4(node.matrix.data());
@@ -732,13 +733,21 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 					rotation = glm::make_quat(node.rotation.data());
 				if (node.translation.size() == 3)
 					translation = glm::make_vec3(node.translation.data());
-				if (node.scale.size() == 3)
+
+				if (node.scale.size() == 3) {
 					scale = glm::make_vec3(node.scale.data());
 
-				mat = glm::translate(translation) * glm::mat4_cast(rotation) * glm::scale(scale);
+					if (scale.x < 0 || scale.y < 0 || scale.z < 0) {
+						inverted = true;
+					}
+				}
+
+				mat = glm::translate(translation)
+				    * glm::mat4_cast(rotation)
+				    * glm::scale(scale);
 			}
 
-			ret.nodes.push_back({mesh.name, mat});
+			ret.nodes.push_back({mesh.name, mat, inverted});
 		}
 	}
 
