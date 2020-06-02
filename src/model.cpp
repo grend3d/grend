@@ -724,7 +724,7 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 				mat = glm::make_mat4(node.matrix.data());
 
 			} else {
-				glm::quat rotation = {0, 0, 0, 1};
+				glm::quat rotation(1, 0, 0, 0);
 				glm::vec3 translation = {0, 0, 0};
 				glm::vec3 scale = {1, 1, 1};
 
