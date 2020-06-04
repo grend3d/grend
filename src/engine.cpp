@@ -417,7 +417,7 @@ uint32_t engine::add_light(struct spot_light lit) {
 uint32_t engine::add_light(struct directional_light lit) {
 	uint32_t ret = alloc_light();
 	directional_lights[ret] = lit;
-	spot_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
+	directional_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
 	return ret;
 }
 
@@ -425,6 +425,47 @@ void engine::free_light(uint32_t id) {
 	point_lights.erase(id);
 	spot_lights.erase(id);
 	directional_lights.erase(id);
+}
+
+struct engine::point_light engine::get_point_light(uint32_t id) {
+	if (point_lights.find(id) != point_lights.end()) {
+		return point_lights[id];
+	}
+
+	// return... something
+	return (struct point_light){};
+}
+
+struct engine::spot_light engine::get_spot_light(uint32_t id) {
+	if (spot_lights.find(id) != spot_lights.end()) {
+		return spot_lights[id];
+	}
+
+	return (struct spot_light){};
+}
+
+struct engine::directional_light engine::get_directional_light(uint32_t id) {
+	if (directional_lights.find(id) != directional_lights.end()) {
+		return directional_lights[id];
+	}
+
+	return (struct directional_light){};
+}
+
+void engine::set_point_light(uint32_t id, struct engine::point_light *lit) {
+	assert(lit != nullptr);
+	point_lights[id] = *lit;
+}
+
+void engine::set_spot_light(uint32_t id, struct engine::spot_light *lit) {
+	assert(lit != nullptr);
+	spot_lights[id] = *lit;
+}
+
+void
+engine::set_directional_light(uint32_t id, struct engine::directional_light *lit) {
+	assert(lit != nullptr);
+	directional_lights[id] = *lit;
 }
 
 uint32_t engine::add_reflection_probe(struct reflection_probe ref) {

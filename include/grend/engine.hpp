@@ -121,6 +121,14 @@ class engine {
 		uint32_t add_light(struct directional_light lit);
 		uint32_t add_reflection_probe(struct reflection_probe ref);
 
+		struct point_light       get_point_light(uint32_t id);
+		struct spot_light        get_spot_light(uint32_t id);
+		struct directional_light get_directional_light(uint32_t id);
+
+		void set_point_light(uint32_t id, struct point_light *lit);
+		void set_spot_light(uint32_t id, struct spot_light *lit);
+		void set_directional_light(uint32_t id, struct directional_light *lit);
+
 		void set_shader(gl_manager::rhandle& shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);

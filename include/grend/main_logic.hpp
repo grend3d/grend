@@ -74,6 +74,8 @@ class game_editor {
 		// TODO: rename 'engine' to 'renderer' or something
 		void render_imgui(engine *renderer, context& ctx);
 		void render_editor(engine *renderer, imp_physics *phys, context& ctx);
+		void render_map_models(engine *renderer, context& ctx);
+
 		void save_map(engine *renderer, std::string name="save.map");
 		void load_map(engine *renderer, std::string name="save.map");
 		void logic(context& ctx, float delta);
@@ -99,11 +101,19 @@ class game_editor {
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
+
+		// Keep track of lights added in the editor so that we can export
+		// them to the save file later (don't want other dynamic/effect lights
+		// to be exported/imported)
+		struct {
+			std::vector<uint32_t> point;
+			std::vector<uint32_t> spot;
+			std::vector<uint32_t> directional;
+		} edit_lights;
 		gl_manager::cooked_model_map::const_iterator edit_model;
 
 	private:
 		void menubar(void);
-		void map_models(engine *renderer, context& ctx);
 		void map_window(engine *renderer, imp_physics *phys, context& ctx);
 		void lights_window(engine *renderer, context& ctx);
 

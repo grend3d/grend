@@ -65,6 +65,7 @@ static model_map test_models = {
 	{"earthsphere",  model("assets/obj/smoothsphere.obj")},
 	{"dragon",       model("assets/obj/tests/dragon.obj")},
 	{"maptest",      model("assets/obj/tests/maptest.obj")},
+	{"sponza",       model("assets/obj/tests/Sponza-obj/sponza.obj")},
 	{"building",     model("assets/obj/tests/building_test/building_test.obj")},
 	{"unit_cube",        generate_cuboid(1, 1, 1)},
 	//{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
@@ -161,7 +162,7 @@ void game_state::load_shaders(void) {
 #else
 	main_shader = glman.load_program(
 		"shaders/out/pixel-shading.vert",
-		//"shaders/out/pixel-shading.frag",
+		//"shaders/out/pixel-shading.frag"
 		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 #endif
@@ -252,30 +253,7 @@ void game_state::init_test_lights(void) {
 		.position = {0, 7, -8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
-		.intensity = 500.0,
-	});
-
-	add_light((struct engine::point_light){
-		.position = {0, 7, 8},
-		.diffuse  = {1.0, 0.8, 0.5, 1.0},
-		.radius = 0.2,
-		.intensity = 500.0,
-	});
-
-	add_light((struct engine::spot_light){
-		.position = {0, 7, 0},
-		.diffuse  = {1.0, 0.9, 0.8, 1.0},
-		.direction = {0, 1, 0},
-		.radius = 0.2,
-		.intensity = 100.0,
-		.angle = 0.7,
-	});
-
-	add_light((struct engine::directional_light){
-		.position = {0, 30, 50},
-		.diffuse  = {0.9, 0.9, 1.0, 0.1},
-		.direction = {0, 0, 1},
-		.intensity = 100.0,
+		.intensity = 50.0,
 	});
 }
 
@@ -479,7 +457,7 @@ void game_state::render_light_maps(context& ctx) {
 			render_static(ctx);
 			render_players(ctx);
 			render_dynamic(ctx);
-			DO_ERROR_CHECK();
+			editor.render_map_models(this, ctx);
 			dqueue_sort_draws(probe.position);
 			dqueue_flush_draws();
 			DO_ERROR_CHECK();
@@ -502,6 +480,7 @@ void game_state::render_light_maps(context& ctx) {
 			render_static(ctx);
 			render_players(ctx);
 			render_dynamic(ctx);
+			editor.render_map_models(this, ctx);
 			dqueue_sort_draws(plit.position);
 			dqueue_flush_draws();
 			DO_ERROR_CHECK();
@@ -733,6 +712,7 @@ void game_state::render(context& ctx) {
 	render_static(ctx);
 	render_players(ctx);
 	render_dynamic(ctx);
+	editor.render_map_models(this, ctx);
 	editor.render_editor(this, &phys, ctx);
 
 	assert(current_cam != nullptr);
@@ -922,6 +902,11 @@ void game_state::logic(context& ctx) {
 
 	glm::vec3 player_position = phys.objects[player_phys_id].position;
 	player_cam.position = player_position - player_cam.direction*5.f;
+
+	auto lit = get_point_light(player_light);
+	lit.position = player_position + glm::vec3(0, 2, 0);
+	//lit.intensity = ((cur_ticks / 2000) & 1)? 100 : 0;
+	set_point_light(player_light, &lit);
 
 	assert(current_cam != nullptr);
 	view = glm::lookAt(current_cam->position,

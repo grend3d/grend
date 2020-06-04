@@ -185,6 +185,7 @@ void game_editor::handle_editor_input(engine *renderer,
 								.radius = 1.f,
 								.intensity = 50.f,
 							});
+						edit_lights.point.push_back(selected_light);
 						set_mode(mode::View);
 						break;
 
@@ -199,6 +200,7 @@ void game_editor::handle_editor_input(engine *renderer,
 								.intensity = 50.f,
 								.angle = 0.5f,
 							});
+						edit_lights.spot.push_back(selected_light);
 						set_mode(mode::View);
 						break;
 
@@ -211,6 +213,7 @@ void game_editor::handle_editor_input(engine *renderer,
 								.direction = {0, 1, 0},
 								.intensity = 50.f,
 							});
+						edit_lights.directional.push_back(selected_light);
 						set_mode(mode::View);
 						break;
 
@@ -549,7 +552,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 	ImGui::End();
 }
 
-void game_editor::map_models(engine *renderer, context& ctx) {
+void game_editor::render_map_models(engine *renderer, context& ctx) {
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
 
@@ -635,8 +638,32 @@ void game_editor::render_editor(engine *renderer,
 			});
 		}
 	}
+}
 
-	map_models(renderer, ctx);
+static inline std::vector<float> strvec_to_float(std::vector<std::string> strs) {
+	std::vector<float> ret;
+
+	for (auto& s : strs) {
+		if (!s.empty()) {
+			ret.push_back(std::stof(s));
+		}
+	}
+
+	return ret;
+}
+
+template <typename T>
+static inline T parse_vec(std::string& str) {
+	auto temp = strvec_to_float(split_string(str, ','));
+	// TODO: throw an exception here?
+	assert(temp.size() >= T::length());
+
+	T ret;
+	for (unsigned i = 0; i < T::length(); i++) {
+		ret[i] = temp[i];
+	}
+
+	return ret;
 }
 
 void game_editor::load_map(engine *renderer, std::string name) {
@@ -656,16 +683,16 @@ void game_editor::load_map(engine *renderer, std::string name) {
 		}
 
 		if (statement[0] == "entity" && statement.size() >= 5) {
-			auto posvec = split_string(statement[2], ',');
-			auto matvec = split_string(statement[3], ',');
+			// TODO: size check
+			auto matvec = strvec_to_float(split_string(statement[3], ','));
 
 			editor_entry v;
 			v.name = statement[1];
-			v.position = glm::vec3(std::stof(posvec[0]), std::stof(posvec[1]), std::stof(posvec[2]));
+			v.position = parse_vec<glm::vec3>(statement[2]);
 			v.inverted = std::stoi(statement[4]);
 
 			for (unsigned i = 0; i < 16; i++) {
-				v.transform[i/4][i%4] = std::stof(matvec[i]);
+				v.transform[i/4][i%4] = matvec[i];
 			}
 
 			dynamic_models.push_back(v);
@@ -673,17 +700,91 @@ void game_editor::load_map(engine *renderer, std::string name) {
 		}
 
 		if (statement[0] == "reflection_probe" && statement.size() == 2) {
-			auto posvec = split_string(statement[1], ',');
-			glm::vec3 pos(std::stof(posvec[0]),
-			              std::stof(posvec[1]),
-			              std::stof(posvec[2]));
+			// TODO: size check
+			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 
 			renderer->add_reflection_probe((struct engine::reflection_probe) {
 				.position = pos,
 				.changed = true,
 			});
 		}
+
+		if (statement[0] == "point_light" && statement.size() == 5) {
+			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
+			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
+			float radius = std::stof(statement[3]);
+			float intensity = std::stof(statement[4]);
+
+			uint32_t nlit = renderer->add_light((struct engine::point_light){
+				.position = pos,
+				.diffuse = diffuse,
+				.radius = radius,
+				.intensity = intensity,
+			});
+
+			edit_lights.point.push_back(nlit);
+		}
+
+		if (statement[0] == "spot_light" && statement.size() == 7) {
+			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
+			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
+			glm::vec3 direction = parse_vec<glm::vec3>(statement[3]);
+			float radius = std::stof(statement[4]);
+			float intensity = std::stof(statement[5]);
+			float angle = std::stof(statement[6]);
+
+			uint32_t nlit = renderer->add_light((struct engine::spot_light){
+				.position = pos,
+				.diffuse = diffuse,
+				.direction = direction,
+				.radius = radius,
+				.intensity = intensity,
+				.angle = angle,
+			});
+
+			edit_lights.spot.push_back(nlit);
+		}
+
+		if (statement[0] == "directional_light" && statement.size() == 5) {
+			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
+			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
+			glm::vec3 direction = parse_vec<glm::vec3>(statement[3]);
+			float intensity = std::stof(statement[4]);
+
+			uint32_t nlit = renderer->add_light((struct engine::directional_light){
+				.position = pos,
+				.diffuse = diffuse,
+				.direction = direction,
+				.intensity = intensity,
+			});
+
+			edit_lights.spot.push_back(nlit);
+		}
 	}
+}
+
+template <typename T>
+static inline std::string format_vec(T& vec) {
+	std::string ret = "";
+
+	for (unsigned i = 0; i < T::length(); i++) {
+		ret += std::to_string(vec[i]) + ",";
+	}
+
+	return ret;
+}
+
+template <typename T>
+static inline std::string format_mat(T& mtx) {
+	std::string ret = "";
+
+	for (unsigned y = 0; y < T::col_type::length(); y++) {
+		for (unsigned x = 0; x < T::row_type::length(); x++) {
+			ret += std::to_string(mtx[y][x]) + ",";
+		}
+	}
+
+	return ret;
 }
 
 void game_editor::save_map(engine *renderer, std::string name) {
@@ -697,29 +798,61 @@ void game_editor::save_map(engine *renderer, std::string name) {
 
 	foo << "### test scene save file" << std::endl;
 
-	/*
-	for (std::string& lib : libraries) {
-		foo << "library\t" << lib << std::endl;
-	}
-	*/
-
 	for (auto& v : dynamic_models) {
 		foo << "entity\t" << v.name << "\t"
-			<< v.position.x << "," << v.position.y << "," << v.position.z << "\t";
+			<< format_vec(v.position) << "\t";
 
-		for (unsigned y = 0; y < 4; y++) {
-			for (unsigned x = 0; x < 4; x++) {
-				foo << v.transform[y][x] << ",";
-			}
-		}
-
-		foo << "\t" << v.inverted;
+		foo << format_mat(v.transform) << "\t";
+		foo << v.inverted;
 		foo << std::endl;
 	}
 
 	for (auto& p : renderer->ref_probes) {
 		foo << "reflection_probe\t"
-		    << p.position.x << "," << p.position.y << "," << p.position.z
+		    << format_vec(p.position)
 		    << std::endl;
+	}
+
+	for (auto& id : edit_lights.point) {
+		if (renderer->point_lights.find(id) != renderer->point_lights.end()) {
+			auto lit = renderer->get_point_light(id);
+
+			foo << "point_light\t"
+			    << format_vec(lit.position) << "\t"
+			    << format_vec(lit.diffuse) << "\t"
+			    << lit.radius << "\t"
+			    << lit.intensity
+			    << std::endl;
+		}
+	}
+
+	for (auto& id : edit_lights.spot) {
+		if (renderer->spot_lights.find(id) != renderer->spot_lights.end()) {
+			auto lit = renderer->get_spot_light(id);
+
+			foo << "spot_light\t"
+			    << format_vec(lit.position) << "\t"
+			    << format_vec(lit.diffuse) << "\t"
+			    << format_vec(lit.direction) << "\t"
+			    << lit.radius << "\t"
+				<< lit.intensity << "\t"
+				<< lit.angle
+			    << std::endl;
+		}
+	}
+
+	for (auto& id : edit_lights.directional) {
+		if (renderer->directional_lights.find(id)
+		    != renderer->directional_lights.end())
+		{
+			auto lit = renderer->get_directional_light(id);
+
+			foo << "directional_light\t"
+			    << format_vec(lit.position) << "\t"
+			    << format_vec(lit.diffuse) << "\t"
+			    << format_vec(lit.direction) << "\t"
+			    << lit.intensity
+			    << std::endl;
+		}
 	}
 }
