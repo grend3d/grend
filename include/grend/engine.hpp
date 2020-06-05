@@ -94,6 +94,7 @@ class engine {
 		void draw_model_lines(struct draw_attributes attr);
 		void draw_screenquad(void);
 
+		void dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr);
 		void dqueue_draw_model(const struct draw_attributes *attr);
 		void dqueue_draw_model(struct draw_attributes attr);
 		void dqueue_sort_draws(glm::vec3 camera);
@@ -185,7 +186,7 @@ class engine {
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
 		//std::vector<std::pair<std::string, glm::mat4>> draw_queue;
-		std::vector<draw_attributes> draw_queue;
+		std::vector<std::pair<std::string, draw_attributes>> draw_queue;
 
 		std::string fallback_material = "(null)";
 		//std::string fallback_material = "Rock";

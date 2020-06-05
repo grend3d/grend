@@ -354,8 +354,18 @@ void engine::draw_screenquad(void) {
 	DO_ERROR_CHECK();
 }
 
+void
+engine::dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr) {
+	draw_queue.push_back({mesh, *attr});
+}
+
 void engine::dqueue_draw_model(const struct draw_attributes *attr) {
-	draw_queue.push_back(*attr);
+	// TODO: check that attr->name exists
+	auto& obj = glman.cooked_models[attr->name];
+
+	for (auto& str : obj.meshes) {
+		dqueue_draw_mesh(str, attr);
+	}
 }
 
 void engine::dqueue_draw_model(struct draw_attributes attr) {
@@ -363,10 +373,12 @@ void engine::dqueue_draw_model(struct draw_attributes attr) {
 }
 
 void engine::dqueue_sort_draws(glm::vec3 camera) {
+	typedef std::pair<std::string, struct draw_attributes> draw_ent;
+
 	std::sort(draw_queue.begin(), draw_queue.end(),
-		[&] (struct draw_attributes a, struct draw_attributes b) {
-			glm::vec4 ta = a.transform * glm::vec4(1);
-			glm::vec4 tb = b.transform * glm::vec4(1);
+		[&] (draw_ent a, draw_ent b) {
+			glm::vec4 ta = a.second.transform * glm::vec4(1);
+			glm::vec4 tb = b.second.transform * glm::vec4(1);
 			glm::vec3 va = glm::vec3(ta) / ta.w;
 			glm::vec3 vb = glm::vec3(tb) / tb.w;
 
@@ -380,8 +392,11 @@ void engine::dqueue_cull_models(glm::vec3 camera) {
 }
 
 void engine::dqueue_flush_draws(void) {
-	for (auto& ent : draw_queue) {
-		draw_model(&ent);
+	for (auto& [name, attrs] : draw_queue) {
+		auto& obj = glman.cooked_models[attrs.name];
+
+		set_material(obj, glman.cooked_meshes[name].material);
+		draw_mesh(name, &attrs);
 	}
 
 	draw_queue.clear();
