@@ -306,7 +306,7 @@ void engine::draw_mesh_lines(std::string name, const struct draw_attributes *att
 	// TODO: keep track of face culling state in this class
 	// TODO: actually, keep a cache of enabled flags in the gl_manager class
 #ifdef ENABLE_FACE_CULLING
-	glDisable(GL_CULL_FACE);
+	glman.disable(GL_CULL_FACE);
 #endif
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -314,7 +314,7 @@ void engine::draw_mesh_lines(std::string name, const struct draw_attributes *att
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 #ifdef ENABLE_FACE_CULLING
-	glEnable(GL_CULL_FACE);
+	glman.enable(GL_CULL_FACE);
 #endif
 #endif
 }

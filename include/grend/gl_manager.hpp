@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <set>
 
 // TODO: expose this config somehow
 #define ENABLE_MIPMAPS 1
@@ -118,10 +119,16 @@ class gl_manager {
 		const shader& get_shader_obj(rhandle& handle);
 		void set_face_order(GLenum face_order);
 
+		void enable(GLenum feature);
+		void disable(GLenum feature);
+
 		// map of loaded textures by filename
 		// TODO: proper hash
 		// TODO: LRU cache
 		std::map<uint32_t, rhandle> texture_cache;
+
+		// cache of features currently enabled
+		std::set<GLenum> feature_cache;
 
 		std::vector<GLuint> vaos;
 		std::vector<GLuint> vbos;

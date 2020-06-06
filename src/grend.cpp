@@ -790,5 +790,21 @@ void gl_manager::set_face_order(GLenum face_order) {
 	}
 }
 
+void gl_manager::enable(GLenum feature) {
+	if (feature_cache.find(feature) == feature_cache.end()) {
+		glEnable(feature);
+		feature_cache.insert(feature);
+	}
+}
+
+void gl_manager::disable(GLenum feature) {
+	auto it = feature_cache.find(feature);
+
+	if (it != feature_cache.end()) {
+		glDisable(feature);
+		feature_cache.erase(it);
+	}
+}
+
 // namespace grendx
 }

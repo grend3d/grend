@@ -91,11 +91,11 @@ void game_state::load_models(void) {
 	std::cerr << "loading duck" << std::endl;
 	model_map gltf = load_gltf_models("assets/obj/Duck/glTF/Duck.gltf");
 	models.insert(gltf.begin(), gltf.end());
+	*/
 
 	std::cerr << "loading morphcube" << std::endl;
 	gltf = load_gltf_models("assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf");
 	models.insert(gltf.begin(), gltf.end());
-	*/
 
 	std::cerr << "loading helmet" << std::endl;
 	gltf = load_gltf_models("assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf");
@@ -313,10 +313,9 @@ game_state::game_state(context& ctx) : engine(), text(this) {
 	// TODO: fit the player
 	player_phys_id = phys.add_sphere("person", {0, 3, 0}, 1);
 
-	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_FRAMEBUFFER_SRGB);
+	glman.enable(GL_DEPTH_TEST);
+	//glman.enable(GL_FRAMEBUFFER_SRGB);
 	glDepthFunc(GL_LESS);
-	DO_ERROR_CHECK();
 
 	glman.bind_default_framebuffer();
 	DO_ERROR_CHECK();
@@ -366,9 +365,10 @@ void game_state::render_skybox(context& ctx) {
 	set_shader(skybox_shader);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LEQUAL);
+
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
-	glDisable(GL_CULL_FACE);
+	glman.disable(GL_CULL_FACE);
 #endif
 
 	auto shader_obj = glman.get_shader_obj(shader);
@@ -417,8 +417,8 @@ void game_state::render_light_maps(context& ctx) {
 	set_shader(refprobe_shader);
 	update_lights();
 
-	glEnable(GL_SCISSOR_TEST);
-	glEnable(GL_DEPTH_TEST);
+	glman.enable(GL_SCISSOR_TEST);
+	glman.enable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
@@ -593,7 +593,7 @@ void game_state::render_postprocess(context& ctx) {
 	glClearColor(0, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
+	glman.disable(GL_DEPTH_TEST);
 	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
@@ -650,7 +650,7 @@ void game_state::render(context& ctx) {
 	//      lol, need some optimization
 	// TODO: MRTs for cube maps, only update maps in-frustum
 	static unsigned counter = 0;
-	if ((counter++ % 240) == 0) {
+	if ((counter++ % (60 * 10 /* every 10 seconds */)) == 0) {
 		render_light_maps(ctx);
 	}
 
@@ -665,10 +665,10 @@ void game_state::render(context& ctx) {
 	glViewport(0, 0, width, height);
 	glScissor(0, 0, width, height);
 
-	glEnable(GL_SCISSOR_TEST);
+	glman.enable(GL_SCISSOR_TEST);
 #endif
 
-	glEnable(GL_DEPTH_TEST);
+	glman.enable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
@@ -691,7 +691,7 @@ void game_state::render(context& ctx) {
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
-	glEnable(GL_CULL_FACE);
+	glman.enable(GL_CULL_FACE);
 	// make sure we always start with counter-clockwise faces
 	// (also should be toggled per-model)
 	glFrontFace(GL_CCW);
@@ -722,7 +722,7 @@ void game_state::render(context& ctx) {
 	render_skybox(ctx);
 
 #ifndef NO_POSTPROCESSING
-	glDisable(GL_SCISSOR_TEST);
+	glman.disable(GL_SCISSOR_TEST);
 	render_postprocess(ctx);
 	glman.bind_default_framebuffer();
 #endif
@@ -742,7 +742,7 @@ void game_state::render(context& ctx) {
 
 void game_state::draw_debug_string(std::string str) {
 	return;
-	glDisable(GL_DEPTH_TEST);
+	glman.disable(GL_DEPTH_TEST);
 	//text.render({-0.9, -0.9, 0}, str);
 	DO_ERROR_CHECK();
 }
