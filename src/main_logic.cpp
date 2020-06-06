@@ -467,7 +467,11 @@ void game_state::render_light_maps(context& ctx) {
 	set_shader(shadow_shader);
 	shader_obj = glman.get_shader_obj(shader);
 
+	// TODO: MRTs for cube maps, only update maps in-frustum
 	for (auto& [id, plit] : point_lights) {
+		if (!plit.casts_shadows || (plit.static_shadows && plit.shadows_rendered))
+			continue;
+
 		for (unsigned i = 0; i < 6; i++) {
 			shadow_atlas->bind_atlas_fb(plit.shadowmap[i]);
 
@@ -485,9 +489,14 @@ void game_state::render_light_maps(context& ctx) {
 			dqueue_flush_draws();
 			DO_ERROR_CHECK();
 		}
+
+		plit.shadows_rendered = true;
 	}
 
 	for (auto& [id, slit] : spot_lights) {
+		if (!slit.casts_shadows || (slit.static_shadows && slit.shadows_rendered))
+			continue;
+
 		shadow_atlas->bind_atlas_fb(slit.shadowmap);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -509,6 +518,8 @@ void game_state::render_light_maps(context& ctx) {
 		dqueue_sort_draws(slit.position);
 		dqueue_flush_draws();
 		DO_ERROR_CHECK();
+
+		slit.shadows_rendered = true;
 	}
 }
 
@@ -646,13 +657,7 @@ void game_state::update_dynamic_lights(context& ctx) {
 */
 
 void game_state::render(context& ctx) {
-	// XXX: my machine can't actually render the scene 24+ times per frame
-	//      lol, need some optimization
-	// TODO: MRTs for cube maps, only update maps in-frustum
-	static unsigned counter = 0;
-	if ((counter++ % (60 * 10 /* every 10 seconds */)) == 0) {
-		render_light_maps(ctx);
-	}
+	render_light_maps(ctx);
 
 #ifdef NO_POSTPROCESSING
 	glman.bind_default_framebuffer();

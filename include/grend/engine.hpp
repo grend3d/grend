@@ -25,8 +25,13 @@ class engine {
 			glm::vec4 diffuse;
 			float radius;
 			float intensity;
+			bool casts_shadows = false;
 			quadtree::node_id shadowmap[6];
+
+			// meta info not passed to the shader
 			bool changed = true;
+			bool static_shadows = false;
+			bool shadows_rendered = false;
 		};
 
 		struct spot_light {
@@ -36,8 +41,13 @@ class engine {
 			float radius; // bulb radius
 			float intensity;
 			float angle;
+			bool casts_shadows = false;
 			quadtree::node_id shadowmap;
+
+			// meta
 			bool changed = true;
+			bool static_shadows = false;
+			bool shadows_rendered = false;
 		};
 
 		struct directional_light {
@@ -45,8 +55,13 @@ class engine {
 			glm::vec4 diffuse;
 			glm::vec3 direction;
 			float intensity;
+			bool casts_shadows = false;
 			quadtree::node_id shadowmap;
+
+			// meta
 			bool changed = true;
+			bool static_shadows = false;
+			bool shadows_rendered = false;
 		};
 
 		// TODO: revisit parabolic maps at some point, but for now they're

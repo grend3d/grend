@@ -553,14 +553,17 @@ void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
 		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "point_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",  light.position);
-		shader_obj.set(locstr + ".diffuse",   light.diffuse);
-		shader_obj.set(locstr + ".radius",    light.radius);
-		shader_obj.set(locstr + ".intensity", light.intensity);
+		shader_obj.set(locstr + ".position",      light.position);
+		shader_obj.set(locstr + ".diffuse",       light.diffuse);
+		shader_obj.set(locstr + ".radius",        light.radius);
+		shader_obj.set(locstr + ".intensity",     light.intensity);
+		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
 
-		for (unsigned k = 0; k < 6; k++) {
-			std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
-			shader_obj.set(sloc, shadow_atlas->tex_vector(light.shadowmap[k]));
+		if (light.casts_shadows) {
+			for (unsigned k = 0; k < 6; k++) {
+				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
+				shader_obj.set(sloc, shadow_atlas->tex_vector(light.shadowmap[k]));
+			}
 		}
 	}
 }
@@ -576,13 +579,18 @@ void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
 		const auto& light = spot_lights[lights[i]];
 		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",  light.position);
-		shader_obj.set(locstr + ".diffuse",   light.diffuse);
-		shader_obj.set(locstr + ".direction", light.direction);
-		shader_obj.set(locstr + ".radius",    light.radius);
-		shader_obj.set(locstr + ".intensity", light.intensity);
-		shader_obj.set(locstr + ".angle",     light.angle);
-		shader_obj.set(locstr + ".shadowmap", shadow_atlas->tex_vector(light.shadowmap));
+		shader_obj.set(locstr + ".position",      light.position);
+		shader_obj.set(locstr + ".diffuse",       light.diffuse);
+		shader_obj.set(locstr + ".direction",     light.direction);
+		shader_obj.set(locstr + ".radius",        light.radius);
+		shader_obj.set(locstr + ".intensity",     light.intensity);
+		shader_obj.set(locstr + ".angle",         light.angle);
+		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
+
+		if (light.casts_shadows) {
+			shader_obj.set(locstr + ".shadowmap",
+			               shadow_atlas->tex_vector(light.shadowmap));
+		}
 	}
 }
 
@@ -597,10 +605,11 @@ void engine::sync_directional_lights(const std::vector<uint32_t>& lights) {
 		const auto& light = directional_lights[lights[i]];
 		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",  light.position);
-		shader_obj.set(locstr + ".diffuse",   light.diffuse);
-		shader_obj.set(locstr + ".direction", light.direction);
-		shader_obj.set(locstr + ".intensity", light.intensity);
+		shader_obj.set(locstr + ".position",      light.position);
+		shader_obj.set(locstr + ".diffuse",       light.diffuse);
+		shader_obj.set(locstr + ".direction",     light.direction);
+		shader_obj.set(locstr + ".intensity",     light.intensity);
+		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
 	}
 }
 

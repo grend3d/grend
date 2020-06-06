@@ -458,6 +458,8 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::ColorEdit4("color", glm::value_ptr(light.diffuse));
 			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
 			ImGui::SliderFloat("radius", &light.radius, 0.01f, 3.f);
+			ImGui::Checkbox("casts shadows", &light.casts_shadows);
+			ImGui::Checkbox("static shadows", &light.static_shadows);
 
 			renderer->draw_model_lines({
 				.name = "smoothsphere",
@@ -488,6 +490,8 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
 			ImGui::SliderFloat("radius", &light.radius, 0.01f, 3.f);
 			ImGui::SliderFloat("angle", &light.angle, 0.0f, 1.f);
+			ImGui::Checkbox("casts shadows", &light.casts_shadows);
+			ImGui::Checkbox("static shadows", &light.static_shadows);
 
 			/*
 			renderer->draw_model_lines("smoothsphere",
@@ -516,6 +520,8 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::SliderFloat3("direction", glm::value_ptr(light.direction),
 				-1.f, 1.f);
 			ImGui::SliderFloat("intensity", &light.intensity, 0.f, 1000.f);
+			ImGui::Checkbox("casts shadows", &light.casts_shadows);
+			ImGui::Checkbox("static shadows", &light.static_shadows);
 
 			renderer->draw_model_lines({
 				.name = "smoothsphere",
@@ -709,29 +715,35 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			});
 		}
 
-		if (statement[0] == "point_light" && statement.size() == 5) {
+		if (statement[0] == "point_light" && statement.size() == 7) {
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
 			float radius = std::stof(statement[3]);
 			float intensity = std::stof(statement[4]);
+			bool casts_shadows = std::stoi(statement[5]);
+			bool static_shadows = std::stoi(statement[6]);
 
 			uint32_t nlit = renderer->add_light((struct engine::point_light){
 				.position = pos,
 				.diffuse = diffuse,
 				.radius = radius,
 				.intensity = intensity,
+				.casts_shadows = casts_shadows,
+				.static_shadows = static_shadows,
 			});
 
 			edit_lights.point.push_back(nlit);
 		}
 
-		if (statement[0] == "spot_light" && statement.size() == 7) {
+		if (statement[0] == "spot_light" && statement.size() == 9) {
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
 			glm::vec3 direction = parse_vec<glm::vec3>(statement[3]);
 			float radius = std::stof(statement[4]);
 			float intensity = std::stof(statement[5]);
 			float angle = std::stof(statement[6]);
+			bool casts_shadows = std::stoi(statement[7]);
+			bool static_shadows = std::stoi(statement[8]);
 
 			uint32_t nlit = renderer->add_light((struct engine::spot_light){
 				.position = pos,
@@ -740,22 +752,28 @@ void game_editor::load_map(engine *renderer, std::string name) {
 				.radius = radius,
 				.intensity = intensity,
 				.angle = angle,
+				.casts_shadows = casts_shadows,
+				.static_shadows = static_shadows,
 			});
 
 			edit_lights.spot.push_back(nlit);
 		}
 
-		if (statement[0] == "directional_light" && statement.size() == 5) {
+		if (statement[0] == "directional_light" && statement.size() == 7) {
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
 			glm::vec3 direction = parse_vec<glm::vec3>(statement[3]);
 			float intensity = std::stof(statement[4]);
+			bool casts_shadows = std::stoi(statement[5]);
+			bool static_shadows = std::stoi(statement[6]);
 
 			uint32_t nlit = renderer->add_light((struct engine::directional_light){
 				.position = pos,
 				.diffuse = diffuse,
 				.direction = direction,
 				.intensity = intensity,
+				.casts_shadows = casts_shadows,
+				.static_shadows = static_shadows,
 			});
 
 			edit_lights.spot.push_back(nlit);
@@ -821,7 +839,9 @@ void game_editor::save_map(engine *renderer, std::string name) {
 			    << format_vec(lit.position) << "\t"
 			    << format_vec(lit.diffuse) << "\t"
 			    << lit.radius << "\t"
-			    << lit.intensity
+			    << lit.intensity << "\t"
+			    << lit.casts_shadows << "\t"
+			    << lit.static_shadows
 			    << std::endl;
 		}
 	}
@@ -836,7 +856,9 @@ void game_editor::save_map(engine *renderer, std::string name) {
 			    << format_vec(lit.direction) << "\t"
 			    << lit.radius << "\t"
 				<< lit.intensity << "\t"
-				<< lit.angle
+				<< lit.angle << "\t"
+			    << lit.casts_shadows << "\t"
+			    << lit.static_shadows
 			    << std::endl;
 		}
 	}
@@ -851,7 +873,9 @@ void game_editor::save_map(engine *renderer, std::string name) {
 			    << format_vec(lit.position) << "\t"
 			    << format_vec(lit.diffuse) << "\t"
 			    << format_vec(lit.direction) << "\t"
-			    << lit.intensity
+			    << lit.intensity << "\t"
+			    << lit.casts_shadows << "\t"
+			    << lit.static_shadows
 			    << std::endl;
 		}
 	}

@@ -16,15 +16,24 @@ float vec_to_depth(vec3 vec) {
 }
 
 float point_shadow(int i, vec3 pos) {
+	// TODO: can branching be avoided without the texture sample?
+	if (!point_lights[i].casts_shadows) {
+		return 1.0;
+	}
+
 	vec3 light_vertex = point_lights[i].position - pos;
 	vec3 light_dir = normalize(light_vertex);
 	vec4 depth = textureCubeAtlas(shadowmap_atlas,
 								  point_lights[i].shadowmap, -light_dir);
 
-	return ((depth.r + 0.001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
+	return ((depth.r + 0.00001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
 }
 
 float spot_shadow(int i, vec3 pos) {
+	if (!spot_lights[i].casts_shadows) {
+		return 1.0;
+	}
+
 	vec3 light_vertex = spot_lights[i].position - pos;
 	vec3 light_dir = normalize(light_vertex);
 
@@ -49,6 +58,10 @@ float spot_shadow(int i, vec3 pos) {
 }
 
 float directional_shadow(int i, vec3 pos) {
+	if (!directional_lights[i].casts_shadows) {
+		return 1.0;
+	}
+
 	// TODO: directional_shadow()
-	return 0.0;
+	return 1.0;
 }
