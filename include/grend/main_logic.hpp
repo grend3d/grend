@@ -94,6 +94,7 @@ class game_editor {
 		camera cam;
 		int selected_light = -1;
 		int selected_object = -1;
+		int selected_refprobe = -1;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
@@ -116,9 +117,11 @@ class game_editor {
 		void menubar(void);
 		void map_window(engine *renderer, imp_physics *phys, context& ctx);
 		void lights_window(engine *renderer, context& ctx);
+		void refprobes_window(engine *renderer, context& ctx);
 
-		bool show_map_window = true;
+		bool show_map_window = false;
 		bool show_lights_window = false;
+		bool show_refprobe_window = false;
 };
 
 class game_state : public engine {

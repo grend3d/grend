@@ -81,6 +81,9 @@ class engine {
 			glm::vec3 position;
 			quadtree::node_id faces[6];
 			bool changed = true;
+			bool is_static = true;
+			bool have_map = false;
+			// TODO: maybe non-static with update frequency
 		};
 
 		engine();
@@ -136,6 +139,7 @@ class engine {
 		uint32_t add_light(struct spot_light lit);
 		uint32_t add_light(struct directional_light lit);
 		uint32_t add_reflection_probe(struct reflection_probe ref);
+		void free_reflection_probe(uint32_t id);
 
 		struct point_light       get_point_light(uint32_t id);
 		struct spot_light        get_spot_light(uint32_t id);
@@ -165,7 +169,8 @@ class engine {
 			std::vector<uint32_t> directional;
 		} active_lights;
 
-		std::vector<struct reflection_probe> ref_probes;
+		uint32_t refprobe_ids = 0;
+		std::map<uint32_t, struct reflection_probe> ref_probes;
 		std::unique_ptr<atlas> reflection_atlas;
 		std::unique_ptr<atlas> shadow_atlas;
 

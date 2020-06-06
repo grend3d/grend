@@ -433,7 +433,10 @@ void game_state::render_light_maps(context& ctx) {
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 100.f);
 
-	for (auto& probe : ref_probes) {
+	for (auto& [id, probe] : ref_probes) {
+		if (probe.is_static && probe.have_map)
+			continue;
+
 		for (unsigned i = 0; i < 6; i++) {
 			reflection_atlas->bind_atlas_fb(probe.faces[i]);
 
@@ -461,6 +464,8 @@ void game_state::render_light_maps(context& ctx) {
 			dqueue_sort_draws(probe.position);
 			dqueue_flush_draws();
 			DO_ERROR_CHECK();
+
+			probe.have_map = true;
 		}
 	}
 
@@ -532,7 +537,7 @@ void game_state::render_light_info(context& ctx) {
 	shader_obj.set("reflection_atlas", 0);
 	set_mvp(glm::mat4(1), view, projection);
 
-	for (auto& probe : ref_probes) {
+	for (auto& [id, probe] : ref_probes) {
 		for (unsigned i = 0; i < 6; i++) {
 			glm::vec3 facevec = reflection_atlas->tex_vector(probe.faces[i]);
 			std::string locstr = "cubeface[" + std::to_string(i) + "]";

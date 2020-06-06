@@ -522,13 +522,21 @@ engine::set_directional_light(uint32_t id, struct engine::directional_light *lit
 }
 
 uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
+	uint32_t ret = refprobe_ids++;
+
 	// TODO: configurable/deduced dimensions
 	for (unsigned i = 0; i < 6; i++) {
 		ref.faces[i] = reflection_atlas->tree.alloc(128);
 	}
 
-	ref_probes.push_back(ref);
-	return ref_probes.size() - 1;
+	ref_probes[ret] = ref;
+	return ret;
+}
+
+void engine::free_reflection_probe(uint32_t id) {
+	if (ref_probes.find(id) != ref_probes.end()) {
+		ref_probes.erase(id);
+	}
 }
 
 void engine::set_shader(gl_manager::rhandle& shd) {

@@ -307,6 +307,8 @@ void game_editor::menubar(void) {
 				show_map_window = true;
 			if (ImGui::MenuItem("Lights editor", "l"))
 				show_lights_window = true;
+			if (ImGui::MenuItem("Reflection probes", "r"))
+				show_refprobe_window = true;
 
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
@@ -558,6 +560,43 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 	ImGui::End();
 }
 
+void game_editor::refprobes_window(engine *renderer, context& ctx) {
+	ImGui::Begin("Reflection probes", &show_refprobe_window);
+	ImGui::Columns(2);
+
+	for (auto& [id, probe] : renderer->ref_probes) {
+		std::string name = "reflection probe " + std::to_string(id);
+
+		ImGui::Separator();
+		if (ImGui::Selectable(name.c_str(), selected_refprobe == (int)id)) {
+			selected_refprobe = id;
+		}
+
+		ImGui::NextColumn();
+		ImGui::InputFloat3("position", glm::value_ptr(probe.position));
+
+		if (selected_refprobe == (int)id) {
+			ImGui::Checkbox("static", &probe.is_static);
+		}
+
+		ImGui::NextColumn();
+	}
+
+	ImGui::Columns(1);
+	ImGui::Separator();
+
+	if (ImGui::Button("Add reflection probe")) {
+		set_mode(mode::AddReflectionProbe);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Delete reflection probe")) {
+		// TODO: delete reflection probe
+	}
+
+	ImGui::End();
+}
+
 void game_editor::render_map_models(engine *renderer, context& ctx) {
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position) * v.transform;
@@ -597,6 +636,10 @@ void game_editor::render_editor(engine *renderer,
 			}
 
 			lights_window(renderer, ctx);
+		}
+
+		if (show_refprobe_window) {
+			refprobes_window(renderer, ctx);
 		}
 
 		if (mode == mode::AddObject) {
@@ -705,7 +748,7 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			std::cerr << "# loaded a " << v.name << std::endl;
 		}
 
-		if (statement[0] == "reflection_probe" && statement.size() == 2) {
+		if (statement[0] == "reflection_probe" && statement.size() == 3) {
 			// TODO: size check
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 
@@ -825,9 +868,10 @@ void game_editor::save_map(engine *renderer, std::string name) {
 		foo << std::endl;
 	}
 
-	for (auto& p : renderer->ref_probes) {
+	for (auto& [id, p] : renderer->ref_probes) {
 		foo << "reflection_probe\t"
-		    << format_vec(p.position)
+		    << format_vec(p.position) << "\t"
+			<< p.is_static
 		    << std::endl;
 	}
 
