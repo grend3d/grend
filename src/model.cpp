@@ -145,6 +145,7 @@ void model::load_object(std::string filename) {
 	// in case we're reloading over a previously-loaded object
 	clear();
 
+	// TODO: split this into a seperate parse function
 	while (std::getline(input, line)) {
 		auto statement = split_string(line);
 
@@ -221,6 +222,7 @@ void model::load_object(std::string filename) {
 			texbuf.push_back({std::stof(statement[1]), std::stof(statement[2])});
 			have_texcoords = true;
 		}
+
 	}
 
 	for (const auto& thing : meshes) {
@@ -340,6 +342,23 @@ void model::load_materials(std::string filename) {
 		else if (statement[0] == "Ns") {
 			materials[current_material].roughness =
 				1.f - std::stof(statement[1])/1000.f;
+		}
+
+		else if (statement[0] == "illum") {
+			unsigned illumination_model = std::stoi(statement[1]);
+
+			switch (illumination_model) {
+				case 4:
+				case 6:
+				case 7:
+				case 9:
+					materials[current_material].blend = material::blend_mode::Blend;
+					break;
+
+				default:
+					materials[current_material].blend = material::blend_mode::Opaque;
+					break;
+			}
 		}
 
 		else if (statement[0] == "map_Kd") {
@@ -622,6 +641,7 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	if (mat.alphaMode == "BLEND") {
 		// XXX:
 		mod_mat.opacity = mat.alphaCutoff;
+		mod_mat.blend = grendx::material::blend_mode::Blend;
 	}
 
 	mod_mat.roughness = pbr.roughnessFactor;

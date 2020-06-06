@@ -32,8 +32,10 @@ void main(void) {
 	mat4 mvp = p*v*m;
 
 	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
+	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
+	vec3 albedo = texcolor.rgb;
+	float opacity = texcolor.a;
 
-	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
@@ -102,7 +104,7 @@ void main(void) {
 
 	// apply tonemapping here if there's no postprocessing step afterwards
 	total_light = EARLY_TONEMAP(total_light, 1.0);
-	FRAG_COLOR = vec4(total_light, 1.0);
+	FRAG_COLOR = vec4(total_light, opacity);
 
 	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
 	//gl_FragColor = dispnorm;

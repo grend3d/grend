@@ -1,9 +1,11 @@
 #include <grend/engine.hpp>
 #include <grend/model.hpp>
+#include <grend/utility.hpp>
+
 #include <vector>
 #include <map>
 #include <iostream>
-#include <grend/utility.hpp>
+#include <algorithm>
 
 using namespace grendx;
 
@@ -372,9 +374,11 @@ void engine::dqueue_draw_model(struct draw_attributes attr) {
 	dqueue_draw_model(&attr);
 }
 
+// TODO: should this just be called from dqueue_flush_draws?
 void engine::dqueue_sort_draws(glm::vec3 camera) {
 	typedef std::pair<std::string, struct draw_attributes> draw_ent;
 
+	// sort by position from camera
 	std::sort(draw_queue.begin(), draw_queue.end(),
 		[&] (draw_ent a, draw_ent b) {
 			glm::vec4 ta = a.second.transform * glm::vec4(1);
@@ -384,6 +388,27 @@ void engine::dqueue_sort_draws(glm::vec3 camera) {
 
 			return glm::distance(camera, va) < glm::distance(camera, vb);
 		});
+
+	// split opaque and transparent objects into seperate lists
+	for (auto it = draw_queue.begin(); it != draw_queue.end(); it++) {
+		auto& obj = glman.cooked_models[it->second.name];
+		auto& meshmat = glman.cooked_meshes[it->first].material;
+
+		if (obj.materials.find(meshmat) != obj.materials.end()) {
+			material& mat = obj.materials[meshmat];
+
+			if (mat.blend != material::blend_mode::Opaque) {
+				transparent_draws.push_back(*it);
+				it = draw_queue.erase(it);
+			}
+		}
+	}
+
+	// these remain front-to-back sorted, so reversing makes it back-to-front
+	// TODO: this makes dqueue_sort_draws() stateful, if it's called a second
+	//       time the transparent draws will be in the wrong order, better way
+	//       to do this without a redundant sort?
+	std::reverse(transparent_draws.begin(), transparent_draws.end());
 }
 
 void engine::dqueue_cull_models(glm::vec3 camera) {
@@ -392,6 +417,8 @@ void engine::dqueue_cull_models(glm::vec3 camera) {
 }
 
 void engine::dqueue_flush_draws(void) {
+	glman.disable(GL_BLEND);
+
 	for (auto& [name, attrs] : draw_queue) {
 		auto& obj = glman.cooked_models[attrs.name];
 
@@ -399,7 +426,18 @@ void engine::dqueue_flush_draws(void) {
 		draw_mesh(name, &attrs);
 	}
 
+	glman.enable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	for (auto& [name, attrs] : transparent_draws) {
+		auto& obj = glman.cooked_models[attrs.name];
+
+		set_material(obj, glman.cooked_meshes[name].material);
+		draw_mesh(name, &attrs);
+	}
+
 	draw_queue.clear();
+	transparent_draws.clear();
 }
 
 bool engine::is_valid_light(uint32_t id) {

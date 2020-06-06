@@ -137,22 +137,6 @@ class engine {
 
 		bool running = true;
 
-
-		/*
-		int add_light(struct light lit);
-		int set_light(int id, struct light lit);
-		int get_light(int id, struct light *lit);
-		void remove_light(int id);
-		*/
-
-		// TODO: make an accessor function for this, for debug drawing in the
-		//       editor
-		// TODO: need to keep the max number of lights synced between
-		//       the engine code and shader code, something to keep in mind
-		//       if/when writing a shader preprocessor language
-		//unsigned active_lights = 0;
-		//struct light lights[MAX_LIGHTS];
-
 		// map light IDs to light structures
 		uint32_t light_ids = 0;
 		struct std::map<uint32_t, struct point_light> point_lights;
@@ -185,8 +169,11 @@ class engine {
 		//       possible solution is to have a global namespace for materials,
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
-		//std::vector<std::pair<std::string, glm::mat4>> draw_queue;
 		std::vector<std::pair<std::string, draw_attributes>> draw_queue;
+		// sorted after dqueue_sort_draws(), and flushed along with
+		// dqueue_flush_draws(), this is sorted back-to-front rather than
+		// front-to-back
+		std::vector<std::pair<std::string, draw_attributes>> transparent_draws;
 
 		std::string fallback_material = "(null)";
 		//std::string fallback_material = "Rock";

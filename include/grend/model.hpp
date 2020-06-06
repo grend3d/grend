@@ -27,6 +27,12 @@ class material_texture {
 };
 
 struct material {
+	enum blend_mode {
+		Opaque,
+		Mask,
+		Blend,
+	};
+
 	glm::vec4 diffuse;
 	glm::vec4 ambient;
 	glm::vec4 specular;
@@ -34,6 +40,7 @@ struct material {
 	GLfloat   metalness = 0.5;
 	GLfloat   opacity = 1.0;
 	GLfloat   refract_idx = 1.5;
+	enum blend_mode blend = blend_mode::Opaque;
 
 	void copy_properties(const struct material& other) {
 		// copy everything but textures
@@ -43,6 +50,7 @@ struct material {
 		roughness = other.roughness;
 		opacity = other.opacity;
 		refract_idx = other.refract_idx;
+		blend = other.blend;
 	}
 
 	material_texture diffuse_map;
