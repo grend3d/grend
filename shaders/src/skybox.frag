@@ -6,7 +6,7 @@ precision mediump samplerCube;
 
 #include <lib/compat.glsl>
 
-in vec3 f_texcoord;
+IN vec3 f_texcoord;
 uniform samplerCube skytexture;
 
 void main(void) {

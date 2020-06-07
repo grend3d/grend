@@ -154,7 +154,7 @@ void game_state::load_shaders(void) {
 	glman.link_program(skybox_shader);
 	std::cerr << "loaded skybox shader" << std::endl;
 
-#if 0
+#if GLSL_VERSION < 300
 	main_shader = glman.load_program(
 		"shaders/out/vertex-shading.vert",
 		"shaders/out/vertex-shading.frag"

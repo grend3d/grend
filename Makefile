@@ -22,9 +22,13 @@ SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
 			    -D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
 			    -D GLSL_STRING=\"$(SHADER_GLSL_STRING)\"
 
+# GLES2 options for opengl es 2.0 compatibility, since loops in glsl 1.00
+# must have a bound that can be determined at compile time
 SHADER_FLAGS += -D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
-			    -D GLSL_STRING=\"$(SHADER_GLSL_STRING)\" \
-			    -D SOFT_ANTIALIASING
+                -D GLSL_STRING=\"$(SHADER_GLSL_STRING)\" \
+                -D GLES2_MAX_POINT_LIGHTS=4 \
+                -D GLES2_MAX_SPOT_LIGHTS=2 \
+                -D GLES2_MAX_DIRECTIONAL_LIGHTS=1
 
 INCLUDES = -I./include -I./libs/ $(DIMGUI_INCLUDES)
 

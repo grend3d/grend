@@ -2,20 +2,26 @@
 #include <lib/compat.glsl>
 
 #ifdef FRAGMENT_SHADER
-in vec3 f_normal;
-in vec3 f_tangent;
-in vec3 f_bitangent;
-in vec2 f_texcoord;
-in vec4 f_position;
-in mat3 TBN;
-
+IN vec3 f_normal;
+IN vec3 f_tangent;
+IN vec3 f_bitangent;
+IN vec2 f_texcoord;
+IN vec4 f_position;
+IN mat3 TBN;
 #endif
 
 #ifdef VERTEX_SHADER
-out vec3 f_normal;
-out vec3 f_tangent;
-out vec3 f_bitangent;
-out vec2 f_texcoord;
-out vec4 f_position;
-out mat3 TBN;
+// vertex attributes
+IN vec3 in_Position;
+IN vec2 texcoord;
+IN vec3 v_normal;
+IN vec3 v_tangent;
+IN vec3 v_bitangent;
+
+OUT vec3 f_normal;
+OUT vec3 f_tangent;
+OUT vec3 f_bitangent;
+OUT vec2 f_texcoord;
+OUT vec4 f_position;
+OUT mat3 TBN;
 #endif

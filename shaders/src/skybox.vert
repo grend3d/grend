@@ -6,8 +6,8 @@ precision mediump samplerCube;
 
 #include <lib/compat.glsl>
 
-in vec3 v_position;
-out vec3 f_texcoord;
+IN vec3 v_position;
+OUT vec3 f_texcoord;
 uniform mat4 p, v;
 
 // unused, here to prevent errors when setting undefined uniforms

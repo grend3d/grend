@@ -5,11 +5,11 @@ precision mediump sampler2D;
 precision mediump samplerCube;
 
 #include <lib/compat.glsl>
+#include <lib/shading-varying.glsl>
+#include <lib/shading-uniforms.glsl>
 
-in vec3 ex_Color;
-in vec2 f_texcoord;
-uniform sampler2D mytexture;
+IN vec3 ex_Color;
 
 void main(void) {
-	gl_FragColor = texture2D(mytexture, f_texcoord) * vec4(ex_Color, 1.0);
+	FRAG_COLOR = texture2D(diffuse_map, f_texcoord) * vec4(ex_Color, 1.0);
 }

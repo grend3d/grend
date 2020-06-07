@@ -10,14 +10,7 @@
 #include <lib/shading-varying.glsl>
 #include <lib/tonemapping.glsl>
 
-in vec3 in_Position;
-in vec2 texcoord;
-in vec3 in_Color;
-in vec3 v_normal;
-in vec3 v_tangent;
-in vec3 v_bitangent;
-
-out vec3 ex_Color;
+OUT vec3 ex_Color;
 
 vec3 gouraud_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
                       vec3 albedo, vec3 normal)
@@ -64,34 +57,41 @@ void main(void) {
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
 
-	for (int i = 0; i < max_lights; i++) {
-		float lum = point_attenuation(i, position);
+	for (int i = 0; i < GLES2_MAX_POINT_LIGHTS; i++) {
+		float atten = point_attenuation(i, position);
 
-		total_light += lum *
+		vec3 lum =
 			gouraud_lighting(point_lights[i].position, point_lights[i].diffuse,
-			                 position, view_dir, anmaterial.diffuse.xyz, normal_dir);
+			                 position, view_dir, anmaterial.diffuse.xyz,
+			                 normal_dir);
+
+		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < max_lights; i++) {
-		float lum = spot_attenuation(i, position);
+	for (int i = 0; i < GLES2_MAX_SPOT_LIGHTS; i++) {
+		float atten = spot_attenuation(i, position);
 
-		total_light += lum *
+		vec3 lum =
 			gouraud_lighting(spot_lights[i].position, spot_lights[i].diffuse,
-			                 position, view_dir, anmaterial.diffuse.xyz, normal_dir);
+			                 position, view_dir, anmaterial.diffuse.xyz,
+			                 normal_dir);
+
+		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < max_lights; i++) {
-		float lum = directional_attenuation(i, position);
+	for (int i = 0; i < GLES2_MAX_DIRECTIONAL_LIGHTS; i++) {
+		float atten = directional_attenuation(i, position);
 
-		total_light += lum *
+		vec3 lum =
 			gouraud_lighting(directional_lights[i].position,
 			                 directional_lights[i].diffuse,
 			                 position, view_dir, anmaterial.diffuse.xyz, normal_dir);
+
+		total_light += lum*atten;
 	}
 
 	ex_Color = EARLY_TONEMAP(vec3(total_light), 1.0); 
-	gl_Position = normalize(mvp * vec4(in_Position, 1.0));
-	//gl_Position = mvp * vec4(in_Position, 0.25);
-
 	f_texcoord = texcoord;
+	gl_Position = mvp * vec4(in_Position, 1.0);
+	//gl_Position = mvp * vec4(in_Position, 0.25);
 }

@@ -6,7 +6,7 @@ precision mediump samplerCube;
 
 #include <lib/compat.glsl>
 
-in vec3 v_position;
+IN vec3 v_position;
 uniform mat4 m, v, p;
 
 void main(void) {

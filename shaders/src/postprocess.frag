@@ -10,7 +10,7 @@ precision mediump sampler2D;
 #include <lib/psaa.glsl>
 #endif
 
-in vec2 f_texcoord;
+IN vec2 f_texcoord;
 
 void main(void) {
 	vec2 scaled_texcoord = vec2(scale_x, scale_y) * f_texcoord;

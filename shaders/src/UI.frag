@@ -6,8 +6,8 @@ precision mediump samplerCube;
 
 #include <lib/compat.glsl>
 
-in vec2 f_texcoord;
-out vec4 gl_FragColor;
+IN vec2 f_texcoord;
+OUT vec4 gl_FragColor;
 
 uniform sampler2D UItex;
 
