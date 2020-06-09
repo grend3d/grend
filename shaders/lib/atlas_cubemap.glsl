@@ -4,23 +4,22 @@
 #include <lib/compat.glsl>
 
 vec4 textureCubeAtlas(in sampler2D atlas, vec3 cube[6], vec3 dir) {
-	vec3 adj = clamp((normalize(dir) + 1.0)/2.0, 0.0, 1.0);
 	vec3 ab = abs(dir);
 	vec2 f_uv;
 	int face;
 
-	if (ab.z >= ab.x && ab.z >= ab.y) {
-		face = (adj.z > 0.5)? 5 : 2;
-		f_uv = vec2((adj.z < 0.5)? adj.x : (1.0 - adj.x), adj.y);
+	if (ab.x >= ab.y && ab.x >= ab.z) {
+		face = (dir.x < 0.0)? 0 : 3;
+		f_uv = vec2((dir.x > 0.0)? dir.z : -dir.z, dir.y) / ab.x;
 
-	} else if (ab.y >= ab.x) {
-		face = (adj.y > 0.5)? 4 : 1;
-		f_uv = vec2((adj.y > 0.5)? adj.x : (1.0 - adj.x), adj.z);
+	} else if (ab.y >= ab.z) {
+		face = (dir.y < 0.0)? 1 : 4;
+		f_uv = vec2((dir.y > 0.0)? dir.x : -dir.x, dir.z) / ab.y;
 
 	} else {
-		face = (adj.x > 0.5)? 3 : 0;
-		f_uv = vec2((adj.x > 0.5)? adj.z : (1.0 - adj.z), adj.y);
+		face = (dir.z < 0.0)? 2 : 5;
+		f_uv = vec2((dir.z < 0.0)? dir.x : -dir.x, dir.y) / ab.z;
 	}
 
-	return texture2D(atlas, atlasUV(cube[face], f_uv));
+	return texture2D(atlas, atlasUV(cube[face], (f_uv + 1.0) * 0.5));
 }

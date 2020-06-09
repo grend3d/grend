@@ -26,7 +26,7 @@ float point_shadow(int i, vec3 pos) {
 	vec4 depth = textureCubeAtlas(shadowmap_atlas,
 								  point_lights[i].shadowmap, -light_dir);
 
-	return ((depth.r + 0.00001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
+	return ((depth.r + 0.0001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
 }
 
 float spot_shadow(int i, vec3 pos) {

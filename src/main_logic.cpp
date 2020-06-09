@@ -440,8 +440,8 @@ void game_state::render_light_maps(context& ctx) {
 		for (unsigned i = 0; i < 6; i++) {
 			reflection_atlas->bind_atlas_fb(probe.faces[i]);
 
-			view = glm::lookAt(probe.position - cube_dirs[i],
-					probe.position,
+			view = glm::lookAt(probe.position,
+					probe.position + cube_dirs[i],
 					cube_up[i]);
 			set_mvp(glm::mat4(1), view, projection);
 
@@ -480,8 +480,8 @@ void game_state::render_light_maps(context& ctx) {
 		for (unsigned i = 0; i < 6; i++) {
 			shadow_atlas->bind_atlas_fb(plit.shadowmap[i]);
 
-			view = glm::lookAt(plit.position - cube_dirs[i],
-					plit.position,
+			view = glm::lookAt(plit.position,
+					plit.position + cube_dirs[i],
 					cube_up[i]);
 			set_mvp(glm::mat4(1), view, projection);
 			glClear(GL_DEPTH_BUFFER_BIT);
