@@ -438,7 +438,12 @@ void game_state::render_light_maps(context& ctx) {
 			continue;
 
 		for (unsigned i = 0; i < 6; i++) {
-			reflection_atlas->bind_atlas_fb(probe.faces[i]);
+			if (!reflection_atlas->bind_atlas_fb(probe.faces[i])) {
+				std::cerr
+					<< "render_light_maps(): couldn't bind reflection FB"
+					<< std::endl;
+				continue;
+			}
 
 			view = glm::lookAt(probe.position,
 					probe.position + cube_dirs[i],
@@ -478,7 +483,12 @@ void game_state::render_light_maps(context& ctx) {
 			continue;
 
 		for (unsigned i = 0; i < 6; i++) {
-			shadow_atlas->bind_atlas_fb(plit.shadowmap[i]);
+			if (!shadow_atlas->bind_atlas_fb(plit.shadowmap[i])) {
+				std::cerr
+					<< "render_light_maps(): couldn't bind shadowmap FB"
+					<< std::endl;
+				continue;
+			}
 
 			view = glm::lookAt(plit.position,
 					plit.position + cube_dirs[i],
@@ -502,7 +512,13 @@ void game_state::render_light_maps(context& ctx) {
 		if (!slit.casts_shadows || (slit.static_shadows && slit.shadows_rendered))
 			continue;
 
-		shadow_atlas->bind_atlas_fb(slit.shadowmap);
+		if (!shadow_atlas->bind_atlas_fb(slit.shadowmap)) {
+			std::cerr
+				<< "render_light_maps(): couldn't bind shadowmap FB"
+				<< std::endl;
+			continue;
+		}
+
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 		//glm::vec3 right = glm::vec3(slit.direction.y, slit.direction.z, slit.direction.x);

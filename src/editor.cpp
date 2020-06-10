@@ -591,7 +591,7 @@ void game_editor::refprobes_window(engine *renderer, context& ctx) {
 
 	ImGui::SameLine();
 	if (ImGui::Button("Delete reflection probe")) {
-		// TODO: delete reflection probe
+		renderer->free_reflection_probe(selected_refprobe);
 	}
 
 	ImGui::End();

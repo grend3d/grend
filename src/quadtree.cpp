@@ -29,13 +29,14 @@ quadtree::node_id quadtree::alloc(unsigned size) {
 
 		if (!retnode) {
 			std::cerr << "XXX: freeing old nodes..." << std::endl;
-			assert(false);
+			//assert(false);
 			free_oldest();
 		}
 	}
 
 	if (retnode) {
 		ret = alloc_id();
+		retnode->id = ret;
 		active_nodes[ret] = retnode;
 	}
 
@@ -134,10 +135,12 @@ void quadtree::free_oldest(void) {
 
 	if (temp->id == 0 || !valid(temp->id)) {
 		// TODO: might want to do something here
-		assert(temp != 0 || !valid(temp->id));
+		assert(temp != 0);
+		assert(valid(temp->id));
 		return;
 	}
 
+	fprintf(stderr, "freeing ID %u\n", temp->id);
 	free(temp->id);
 }
 
@@ -164,6 +167,8 @@ quadtree::node_id quadtree::refresh(node_id id) {
 
 	node *ptr = active_nodes[id];
 	ptr->stamp = alloc_stamp();
+	ptr->update_tree();
+
 	assert(ptr->id == id);
 	return id;
 }

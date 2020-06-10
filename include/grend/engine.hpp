@@ -127,6 +127,8 @@ class engine {
 		//void init_lights(void);
 		void compile_lights(void);
 		void update_lights(void);
+		void touch_light_shadowmaps(void);
+		void touch_light_refprobes(void);
 		void sync_point_lights(const std::vector<uint32_t>& lights);
 		void sync_spot_lights(const std::vector<uint32_t>& lights);
 		void sync_directional_lights(const std::vector<uint32_t>& lights);

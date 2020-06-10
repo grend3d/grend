@@ -478,6 +478,8 @@ void engine::free_light(uint32_t id) {
 	point_lights.erase(id);
 	spot_lights.erase(id);
 	directional_lights.erase(id);
+
+	touch_light_shadowmaps();
 }
 
 struct engine::point_light engine::get_point_light(uint32_t id) {
@@ -536,6 +538,10 @@ uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
 void engine::free_reflection_probe(uint32_t id) {
 	if (ref_probes.find(id) != ref_probes.end()) {
 		ref_probes.erase(id);
+		// TODO: this is just here to test the texture cache, this should just
+		//       free the node from the tree (O(log n)) rather than touching
+		//       every node (O(n log n))
+		touch_light_refprobes();
 	}
 }
 
@@ -645,6 +651,40 @@ void engine::update_lights(void) {
 	sync_spot_lights(active_lights.spot);
 	sync_directional_lights(active_lights.directional);
 	DO_ERROR_CHECK();
+}
+
+void engine::touch_light_refprobes(void) {
+	for (auto& [id, probe] : ref_probes) {
+		for (unsigned i = 0; i < 6; i++) {
+			if (reflection_atlas->tree.valid(probe.faces[i])) {
+				probe.faces[i] = reflection_atlas->tree.refresh(probe.faces[i]);
+			}
+		}
+	}
+}
+
+// TODO: touch lights that are visible
+void engine::touch_light_shadowmaps(void) {
+	for (auto& [id, plit] : point_lights) {
+		if (!plit.casts_shadows)
+			continue;
+
+		for (unsigned i = 0; i < 6; i++) {
+			if (reflection_atlas->tree.valid(plit.shadowmap[i])) {
+				plit.shadowmap[i] =
+					reflection_atlas->tree.refresh(plit.shadowmap[i]);
+			}
+		}
+	}
+
+	for (auto& [id, slit] : spot_lights) {
+		if (!slit.casts_shadows)
+			continue;
+
+		if (reflection_atlas->tree.valid(slit.shadowmap)) {
+			slit.shadowmap = reflection_atlas->tree.refresh(slit.shadowmap);
+		}
+	}
 }
 
 float grendx::light_extent(struct engine::point_light *p, float threshold) {
