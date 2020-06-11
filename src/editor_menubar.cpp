@@ -1,4 +1,8 @@
 #include <grend/game_editor.hpp>
+#include <grend/file_dialog.hpp>
+
+// TODO: debugging, remove
+#include <iostream>
 
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
 #include <imgui/imgui.h>
@@ -7,25 +11,23 @@
 
 using namespace grendx;
 
+static file_dialog open_dialog("Open File");
+static file_dialog save_as_dialog("Save As...");
+static file_dialog import_dialog("Import");
+
 void game_editor::menubar(void) {
 	static bool demo_window = false;
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("Open", "CTRL+O")) {}
+			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}
-			if (ImGui::MenuItem("Save As", "Shift+CTRL+S")) {}
+			if (ImGui::MenuItem("Save As", "Shift+CTRL+S")) { save_as_dialog.show(); }
+
 			if (ImGui::MenuItem("Close", "CTRL+O")) {}
 
 			ImGui::Separator();
-			if (ImGui::BeginMenu("Import")) {
-				if (ImGui::MenuItem("Import .obj model")) {}
-				if (ImGui::MenuItem("Import .gltf models")) {}
-				if (ImGui::MenuItem("Import .gltf scene")) {}
-				if (ImGui::MenuItem("Import .map scene")) {}
-				if (ImGui::MenuItem("Load .gltf scene as current")) {}
-				ImGui::EndMenu();
-			}
+			if (ImGui::MenuItem("Import")) { import_dialog.show(); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Reload shaders")) {}
@@ -100,5 +102,20 @@ void game_editor::menubar(void) {
 
 	if (demo_window) {
 		ImGui::ShowDemoWindow(&demo_window);
+	}
+
+	if (open_dialog.prompt_filename()) {
+		std::cout << "Opening a file here!" << std::endl;
+		open_dialog.clear();
+	}
+
+	if (save_as_dialog.prompt_filename()) {
+		std::cout << "Saving as a file!" << std::endl;
+		save_as_dialog.clear();
+	}
+
+	if (import_dialog.prompt_filename()) {
+		std::cout << "Importing a thing!" << std::endl;
+		import_dialog.clear();
 	}
 }
