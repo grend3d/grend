@@ -36,13 +36,8 @@ gl_manager::gl_manager() {
 	cooked_vertprops.clear();
 	cooked_elements.clear();
 
-	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_FRAMEBUFFER_SRGB);
-	/*
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	*/
-	glDepthFunc(GL_LESS);
+	cooked_vertprops_vbo = gen_vbo();
+	cooked_element_vbo = gen_vbo();
 }
 
 void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
@@ -66,87 +61,88 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 // TODO: move
 static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[4]) + sizeof(glm::vec2));
 
-void gl_manager::compile_models(model_map& models) {
-	for (const auto& x : models) {
-		const auto& [mod_name, mod] = x;
+void gl_manager::compile_model(std::string name, const model& mod) {
+	std::cerr << " >>> compiling " << name << std::endl;
 
-		std::cerr << " >>> compiling " << x.first << std::endl;
+	assert(mod.vertices.size() == mod.normals.size());
+	assert(mod.vertices.size() == mod.texcoords.size());
+	//assert(mod.vertices.size() == mod.tangents.size());
+	//assert(mod.vertices.size() == mod.bitangents.size());
 
-		assert(mod.vertices.size() == mod.normals.size());
-		assert(mod.vertices.size() == mod.texcoords.size());
-		//assert(mod.vertices.size() == mod.tangents.size());
-		//assert(mod.vertices.size() == mod.bitangents.size());
+	compiled_model obj;
+	obj.vertices_size = mod.vertices.size() * VERTPROP_SIZE;
 
+	size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
 
-		compiled_model obj;
-		obj.vertices_size = mod.vertices.size() * VERTPROP_SIZE;
+	auto offset_ptr = [] (uintptr_t off) {
+		return reinterpret_cast<void*>(off);
+	};
 
-		size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
+	obj.vertices_offset   = offset_ptr(offset);
+	obj.normals_offset    = offset_ptr(offset + sizeof(glm::vec3[1]));
+	obj.tangents_offset   = offset_ptr(offset + sizeof(glm::vec3[2]));
+	obj.bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
+	obj.texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
 
-		auto offset_ptr = [] (uintptr_t off) {
-			return reinterpret_cast<void*>(off);
+	for (unsigned i = 0; i < mod.vertices.size(); i++) {
+		// XXX: glm vectors don't have an iterator
+		auto push_vec = [&] (const auto& vec) {
+			for (unsigned k = 0; k < vec.length(); k++) {
+				cooked_vertprops.push_back(vec[k]);
+			}
 		};
 
-		obj.vertices_offset = offset_ptr(offset);
-		obj.normals_offset = offset_ptr(offset + sizeof(glm::vec3[1]));
-		obj.tangents_offset = offset_ptr(offset + sizeof(glm::vec3[2]));
-		obj.bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
-		obj.texcoords_offset = offset_ptr(offset + sizeof(glm::vec3[4]));
+		push_vec(mod.vertices[i]);
+		push_vec(mod.normals[i]);
+		push_vec(mod.tangents[i]);
+		push_vec(mod.bitangents[i]);
+		push_vec(mod.texcoords[i]);
+	}
 
-		for (unsigned i = 0; i < mod.vertices.size(); i++) {
-			// XXX: glm vectors don't have an iterator
-			auto push_vec = [&] (const auto& vec) {
-				for (unsigned k = 0; k < vec.length(); k++) {
-					cooked_vertprops.push_back(vec[k]);
-				}
-			};
+	compile_meshes(name, mod.meshes);
 
-			push_vec(mod.vertices[i]);
-			push_vec(mod.normals[i]);
-			push_vec(mod.tangents[i]);
-			push_vec(mod.bitangents[i]);
-			push_vec(mod.texcoords[i]);
+	// copy mesh names
+	for (const auto& m : mod.meshes) {
+		std::string asdf = name + "." + m.first;
+		std::cerr << " > have cooked mesh " << asdf << std::endl;
+		obj.meshes.push_back(asdf);
+	}
+
+	// copy materials
+	for (const auto& mat : mod.materials) {
+		//obj.materials[mat.first] = mat.second;
+		obj.materials[mat.first].copy_properties(mat.second);
+
+		// TODO: is there a less tedious way to do this?
+		//       like could load all of the textures into a map then iterate over
+		//       the map rather than do this for each map type...
+		if (mat.second.diffuse_map.loaded()) {
+			obj.mat_textures[mat.first] =
+				buffer_texture(mat.second.diffuse_map, true /* srgb */);
 		}
 
-		compile_meshes(x.first, x.second.meshes);
-
-		// copy mesh names
-		for (const auto& m : x.second.meshes) {
-			std::string asdf = x.first + "." + m.first;
-			std::cerr << " > have cooked mesh " << asdf << std::endl;
-			obj.meshes.push_back(asdf);
+		if (mat.second.metal_roughness_map.loaded()) {
+			obj.mat_specular[mat.first] =
+				buffer_texture(mat.second.metal_roughness_map);
 		}
 
-		// copy materials
-		for (const auto& mat : x.second.materials) {
-			//obj.materials[mat.first] = mat.second;
-			obj.materials[mat.first].copy_properties(mat.second);
-
-			// TODO: is there a less tedious way to do this?
-			//       like could load all of the textures into a map then iterate over
-			//       the map rather than do this for each map type...
-			if (mat.second.diffuse_map.loaded()) {
-				obj.mat_textures[mat.first] =
-					buffer_texture(mat.second.diffuse_map, true /* srgb */);
-			}
-
-			if (mat.second.metal_roughness_map.loaded()) {
-				obj.mat_specular[mat.first] =
-					buffer_texture(mat.second.metal_roughness_map);
-			}
-
-			if (mat.second.normal_map.loaded()) {
-				obj.mat_normal[mat.first] =
-					buffer_texture(mat.second.normal_map);
-			}
-
-			if (mat.second.ambient_occ_map.loaded()) {
-				obj.mat_ao[mat.first] =
-					buffer_texture(mat.second.ambient_occ_map);
-			}
+		if (mat.second.normal_map.loaded()) {
+			obj.mat_normal[mat.first] =
+				buffer_texture(mat.second.normal_map);
 		}
 
-		cooked_models[x.first] = obj;
+		if (mat.second.ambient_occ_map.loaded()) {
+			obj.mat_ao[mat.first] =
+				buffer_texture(mat.second.ambient_occ_map);
+		}
+	}
+
+	cooked_models[name] = obj;
+}
+
+void gl_manager::compile_models(model_map& models) {
+	for (const auto& x : models) {
+		compile_model(x.first, x.second);
 	}
 }
 
@@ -197,9 +193,6 @@ gl_manager::rhandle gl_manager::preload_model_vao(compiled_model& obj) {
 }
 
 void gl_manager::bind_cooked_meshes(void) {
-	cooked_vertprops_vbo = gen_vbo();
-	cooked_element_vbo = gen_vbo();
-
 	buffer_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER, cooked_vertprops);
 	buffer_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 

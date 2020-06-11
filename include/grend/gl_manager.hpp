@@ -63,6 +63,7 @@ class gl_manager {
 		typedef std::map<std::string, compiled_model> cooked_model_map;
 
 		void compile_meshes(std::string objname, const mesh_map& meshies);
+		void compile_model(std::string name, const model& mod);
 		void compile_models(model_map& models);
 		rhandle preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh);
 		rhandle preload_model_vao(compiled_model& mesh);

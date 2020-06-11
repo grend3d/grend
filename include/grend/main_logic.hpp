@@ -7,7 +7,6 @@
 #include <grend/geometry-gen.hpp>
 #include <grend/gl_manager.hpp>
 #include <grend/utility.hpp>
-#include <grend/octree.hpp>
 #include <grend/text.hpp>
 #include <grend/timers.hpp>
 #include <grend/physics.hpp>
@@ -236,10 +235,6 @@ class game_state : public engine {
 
 		// dynamic lights
 		int player_light;
-
-		// testing stuff
-		void draw_octree_leaves(octree::node *node, glm::vec3 location);
-		octree oct;
 
 		// text rendering
 		text_renderer text;

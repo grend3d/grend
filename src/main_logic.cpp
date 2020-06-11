@@ -23,6 +23,7 @@ void camera::set_direction(glm::vec3 dir) {
 	up    = glm::normalize(glm::cross(direction, right));
 }
 
+// TODO: probably won't be used, convenience here is pretty minimal
 model_map load_library(std::string dir) {
 	model_map ret;
 	struct dirent *dirent;
@@ -52,93 +53,66 @@ model_map load_library(std::string dir) {
 	return ret;
 }
 
-static model_map test_models = {
-	{"person",       model("assets/obj/low-poly-character-rpg/boy.obj")},
-	{"teapot",       model("assets/obj/teapot.obj")},
-	{"smoothteapot", model("assets/obj/smooth-teapot.obj")},
-	{"monkey",       model("assets/obj/suzanne.obj")},
-	{"smoothmonkey", model("assets/obj/smooth-suzanne.obj")},
-	{"sphere",       model("assets/obj/sphere.obj")},
-	{"smoothsphere", model("assets/obj/smoothsphere.obj")},
-	{"glasssphere",  model("assets/obj/smoothsphere.obj")},
-	{"steelsphere",  model("assets/obj/smoothsphere.obj")},
-	{"earthsphere",  model("assets/obj/smoothsphere.obj")},
-	{"dragon",       model("assets/obj/tests/dragon.obj")},
-	{"maptest",      model("assets/obj/tests/maptest.obj")},
-	{"sponza",       model("assets/obj/tests/Sponza-obj/sponza.obj")},
-	{"building",     model("assets/obj/tests/building_test/building_test.obj")},
+static std::pair<std::string, std::string> obj_models[] = {
+	{"person",       "assets/obj/low-poly-character-rpg/boy.obj"},
+	{"teapot",       "assets/obj/teapot.obj"},
+	{"smoothteapot", "assets/obj/smooth-teapot.obj"},
+	{"monkey",       "assets/obj/suzanne.obj"},
+	{"smoothmonkey", "assets/obj/smooth-suzanne.obj"},
+	{"sphere",       "assets/obj/sphere.obj"},
+	{"smoothsphere", "assets/obj/smoothsphere.obj"},
+	{"glasssphere",  "assets/obj/smoothsphere.obj"},
+	{"steelsphere",  "assets/obj/smoothsphere.obj"},
+	{"earthsphere",  "assets/obj/smoothsphere.obj"},
+	{"dragon",       "assets/obj/tests/dragon.obj"},
+	{"maptest",      "assets/obj/tests/maptest.obj"},
+	{"sponza",       "assets/obj/tests/Sponza-obj/sponza.obj"},
+	{"building",     "assets/obj/tests/building_test/building_test.obj"},
+	/*
 	{"unit_cube",        generate_cuboid(1, 1, 1)},
 	//{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
 	{"unit_cube_ground", generate_cuboid(1, 1, 1)},
+	*/
 	//{"grid",             generate_grid(-32, -32, 32, 32, 4)},
 };
 
-static std::list<std::string> test_libraries = {
-	/*
-	   "assets/obj/Modular Terrain Cliff/",
-	   "assets/obj/Modular Terrain Hilly/",
-	   "assets/obj/Modular Terrain Beach/",
-	   */
-	//"assets/obj/Dungeon Set 2/",
+static std::string gltf_models[] = {
+	"assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf",
+	"assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf",
+	"assets/obj/tests/Mossberg-smaller/shotgun.gltf",
+	"assets/obj/tests/donut4.gltf",
 };
 
+static model_map gen_internal_models(void) {
+	return {
+		{"unit_cube",        generate_cuboid(1, 1, 1)},
+	};
+}
+
 void game_state::load_models(void) {
-	model_map models = test_models;
-	std::list<std::string> libraries = test_libraries;
-
-	model_map gltf;
-	/*
-	std::cerr << "loading duck" << std::endl;
-	model_map gltf = load_gltf_models("assets/obj/Duck/glTF/Duck.gltf");
-	models.insert(gltf.begin(), gltf.end());
-	*/
-
-	std::cerr << "loading morphcube" << std::endl;
-	gltf = load_gltf_models("assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf");
-	models.insert(gltf.begin(), gltf.end());
-
-	std::cerr << "loading helmet" << std::endl;
-	gltf = load_gltf_models("assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf");
-	models.insert(gltf.begin(), gltf.end());
-
-	std::cerr << "loading test objects" << std::endl;
-	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
-	//auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/Sponza/Sponza.gltf");
-	static_models = scene;
-	models.insert(gmodels.begin(), gmodels.end());
-		/*
-	gltf = load_gltf_models("assets/obj/tests/test_objects.gltf");
-	models.insert(gltf.begin(), gltf.end());
-	*/
-
-	std::cerr << "loading donut" << std::endl;
-	gltf = load_gltf_models("assets/obj/tests/donut4.gltf");
-	models.insert(gltf.begin(), gltf.end());
-
-	for (std::string libname : libraries) {
-		// inserting each library into the models map so that way
-		// we can access them from the editor, but could also do another
-		// compile_models() call before bind_cooked_meshes to load the models.
-		auto library = load_library(libname);
-		models.insert(library.begin(), library.end());
+	for (auto& thing : obj_models) {
+		model m(thing.second);
+		glman.compile_model(thing.first, m);
 	}
 
-	models["teapot"].meshes["default:(null)"].material = "Steel";
-	//models["grid"].meshes["default"].material = "Gravel";
-	//models["monkey"].meshes["Monkey"].material = "Wood";
-	models["glasssphere"].meshes["Sphere:None"].material = "Glass";
-	models["steelsphere"].meshes["Sphere:None"].material = "Steel";
-	models["earthsphere"].meshes["Sphere:None"].material = "Earth";
+	for (auto& g : gltf_models) {
+		std::cerr << "loading morphcube" << std::endl;
+		model_map models = load_gltf_models(g);
+		glman.compile_models(models);
+	}
 
-	// TODO: octree for static models
+	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
+	static_models = scene;
+	glman.compile_models(gmodels);
+
 	for (auto& node : static_models.nodes) {
 		//static_octree.add_model(models[node.name], node.transform);
-		phys.add_static_model(node.name, models[node.name], node.transform);
+		phys.add_static_model(node.name, gmodels[node.name], node.transform);
 	}
 
-	std::cerr << " # generated octree with " << oct.count_nodes() << " nodes\n";
+	model_map intern_models = gen_internal_models();
+	glman.compile_models(intern_models);
 
-	glman.compile_models(models);
 	glman.bind_cooked_meshes();
 	editor.update_models(this);
 }
@@ -323,42 +297,6 @@ game_state::game_state(context& ctx) : engine(), text(this) {
 
 game_state::~game_state() {
 	puts("got here");
-}
-
-void game_state::draw_octree_leaves(octree::node *node, glm::vec3 location) {
-	if (node == nullptr) {
-		return;
-	}
-
-	else if (node->level == 0) {
-		//glm::mat4 trans = glm::translate(glm::scale(glm::vec3(0.1)), location);
-		double scale = oct.leaf_size * (1 << (node->level + 1));
-		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
-		//draw_model_lines("unit_cube", trans);
-		//draw_model("unit_cube", trans);
-		draw_model({ "unit_cube", trans });
-	}
-
-	else {
-		/*
-		double scale = oct.leaf_size * (1 << node->level + 1);
-		glm::mat4 trans = glm::scale(glm::translate(location*0.5f), glm::vec3(scale));
-		draw_model_lines("unit_cube", trans);
-		*/
-
-		for (unsigned i = 0; i < 8; i++) {
-			bool x = i&1;
-			bool y = i&2;
-			bool z = i&4;
-
-			glm::vec3 temp = location;
-			temp.x -= (x?1:-1) * oct.leaf_size * (1 << node->level);
-			temp.y -= (y?1:-1) * oct.leaf_size * (1 << node->level);
-			temp.z -= (z?1:-1) * oct.leaf_size * (1 << node->level);
-
-			draw_octree_leaves(node->subnodes[x][y][z], temp);
-		}
-	}
 }
 
 void game_state::render_skybox(context& ctx) {
