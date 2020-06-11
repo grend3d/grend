@@ -126,7 +126,6 @@ void game_state::load_shaders(void) {
 
 	glBindAttribLocation(skybox_shader.first, 0, "v_position");
 	glman.link_program(skybox_shader);
-	std::cerr << "loaded skybox shader" << std::endl;
 
 #if GLSL_VERSION < 300
 	main_shader = glman.load_program(
@@ -141,39 +140,24 @@ void game_state::load_shaders(void) {
 	);
 #endif
 
-	glBindAttribLocation(main_shader.first, 0, "in_Position");
-	glBindAttribLocation(main_shader.first, 1, "v_normal");
-	glBindAttribLocation(main_shader.first, 2, "v_tangent");
-	glBindAttribLocation(main_shader.first, 3, "v_bitangent");
-	glBindAttribLocation(main_shader.first, 4, "texcoord");
-	glman.link_program(main_shader);
-	std::cerr << "loaded main shader" << std::endl;
-
 	refprobe_shader = glman.load_program(
 		"shaders/out/ref_probe.vert",
 		"shaders/out/ref_probe.frag"
 	);
-
-	glBindAttribLocation(refprobe_shader.first, 0, "in_Position");
-	glBindAttribLocation(refprobe_shader.first, 1, "v_normal");
-	glBindAttribLocation(refprobe_shader.first, 2, "v_tangent");
-	glBindAttribLocation(refprobe_shader.first, 3, "v_bitangent");
-	glBindAttribLocation(refprobe_shader.first, 4, "texcoord");
-	glman.link_program(refprobe_shader);
-	std::cerr << "loaded refprobe shader" << std::endl;
 
 	refprobe_debug = glman.load_program(
 		"shaders/out/ref_probe_debug.vert",
 		"shaders/out/ref_probe_debug.frag"
 	);
 
-	glBindAttribLocation(refprobe_debug.first, 0, "in_Position");
-	glBindAttribLocation(refprobe_debug.first, 1, "v_normal");
-	glBindAttribLocation(refprobe_debug.first, 2, "v_tangent");
-	glBindAttribLocation(refprobe_debug.first, 3, "v_bitangent");
-	glBindAttribLocation(refprobe_debug.first, 4, "texcoord");
-	glman.link_program(refprobe_debug);
-	std::cerr << "loaded refprobe debug shader" << std::endl;
+	for (auto& s : {main_shader, refprobe_shader, refprobe_debug}) {
+		glBindAttribLocation(s.first, 0, "in_Position");
+		glBindAttribLocation(s.first, 1, "v_normal");
+		glBindAttribLocation(s.first, 2, "v_tangent");
+		glBindAttribLocation(s.first, 3, "v_bitangent");
+		glBindAttribLocation(s.first, 4, "texcoord");
+		glman.link_program(s);
+	}
 
 	shadow_shader = glman.load_program(
 		"shaders/out/depth.vert",
@@ -181,7 +165,6 @@ void game_state::load_shaders(void) {
 	);
 	glBindAttribLocation(shadow_shader.first, 0, "v_position");
 	glman.link_program(shadow_shader);
-	std::cerr << "loaded depth (shadow) shader" << std::endl;
 
 	gl_manager::rhandle orig_vao = glman.current_vao;
 	glman.bind_vao(glman.screenquad_vao);
@@ -196,9 +179,6 @@ void game_state::load_shaders(void) {
 	DO_ERROR_CHECK();
 	glman.link_program(post_shader);
 
-	std::cerr << "loaded postprocess shader" << std::endl;
-
-	//glUseProgram(shader.first);
 	glman.bind_vao(orig_vao);
 	set_shader(main_shader);
 }
