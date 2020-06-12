@@ -4,25 +4,42 @@
 #include <string>
 #include <vector>
 
+#include <string.h>
+
 namespace grendx {
 
 class file_dialog {
 	public:
-		file_dialog(std::string t = "Select File") : title(t) {};
+		enum ent_type {
+			Directory,
+			Model,
+			Map,
+			Image,
+			File,
+		};
+
+		struct f_dirent {
+			std::string name;
+			size_t size;
+			enum ent_type type;
+		};
+
+		file_dialog(std::string t = "Select File") : title(t) {
+			current_dir[0] = '\0';
+			chdir(".");
+		};
+
 		bool prompt_filename(void);
 		void show(void);
 		void clear(void);
+		void chdir(std::string dir);
+		void listdir(void);
+		void handle_doubleclicken(struct f_dirent& ent);
+		void select(struct f_dirent& ent);
 
 		bool selected = false;
 		std::string selection;
 		std::string title;
-
-		std::vector<std::string> current_dir_contents = {
-			"Foo",
-			"Bar",
-			"Bizz",
-			"Quix"
-		};
 
 	private:
 		bool active = false;
@@ -30,6 +47,7 @@ class file_dialog {
 
 		enum { FD_PATH_MAX = 256, };
 		char current_dir[FD_PATH_MAX];
+		std::vector<struct f_dirent> dir_contents;
 };
 
 // namespace grendx

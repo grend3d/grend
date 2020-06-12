@@ -105,17 +105,17 @@ void game_editor::menubar(void) {
 	}
 
 	if (open_dialog.prompt_filename()) {
-		std::cout << "Opening a file here!" << std::endl;
+		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 	}
 
 	if (save_as_dialog.prompt_filename()) {
-		std::cout << "Saving as a file!" << std::endl;
+		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 		save_as_dialog.clear();
 	}
 
 	if (import_dialog.prompt_filename()) {
-		std::cout << "Importing a thing!" << std::endl;
+		std::cout << "Importing a thing! at " << import_dialog.selection << std::endl;
 		import_dialog.clear();
 	}
 }
