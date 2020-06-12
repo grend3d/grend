@@ -102,6 +102,6 @@ vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
 			* vec3(light_color) * light_color.w;
 	fa_spec = f_thing(fa_spec, normal, light_dir, view);
 
-	return PI*max(0.0, dot(normal, light_dir)) * (fa_diff+ 0.5*fa_spec);
+	return PI*max(0.0, dot(normal, light_dir)) * (fa_diff+fa_spec);
 	//return fa_diff + 0.5*fa_spec;
 }
