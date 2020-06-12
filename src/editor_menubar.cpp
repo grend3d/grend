@@ -15,7 +15,7 @@ static file_dialog open_dialog("Open File");
 static file_dialog save_as_dialog("Save As...");
 static file_dialog import_dialog("Import");
 
-void game_editor::menubar(void) {
+void game_editor::menubar(engine *renderer) {
 	static bool demo_window = false;
 
 	if (ImGui::BeginMainMenuBar()) {
@@ -107,15 +107,28 @@ void game_editor::menubar(void) {
 	if (open_dialog.prompt_filename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
+
+		clear(renderer);
+		load_map(renderer, open_dialog.selection);
 	}
 
 	if (save_as_dialog.prompt_filename()) {
 		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 		save_as_dialog.clear();
+
+		save_map(renderer, save_as_dialog.selection);
 	}
 
 	if (import_dialog.prompt_filename()) {
 		std::cout << "Importing a thing! at " << import_dialog.selection << std::endl;
 		import_dialog.clear();
+
+		model m(import_dialog.selection);
+
+		// TODO: XXX: no point in returning const here if it's casted away anyway...
+		auto& glman = (gl_manager&)renderer->get_glman();
+		glman.compile_model(import_dialog.selection, m);
+		glman.bind_cooked_meshes();
+		update_models(renderer);
 	}
 }

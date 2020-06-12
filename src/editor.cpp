@@ -248,10 +248,25 @@ void game_editor::logic(context& ctx, float delta) {
 	cam.position += cam.velocity.x*cam.right*delta;
 }
 
+void game_editor::clear(engine *renderer) {
+	cam.position = {0, 0, 0};
+	dynamic_models.clear();
+
+	for (auto& vec : {edit_lights.point, edit_lights.spot, edit_lights.directional}) {
+		for (uint32_t id : vec) {
+			renderer->free_light(id);
+		}
+	}
+
+	edit_lights.point.clear();
+	edit_lights.spot.clear();
+	edit_lights.directional.clear();
+}
+
 // TODO: rename 'engine' to 'renderer' or something
 void game_editor::render_imgui(engine *renderer, context& ctx) {
 	if (mode != mode::Inactive) {
-		menubar();
+		menubar(renderer);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}

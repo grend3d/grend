@@ -51,6 +51,7 @@ class game_editor {
 		void save_map(engine *renderer, std::string name="save.map");
 		void load_map(engine *renderer, std::string name="save.map");
 		void logic(context& ctx, float delta);
+		void clear(engine *renderer);
 
 		int mode = mode::Inactive;
 		/*
@@ -86,7 +87,7 @@ class game_editor {
 		gl_manager::cooked_model_map::const_iterator edit_model;
 
 	private:
-		void menubar(void);
+		void menubar(engine *renderer);
 		void map_window(engine *renderer, imp_physics *phys, context& ctx);
 		void lights_window(engine *renderer, context& ctx);
 		void refprobes_window(engine *renderer, context& ctx);
