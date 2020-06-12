@@ -7,6 +7,24 @@
 
 using namespace grendx;
 
+void game_editor::load_model(engine *renderer, std::string path) {
+	std::string ext = filename_extension(path);
+	// TODO: XXX: no need for const
+	auto& glman = (gl_manager&)renderer->get_glman();
+
+	if (ext == ".obj") {
+		model m(path);
+		glman.compile_model(path, m);
+	}
+
+	else if (ext == ".gltf") {
+		model_map models = load_gltf_models(path);
+		glman.compile_models(models);
+	}
+
+	editor_model_files.push_back(path);
+}
+
 void game_editor::update_models(engine *renderer) {
 	const gl_manager& glman = renderer->get_glman();
 	edit_model = glman.cooked_models.begin();
@@ -251,6 +269,7 @@ void game_editor::logic(context& ctx, float delta) {
 void game_editor::clear(engine *renderer) {
 	cam.position = {0, 0, 0};
 	dynamic_models.clear();
+	editor_model_files.clear();
 
 	for (auto& vec : {edit_lights.point, edit_lights.spot, edit_lights.directional}) {
 		for (uint32_t id : vec) {
@@ -261,6 +280,8 @@ void game_editor::clear(engine *renderer) {
 	edit_lights.point.clear();
 	edit_lights.spot.clear();
 	edit_lights.directional.clear();
+
+	renderer->ref_probes.clear();
 }
 
 // TODO: rename 'engine' to 'renderer' or something

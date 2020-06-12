@@ -40,6 +40,7 @@ class game_editor {
 			//       this model, although that might be better off in the model class itself...
 		};
 
+		void load_model(engine *renderer, std::string path);
 		void update_models(engine *renderer);
 		void set_mode(enum mode newmode) { mode = newmode; };
 		void handle_editor_input(engine *renderer, context& ctx, SDL_Event& ev);
@@ -75,6 +76,8 @@ class game_editor {
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
+		// list of imported files
+		std::vector<std::string> editor_model_files;
 
 		// Keep track of lights added in the editor so that we can export
 		// them to the save file later (don't want other dynamic/effect lights

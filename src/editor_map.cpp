@@ -1,4 +1,5 @@
 #include <grend/game_editor.hpp>
+#include <grend/utility.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -38,17 +39,24 @@ static inline T parse_vec(std::string& str) {
 void game_editor::load_map(engine *renderer, std::string name) {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
+	bool imported_models = false;
 
 	if (!foo.good()) {
 		std::cerr << "couldn't open save file" << name << std::endl;
 		return;
 	}
 
+	// TODO: split this into smaller functions
 	std::string line;
 	while (std::getline(foo, line)) {
 		auto statement = split_string(line, '\t');
 		if (line[0] == '#' || line[0] == '\n') {
 			continue;
+		}
+
+		if (statement[0] == "objfile" && statement.size() == 2) {
+			load_model(renderer, statement[1]);
+			imported_models = true;
 		}
 
 		if (statement[0] == "entity" && statement.size() >= 5) {
@@ -142,6 +150,13 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			edit_lights.spot.push_back(nlit);
 		}
 	}
+
+	if (imported_models) {
+		// TODO: XXX: no need for const
+		auto& glman = (gl_manager&)renderer->get_glman();
+		glman.bind_cooked_meshes();
+		update_models(renderer);
+	}
 }
 
 template <typename T>
@@ -178,6 +193,10 @@ void game_editor::save_map(engine *renderer, std::string name) {
 	}
 
 	foo << "### test scene save file" << std::endl;
+
+	for (auto& path : editor_model_files) {
+		foo << "objfile\t" << path << std::endl;
+	}
 
 	for (auto& v : dynamic_models) {
 		foo << "entity\t" << v.name << "\t"

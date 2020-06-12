@@ -55,32 +55,7 @@ model_map load_library(std::string dir) {
 
 static std::pair<std::string, std::string> obj_models[] = {
 	{"person",       "assets/obj/low-poly-character-rpg/boy.obj"},
-	{"teapot",       "assets/obj/teapot.obj"},
-	{"smoothteapot", "assets/obj/smooth-teapot.obj"},
-	{"monkey",       "assets/obj/suzanne.obj"},
-	{"smoothmonkey", "assets/obj/smooth-suzanne.obj"},
-	{"sphere",       "assets/obj/sphere.obj"},
 	{"smoothsphere", "assets/obj/smoothsphere.obj"},
-	{"glasssphere",  "assets/obj/smoothsphere.obj"},
-	{"steelsphere",  "assets/obj/smoothsphere.obj"},
-	{"earthsphere",  "assets/obj/smoothsphere.obj"},
-	{"dragon",       "assets/obj/tests/dragon.obj"},
-	{"maptest",      "assets/obj/tests/maptest.obj"},
-	{"sponza",       "assets/obj/tests/Sponza-obj/sponza.obj"},
-	{"building",     "assets/obj/tests/building_test/building_test.obj"},
-	/*
-	{"unit_cube",        generate_cuboid(1, 1, 1)},
-	//{"unit_cube_wood",   generate_cuboid(1, 1, 1)},
-	{"unit_cube_ground", generate_cuboid(1, 1, 1)},
-	*/
-	//{"grid",             generate_grid(-32, -32, 32, 32, 4)},
-};
-
-static std::string gltf_models[] = {
-	"assets/obj/tests/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf",
-	"assets/obj/tests/DamagedHelmet/glTF/DamagedHelmet.gltf",
-	"assets/obj/tests/Mossberg-smaller/shotgun.gltf",
-	"assets/obj/tests/donut4.gltf",
 };
 
 static model_map gen_internal_models(void) {
@@ -95,11 +70,13 @@ void game_state::load_models(void) {
 		glman.compile_model(thing.first, m);
 	}
 
+	/*
 	for (auto& g : gltf_models) {
 		std::cerr << "loading morphcube" << std::endl;
 		model_map models = load_gltf_models(g);
 		glman.compile_models(models);
 	}
+	*/
 
 	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
 	static_models = scene;
@@ -750,8 +727,9 @@ void game_state::handle_player_input(SDL_Event& ev) {
 			});
 			*/
 
-			uint64_t id = phys.add_sphere("steelsphere", phys.objects[player_phys_id].position, 1);
-			phys.objects[id].velocity = player_direction*movement_speed;
+			uint64_t id = phys.add_sphere("smoothsphere",
+			                              phys.objects[player_phys_id].position, 1);
+			phys.objects[id].velocity = player_direction*100.f;
 			// TODO: initial velocity
 		}
 	}

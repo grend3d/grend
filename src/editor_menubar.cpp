@@ -123,11 +123,8 @@ void game_editor::menubar(engine *renderer) {
 		std::cout << "Importing a thing! at " << import_dialog.selection << std::endl;
 		import_dialog.clear();
 
-		model m(import_dialog.selection);
-
-		// TODO: XXX: no point in returning const here if it's casted away anyway...
 		auto& glman = (gl_manager&)renderer->get_glman();
-		glman.compile_model(import_dialog.selection, m);
+		load_model(renderer, import_dialog.selection);
 		glman.bind_cooked_meshes();
 		update_models(renderer);
 	}
