@@ -59,6 +59,11 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			imported_models = true;
 		}
 
+		if (statement[0] == "scene" && statement.size() == 2) {
+			load_model(renderer, statement[1]);
+			imported_models = true;
+		}
+
 		if (statement[0] == "entity" && statement.size() >= 5) {
 			// TODO: size check
 			auto matvec = strvec_to_float(split_string(statement[3], ','));
@@ -196,6 +201,10 @@ void game_editor::save_map(engine *renderer, std::string name) {
 
 	for (auto& path : editor_model_files) {
 		foo << "objfile\t" << path << std::endl;
+	}
+
+	for (auto& path : editor_scene_files) {
+		foo << "scene\t" << path << std::endl;
 	}
 
 	for (auto& v : dynamic_models) {

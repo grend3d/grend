@@ -41,6 +41,7 @@ class game_editor {
 		};
 
 		void load_model(engine *renderer, std::string path);
+		void load_scene(engine *renderer, std::string path);
 		void update_models(engine *renderer);
 		void set_mode(enum mode newmode) { mode = newmode; };
 		void handle_editor_input(engine *renderer, context& ctx, SDL_Event& ev);
@@ -78,6 +79,7 @@ class game_editor {
 		std::vector<editor_entry> dynamic_models;
 		// list of imported files
 		std::vector<std::string> editor_model_files;
+		std::vector<std::string> editor_scene_files;
 
 		// Keep track of lights added in the editor so that we can export
 		// them to the save file later (don't want other dynamic/effect lights
@@ -94,10 +96,12 @@ class game_editor {
 		void map_window(engine *renderer, imp_physics *phys, context& ctx);
 		void lights_window(engine *renderer, context& ctx);
 		void refprobes_window(engine *renderer, context& ctx);
+		void object_select_window(engine *renderer, context& ctx);
 
 		bool show_map_window = false;
 		bool show_lights_window = false;
 		bool show_refprobe_window = false;
+		bool show_object_select_window = false;
 };
 
 // namespace grendx

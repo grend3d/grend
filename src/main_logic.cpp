@@ -78,6 +78,7 @@ void game_state::load_models(void) {
 	}
 	*/
 
+	/*
 	auto [scene, gmodels] = load_gltf_scene("assets/obj/tests/test_objects.gltf");
 	static_models = scene;
 	glman.compile_models(gmodels);
@@ -86,6 +87,7 @@ void game_state::load_models(void) {
 		//static_octree.add_model(models[node.name], node.transform);
 		phys.add_static_model(node.name, gmodels[node.name], node.transform);
 	}
+	*/
 
 	model_map intern_models = gen_internal_models();
 	glman.compile_models(intern_models);

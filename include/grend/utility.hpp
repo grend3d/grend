@@ -17,7 +17,8 @@ static inline A max(A a, B b) {
 std::vector<std::string> split_string(std::string s, char delim=' ');
 
 static inline std::string filename_extension(std::string fname) {
-	return fname.substr(fname.rfind("."));
+	auto pos = fname.rfind(".");
+	return (pos == std::string::npos)? "" : fname.substr(pos);
 }
 
 // namespace grendx

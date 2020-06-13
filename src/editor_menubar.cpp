@@ -13,7 +13,56 @@ using namespace grendx;
 
 static file_dialog open_dialog("Open File");
 static file_dialog save_as_dialog("Save As...");
-static file_dialog import_dialog("Import");
+
+static file_dialog import_model_dialog("Import Model");
+static file_dialog import_scene_dialog("Import Scene");
+static file_dialog import_map_dialog("Import Map");
+
+static void handle_prompts(game_editor *editor, engine *renderer) {
+	if (open_dialog.prompt_filename()) {
+		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
+		open_dialog.clear();
+
+		editor->clear(renderer);
+		editor->load_map(renderer, open_dialog.selection);
+	}
+
+	if (save_as_dialog.prompt_filename()) {
+		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
+
+		editor->save_map(renderer, save_as_dialog.selection);
+		save_as_dialog.clear();
+	}
+
+	if (import_model_dialog.prompt_filename()) {
+		std::cout << "Importing a thing! at "
+		          << import_model_dialog.selection << std::endl;
+		import_model_dialog.clear();
+
+		// TODO: XXX: no need for const if it's just being casted away anyway...
+		auto& glman = (gl_manager&)renderer->get_glman();
+		editor->load_model(renderer, import_model_dialog.selection);
+		glman.bind_cooked_meshes();
+		editor->update_models(renderer);
+	}
+
+	if (import_scene_dialog.prompt_filename()) {
+		std::cout << "Importing a scene! at "
+		          << import_scene_dialog.selection << std::endl;
+		import_scene_dialog.clear();
+
+		auto& glman = (gl_manager&)renderer->get_glman();
+		editor->load_scene(renderer, import_scene_dialog.selection);
+		glman.bind_cooked_meshes();
+		editor->update_models(renderer);
+	}
+
+	if (import_map_dialog.prompt_filename()) {
+		std::cout << "Importing a map! at "
+		          << import_map_dialog.selection << std::endl;
+		import_scene_dialog.clear();
+	}
+}
 
 void game_editor::menubar(engine *renderer) {
 	static bool demo_window = false;
@@ -27,7 +76,13 @@ void game_editor::menubar(engine *renderer) {
 			if (ImGui::MenuItem("Close", "CTRL+O")) {}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Import")) { import_dialog.show(); }
+			//if (ImGui::MenuItem("Import")) { import_dialog.show(); }
+			if (ImGui::BeginMenu("Import")) {
+				if (ImGui::MenuItem("Model(s)")) { import_model_dialog.show(); }
+				if (ImGui::MenuItem("Scene")) { import_scene_dialog.show(); }
+				if (ImGui::MenuItem("Map")) { import_map_dialog.show(); }
+				ImGui::EndMenu();
+			}
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Reload shaders")) {}
@@ -64,12 +119,14 @@ void game_editor::menubar(engine *renderer) {
 		}
 
 		if (ImGui::BeginMenu("Tools")) {
-			if (ImGui::MenuItem("Objects editor", "o"))
+			if (ImGui::MenuItem("Map editor", "o"))
 				show_map_window = true;
 			if (ImGui::MenuItem("Lights editor", "l"))
 				show_lights_window = true;
 			if (ImGui::MenuItem("Reflection probes", "r"))
 				show_refprobe_window = true;
+			if (ImGui::MenuItem("Object selection"))
+				show_object_select_window = true;
 
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
@@ -104,28 +161,5 @@ void game_editor::menubar(engine *renderer) {
 		ImGui::ShowDemoWindow(&demo_window);
 	}
 
-	if (open_dialog.prompt_filename()) {
-		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
-		open_dialog.clear();
-
-		clear(renderer);
-		load_map(renderer, open_dialog.selection);
-	}
-
-	if (save_as_dialog.prompt_filename()) {
-		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
-		save_as_dialog.clear();
-
-		save_map(renderer, save_as_dialog.selection);
-	}
-
-	if (import_dialog.prompt_filename()) {
-		std::cout << "Importing a thing! at " << import_dialog.selection << std::endl;
-		import_dialog.clear();
-
-		auto& glman = (gl_manager&)renderer->get_glman();
-		load_model(renderer, import_dialog.selection);
-		glman.bind_cooked_meshes();
-		update_models(renderer);
-	}
+	handle_prompts(this, renderer);
 }

@@ -25,6 +25,28 @@ void game_editor::load_model(engine *renderer, std::string path) {
 	editor_model_files.push_back(path);
 }
 
+void game_editor::load_scene(engine *renderer, std::string path) {
+	std::string ext = filename_extension(path);
+	// TODO: XXX: no need for const
+	auto& glman = (gl_manager&)renderer->get_glman();
+
+	if (ext == ".gltf") {
+		auto [scene, models] = load_gltf_scene(path);
+
+		for (auto& node : scene.nodes) {
+			dynamic_models.push_back((struct editor_entry) {
+				.name = node.name,
+				.transform = node.transform,
+				.inverted = node.inverted,
+			});
+		}
+
+		glman.compile_models(models);
+	}
+
+	editor_scene_files.push_back(path);
+}
+
 void game_editor::update_models(engine *renderer) {
 	const gl_manager& glman = renderer->get_glman();
 	edit_model = glman.cooked_models.begin();
@@ -337,6 +359,10 @@ void game_editor::render_editor(engine *renderer,
 
 		if (show_refprobe_window) {
 			refprobes_window(renderer, ctx);
+		}
+
+		if (show_object_select_window) {
+			object_select_window(renderer, ctx);
 		}
 
 		if (mode == mode::AddObject) {
