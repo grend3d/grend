@@ -26,12 +26,13 @@ class game_editor {
 
 		struct editor_entry {
 			std::string name;
+			std::string classname = "<default>";
 			glm::vec3   position;
 			// TODO: make this a function
 			glm::mat4   transform = glm::mat4(1);
 			glm::vec3   scale = {1, 1, 1};
-			// TODO: full rotation
-			glm::quat   rotation = {0, 0, 0, 1};
+			// NOTE: glm quat contructor is (w, x, y, z)
+			glm::quat   rotation = {1, 0, 0, 0};
 
 			bool        inverted = false;
 			bool        cull_backfaces = true;

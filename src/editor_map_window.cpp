@@ -35,6 +35,15 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 		ImGui::Text(ent.name.c_str());
 
 		if (selected_object == i) {
+			char tempname[256];
+			strncpy(tempname, ent.classname.c_str(), 256);
+
+			ImGui::InputText("class name", tempname, 256);
+			ImGui::InputFloat3("position", glm::value_ptr(ent.position));
+			ImGui::InputFloat3("scale", glm::value_ptr(ent.scale));
+			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(ent.rotation));
+
+			ent.classname = std::string(tempname);
 			renderer->draw_model_lines({
 				.name = ent.name,
 				.transform = glm::translate(ent.position)
@@ -42,9 +51,6 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 					* glm::scale(glm::vec3(1.05)),
 			});
 
-			ImGui::InputFloat3("position", glm::value_ptr(ent.position));
-			ImGui::InputFloat3("scale", glm::value_ptr(ent.scale));
-			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(ent.rotation));
 		}
 		ImGui::NextColumn();
 	}

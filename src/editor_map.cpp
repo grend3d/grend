@@ -64,14 +64,15 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			imported_models = true;
 		}
 
-		if (statement[0] == "entity" && statement.size() >= 5) {
+		if (statement[0] == "entity" && statement.size() >= 6) {
 			// TODO: size check
-			auto matvec = strvec_to_float(split_string(statement[3], ','));
+			auto matvec = strvec_to_float(split_string(statement[4], ','));
 
 			editor_entry v;
 			v.name = statement[1];
-			v.position = parse_vec<glm::vec3>(statement[2]);
-			v.inverted = std::stoi(statement[4]);
+			v.classname = statement[2];
+			v.position = parse_vec<glm::vec3>(statement[3]);
+			v.inverted = std::stoi(statement[5]);
 
 			for (unsigned i = 0; i < 16; i++) {
 				v.transform[i/4][i%4] = matvec[i];
@@ -208,7 +209,7 @@ void game_editor::save_map(engine *renderer, std::string name) {
 	}
 
 	for (auto& v : dynamic_models) {
-		foo << "entity\t" << v.name << "\t"
+		foo << "entity\t" << v.name << "\t" << v.classname << "\t"
 			<< format_vec(v.position) << "\t";
 
 		foo << format_mat(v.transform) << "\t";

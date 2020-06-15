@@ -36,6 +36,7 @@ void game_editor::load_scene(engine *renderer, std::string path) {
 		for (auto& node : scene.nodes) {
 			dynamic_models.push_back((struct editor_entry) {
 				.name = node.name,
+				.classname = "static",
 				.transform = node.transform,
 				.inverted = node.inverted,
 			});
@@ -116,11 +117,13 @@ void game_editor::handle_editor_input(engine *renderer,
 				case SDLK_j:
 					// scale down
 					entbuf.transform *= glm::scale(glm::vec3(0.9));
+					entbuf.scale *= 0.9f;
 					break;
 
 				case SDLK_k:
 					// scale up
 					entbuf.transform *= glm::scale(glm::vec3(1/0.9));
+					entbuf.scale *= 1/0.9f;
 					break;
 
 				case SDLK_r:
@@ -318,9 +321,11 @@ void game_editor::render_imgui(engine *renderer, context& ctx) {
 
 void game_editor::render_map_models(engine *renderer, context& ctx) {
 	for (auto& v : dynamic_models) {
-		glm::mat4 trans = glm::translate(v.position) * v.transform;
+		glm::mat4 trans = glm::translate(v.position)
+			* glm::mat4_cast(v.rotation)
+			* glm::scale(v.scale)
+			* v.transform;
 
-		//glFrontFace(v.inverted? GL_CW : GL_CCW);
 		renderer->dqueue_draw_model({
 			.name = v.name,
 			.transform = trans,

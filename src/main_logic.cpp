@@ -837,6 +837,14 @@ void game_state::logic(context& ctx) {
 	                   current_cam->position + current_cam->direction,
 	                   current_cam->up);
 
+	for (auto& obj : editor.dynamic_models) {
+		float meh = cur_ticks / 1000.0f;
+
+		if (obj.classname == "<default>") {
+			obj.rotation = {sin(meh), 0, cos(meh), 0};
+		}
+	}
+
 	adjust_draw_resolution();
 }
 
