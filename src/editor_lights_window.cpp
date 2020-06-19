@@ -7,11 +7,11 @@
 
 using namespace grendx;
 
-void game_editor::lights_window(engine *renderer, context& ctx) {
+void game_editor::lights_window(renderer *rend, context& ctx) {
 	ImGui::Begin("Lights", &show_lights_window);
 	ImGui::Columns(2);
 
-	for (auto& [id, light] : renderer->point_lights) {
+	for (auto& [id, light] : rend->point_lights) {
 		std::string name = "Point light " + std::to_string(id);
 
 		ImGui::Separator();
@@ -29,7 +29,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::Checkbox("casts shadows", &light.casts_shadows);
 			ImGui::Checkbox("static shadows", &light.static_shadows);
 
-			renderer->draw_model_lines({
+			rend->draw_model_lines({
 				.name = "smoothsphere",
 				.transform = glm::translate(glm::vec3(light.position))
 					* glm::scale(glm::vec3(light_extent(&light, light_threshold))),
@@ -39,7 +39,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 		ImGui::NextColumn();
 	}
 
-	for (auto& [id, light] : renderer->spot_lights) {
+	for (auto& [id, light] : rend->spot_lights) {
 		std::string name = "Spot light " + std::to_string(id);
 
 		ImGui::Separator();
@@ -62,7 +62,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::Checkbox("static shadows", &light.static_shadows);
 
 			/*
-			renderer->draw_model_lines("smoothsphere",
+			rend->draw_model_lines("smoothsphere",
 				glm::translate(glm::vec3(light.position))
 				* glm::scale(glm::vec3(light_extent(&light, light_threshold))));
 				*/
@@ -71,7 +71,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 		ImGui::NextColumn();
 	}
 
-	for (auto& [id, light] : renderer->directional_lights) {
+	for (auto& [id, light] : rend->directional_lights) {
 		std::string name = "directional light " + std::to_string(id);
 
 		ImGui::Separator();
@@ -91,7 +91,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 			ImGui::Checkbox("casts shadows", &light.casts_shadows);
 			ImGui::Checkbox("static shadows", &light.static_shadows);
 
-			renderer->draw_model_lines({
+			rend->draw_model_lines({
 				.name = "smoothsphere",
 				.transform = glm::translate(glm::vec3(light.position))
 			});
@@ -120,7 +120,7 @@ void game_editor::lights_window(engine *renderer, context& ctx) {
 
 	ImGui::SameLine();
 	if (ImGui::Button("Delete Light")) {
-		renderer->free_light(selected_light);
+		rend->free_light(selected_light);
 	}
 
 	ImGui::End();

@@ -7,7 +7,7 @@
 
 using namespace grendx;
 
-void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) {
+void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 	ImGui::Begin("Objects", &show_map_window);
 	ImGui::Columns(2);
 
@@ -44,7 +44,7 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(ent.rotation));
 
 			ent.classname = std::string(tempname);
-			renderer->draw_model_lines({
+			rend->draw_model_lines({
 				.name = ent.name,
 				.transform = glm::translate(ent.position)
 					* ent.transform
@@ -69,7 +69,7 @@ void game_editor::map_window(engine *renderer, imp_physics *phys, context& ctx) 
 		ImGui::Text(obj.model_name.c_str());
 
 		if (selected_object == transid) {
-			renderer->draw_model_lines({
+			rend->draw_model_lines({
 				.name = obj.model_name,
 				.transform = glm::translate(obj.position)
 					* glm::scale(glm::vec3(1.05)),

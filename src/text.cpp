@@ -4,34 +4,34 @@
 
 using namespace grendx;
 
-text_renderer::text_renderer(engine *eng,
+text_renderer::text_renderer(renderer *eng,
                              const char *font, int size)
-	: gengine(eng)
+	: rend(eng)
 {
 	// XXX: TODO asdf remove
 	return;
-	assert(gengine != nullptr);
+	assert(rend != nullptr);
 
 	if ((ttf = TTF_OpenFont(font, size)) == nullptr) {
 		throw std::logic_error(std::string(__func__) + ": " + TTF_GetError());
 	}
 
-	text_vbo = gengine->glman.gen_vbo();
-	text_texture = gengine->glman.gen_texture();
+	text_vbo = rend->glman.gen_vbo();
+	text_texture = rend->glman.gen_texture();
 
-	gl_manager::rhandle orig_vao = gengine->glman.current_vao;
-	text_vao = gengine->glman.bind_vao(gengine->glman.gen_vao());
+	gl_manager::rhandle orig_vao = rend->glman.current_vao;
+	text_vao = rend->glman.bind_vao(rend->glman.gen_vao());
 
-	gengine->glman.bind_vbo(text_vbo, GL_ARRAY_BUFFER);
+	rend->glman.bind_vbo(text_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
-	gl_manager::rhandle vertex_shader = gengine->glman.load_shader("shaders/out/UI.vert", GL_VERTEX_SHADER);
-	gl_manager::rhandle fragment_shader = gengine->glman.load_shader("shaders/out/UI.frag", GL_FRAGMENT_SHADER);
-	text_shader = gengine->glman.gen_program();
+	gl_manager::rhandle vertex_shader = rend->glman.load_shader("shaders/out/UI.vert", GL_VERTEX_SHADER);
+	gl_manager::rhandle fragment_shader = rend->glman.load_shader("shaders/out/UI.frag", GL_FRAGMENT_SHADER);
+	text_shader = rend->glman.gen_program();
 
 	glAttachShader(text_shader.first, vertex_shader.first);
 	glAttachShader(text_shader.first, fragment_shader.first);
@@ -50,7 +50,7 @@ text_renderer::text_renderer(engine *eng,
 		SDL_Die("couldn't link shaders");
 	}
 
-	gengine->glman.bind_vao(orig_vao);
+	rend->glman.bind_vao(orig_vao);
 	DO_ERROR_CHECK();
 }
 
@@ -62,8 +62,8 @@ void text_renderer::render(glm::vec3 pos,
                            std::string str,
                            SDL_Color color)
 {
-	gengine->glman.bind_vao(text_vao);
-	gengine->set_shader(text_shader);
+	rend->glman.bind_vao(text_vao);
+	rend->set_shader(text_shader);
 
 	// TODO: make this a parameter
 	//SDL_Surface *surf = TTF_RenderUTF8_Solid(ttf, str.c_str(), {255, 255, 0, 255});
@@ -108,9 +108,9 @@ void text_renderer::render(glm::vec3 pos,
 	        rgba_surf->w, rgba_surf->h, rgba_surf->pitch, rgba_surf->format->BytesPerPixel);
 			*/
 
-	glUniform1i(glGetUniformLocation(gengine->shader.first, "UItex"), 0);
+	glUniform1i(glGetUniformLocation(rend->shader.first, "UItex"), 0);
 
-	gengine->glman.buffer_vbo(text_vbo, GL_ARRAY_BUFFER, quad, GL_DYNAMIC_DRAW);
+	rend->glman.buffer_vbo(text_vbo, GL_ARRAY_BUFFER, quad, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	SDL_FreeSurface(rgba_surf);

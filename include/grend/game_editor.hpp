@@ -41,28 +41,22 @@ class game_editor {
 			//       this model, although that might be better off in the model class itself...
 		};
 
-		void load_model(engine *renderer, std::string path);
-		void load_scene(engine *renderer, std::string path);
-		void update_models(engine *renderer);
+		void load_model(renderer *rend, std::string path);
+		void load_scene(renderer *rend, std::string path);
+		void update_models(renderer *rend);
 		void set_mode(enum mode newmode) { mode = newmode; };
-		void handle_editor_input(engine *renderer, context& ctx, SDL_Event& ev);
+		void handle_editor_input(renderer *rend, context& ctx, SDL_Event& ev);
 		// TODO: rename 'engine' to 'renderer' or something
-		void render_imgui(engine *renderer, context& ctx);
-		void render_editor(engine *renderer, imp_physics *phys, context& ctx);
-		void render_map_models(engine *renderer, context& ctx);
+		void render_imgui(renderer *rend, context& ctx);
+		void render_editor(renderer *rend, imp_physics *phys, context& ctx);
+		void render_map_models(renderer *rend, context& ctx);
 
-		void save_map(engine *renderer, std::string name="save.map");
-		void load_map(engine *renderer, std::string name="save.map");
+		void save_map(renderer *rend, std::string name="save.map");
+		void load_map(renderer *rend, std::string name="save.map");
 		void logic(context& ctx, float delta);
-		void clear(engine *renderer);
+		void clear(renderer *rend);
 
 		int mode = mode::Inactive;
-		/*
-		glm::vec3 edit_position = glm::vec3(0, 0, 0);
-		glm::mat4 edit_transform = glm::mat4(1);
-		// this keeps track of the current face order after flipping along an axis
-		bool      edit_inverted = false;
-		*/
 
 		float edit_distance = 5;
 		editor_entry entbuf;
@@ -93,11 +87,11 @@ class game_editor {
 		gl_manager::cooked_model_map::const_iterator edit_model;
 
 	private:
-		void menubar(engine *renderer);
-		void map_window(engine *renderer, imp_physics *phys, context& ctx);
-		void lights_window(engine *renderer, context& ctx);
-		void refprobes_window(engine *renderer, context& ctx);
-		void object_select_window(engine *renderer, context& ctx);
+		void menubar(renderer *rend);
+		void map_window(renderer *rend, imp_physics *phys, context& ctx);
+		void lights_window(renderer *rend, context& ctx);
+		void refprobes_window(renderer *rend, context& ctx);
+		void object_select_window(renderer *rend, context& ctx);
 
 		bool show_map_window = false;
 		bool show_lights_window = false;

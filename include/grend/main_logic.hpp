@@ -28,8 +28,9 @@
 
 namespace grendx {
 
-class game_state : public engine {
+class game_state {
 	friend class game_editor;
+	friend class renderer;
 
 	public:
 		game_state(context& ctx);
@@ -59,33 +60,23 @@ class game_state : public engine {
 
 		void draw_debug_string(std::string str);
 
-		glm::mat4 projection, view;
-
-		/*
-		// TODO: replace this with camera class
-		glm::vec3 view_position = glm::vec3(0, 0, 0);
-		glm::vec3 view_velocity;
-
-		glm::vec3 view_direction = glm::vec3(0, 0, -1);
-		glm::vec3 view_up = glm::vec3(0, 1, 0);
-		glm::vec3 view_right = glm::vec3(1, 0, 0);
-		*/
+		bool running;
+		renderer rend;
+		game_editor editor;
+		imp_physics phys;
+		text_renderer text;
+		// FPS info
+		sma_counter frame_timer;
 
 		camera player_cam;
 		camera *current_cam = &player_cam;
 
-		//glm::vec3 player_position = glm::vec3(0); // meters
-		//glm::vec3 player_velocity = glm::vec3(0); // m/s
+		glm::mat4 projection, view;
+
 		uint64_t player_phys_id;
 		glm::vec3 player_move_input = glm::vec3(0);
 		glm::vec3 player_direction = glm::vec3(1, 0, 0);
 		grendx::scene static_models;
-
-		game_editor editor;
-
-		// physics things
-		//std::vector<physics_object> phys_objs;
-		imp_physics phys;
 
 		// sky box
 		// TODO: should this be in the engine?
@@ -140,12 +131,6 @@ class game_state : public engine {
 
 		// dynamic lights
 		int player_light;
-
-		// text rendering
-		text_renderer text;
-
-		// FPS info
-		sma_counter frame_timer;
 
 	private:
 

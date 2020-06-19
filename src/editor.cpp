@@ -7,10 +7,10 @@
 
 using namespace grendx;
 
-void game_editor::load_model(engine *renderer, std::string path) {
+void game_editor::load_model(renderer *rend, std::string path) {
 	std::string ext = filename_extension(path);
 	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)renderer->get_glman();
+	auto& glman = (gl_manager&)rend->get_glman();
 
 	if (ext == ".obj") {
 		model m(path);
@@ -25,10 +25,10 @@ void game_editor::load_model(engine *renderer, std::string path) {
 	editor_model_files.push_back(path);
 }
 
-void game_editor::load_scene(engine *renderer, std::string path) {
+void game_editor::load_scene(renderer *rend, std::string path) {
 	std::string ext = filename_extension(path);
 	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)renderer->get_glman();
+	auto& glman = (gl_manager&)rend->get_glman();
 
 	if (ext == ".gltf") {
 		auto [scene, models] = load_gltf_scene(path);
@@ -48,16 +48,16 @@ void game_editor::load_scene(engine *renderer, std::string path) {
 	editor_scene_files.push_back(path);
 }
 
-void game_editor::update_models(engine *renderer) {
-	const gl_manager& glman = renderer->get_glman();
+void game_editor::update_models(renderer *rend) {
+	const gl_manager& glman = rend->get_glman();
 	edit_model = glman.cooked_models.begin();
 }
 
-void game_editor::handle_editor_input(engine *renderer,
+void game_editor::handle_editor_input(renderer *rend,
                                       context& ctx,
                                       SDL_Event& ev)
 {
-	const gl_manager& glman = renderer->get_glman();
+	const gl_manager& glman = rend->get_glman();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui_ImplSDL2_ProcessEvent(&ev);
 
@@ -73,8 +73,8 @@ void game_editor::handle_editor_input(engine *renderer,
 
 				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
 				case SDLK_m: mode = mode::Inactive; break;
-				case SDLK_i: load_map(renderer); break;
-				case SDLK_o: save_map(renderer); break;
+				case SDLK_i: load_map(rend); break;
+				case SDLK_o: save_map(rend); break;
 
 				case SDLK_g:
 					//edit_rotation -= M_PI/4;
@@ -221,7 +221,7 @@ void game_editor::handle_editor_input(engine *renderer,
 
 					case mode::AddPointLight:
 						selected_light =
-							renderer->add_light((struct engine::point_light) {
+							rend->add_light((struct point_light) {
 								.position = glm::vec4(entbuf.position, 1.0),
 								// TODO: set before placing
 								.diffuse = glm::vec4(1),
@@ -234,7 +234,7 @@ void game_editor::handle_editor_input(engine *renderer,
 
 					case mode::AddSpotLight:
 						selected_light =
-							renderer->add_light((struct engine::spot_light) {
+							rend->add_light((struct spot_light) {
 								.position = glm::vec4(entbuf.position, 1.0),
 								// TODO: set before placing
 								.diffuse = glm::vec4(1),
@@ -249,7 +249,7 @@ void game_editor::handle_editor_input(engine *renderer,
 
 					case mode::AddDirectionalLight:
 						selected_light =
-							renderer->add_light((struct engine::directional_light) {
+							rend->add_light((struct directional_light) {
 								.position = glm::vec4(entbuf.position, 1.0),
 								// TODO: set before placing
 								.diffuse = glm::vec4(1),
@@ -261,7 +261,7 @@ void game_editor::handle_editor_input(engine *renderer,
 						break;
 
 					case mode::AddReflectionProbe:
-						renderer->add_reflection_probe((struct engine::reflection_probe) {
+						rend->add_reflection_probe((struct reflection_probe) {
 							.position = entbuf.position,
 							.changed = true,
 						});
@@ -291,14 +291,14 @@ void game_editor::logic(context& ctx, float delta) {
 	cam.position += cam.velocity.x*cam.right*delta;
 }
 
-void game_editor::clear(engine *renderer) {
+void game_editor::clear(renderer *rend) {
 	cam.position = {0, 0, 0};
 	dynamic_models.clear();
 	editor_model_files.clear();
 
 	for (auto& vec : {edit_lights.point, edit_lights.spot, edit_lights.directional}) {
 		for (uint32_t id : vec) {
-			renderer->free_light(id);
+			rend->free_light(id);
 		}
 	}
 
@@ -306,27 +306,27 @@ void game_editor::clear(engine *renderer) {
 	edit_lights.spot.clear();
 	edit_lights.directional.clear();
 
-	renderer->ref_probes.clear();
+	rend->ref_probes.clear();
 }
 
-// TODO: rename 'engine' to 'renderer' or something
-void game_editor::render_imgui(engine *renderer, context& ctx) {
+// TODO: rename 'renderer' to 'rend' or something
+void game_editor::render_imgui(renderer *rend, context& ctx) {
 	if (mode != mode::Inactive) {
-		menubar(renderer);
+		menubar(rend);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 }
 
 
-void game_editor::render_map_models(engine *renderer, context& ctx) {
+void game_editor::render_map_models(renderer *rend, context& ctx) {
 	for (auto& v : dynamic_models) {
 		glm::mat4 trans = glm::translate(v.position)
 			* glm::mat4_cast(v.rotation)
 			* glm::scale(v.scale)
 			* v.transform;
 
-		renderer->dqueue_draw_model({
+		rend->dqueue_draw_model({
 			.name = v.name,
 			.transform = trans,
 			.face_order = v.inverted? GL_CW : GL_CCW,
@@ -337,7 +337,7 @@ void game_editor::render_map_models(engine *renderer, context& ctx) {
 	}
 }
 
-void game_editor::render_editor(engine *renderer,
+void game_editor::render_editor(renderer *rend,
                                 imp_physics *phys,
                                 context& ctx)
 {
@@ -347,43 +347,43 @@ void game_editor::render_editor(engine *renderer,
 		ImGui::NewFrame();
 
 		if (show_map_window) {
-			map_window(renderer, phys, ctx);
+			map_window(rend, phys, ctx);
 		}
 
 		if (show_lights_window) {
-			for (const auto& [id, plit] : renderer->point_lights) {
-				renderer->dqueue_draw_model({
+			for (const auto& [id, plit] : rend->point_lights) {
+				rend->dqueue_draw_model({
 					.name = "smoothsphere",
 					.transform = glm::translate(glm::vec3(plit.position))
 						* glm::scale(glm::vec3(plit.radius)),
 				});
 			}
 
-			lights_window(renderer, ctx);
+			lights_window(rend, ctx);
 		}
 
 		if (show_refprobe_window) {
-			refprobes_window(renderer, ctx);
+			refprobes_window(rend, ctx);
 		}
 
 		if (show_object_select_window) {
-			object_select_window(renderer, ctx);
+			object_select_window(rend, ctx);
 		}
 
 		if (mode == mode::AddObject) {
-			struct engine::draw_attributes attrs = {
+			struct renderer::draw_attributes attrs = {
 				.name = edit_model->first,
 				.transform = glm::translate(entbuf.position) * entbuf.transform,
 			};
 
 			glFrontFace(entbuf.inverted? GL_CW : GL_CCW);
-			renderer->draw_model_lines(&attrs);
-			renderer->draw_model(&attrs);
+			rend->draw_model_lines(&attrs);
+			rend->draw_model(&attrs);
 			DO_ERROR_CHECK();
 		}
 
 		if (mode == mode::AddPointLight) {
-			renderer->dqueue_draw_model({
+			rend->dqueue_draw_model({
 				.name = "smoothsphere",
 				.transform = 
 					glm::translate(entbuf.position)
@@ -393,7 +393,7 @@ void game_editor::render_editor(engine *renderer,
 
 		// TODO: cone here
 		} else if (mode == mode::AddSpotLight) {
-			renderer->dqueue_draw_model({
+			rend->dqueue_draw_model({
 				.name = "smoothsphere",
 				.transform = glm::translate(entbuf.position)
 					// TODO: keep scale state
@@ -401,7 +401,7 @@ void game_editor::render_editor(engine *renderer,
 			});
 
 		} else if (mode == mode::AddDirectionalLight) {
-			renderer->dqueue_draw_model({
+			rend->dqueue_draw_model({
 				.name = "smoothsphere",
 				.transform = glm::translate(entbuf.position)
 					// TODO: keep scale state
@@ -409,7 +409,7 @@ void game_editor::render_editor(engine *renderer,
 			});
 
 		} else if (mode == mode::AddReflectionProbe) {
-			renderer->dqueue_draw_model({
+			rend->dqueue_draw_model({
 				.name = "smoothsphere",
 				.transform = glm::translate(entbuf.position),
 			});

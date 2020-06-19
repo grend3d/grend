@@ -67,7 +67,7 @@ static model_map gen_internal_models(void) {
 void game_state::load_models(void) {
 	for (auto& thing : obj_models) {
 		model m(thing.second);
-		glman.compile_model(thing.first, m);
+		rend.glman.compile_model(thing.first, m);
 	}
 
 	/*
@@ -90,41 +90,41 @@ void game_state::load_models(void) {
 	*/
 
 	model_map intern_models = gen_internal_models();
-	glman.compile_models(intern_models);
+	rend.glman.compile_models(intern_models);
 
-	glman.bind_cooked_meshes();
-	editor.update_models(this);
+	rend.glman.bind_cooked_meshes();
+	editor.update_models(&rend);
 }
 
 void game_state::load_shaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-	skybox_shader = glman.load_program(
+	skybox_shader = rend.glman.load_program(
 		"shaders/out/skybox.vert",
 		"shaders/out/skybox.frag"
 	);
 
 	glBindAttribLocation(skybox_shader.first, 0, "v_position");
-	glman.link_program(skybox_shader);
+	rend.glman.link_program(skybox_shader);
 
 #if GLSL_VERSION < 300
-	main_shader = glman.load_program(
+	main_shader = rend.glman.load_program(
 		"shaders/out/vertex-shading.vert",
 		"shaders/out/vertex-shading.frag"
 	);
 #else
-	main_shader = glman.load_program(
+	main_shader = rend.glman.load_program(
 		"shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"
 		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 #endif
 
-	refprobe_shader = glman.load_program(
+	refprobe_shader = rend.glman.load_program(
 		"shaders/out/ref_probe.vert",
 		"shaders/out/ref_probe.frag"
 	);
 
-	refprobe_debug = glman.load_program(
+	refprobe_debug = rend.glman.load_program(
 		"shaders/out/ref_probe_debug.vert",
 		"shaders/out/ref_probe_debug.frag"
 	);
@@ -135,20 +135,20 @@ void game_state::load_shaders(void) {
 		glBindAttribLocation(s.first, 2, "v_tangent");
 		glBindAttribLocation(s.first, 3, "v_bitangent");
 		glBindAttribLocation(s.first, 4, "texcoord");
-		glman.link_program(s);
+		rend.glman.link_program(s);
 	}
 
-	shadow_shader = glman.load_program(
+	shadow_shader = rend.glman.load_program(
 		"shaders/out/depth.vert",
 		"shaders/out/depth.frag"
 	);
 	glBindAttribLocation(shadow_shader.first, 0, "v_position");
-	glman.link_program(shadow_shader);
+	rend.glman.link_program(shadow_shader);
 
-	gl_manager::rhandle orig_vao = glman.current_vao;
-	glman.bind_vao(glman.screenquad_vao);
+	gl_manager::rhandle orig_vao = rend.glman.current_vao;
+	rend.glman.bind_vao(rend.glman.screenquad_vao);
 
-	post_shader = glman.load_program(
+	post_shader = rend.glman.load_program(
 		"shaders/out/postprocess.vert",
 		"shaders/out/postprocess.frag"
 	);
@@ -156,33 +156,33 @@ void game_state::load_shaders(void) {
 	glBindAttribLocation(post_shader.first, 0, "v_position");
 	glBindAttribLocation(post_shader.first, 1, "v_texcoord");
 	DO_ERROR_CHECK();
-	glman.link_program(post_shader);
+	rend.glman.link_program(post_shader);
 
-	glman.bind_vao(orig_vao);
-	set_shader(main_shader);
+	rend.glman.bind_vao(orig_vao);
+	rend.set_shader(main_shader);
 }
 
 void game_state::init_framebuffers(void) {
 	// set up the render framebuffer
-	rend_fb = glman.gen_framebuffer();
+	rend_fb = rend.glman.gen_framebuffer();
 	rend_x = screen_x, rend_y = screen_y;
 
-	glman.bind_framebuffer(rend_fb);
-	rend_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                 glman.gen_texture_color(rend_x, rend_y, GL_RGBA16F));
-	rend_depth = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
-	                 glman.gen_texture_depth_stencil(rend_x, rend_y));
+	rend.glman.bind_framebuffer(rend_fb);
+	rend_tex = rend.glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
+	                 rend.glman.gen_texture_color(rend_x, rend_y, GL_RGBA16F));
+	rend_depth = rend.glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
+	                 rend.glman.gen_texture_depth_stencil(rend_x, rend_y));
 
 	// and framebuffer holding the previously drawn frame
-	last_frame_fb = glman.gen_framebuffer();
-	glman.bind_framebuffer(last_frame_fb);
-	last_frame_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                       glman.gen_texture_color(rend_x, rend_y));
+	last_frame_fb = rend.glman.gen_framebuffer();
+	rend.glman.bind_framebuffer(last_frame_fb);
+	last_frame_tex = rend.glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
+	                       rend.glman.gen_texture_color(rend_x, rend_y));
 }
 
 void game_state::init_test_lights(void) {
 	// TODO: assert() + logger
-	player_light = add_light((struct engine::point_light){
+	player_light = rend.add_light((struct point_light){
 		.position = {0, 7, -8},
 		.diffuse  = {1.0, 0.8, 0.5, 1.0},
 		.radius = 0.2,
@@ -204,7 +204,7 @@ void game_state::init_imgui(context& ctx) {
 }
 
 // TODO: should start thinking about splitting initialization into smaller functions
-game_state::game_state(context& ctx) : engine(), text(this) {
+game_state::game_state(context& ctx) : text(&rend) {
 //game_state::game_state(context& ctx) : engine() {
 	std::cerr << "got to game_state::game_state()" << std::endl;
 
@@ -227,10 +227,8 @@ game_state::game_state(context& ctx) : engine(), text(this) {
 #endif
 
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
-	skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	skybox = rend.glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
 	std::cerr << "loaded cubemap" << std::endl;
-	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget-tiny/", ".png");
-	//skybox = glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Tantolunden6/");
 
 	load_models();
 	std::cerr << "loaded models" << std::endl;
@@ -246,11 +244,10 @@ game_state::game_state(context& ctx) : engine(), text(this) {
 	// TODO: fit the player
 	player_phys_id = phys.add_sphere("person", {0, 3, 0}, 1);
 
-	glman.enable(GL_DEPTH_TEST);
-	//glman.enable(GL_FRAMEBUFFER_SRGB);
+	rend.glman.enable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	glman.bind_default_framebuffer();
+	rend.glman.bind_default_framebuffer();
 	DO_ERROR_CHECK();
 }
 
@@ -259,30 +256,30 @@ game_state::~game_state() {
 }
 
 void game_state::render_skybox(context& ctx) {
-	set_shader(skybox_shader);
+	rend.set_shader(skybox_shader);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LEQUAL);
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
-	glman.disable(GL_CULL_FACE);
+	rend.glman.disable(GL_CULL_FACE);
 #endif
 
-	auto shader_obj = glman.get_shader_obj(shader);
+	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
 	shader_obj.set("skytexture", 4);
 	DO_ERROR_CHECK();
 
-	set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
+	rend.set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
 	//draw_model("unit_cube", glm::mat4(1));
 	//draw_mesh("unit_cube.default", glm::mat4(0));
-	struct draw_attributes attrs = {
+	struct renderer::draw_attributes attrs = {
 		.name = "unit_cube",
 		.transform = glm::mat4(0),
 	};
-	draw_mesh("unit_cube.default", &attrs);
+	rend.draw_mesh("unit_cube.default", &attrs);
 	glDepthMask(GL_TRUE);
 }
 
@@ -311,15 +308,15 @@ static const glm::vec3 cube_up[] = {
 };
 
 void game_state::render_light_maps(context& ctx) {
-	set_shader(refprobe_shader);
-	update_lights();
+	rend.set_shader(refprobe_shader);
+	rend.update_lights();
 
-	glman.enable(GL_SCISSOR_TEST);
-	glman.enable(GL_DEPTH_TEST);
+	rend.glman.enable(GL_SCISSOR_TEST);
+	rend.glman.enable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
-	auto shader_obj = glman.get_shader_obj(shader);
+	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 	shader_obj.set("skytexture", 4);
 	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 
@@ -330,12 +327,12 @@ void game_state::render_light_maps(context& ctx) {
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 100.f);
 
-	for (auto& [id, probe] : ref_probes) {
+	for (auto& [id, probe] : rend.ref_probes) {
 		if (probe.is_static && probe.have_map)
 			continue;
 
 		for (unsigned i = 0; i < 6; i++) {
-			if (!reflection_atlas->bind_atlas_fb(probe.faces[i])) {
+			if (!rend.reflection_atlas->bind_atlas_fb(probe.faces[i])) {
 				std::cerr
 					<< "render_light_maps(): couldn't bind reflection FB"
 					<< std::endl;
@@ -345,7 +342,7 @@ void game_state::render_light_maps(context& ctx) {
 			view = glm::lookAt(probe.position,
 					probe.position + cube_dirs[i],
 					cube_up[i]);
-			set_mvp(glm::mat4(1), view, projection);
+			rend.set_mvp(glm::mat4(1), view, projection);
 
 			/*
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -362,25 +359,25 @@ void game_state::render_light_maps(context& ctx) {
 			render_static(ctx);
 			render_players(ctx);
 			render_dynamic(ctx);
-			editor.render_map_models(this, ctx);
-			dqueue_sort_draws(probe.position);
-			dqueue_flush_draws();
+			editor.render_map_models(&rend, ctx);
+			rend.dqueue_sort_draws(probe.position);
+			rend.dqueue_flush_draws();
 			DO_ERROR_CHECK();
 
 			probe.have_map = true;
 		}
 	}
 
-	set_shader(shadow_shader);
-	shader_obj = glman.get_shader_obj(shader);
+	rend.set_shader(shadow_shader);
+	shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	// TODO: MRTs for cube maps, only update maps in-frustum
-	for (auto& [id, plit] : point_lights) {
+	for (auto& [id, plit] : rend.point_lights) {
 		if (!plit.casts_shadows || (plit.static_shadows && plit.shadows_rendered))
 			continue;
 
 		for (unsigned i = 0; i < 6; i++) {
-			if (!shadow_atlas->bind_atlas_fb(plit.shadowmap[i])) {
+			if (!rend.shadow_atlas->bind_atlas_fb(plit.shadowmap[i])) {
 				std::cerr
 					<< "render_light_maps(): couldn't bind shadowmap FB"
 					<< std::endl;
@@ -390,26 +387,26 @@ void game_state::render_light_maps(context& ctx) {
 			view = glm::lookAt(plit.position,
 					plit.position + cube_dirs[i],
 					cube_up[i]);
-			set_mvp(glm::mat4(1), view, projection);
+			rend.set_mvp(glm::mat4(1), view, projection);
 			glClear(GL_DEPTH_BUFFER_BIT);
 
 			render_static(ctx);
 			render_players(ctx);
 			render_dynamic(ctx);
-			editor.render_map_models(this, ctx);
-			dqueue_sort_draws(plit.position);
-			dqueue_flush_draws();
+			editor.render_map_models(&rend, ctx);
+			rend.dqueue_sort_draws(plit.position);
+			rend.dqueue_flush_draws();
 			DO_ERROR_CHECK();
 		}
 
 		plit.shadows_rendered = true;
 	}
 
-	for (auto& [id, slit] : spot_lights) {
+	for (auto& [id, slit] : rend.spot_lights) {
 		if (!slit.casts_shadows || (slit.static_shadows && slit.shadows_rendered))
 			continue;
 
-		if (!shadow_atlas->bind_atlas_fb(slit.shadowmap)) {
+		if (!rend.shadow_atlas->bind_atlas_fb(slit.shadowmap)) {
 			std::cerr
 				<< "render_light_maps(): couldn't bind shadowmap FB"
 				<< std::endl;
@@ -428,13 +425,13 @@ void game_state::render_light_maps(context& ctx) {
 		// TODO: adjust perspective to spot light angle
 		// float angle = acos(slit.angle);
 		projection = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
-		set_mvp(glm::mat4(1), view, projection);
+		rend.set_mvp(glm::mat4(1), view, projection);
 
 		render_static(ctx);
 		render_players(ctx);
 		render_dynamic(ctx);
-		dqueue_sort_draws(slit.position);
-		dqueue_flush_draws();
+		rend.dqueue_sort_draws(slit.position);
+		rend.dqueue_flush_draws();
 		DO_ERROR_CHECK();
 
 		slit.shadows_rendered = true;
@@ -442,35 +439,35 @@ void game_state::render_light_maps(context& ctx) {
 }
 
 void game_state::render_light_info(context& ctx) {
-	set_shader(refprobe_debug);
-	auto shader_obj = glman.get_shader_obj(shader);
+	rend.set_shader(refprobe_debug);
+	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, reflection_atlas->color_tex.first);
+	glBindTexture(GL_TEXTURE_2D, rend.reflection_atlas->color_tex.first);
 	shader_obj.set("reflection_atlas", 0);
-	set_mvp(glm::mat4(1), view, projection);
+	rend.set_mvp(glm::mat4(1), view, projection);
 
-	for (auto& [id, probe] : ref_probes) {
+	for (auto& [id, probe] : rend.ref_probes) {
 		for (unsigned i = 0; i < 6; i++) {
-			glm::vec3 facevec = reflection_atlas->tex_vector(probe.faces[i]);
+			glm::vec3 facevec = rend.reflection_atlas->tex_vector(probe.faces[i]);
 			std::string locstr = "cubeface[" + std::to_string(i) + "]";
 
 			shader_obj.set(locstr, facevec);
 			DO_ERROR_CHECK();
 		}
 
-		struct engine::draw_attributes foo = {
+		struct renderer::draw_attributes foo = {
 			.name = "smoothsphere",
 			.transform = glm::translate(probe.position),
 		};
-		draw_mesh("smoothsphere.Sphere:None", &foo);
+		rend.draw_mesh("smoothsphere.Sphere:None", &foo);
 	}
 }
 
 void game_state::render_static(context& ctx) {
 	for (auto& thing : static_models.nodes) {
 		//draw_model(thing.name, thing.transform);
-		dqueue_draw_model({
+		rend.dqueue_draw_model({
 			.name = thing.name,
 			.transform = thing.transform,
 			.face_order = thing.inverted? GL_CW : GL_CCW,
@@ -494,7 +491,7 @@ void game_state::render_players(context& ctx) {
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
 		;
 
-	dqueue_draw_model({ "person", bizz });
+	rend.dqueue_draw_model({ "person", bizz });
 }
 
 void game_state::render_dynamic(context& ctx) {
@@ -506,23 +503,23 @@ void game_state::render_dynamic(context& ctx) {
 			glm::mat4 transform =
 				glm::translate(obj.position) * glm::mat4_cast(obj.rotation);
 
-			dqueue_draw_model({ obj.model_name, transform });
+			rend.dqueue_draw_model({ obj.model_name, transform });
 		}
 	}
 }
 
 void game_state::render_postprocess(context& ctx) {
-	glman.bind_default_framebuffer();
-	glman.bind_vao(glman.screenquad_vao);
+	rend.glman.bind_default_framebuffer();
+	rend.glman.bind_vao(rend.glman.screenquad_vao);
 	glViewport(0, 0, screen_x, screen_y);
-	set_shader(post_shader);
+	rend.set_shader(post_shader);
 	// TODO: should the shader_obj be automatically set the same way 'shader' is...
-	auto shader_obj = glman.get_shader_obj(shader);
+	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	glClearColor(0, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
-	glman.disable(GL_DEPTH_TEST);
+	rend.glman.disable(GL_DEPTH_TEST);
 	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
@@ -544,7 +541,7 @@ void game_state::render_postprocess(context& ctx) {
 	shader_obj.set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
-	draw_screenquad();
+	rend.draw_screenquad();
 
 	/*
 	// TODO: this ends up taking 100% CPU while running...
@@ -578,20 +575,20 @@ void game_state::render(context& ctx) {
 	render_light_maps(ctx);
 
 #ifdef NO_POSTPROCESSING
-	glman.bind_default_framebuffer();
+	rend.glman.bind_default_framebuffer();
 	glViewport(0, 0, screen_x, screen_y);
 
 #else
-	glman.bind_framebuffer(rend_fb);
+	rend.glman.bind_framebuffer(rend_fb);
 	GLsizei width = round(rend_x*dsr_scale_x);
 	GLsizei height = round(rend_y*dsr_scale_y);
 	glViewport(0, 0, width, height);
 	glScissor(0, 0, width, height);
 
-	glman.enable(GL_SCISSOR_TEST);
+	rend.glman.enable(GL_SCISSOR_TEST);
 #endif
 
-	glman.enable(GL_DEPTH_TEST);
+	rend.glman.enable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
@@ -608,13 +605,13 @@ void game_state::render(context& ctx) {
 
 	render_light_info(ctx);
 
-	set_shader(main_shader);
-	update_lights();
-	auto shader_obj = glman.get_shader_obj(shader);
+	rend.set_shader(main_shader);
+	rend.update_lights();
+	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
-	glman.enable(GL_CULL_FACE);
+	rend.glman.enable(GL_CULL_FACE);
 	// make sure we always start with counter-clockwise faces
 	// (also should be toggled per-model)
 	glFrontFace(GL_CCW);
@@ -622,32 +619,32 @@ void game_state::render(context& ctx) {
 	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, reflection_atlas->color_tex.first);
+	glBindTexture(GL_TEXTURE_2D, rend.reflection_atlas->color_tex.first);
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, shadow_atlas->depth_tex.first);
+	glBindTexture(GL_TEXTURE_2D, rend.shadow_atlas->depth_tex.first);
 
 	shader_obj.set("reflection_atlas", 6);
 	shader_obj.set("shadowmap_atlas", 7);
 	shader_obj.set("skytexture", 4);
 	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
 
-	set_mvp(glm::mat4(1), view, projection);
+	rend.set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);
 	render_players(ctx);
 	render_dynamic(ctx);
-	editor.render_map_models(this, ctx);
-	editor.render_editor(this, &phys, ctx);
+	editor.render_map_models(&rend, ctx);
+	editor.render_editor(&rend, &phys, ctx);
 
 	assert(current_cam != nullptr);
-	dqueue_sort_draws(current_cam->position);
-	dqueue_flush_draws();
+	rend.dqueue_sort_draws(current_cam->position);
+	rend.dqueue_flush_draws();
 
 	render_skybox(ctx);
 
 #ifndef NO_POSTPROCESSING
-	glman.disable(GL_SCISSOR_TEST);
+	rend.glman.disable(GL_SCISSOR_TEST);
 	render_postprocess(ctx);
-	glman.bind_default_framebuffer();
+	rend.glman.bind_default_framebuffer();
 #endif
 
 	/*
@@ -659,13 +656,13 @@ void game_state::render(context& ctx) {
 	//text.render({-0.9, 0.9, 0}, "grend test v0");
 
 	if (editor.mode != game_editor::mode::Inactive) {
-		editor.render_imgui(this, ctx);
+		editor.render_imgui(&rend, ctx);
 	}
 }
 
 void game_state::draw_debug_string(std::string str) {
 	return;
-	glman.disable(GL_DEPTH_TEST);
+	rend.glman.disable(GL_DEPTH_TEST);
 	//text.render({-0.9, -0.9, 0}, str);
 	DO_ERROR_CHECK();
 }
@@ -767,7 +764,7 @@ void game_state::input(context& ctx) {
 		}
 
 		if (editor.mode != game_editor::mode::Inactive) {
-			editor.handle_editor_input(this, ctx, ev);
+			editor.handle_editor_input(&rend, ctx, ev);
 		} else {
 			handle_player_input(ev);
 		}
@@ -827,10 +824,10 @@ void game_state::logic(context& ctx) {
 	glm::vec3 player_position = phys.objects[player_phys_id].position;
 	player_cam.position = player_position - player_cam.direction*5.f;
 
-	auto lit = get_point_light(player_light);
+	auto lit = rend.get_point_light(player_light);
 	lit.position = player_position + glm::vec3(0, 2, 0);
 	//lit.intensity = ((cur_ticks / 2000) & 1)? 100 : 0;
-	set_point_light(player_light, &lit);
+	rend.set_point_light(player_light, &lit);
 
 	assert(current_cam != nullptr);
 	view = glm::lookAt(current_cam->position,

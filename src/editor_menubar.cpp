@@ -18,19 +18,19 @@ static file_dialog import_model_dialog("Import Model");
 static file_dialog import_scene_dialog("Import Scene");
 static file_dialog import_map_dialog("Import Map");
 
-static void handle_prompts(game_editor *editor, engine *renderer) {
+static void handle_prompts(game_editor *editor, renderer *rend) {
 	if (open_dialog.prompt_filename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
-		editor->clear(renderer);
-		editor->load_map(renderer, open_dialog.selection);
+		editor->clear(rend);
+		editor->load_map(rend, open_dialog.selection);
 	}
 
 	if (save_as_dialog.prompt_filename()) {
 		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 
-		editor->save_map(renderer, save_as_dialog.selection);
+		editor->save_map(rend, save_as_dialog.selection);
 		save_as_dialog.clear();
 	}
 
@@ -40,10 +40,10 @@ static void handle_prompts(game_editor *editor, engine *renderer) {
 		import_model_dialog.clear();
 
 		// TODO: XXX: no need for const if it's just being casted away anyway...
-		auto& glman = (gl_manager&)renderer->get_glman();
-		editor->load_model(renderer, import_model_dialog.selection);
+		auto& glman = (gl_manager&)rend->get_glman();
+		editor->load_model(rend, import_model_dialog.selection);
 		glman.bind_cooked_meshes();
-		editor->update_models(renderer);
+		editor->update_models(rend);
 	}
 
 	if (import_scene_dialog.prompt_filename()) {
@@ -51,10 +51,10 @@ static void handle_prompts(game_editor *editor, engine *renderer) {
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 
-		auto& glman = (gl_manager&)renderer->get_glman();
-		editor->load_scene(renderer, import_scene_dialog.selection);
+		auto& glman = (gl_manager&)rend->get_glman();
+		editor->load_scene(rend, import_scene_dialog.selection);
 		glman.bind_cooked_meshes();
-		editor->update_models(renderer);
+		editor->update_models(rend);
 	}
 
 	if (import_map_dialog.prompt_filename()) {
@@ -64,7 +64,7 @@ static void handle_prompts(game_editor *editor, engine *renderer) {
 	}
 }
 
-void game_editor::menubar(engine *renderer) {
+void game_editor::menubar(renderer *rend) {
 	static bool demo_window = false;
 
 	if (ImGui::BeginMainMenuBar()) {
@@ -161,5 +161,5 @@ void game_editor::menubar(engine *renderer) {
 		ImGui::ShowDemoWindow(&demo_window);
 	}
 
-	handle_prompts(this, renderer);
+	handle_prompts(this, rend);
 }

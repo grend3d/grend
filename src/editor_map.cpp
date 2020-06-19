@@ -36,7 +36,7 @@ static inline T parse_vec(std::string& str) {
 	return ret;
 }
 
-void game_editor::load_map(engine *renderer, std::string name) {
+void game_editor::load_map(renderer *rend, std::string name) {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 	bool imported_models = false;
@@ -55,12 +55,12 @@ void game_editor::load_map(engine *renderer, std::string name) {
 		}
 
 		if (statement[0] == "objfile" && statement.size() == 2) {
-			load_model(renderer, statement[1]);
+			load_model(rend, statement[1]);
 			imported_models = true;
 		}
 
 		if (statement[0] == "scene" && statement.size() == 2) {
-			load_model(renderer, statement[1]);
+			load_model(rend, statement[1]);
 			imported_models = true;
 		}
 
@@ -86,7 +86,7 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			// TODO: size check
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 
-			renderer->add_reflection_probe((struct engine::reflection_probe) {
+			rend->add_reflection_probe((struct reflection_probe) {
 				.position = pos,
 				.changed = true,
 			});
@@ -100,7 +100,7 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			bool casts_shadows = std::stoi(statement[5]);
 			bool static_shadows = std::stoi(statement[6]);
 
-			uint32_t nlit = renderer->add_light((struct engine::point_light){
+			uint32_t nlit = rend->add_light((struct point_light){
 				.position = pos,
 				.diffuse = diffuse,
 				.radius = radius,
@@ -122,7 +122,7 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			bool casts_shadows = std::stoi(statement[7]);
 			bool static_shadows = std::stoi(statement[8]);
 
-			uint32_t nlit = renderer->add_light((struct engine::spot_light){
+			uint32_t nlit = rend->add_light((struct spot_light){
 				.position = pos,
 				.diffuse = diffuse,
 				.direction = direction,
@@ -144,7 +144,7 @@ void game_editor::load_map(engine *renderer, std::string name) {
 			bool casts_shadows = std::stoi(statement[5]);
 			bool static_shadows = std::stoi(statement[6]);
 
-			uint32_t nlit = renderer->add_light((struct engine::directional_light){
+			uint32_t nlit = rend->add_light((struct directional_light){
 				.position = pos,
 				.diffuse = diffuse,
 				.direction = direction,
@@ -159,9 +159,9 @@ void game_editor::load_map(engine *renderer, std::string name) {
 
 	if (imported_models) {
 		// TODO: XXX: no need for const
-		auto& glman = (gl_manager&)renderer->get_glman();
+		auto& glman = (gl_manager&)rend->get_glman();
 		glman.bind_cooked_meshes();
-		update_models(renderer);
+		update_models(rend);
 	}
 }
 
@@ -189,7 +189,7 @@ static inline std::string format_mat(T& mtx) {
 	return ret;
 }
 
-void game_editor::save_map(engine *renderer, std::string name) {
+void game_editor::save_map(renderer *rend, std::string name) {
 	std::ofstream foo(name);
 	std::cerr << "saving map " << name << std::endl;
 
@@ -217,7 +217,7 @@ void game_editor::save_map(engine *renderer, std::string name) {
 		foo << std::endl;
 	}
 
-	for (auto& [id, p] : renderer->ref_probes) {
+	for (auto& [id, p] : rend->ref_probes) {
 		foo << "reflection_probe\t"
 		    << format_vec(p.position) << "\t"
 			<< p.is_static
@@ -225,8 +225,8 @@ void game_editor::save_map(engine *renderer, std::string name) {
 	}
 
 	for (auto& id : edit_lights.point) {
-		if (renderer->point_lights.find(id) != renderer->point_lights.end()) {
-			auto lit = renderer->get_point_light(id);
+		if (rend->point_lights.find(id) != rend->point_lights.end()) {
+			auto lit = rend->get_point_light(id);
 
 			foo << "point_light\t"
 			    << format_vec(lit.position) << "\t"
@@ -240,8 +240,8 @@ void game_editor::save_map(engine *renderer, std::string name) {
 	}
 
 	for (auto& id : edit_lights.spot) {
-		if (renderer->spot_lights.find(id) != renderer->spot_lights.end()) {
-			auto lit = renderer->get_spot_light(id);
+		if (rend->spot_lights.find(id) != rend->spot_lights.end()) {
+			auto lit = rend->get_spot_light(id);
 
 			foo << "spot_light\t"
 			    << format_vec(lit.position) << "\t"
@@ -257,10 +257,10 @@ void game_editor::save_map(engine *renderer, std::string name) {
 	}
 
 	for (auto& id : edit_lights.directional) {
-		if (renderer->directional_lights.find(id)
-		    != renderer->directional_lights.end())
+		if (rend->directional_lights.find(id)
+		    != rend->directional_lights.end())
 		{
-			auto lit = renderer->get_directional_light(id);
+			auto lit = rend->get_directional_light(id);
 
 			foo << "directional_light\t"
 			    << format_vec(lit.position) << "\t"

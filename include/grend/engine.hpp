@@ -16,86 +16,79 @@ static const size_t MAX_LIGHTS = 16;
 
 namespace grendx {
 
-class engine {
+struct point_light {
+	glm::vec3 position;
+	glm::vec4 diffuse;
+	float radius;
+	float intensity;
+	bool casts_shadows = false;
+	quadtree::node_id shadowmap[6];
+
+	// meta info not passed to the shader
+	bool changed = true;
+	bool static_shadows = false;
+	bool shadows_rendered = false;
+};
+
+struct spot_light {
+	glm::vec3 position;
+	glm::vec4 diffuse;
+	glm::vec3 direction;
+	float radius; // bulb radius
+	float intensity;
+	float angle;
+	bool casts_shadows = false;
+	quadtree::node_id shadowmap;
+
+	// meta
+	bool changed = true;
+	bool static_shadows = false;
+	bool shadows_rendered = false;
+};
+
+struct directional_light {
+	glm::vec3 position;
+	glm::vec4 diffuse;
+	glm::vec3 direction;
+	float intensity;
+	bool casts_shadows = false;
+	quadtree::node_id shadowmap;
+
+	// meta
+	bool changed = true;
+	bool static_shadows = false;
+	bool shadows_rendered = false;
+};
+
+// TODO: revisit parabolic maps at some point, but for now they're
+//       not ideal:
+//       - transformation of vertices means that depth information is lost,
+//         so rendering is less efficient and depth maps can't be generated
+//         the simple way
+//       - storage is not actually much lower, similar quality parabolic
+//         maps are the same or larger than cubemaps, lots of wasted space
+//         in the rendered images (roughly a circle of usable data per side,
+//         which means a ratio of around PI/4 of the space is actually used)
+//       - with MRTs rendering the faces is a non-issue, the thing can be
+//         rendered in one shot, real-time reflections can just be disabled
+//         on gles2 (and the platforms that gles2 would be used for probably
+//         can't handle rendering real-time reflections to begin with anyway)
+struct reflection_probe {
+	glm::vec3 position;
+	quadtree::node_id faces[6];
+	bool changed = true;
+	bool is_static = true;
+	bool have_map = false;
+	// TODO: maybe non-static with update frequency
+};
+
+class renderer {
 	friend class text_renderer;
+	friend class game_state;
 
 	public:
-		struct point_light {
-			glm::vec3 position;
-			glm::vec4 diffuse;
-			float radius;
-			float intensity;
-			bool casts_shadows = false;
-			quadtree::node_id shadowmap[6];
-
-			// meta info not passed to the shader
-			bool changed = true;
-			bool static_shadows = false;
-			bool shadows_rendered = false;
-		};
-
-		struct spot_light {
-			glm::vec3 position;
-			glm::vec4 diffuse;
-			glm::vec3 direction;
-			float radius; // bulb radius
-			float intensity;
-			float angle;
-			bool casts_shadows = false;
-			quadtree::node_id shadowmap;
-
-			// meta
-			bool changed = true;
-			bool static_shadows = false;
-			bool shadows_rendered = false;
-		};
-
-		struct directional_light {
-			glm::vec3 position;
-			glm::vec4 diffuse;
-			glm::vec3 direction;
-			float intensity;
-			bool casts_shadows = false;
-			quadtree::node_id shadowmap;
-
-			// meta
-			bool changed = true;
-			bool static_shadows = false;
-			bool shadows_rendered = false;
-		};
-
-		// TODO: revisit parabolic maps at some point, but for now they're
-		//       not ideal:
-		//       - transformation of vertices means that depth information is lost,
-		//         so rendering is less efficient and depth maps can't be generated
-		//         the simple way
-		//       - storage is not actually much lower, similar quality parabolic
-		//         maps are the same or larger than cubemaps, lots of wasted space
-		//         in the rendered images (roughly a circle of usable data per side,
-		//         which means a ratio of around PI/4 of the space is actually used)
-		//       - with MRTs rendering the faces is a non-issue, the thing can be
-		//         rendered in one shot, real-time reflections can just be disabled
-		//         on gles2 (and the platforms that gles2 would be used for probably
-		//         can't handle rendering real-time reflections to begin with anyway)
-		struct reflection_probe {
-			glm::vec3 position;
-			quadtree::node_id faces[6];
-			bool changed = true;
-			bool is_static = true;
-			bool have_map = false;
-			// TODO: maybe non-static with update frequency
-		};
-
-		engine();
-		~engine() { };
-
-		// TODO: maybe this should be split out of this class, have some sort of
-		//       render loop class (rename that to engine?) and have this
-		//       be the "render manager" class
-		virtual void render(context& ctx) = 0;
-		virtual void logic(context& ctx) = 0;
-		virtual void physics(context& ctx) = 0;
-		virtual void input(context& ctx) = 0;
+		renderer();
+		~renderer() { };
 
 		struct draw_attributes {
 			std::string name;
@@ -154,7 +147,7 @@ class engine {
 		void set_shader(gl_manager::rhandle& shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
-		const gl_manager& get_glman(void){ return glman; };
+		gl_manager& get_glman(void){ return glman; };
 
 		bool running = true;
 
@@ -180,11 +173,6 @@ class engine {
 		gl_manager::rhandle shader;
 		gl_manager glman;
 
-		GLint u_diffuse_map;
-		GLint u_specular_map;
-		GLint u_normal_map;
-		GLint u_ao_map;
-
 		// list of models to draw
 		// TODO: meshes, need to pair materials with meshes though, which
 		//       currently is part of the model classes
@@ -198,7 +186,6 @@ class engine {
 		std::vector<std::pair<std::string, draw_attributes>> transparent_draws;
 
 		std::string fallback_material = "(null)";
-		//std::string fallback_material = "Rock";
 
 		std::map<std::string, gl_manager::rhandle> diffuse_handles;
 		std::map<std::string, gl_manager::rhandle> specular_handles;
@@ -206,8 +193,8 @@ class engine {
 		std::map<std::string, gl_manager::rhandle> aomap_handles;
 };
 
-float light_extent(struct engine::point_light *p, float threshold=0.03);
-float light_extent(struct engine::spot_light *s, float threshold=0.03);
+float light_extent(struct point_light *p, float threshold=0.03);
+float light_extent(struct spot_light *s, float threshold=0.03);
 
 // namespace grendx
 }

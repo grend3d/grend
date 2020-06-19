@@ -9,7 +9,7 @@ namespace grendx {
 
 class text_renderer {
 	public:
-		text_renderer(engine *eng,
+		text_renderer(renderer *arend,
 		             const char *font="assets/fonts/droid-sans-mono-zeromod/DroidSansMonoSlashed.ttf",
 		             int size=32);
 		~text_renderer();
@@ -17,7 +17,7 @@ class text_renderer {
 		void render(glm::vec3 pos, std::string str, SDL_Color color = {255, 255, 255, 255});
 
 		TTF_Font *ttf = nullptr;
-		engine *gengine;
+		renderer *rend;
 		gl_manager::rhandle text_vbo;
 		gl_manager::rhandle text_vao;
 		gl_manager::rhandle text_texture;

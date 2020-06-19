@@ -121,7 +121,7 @@ static std::map<std::string, material> default_materials = {
 			   }},
 };
 
-engine::engine() {
+renderer::renderer() {
 	for (auto& thing : default_materials) {
 		std::cerr << __func__ << ": loading materials for "
 			<< thing.first << std::endl;
@@ -153,7 +153,7 @@ engine::engine() {
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
-void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name) {
+void renderer::set_material(gl_manager::compiled_model& obj, std::string mat_name) {
 	if (obj.materials.find(mat_name) == obj.materials.end()) {
 		// TODO: maybe show a warning
 		set_default_material(mat_name);
@@ -215,7 +215,7 @@ void engine::set_material(gl_manager::compiled_model& obj, std::string mat_name)
 	DO_ERROR_CHECK();
 }
 
-void engine::set_default_material(std::string mat_name) {
+void renderer::set_default_material(std::string mat_name) {
 	if (default_materials.find(mat_name) == default_materials.end()) {
 		// TODO: really show an error here
 		mat_name = fallback_material;
@@ -257,7 +257,7 @@ void engine::set_default_material(std::string mat_name) {
 	shader_obj.set("ambient_occ_map", 3);
 }
 
-void engine::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
+void renderer::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	glm::mat4 v_inv = glm::inverse(view);
 	auto shader_obj = glman.get_shader_obj(shader);
 
@@ -274,7 +274,7 @@ static glm::mat4 model_to_world(glm::mat4 model) {
 	return glm::mat4_cast(rotation);
 }
 
-void engine::set_m(glm::mat4 mod) {
+void renderer::set_m(glm::mat4 mod) {
 	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(mod)));
 	auto shader_obj = glman.get_shader_obj(shader);
 
@@ -282,7 +282,7 @@ void engine::set_m(glm::mat4 mod) {
 	shader_obj.set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
 
-void engine::draw_mesh(std::string name, const struct draw_attributes *attr) {
+void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 	set_m(attr->transform);
@@ -294,7 +294,7 @@ void engine::draw_mesh(std::string name, const struct draw_attributes *attr) {
 }
 
 // TODO: overload of this that takes a material
-void engine::draw_mesh_lines(std::string name, const struct draw_attributes *attr) {
+void renderer::draw_mesh_lines(std::string name, const struct draw_attributes *attr) {
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 
 	set_m(attr->transform);
@@ -321,7 +321,7 @@ void engine::draw_mesh_lines(std::string name, const struct draw_attributes *att
 #endif
 }
 
-void engine::draw_model(const struct draw_attributes *attr) {
+void renderer::draw_model(const struct draw_attributes *attr) {
 	gl_manager::compiled_model& obj = glman.cooked_models[attr->name];
 
 	for (std::string& name : obj.meshes) {
@@ -330,11 +330,11 @@ void engine::draw_model(const struct draw_attributes *attr) {
 	}
 }
 
-void engine::draw_model(struct draw_attributes attr) {
+void renderer::draw_model(struct draw_attributes attr) {
 	draw_model(attr);
 }
 
-void engine::draw_model_lines(const struct draw_attributes *attr) {
+void renderer::draw_model_lines(const struct draw_attributes *attr) {
 	gl_manager::compiled_model& obj = glman.cooked_models[attr->name];
 	// TODO: need a set_material() function to handle stuff
 	//       and we need to explicitly set a material
@@ -345,11 +345,11 @@ void engine::draw_model_lines(const struct draw_attributes *attr) {
 	}
 }
 
-void engine::draw_model_lines(struct draw_attributes attr) {
+void renderer::draw_model_lines(struct draw_attributes attr) {
 	draw_model_lines(&attr);
 }
 
-void engine::draw_screenquad(void) {
+void renderer::draw_screenquad(void) {
 	// NOTE: assumes that the screenquad vbo has been linked in the
 	//       postprocessing shader, and the proper vao set
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -357,11 +357,11 @@ void engine::draw_screenquad(void) {
 }
 
 void
-engine::dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr) {
+renderer::dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr) {
 	draw_queue.push_back({mesh, *attr});
 }
 
-void engine::dqueue_draw_model(const struct draw_attributes *attr) {
+void renderer::dqueue_draw_model(const struct draw_attributes *attr) {
 	// TODO: check that attr->name exists
 	auto& obj = glman.cooked_models[attr->name];
 
@@ -370,12 +370,12 @@ void engine::dqueue_draw_model(const struct draw_attributes *attr) {
 	}
 }
 
-void engine::dqueue_draw_model(struct draw_attributes attr) {
+void renderer::dqueue_draw_model(struct draw_attributes attr) {
 	dqueue_draw_model(&attr);
 }
 
 // TODO: should this just be called from dqueue_flush_draws?
-void engine::dqueue_sort_draws(glm::vec3 camera) {
+void renderer::dqueue_sort_draws(glm::vec3 camera) {
 	typedef std::pair<std::string, struct draw_attributes> draw_ent;
 
 	// sort by position from camera
@@ -411,12 +411,12 @@ void engine::dqueue_sort_draws(glm::vec3 camera) {
 	std::reverse(transparent_draws.begin(), transparent_draws.end());
 }
 
-void engine::dqueue_cull_models(glm::vec3 camera) {
+void renderer::dqueue_cull_models(glm::vec3 camera) {
 	// TODO: filter objects that aren't visible, behind the camera
 	//       or occluded by walls etc
 }
 
-void engine::dqueue_flush_draws(void) {
+void renderer::dqueue_flush_draws(void) {
 	glman.disable(GL_BLEND);
 
 	for (auto& [name, attrs] : draw_queue) {
@@ -440,7 +440,7 @@ void engine::dqueue_flush_draws(void) {
 	transparent_draws.clear();
 }
 
-bool engine::is_valid_light(uint32_t id) {
+bool renderer::is_valid_light(uint32_t id) {
 	//return id < MAX_LIGHTS && id < (int)active_lights && id >= 0;
 	return id && id <= light_ids && (
 		point_lights.find(id) != point_lights.end()
@@ -449,7 +449,7 @@ bool engine::is_valid_light(uint32_t id) {
 	);
 }
 
-uint32_t engine::add_light(struct point_light lit) {
+uint32_t renderer::add_light(struct point_light lit) {
 	uint32_t ret = alloc_light();
 	point_lights[ret] = lit;
 
@@ -460,21 +460,21 @@ uint32_t engine::add_light(struct point_light lit) {
 	return ret;
 }
 
-uint32_t engine::add_light(struct spot_light lit) {
+uint32_t renderer::add_light(struct spot_light lit) {
 	uint32_t ret = alloc_light();
 	spot_lights[ret] = lit;
 	spot_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
 	return ret;
 }
 
-uint32_t engine::add_light(struct directional_light lit) {
+uint32_t renderer::add_light(struct directional_light lit) {
 	uint32_t ret = alloc_light();
 	directional_lights[ret] = lit;
 	directional_lights[ret].shadowmap = shadow_atlas->tree.alloc(128);
 	return ret;
 }
 
-void engine::free_light(uint32_t id) {
+void renderer::free_light(uint32_t id) {
 	point_lights.erase(id);
 	spot_lights.erase(id);
 	directional_lights.erase(id);
@@ -482,7 +482,7 @@ void engine::free_light(uint32_t id) {
 	touch_light_shadowmaps();
 }
 
-struct engine::point_light engine::get_point_light(uint32_t id) {
+struct point_light renderer::get_point_light(uint32_t id) {
 	if (point_lights.find(id) != point_lights.end()) {
 		return point_lights[id];
 	}
@@ -491,7 +491,7 @@ struct engine::point_light engine::get_point_light(uint32_t id) {
 	return (struct point_light){};
 }
 
-struct engine::spot_light engine::get_spot_light(uint32_t id) {
+struct spot_light renderer::get_spot_light(uint32_t id) {
 	if (spot_lights.find(id) != spot_lights.end()) {
 		return spot_lights[id];
 	}
@@ -499,7 +499,7 @@ struct engine::spot_light engine::get_spot_light(uint32_t id) {
 	return (struct spot_light){};
 }
 
-struct engine::directional_light engine::get_directional_light(uint32_t id) {
+struct directional_light renderer::get_directional_light(uint32_t id) {
 	if (directional_lights.find(id) != directional_lights.end()) {
 		return directional_lights[id];
 	}
@@ -507,23 +507,23 @@ struct engine::directional_light engine::get_directional_light(uint32_t id) {
 	return (struct directional_light){};
 }
 
-void engine::set_point_light(uint32_t id, struct engine::point_light *lit) {
+void renderer::set_point_light(uint32_t id, struct point_light *lit) {
 	assert(lit != nullptr);
 	point_lights[id] = *lit;
 }
 
-void engine::set_spot_light(uint32_t id, struct engine::spot_light *lit) {
+void renderer::set_spot_light(uint32_t id, struct spot_light *lit) {
 	assert(lit != nullptr);
 	spot_lights[id] = *lit;
 }
 
 void
-engine::set_directional_light(uint32_t id, struct engine::directional_light *lit) {
+renderer::set_directional_light(uint32_t id, struct directional_light *lit) {
 	assert(lit != nullptr);
 	directional_lights[id] = *lit;
 }
 
-uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
+uint32_t renderer::add_reflection_probe(struct reflection_probe ref) {
 	uint32_t ret = refprobe_ids++;
 
 	// TODO: configurable/deduced dimensions
@@ -535,7 +535,7 @@ uint32_t engine::add_reflection_probe(struct reflection_probe ref) {
 	return ret;
 }
 
-void engine::free_reflection_probe(uint32_t id) {
+void renderer::free_reflection_probe(uint32_t id) {
 	if (ref_probes.find(id) != ref_probes.end()) {
 		ref_probes.erase(id);
 		// TODO: this is just here to test the texture cache, this should just
@@ -545,7 +545,7 @@ void engine::free_reflection_probe(uint32_t id) {
 	}
 }
 
-void engine::set_shader(gl_manager::rhandle& shd) {
+void renderer::set_shader(gl_manager::rhandle& shd) {
 	if (shader != shd) {
 		shader = shd;
 		glUseProgram(shader.first);
@@ -553,7 +553,7 @@ void engine::set_shader(gl_manager::rhandle& shd) {
 }
 
 // TODO: only update changed uniforms
-void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
+void renderer::sync_point_lights(const std::vector<uint32_t>& lights) {
 	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
@@ -582,7 +582,7 @@ void engine::sync_point_lights(const std::vector<uint32_t>& lights) {
 	}
 }
 
-void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
+void renderer::sync_spot_lights(const std::vector<uint32_t>& lights) {
 	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
@@ -608,7 +608,7 @@ void engine::sync_spot_lights(const std::vector<uint32_t>& lights) {
 	}
 }
 
-void engine::sync_directional_lights(const std::vector<uint32_t>& lights) {
+void renderer::sync_directional_lights(const std::vector<uint32_t>& lights) {
 	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
@@ -627,7 +627,7 @@ void engine::sync_directional_lights(const std::vector<uint32_t>& lights) {
 	}
 }
 
-void engine::compile_lights(void) {
+void renderer::compile_lights(void) {
 	active_lights.point.clear();
 	active_lights.spot.clear();
 	active_lights.directional.clear();
@@ -645,7 +645,7 @@ void engine::compile_lights(void) {
 	}
 }
 
-void engine::update_lights(void) {
+void renderer::update_lights(void) {
 	compile_lights();
 	sync_point_lights(active_lights.point);
 	sync_spot_lights(active_lights.spot);
@@ -653,7 +653,7 @@ void engine::update_lights(void) {
 	DO_ERROR_CHECK();
 }
 
-void engine::touch_light_refprobes(void) {
+void renderer::touch_light_refprobes(void) {
 	for (auto& [id, probe] : ref_probes) {
 		for (unsigned i = 0; i < 6; i++) {
 			if (reflection_atlas->tree.valid(probe.faces[i])) {
@@ -664,7 +664,7 @@ void engine::touch_light_refprobes(void) {
 }
 
 // TODO: touch lights that are visible
-void engine::touch_light_shadowmaps(void) {
+void renderer::touch_light_shadowmaps(void) {
 	for (auto& [id, plit] : point_lights) {
 		if (!plit.casts_shadows)
 			continue;
@@ -687,7 +687,7 @@ void engine::touch_light_shadowmaps(void) {
 	}
 }
 
-float grendx::light_extent(struct engine::point_light *p, float threshold) {
+float grendx::light_extent(struct point_light *p, float threshold) {
 	if (p) {
 		//auto& lit = lights[id];
 		return p->radius * (sqrt((p->intensity * p->diffuse.w)/threshold) - 1);
