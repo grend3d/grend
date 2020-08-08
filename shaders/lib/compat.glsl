@@ -30,6 +30,8 @@
 	#endif
 
 	#define textureLod(tex, coord, level) textureCube(tex, coord)
+	// used in shadow filtering, default shadow atlas size (right now) is 2048
+	#define textureSize(tex, level) (ivec2(2048, 2048))
 #endif
 
 #if GLSL_VERSION >= 130
