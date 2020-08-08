@@ -80,33 +80,33 @@ class game_state {
 
 		// sky box
 		// TODO: should this be in the engine?
-		gl_manager::rhandle skybox;
-		gl_manager::rhandle skybox_shader;
+		Texture::ptr skybox;
+		Program::ptr skybox_shader;
 
 		// main rendering shader
-		gl_manager::rhandle main_shader;
+		Program::ptr main_shader;
 
 		// post-processing shader
-		gl_manager::rhandle post_shader;
+		Program::ptr post_shader;
 
 		// simplified lighting probes for calculating reflection/shadow maps
-		gl_manager::rhandle refprobe_shader;
-		gl_manager::rhandle lightprobe_shader;
-		gl_manager::rhandle shadow_shader;
+		Program::ptr refprobe_shader;
+		Program::ptr lightprobe_shader;
+		Program::ptr shadow_shader;
 
 		// debug shaders for light/reflection probes
-		gl_manager::rhandle refprobe_debug;
+		Program::ptr refprobe_debug;
 
 		// main rendering framebuffer
-		gl_manager::rhandle rend_fb;
-		gl_manager::rhandle rend_tex;
-		gl_manager::rhandle rend_depth;
+		Framebuffer::ptr rend_fb;
+		Texture::ptr     rend_tex;
+		Texture::ptr     rend_depth;
 		int rend_x, rend_y; // framebuffer dimensions
 
 		// previous frame info
 		Uint32 last_frame;
-		gl_manager::rhandle last_frame_fb; // same dimensions as rend_fb
-		gl_manager::rhandle last_frame_tex; // same dimensions as rend_fb
+		Framebuffer::ptr last_frame_fb; // same dimensions as rend_fb
+		Texture::ptr     last_frame_tex; // same dimensions as rend_fb
 
 		// dynamic resolution scaling
 		void adjust_draw_resolution(void);

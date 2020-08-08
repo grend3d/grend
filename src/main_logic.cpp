@@ -98,65 +98,65 @@ void game_state::load_models(void) {
 
 void game_state::load_shaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-	skybox_shader = rend.glman.load_program(
+	skybox_shader = load_program(
 		"shaders/out/skybox.vert",
 		"shaders/out/skybox.frag"
 	);
 
-	glBindAttribLocation(skybox_shader.first, 0, "v_position");
-	rend.glman.link_program(skybox_shader);
+	glBindAttribLocation(skybox_shader->obj, 0, "v_position");
+	link_program(skybox_shader);
 
 #if GLSL_VERSION < 300
-	main_shader = rend.glman.load_program(
+	main_shader = load_program(
 		"shaders/out/vertex-shading.vert",
 		"shaders/out/vertex-shading.frag"
 	);
 #else
-	main_shader = rend.glman.load_program(
+	main_shader = load_program(
 		"shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"
 		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 #endif
 
-	refprobe_shader = rend.glman.load_program(
+	refprobe_shader = load_program(
 		"shaders/out/ref_probe.vert",
 		"shaders/out/ref_probe.frag"
 	);
 
-	refprobe_debug = rend.glman.load_program(
+	refprobe_debug = load_program(
 		"shaders/out/ref_probe_debug.vert",
 		"shaders/out/ref_probe_debug.frag"
 	);
 
 	for (auto& s : {main_shader, refprobe_shader, refprobe_debug}) {
-		glBindAttribLocation(s.first, 0, "in_Position");
-		glBindAttribLocation(s.first, 1, "v_normal");
-		glBindAttribLocation(s.first, 2, "v_tangent");
-		glBindAttribLocation(s.first, 3, "v_bitangent");
-		glBindAttribLocation(s.first, 4, "texcoord");
-		rend.glman.link_program(s);
+		glBindAttribLocation(s->obj, 0, "in_Position");
+		glBindAttribLocation(s->obj, 1, "v_normal");
+		glBindAttribLocation(s->obj, 2, "v_tangent");
+		glBindAttribLocation(s->obj, 3, "v_bitangent");
+		glBindAttribLocation(s->obj, 4, "texcoord");
+		link_program(s);
 	}
 
-	shadow_shader = rend.glman.load_program(
+	shadow_shader = load_program(
 		"shaders/out/depth.vert",
 		"shaders/out/depth.frag"
 	);
-	glBindAttribLocation(shadow_shader.first, 0, "v_position");
-	rend.glman.link_program(shadow_shader);
+	glBindAttribLocation(shadow_shader->obj, 0, "v_position");
+	link_program(shadow_shader);
 
-	gl_manager::rhandle orig_vao = rend.glman.current_vao;
+	Vao::ptr orig_vao = rend.glman.current_vao;
 	rend.glman.bind_vao(rend.glman.screenquad_vao);
 
-	post_shader = rend.glman.load_program(
+	post_shader = load_program(
 		"shaders/out/postprocess.vert",
 		"shaders/out/postprocess.frag"
 	);
 
-	glBindAttribLocation(post_shader.first, 0, "v_position");
-	glBindAttribLocation(post_shader.first, 1, "v_texcoord");
+	glBindAttribLocation(post_shader->obj, 0, "v_position");
+	glBindAttribLocation(post_shader->obj, 1, "v_texcoord");
 	DO_ERROR_CHECK();
-	rend.glman.link_program(post_shader);
+	link_program(post_shader);
 
 	rend.glman.bind_vao(orig_vao);
 	rend.set_shader(main_shader);
@@ -164,20 +164,21 @@ void game_state::load_shaders(void) {
 
 void game_state::init_framebuffers(void) {
 	// set up the render framebuffer
-	rend_fb = rend.glman.gen_framebuffer();
+	rend_fb = gen_framebuffer();
 	rend_x = screen_x, rend_y = screen_y;
 
-	rend.glman.bind_framebuffer(rend_fb);
-	rend_tex = rend.glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                 rend.glman.gen_texture_color(rend_x, rend_y, GL_RGBA16F));
-	rend_depth = rend.glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT,
-	                 rend.glman.gen_texture_depth_stencil(rend_x, rend_y));
+	//rend.glman.bind_framebuffer(rend_fb);
+	rend_fb->bind();
+	rend_tex = rend_fb->attach(GL_COLOR_ATTACHMENT0,
+	                 gen_texture_color(rend_x, rend_y, GL_RGBA16F));
+	rend_depth = rend_fb->attach(GL_DEPTH_STENCIL_ATTACHMENT,
+	                 gen_texture_depth_stencil(rend_x, rend_y));
 
 	// and framebuffer holding the previously drawn frame
-	last_frame_fb = rend.glman.gen_framebuffer();
-	rend.glman.bind_framebuffer(last_frame_fb);
-	last_frame_tex = rend.glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-	                       rend.glman.gen_texture_color(rend_x, rend_y));
+	last_frame_fb = gen_framebuffer();
+	last_frame_fb->bind();
+	last_frame_tex = last_frame_fb->attach(GL_COLOR_ATTACHMENT0,
+		                 gen_texture_color(rend_x, rend_y));
 }
 
 void game_state::init_test_lights(void) {
@@ -227,7 +228,8 @@ game_state::game_state(context& ctx) : text(&rend) {
 #endif
 
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
-	skybox = rend.glman.load_cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	skybox = gen_texture();
+	skybox->cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
 	std::cerr << "loaded cubemap" << std::endl;
 
 	load_models();
@@ -247,7 +249,7 @@ game_state::game_state(context& ctx) : text(&rend) {
 	rend.glman.enable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	rend.glman.bind_default_framebuffer();
+	Framebuffer().bind();
 	DO_ERROR_CHECK();
 }
 
@@ -265,11 +267,11 @@ void game_state::render_skybox(context& ctx) {
 	rend.glman.disable(GL_CULL_FACE);
 #endif
 
-	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
-
 	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
-	shader_obj.set("skytexture", 4);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
+	skybox->bind(GL_TEXTURE_CUBE_MAP);
+	rend.shader->set("skytexture", 4);
+	//shader_obj.set("skytexture", 4);
 	DO_ERROR_CHECK();
 
 	rend.set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
@@ -316,9 +318,8 @@ void game_state::render_light_maps(context& ctx) {
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 
-	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
-	shader_obj.set("skytexture", 4);
-	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
+	rend.shader->set("skytexture", 4);
+	rend.shader->set("time_ms", SDL_GetTicks() * 1.f);
 
 	float fov_x = 90.f;
 	//float fov_y = (fov_x * 256.0)/256.0;
@@ -369,7 +370,6 @@ void game_state::render_light_maps(context& ctx) {
 	}
 
 	rend.set_shader(shadow_shader);
-	shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	// TODO: MRTs for cube maps, only update maps in-frustum
 	for (auto& [id, plit] : rend.point_lights) {
@@ -440,11 +440,10 @@ void game_state::render_light_maps(context& ctx) {
 
 void game_state::render_light_info(context& ctx) {
 	rend.set_shader(refprobe_debug);
-	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, rend.reflection_atlas->color_tex.first);
-	shader_obj.set("reflection_atlas", 0);
+	rend.reflection_atlas->color_tex->bind();
+	rend.shader->set("reflection_atlas", 0);
 	rend.set_mvp(glm::mat4(1), view, projection);
 
 	for (auto& [id, probe] : rend.ref_probes) {
@@ -452,7 +451,7 @@ void game_state::render_light_info(context& ctx) {
 			glm::vec3 facevec = rend.reflection_atlas->tex_vector(probe.faces[i]);
 			std::string locstr = "cubeface[" + std::to_string(i) + "]";
 
-			shader_obj.set(locstr, facevec);
+			rend.shader->set(locstr, facevec);
 			DO_ERROR_CHECK();
 		}
 
@@ -509,12 +508,11 @@ void game_state::render_dynamic(context& ctx) {
 }
 
 void game_state::render_postprocess(context& ctx) {
-	rend.glman.bind_default_framebuffer();
+	Framebuffer().bind();
 	rend.glman.bind_vao(rend.glman.screenquad_vao);
 	glViewport(0, 0, screen_x, screen_y);
 	rend.set_shader(post_shader);
 	// TODO: should the shader_obj be automatically set the same way 'shader' is...
-	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 	glClearColor(0, 0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -523,36 +521,25 @@ void game_state::render_postprocess(context& ctx) {
 	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, rend_tex.first);
+	rend_tex->bind();
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, rend_depth.first);
+	rend_depth->bind();
 	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, last_frame_tex.first);
+	last_frame_tex->bind();
 
-	shader_obj.set("render_fb", 6);
-	shader_obj.set("render_depth", 7);
-	shader_obj.set("last_frame_fb", 8);
-	shader_obj.set("scale_x", (round(dsr_scale_x*rend_x))/rend_x);
-	shader_obj.set("scale_y", (round(dsr_scale_y*rend_y))/rend_y);
-	shader_obj.set("screen_x", screen_x);
-	shader_obj.set("screen_y", screen_y);
-	shader_obj.set("rend_x", rend_x);
-	shader_obj.set("rend_y", rend_y);
-	shader_obj.set("exposure", editor.exposure);
+	rend.shader->set("render_fb", 6);
+	rend.shader->set("render_depth", 7);
+	rend.shader->set("last_frame_fb", 8);
+	rend.shader->set("scale_x", (round(dsr_scale_x*rend_x))/rend_x);
+	rend.shader->set("scale_y", (round(dsr_scale_y*rend_y))/rend_y);
+	rend.shader->set("screen_x", (float)screen_x);
+	rend.shader->set("screen_y", (float)screen_y);
+	rend.shader->set("rend_x", (float)rend_x);
+	rend.shader->set("rend_y", (float)rend_y);
+	rend.shader->set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
 	rend.draw_screenquad();
-
-	/*
-	// TODO: this ends up taking 100% CPU while running...
-	// TODO: why not swap rend/last framebuffers...?
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_frame_fb.first);
-	glBlitFramebuffer(0, 0, screen_x, screen_y,
-	                  0, 0, rend_x, rend_y,
-	                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
-	DO_ERROR_CHECK();
-	*/
 }
 
 /*
@@ -575,11 +562,12 @@ void game_state::render(context& ctx) {
 	render_light_maps(ctx);
 
 #ifdef NO_POSTPROCESSING
-	rend.glman.bind_default_framebuffer();
+	Framebuffer().bind();
+	//rend.glman.bind_default_framebuffer();
 	glViewport(0, 0, screen_x, screen_y);
 
 #else
-	rend.glman.bind_framebuffer(rend_fb);
+	rend_fb->bind();
 	GLsizei width = round(rend_x*dsr_scale_x);
 	GLsizei height = round(rend_y*dsr_scale_y);
 	glViewport(0, 0, width, height);
@@ -607,7 +595,6 @@ void game_state::render(context& ctx) {
 
 	rend.set_shader(main_shader);
 	rend.update_lights();
-	auto shader_obj = rend.glman.get_shader_obj(rend.shader);
 
 #ifdef ENABLE_FACE_CULLING
 	// TODO: toggle per-model
@@ -619,14 +606,14 @@ void game_state::render(context& ctx) {
 	DO_ERROR_CHECK();
 
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, rend.reflection_atlas->color_tex.first);
+	rend.reflection_atlas->color_tex->bind();
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, rend.shadow_atlas->depth_tex.first);
+	rend.shadow_atlas->depth_tex->bind();
 
-	shader_obj.set("reflection_atlas", 6);
-	shader_obj.set("shadowmap_atlas", 7);
-	shader_obj.set("skytexture", 4);
-	shader_obj.set("time_ms", SDL_GetTicks() * 1.f);
+	rend.shader->set("reflection_atlas", 6);
+	rend.shader->set("shadowmap_atlas", 7);
+	rend.shader->set("skytexture", 4);
+	rend.shader->set("time_ms", SDL_GetTicks() * 1.f);
 
 	rend.set_mvp(glm::mat4(1), view, projection);
 	render_static(ctx);
@@ -644,7 +631,7 @@ void game_state::render(context& ctx) {
 #ifndef NO_POSTPROCESSING
 	rend.glman.disable(GL_SCISSOR_TEST);
 	render_postprocess(ctx);
-	rend.glman.bind_default_framebuffer();
+	Framebuffer().bind();
 #endif
 
 	/*

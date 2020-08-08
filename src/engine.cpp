@@ -122,33 +122,33 @@ static std::map<std::string, material> default_materials = {
 };
 
 renderer::renderer() {
-	for (auto& thing : default_materials) {
+	for (auto& [name, tex] : default_materials) {
 		std::cerr << __func__ << ": loading materials for "
-			<< thing.first << std::endl;
+			<< name << std::endl;
 
-		if (thing.second.diffuse_map.loaded()) {
-			diffuse_handles[thing.first] =
-				glman.buffer_texture(thing.second.diffuse_map, true /* srgb */);
+		if (tex.diffuse_map.loaded()) {
+			diffuse_handles[name] = gen_texture();
+			diffuse_handles[name]->buffer(tex.diffuse_map, true);
 		}
 
-		if (thing.second.metal_roughness_map.loaded()) {
-			specular_handles[thing.first] =
-				glman.buffer_texture(thing.second.metal_roughness_map);
+		if (tex.metal_roughness_map.loaded()) {
+			specular_handles[name] = gen_texture();
+			specular_handles[name]->buffer(tex.metal_roughness_map);
 		}
 
-		if (thing.second.normal_map.loaded()) {
-			normmap_handles[thing.first] =
-				glman.buffer_texture(thing.second.normal_map);
+		if (tex.normal_map.loaded()) {
+			normmap_handles[name] = gen_texture();
+			normmap_handles[name]->buffer(tex.normal_map);
 		}
 
-		if (thing.second.ambient_occ_map.loaded()) {
-			aomap_handles[thing.first] =
-				glman.buffer_texture(thing.second.ambient_occ_map);
+		if (tex.ambient_occ_map.loaded()) {
+			aomap_handles[name] = gen_texture();
+			aomap_handles[name]->buffer(tex.ambient_occ_map);
 		}
 	}
 
-	reflection_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048));
-	shadow_atlas = std::unique_ptr<atlas>(new atlas(glman, 2048, atlas::mode::Depth));
+	reflection_atlas = std::unique_ptr<atlas>(new atlas(2048));
+	shadow_atlas = std::unique_ptr<atlas>(new atlas(2048, atlas::mode::Depth));
 
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
@@ -162,54 +162,52 @@ void renderer::set_material(gl_manager::compiled_model& obj, std::string mat_nam
 	}
 
 	material& mat = obj.materials[mat_name];
-	auto shader_obj = glman.get_shader_obj(shader);
 
-	shader_obj.set("anmaterial.diffuse", mat.diffuse);
-	shader_obj.set("anmaterial.ambient", mat.ambient);
-	shader_obj.set("anmaterial.specular", mat.specular);
-	shader_obj.set("anmaterial.roughness", mat.roughness);
-	shader_obj.set("anmaterial.metalness", mat.metalness);
-	shader_obj.set("anmaterial.opacity", mat.opacity);
+	shader->set("anmaterial.diffuse", mat.diffuse);
+	shader->set("anmaterial.ambient", mat.ambient);
+	shader->set("anmaterial.specular", mat.specular);
+	shader->set("anmaterial.roughness", mat.roughness);
+	shader->set("anmaterial.metalness", mat.metalness);
+	shader->set("anmaterial.opacity", mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	if (obj.mat_textures.find(mat_name) != obj.mat_textures.end()) {
-		glBindTexture(GL_TEXTURE_2D, obj.mat_textures[mat_name].first);
-		shader_obj.set("diffuse_map", 0);
+		obj.mat_textures[mat_name]->bind();
+		shader->set("diffuse_map", 0);
 
 	} else {
-		glBindTexture(GL_TEXTURE_2D, diffuse_handles[fallback_material].first);
-		shader_obj.set("diffuse_map", 0);
+		diffuse_handles[fallback_material]->bind();
+		shader->set("diffuse_map", 0);
 	}
 
 	glActiveTexture(GL_TEXTURE1);
 	if (obj.mat_specular.find(mat_name) != obj.mat_specular.end()) {
-		// TODO: specular maps
-		glBindTexture(GL_TEXTURE_2D, obj.mat_specular[mat_name].first);
-		shader_obj.set("specular_map", 1);
+		obj.mat_specular[mat_name]->bind();
+		shader->set("specular_map", 1);
 
 	} else {
-		glBindTexture(GL_TEXTURE_2D, specular_handles[fallback_material].first);
-		shader_obj.set("specular_map", 1);
+		specular_handles[fallback_material]->bind();
+		shader->set("specular_map", 1);
 	}
 
 	glActiveTexture(GL_TEXTURE2);
 	if (obj.mat_normal.find(mat_name) != obj.mat_normal.end()) {
-		glBindTexture(GL_TEXTURE_2D, obj.mat_normal[mat_name].first);
-		shader_obj.set("normal_map", 2);
+		obj.mat_normal[mat_name]->bind();
+		shader->set("normal_map", 2);
 
 	} else {
-		glBindTexture(GL_TEXTURE_2D, normmap_handles[fallback_material].first);
-		shader_obj.set("normal_map", 2);
+		normmap_handles[fallback_material]->bind();
+		shader->set("normal_map", 2);
 	}
 
 	glActiveTexture(GL_TEXTURE3);
 	if (obj.mat_ao.find(mat_name) != obj.mat_ao.end()) {
-		glBindTexture(GL_TEXTURE_2D, obj.mat_ao[mat_name].first);
-		shader_obj.set("ambient_occ_map", 3);
+		obj.mat_ao[mat_name]->bind();
+		shader->set("ambient_occ_map", 3);
 
 	} else {
-		glBindTexture(GL_TEXTURE_2D, aomap_handles[fallback_material].first);
-		shader_obj.set("ambient_occ_map", 3);
+		aomap_handles[fallback_material]->bind();
+		shader->set("ambient_occ_map", 3);
 	}
 
 	DO_ERROR_CHECK();
@@ -217,69 +215,64 @@ void renderer::set_material(gl_manager::compiled_model& obj, std::string mat_nam
 
 void renderer::set_default_material(std::string mat_name) {
 	if (default_materials.find(mat_name) == default_materials.end()) {
-		// TODO: really show an error here
 		mat_name = fallback_material;
 		puts("asdf");
 	}
 
 	material& mat = default_materials[mat_name];
-	auto shader_obj = glman.get_shader_obj(shader);
 
-	shader_obj.set("anmaterial.diffuse", mat.diffuse);
-	shader_obj.set("anmaterial.ambient", mat.ambient);
-	shader_obj.set("anmaterial.specular", mat.specular);
-	shader_obj.set("anmaterial.roughness", mat.roughness);
-	shader_obj.set("anmaterial.metalness", mat.metalness);
-	shader_obj.set("anmaterial.opacity", mat.opacity);
+	shader->set("anmaterial.diffuse", mat.diffuse);
+	shader->set("anmaterial.ambient", mat.ambient);
+	shader->set("anmaterial.specular", mat.specular);
+	shader->set("anmaterial.roughness", mat.roughness);
+	shader->set("anmaterial.metalness", mat.metalness);
+	shader->set("anmaterial.opacity", mat.opacity);
+
+	auto loaded_or_fallback = [&] (auto tex) {
+		if (tex.loaded()) {
+			return mat_name;
+		} else {
+			return fallback_material;
+		}
+	};
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuse_handles[mat.diffuse_map.loaded()?
-	                                             mat_name
-	                                             : fallback_material].first);
-	shader_obj.set("diffuse_map", 0);
+	diffuse_handles[loaded_or_fallback(mat.diffuse_map)]->bind();
+	shader->set("diffuse_map", 0);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specular_handles[mat.metal_roughness_map.loaded()?
-	                                              mat_name
-	                                              : fallback_material].first);
-	shader_obj.set("specular_map", 1);
+	specular_handles[loaded_or_fallback(mat.metal_roughness_map)]->bind();
+	shader->set("specular_map", 1);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, normmap_handles[mat.normal_map.loaded()?
-	                                             mat_name
-	                                             : fallback_material].first);
-	shader_obj.set("normal_map", 2);
+	normmap_handles[loaded_or_fallback(mat.normal_map)]->bind();
+	shader->set("normal_map", 2);
 
 	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, aomap_handles[mat.ambient_occ_map.loaded()?
-	                                           mat_name
-	                                           : fallback_material].first);
-	shader_obj.set("ambient_occ_map", 3);
+	aomap_handles[loaded_or_fallback(mat.ambient_occ_map)]->bind();
+	shader->set("ambient_occ_map", 3);
 }
 
 void renderer::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	glm::mat4 v_inv = glm::inverse(view);
-	auto shader_obj = glman.get_shader_obj(shader);
 
 	set_m(mod);
-	shader_obj.set("v", view);
-	shader_obj.set("p", projection);
-	shader_obj.set("v_inv", v_inv);
+	shader->set("v", view);
+	shader->set("p", projection);
+	shader->set("v_inv", v_inv);
 }
 
 static glm::mat4 model_to_world(glm::mat4 model) {
 	glm::quat rotation = glm::quat_cast(model);
-	//rotation = -glm::conjugate(rotation);
 
 	return glm::mat4_cast(rotation);
 }
 
 void renderer::set_m(glm::mat4 mod) {
 	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(mod)));
-	auto shader_obj = glman.get_shader_obj(shader);
 
-	shader_obj.set("m", mod);
-	shader_obj.set("m_3x3_inv_transp", m_3x3_inv_transp);
+	shader->set("m", mod);
+	shader->set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
 
 void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
@@ -545,19 +538,18 @@ void renderer::free_reflection_probe(uint32_t id) {
 	}
 }
 
-void renderer::set_shader(gl_manager::rhandle& shd) {
-	if (shader != shd) {
-		shader = shd;
-		glUseProgram(shader.first);
+void renderer::set_shader(Program::ptr prog) {
+	if (shader != prog) {
+		shader = prog;
+		prog->bind();
 	}
 }
 
 // TODO: only update changed uniforms
 void renderer::sync_point_lights(const std::vector<uint32_t>& lights) {
-	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
-	shader_obj.set("active_point_lights", (GLint)active);
+	shader->set("active_point_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
@@ -567,63 +559,61 @@ void renderer::sync_point_lights(const std::vector<uint32_t>& lights) {
 		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "point_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",      light.position);
-		shader_obj.set(locstr + ".diffuse",       light.diffuse);
-		shader_obj.set(locstr + ".radius",        light.radius);
-		shader_obj.set(locstr + ".intensity",     light.intensity);
-		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
+		shader->set(locstr + ".position",      light.position);
+		shader->set(locstr + ".diffuse",       light.diffuse);
+		shader->set(locstr + ".radius",        light.radius);
+		shader->set(locstr + ".intensity",     light.intensity);
+		shader->set(locstr + ".casts_shadows", light.casts_shadows);
 
 		if (light.casts_shadows) {
 			for (unsigned k = 0; k < 6; k++) {
 				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
-				shader_obj.set(sloc, shadow_atlas->tex_vector(light.shadowmap[k]));
+				shader->set(sloc, shadow_atlas->tex_vector(light.shadowmap[k]));
 			}
 		}
 	}
 }
 
 void renderer::sync_spot_lights(const std::vector<uint32_t>& lights) {
-	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
-	shader_obj.set("active_spot_lights", (GLint)active);
+	shader->set("active_spot_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
 		const auto& light = spot_lights[lights[i]];
 		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",      light.position);
-		shader_obj.set(locstr + ".diffuse",       light.diffuse);
-		shader_obj.set(locstr + ".direction",     light.direction);
-		shader_obj.set(locstr + ".radius",        light.radius);
-		shader_obj.set(locstr + ".intensity",     light.intensity);
-		shader_obj.set(locstr + ".angle",         light.angle);
-		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
+		shader->set(locstr + ".position",      light.position);
+		shader->set(locstr + ".diffuse",       light.diffuse);
+		shader->set(locstr + ".direction",     light.direction);
+		shader->set(locstr + ".radius",        light.radius);
+		shader->set(locstr + ".intensity",     light.intensity);
+		shader->set(locstr + ".angle",         light.angle);
+		shader->set(locstr + ".casts_shadows", light.casts_shadows);
 
 		if (light.casts_shadows) {
-			shader_obj.set(locstr + ".shadowmap",
-			               shadow_atlas->tex_vector(light.shadowmap));
+			shader->set(locstr + ".shadowmap",
+			            shadow_atlas->tex_vector(light.shadowmap));
 		}
 	}
 }
 
 void renderer::sync_directional_lights(const std::vector<uint32_t>& lights) {
-	auto shader_obj = glman.get_shader_obj(shader);
 	size_t active = min(MAX_LIGHTS, lights.size());
 
-	shader_obj.set("active_directional_lights", (GLint)active);
+	shader->set("active_directional_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
 		// TODO: check light index
 		const auto& light = directional_lights[lights[i]];
 		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
 
-		shader_obj.set(locstr + ".position",      light.position);
-		shader_obj.set(locstr + ".diffuse",       light.diffuse);
-		shader_obj.set(locstr + ".direction",     light.direction);
-		shader_obj.set(locstr + ".intensity",     light.intensity);
-		shader_obj.set(locstr + ".casts_shadows", light.casts_shadows);
+		shader->set(locstr + ".position",      light.position);
+		shader->set(locstr + ".diffuse",       light.diffuse);
+		shader->set(locstr + ".direction",     light.direction);
+		shader->set(locstr + ".intensity",     light.intensity);
+		shader->set(locstr + ".casts_shadows", light.casts_shadows);
 	}
 }
 

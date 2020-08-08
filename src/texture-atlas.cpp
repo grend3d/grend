@@ -4,19 +4,17 @@
 
 using namespace grendx;
 
-atlas::atlas(gl_manager& man, size_t dimension, enum mode m)
-	: tree(dimension), glman(man)
-{
-	framebuffer = glman.gen_framebuffer();
-	glman.bind_framebuffer(framebuffer);
+atlas::atlas(size_t dimension, enum mode m) : tree(dimension) {
+	framebuffer = gen_framebuffer();
+	framebuffer->bind();
 
 	if (m == mode::Color) {
-		color_tex = glman.fb_attach_texture(GL_COLOR_ATTACHMENT0,
-				glman.gen_texture_color(dimension, dimension, GL_RGBA16F));
+		color_tex = framebuffer->attach(GL_COLOR_ATTACHMENT0,
+		                gen_texture_color(dimension, dimension, GL_RGBA16F));
 	}
 
-	depth_tex = glman.fb_attach_texture(GL_DEPTH_STENCIL_ATTACHMENT, 
-			glman.gen_texture_depth_stencil(dimension, dimension));
+	depth_tex = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, 
+	                gen_texture_depth_stencil(dimension, dimension));
 }
 
 bool atlas::bind_atlas_fb(quadtree::node_id id) {
@@ -32,7 +30,8 @@ bool atlas::bind_atlas_fb(quadtree::node_id id) {
 		id, info.x, info.y, info.size);
 		*/
 
-	glman.bind_framebuffer(framebuffer);
+	//glman.bind_framebuffer(framebuffer);
+	framebuffer->bind();
 	glViewport(info.x, info.y, info.size, info.size);
 	glScissor(info.x, info.y, info.size, info.size);
 

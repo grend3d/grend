@@ -144,7 +144,7 @@ class renderer {
 		void set_spot_light(uint32_t id, struct spot_light *lit);
 		void set_directional_light(uint32_t id, struct directional_light *lit);
 
-		void set_shader(gl_manager::rhandle& shd);
+		void set_shader(Program::ptr shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
 		gl_manager& get_glman(void){ return glman; };
@@ -170,7 +170,7 @@ class renderer {
 		std::unique_ptr<atlas> shadow_atlas;
 
 	protected:
-		gl_manager::rhandle shader;
+		Program::ptr shader;
 		gl_manager glman;
 
 		// list of models to draw
@@ -187,10 +187,10 @@ class renderer {
 
 		std::string fallback_material = "(null)";
 
-		std::map<std::string, gl_manager::rhandle> diffuse_handles;
-		std::map<std::string, gl_manager::rhandle> specular_handles;
-		std::map<std::string, gl_manager::rhandle> normmap_handles;
-		std::map<std::string, gl_manager::rhandle> aomap_handles;
+		std::map<std::string, Texture::ptr> diffuse_handles;
+		std::map<std::string, Texture::ptr> specular_handles;
+		std::map<std::string, Texture::ptr> normmap_handles;
+		std::map<std::string, Texture::ptr> aomap_handles;
 };
 
 float light_extent(struct point_light *p, float threshold=0.03);

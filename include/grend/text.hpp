@@ -18,13 +18,13 @@ class text_renderer {
 
 		TTF_Font *ttf = nullptr;
 		renderer *rend;
-		gl_manager::rhandle text_vbo;
-		gl_manager::rhandle text_vao;
-		gl_manager::rhandle text_texture;
-		gl_manager::rhandle text_shader;
+		Vbo::ptr     text_vbo;
+		Vao::ptr     text_vao;
+		Texture::ptr text_texture;
+		Program::ptr text_shader;
 
 		// TODO: font texture render cache
-		gl_manager::rhandle cache_texture;
+		Texture::ptr cache_texture;
 };
 
 // namespace grendx
