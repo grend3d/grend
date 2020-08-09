@@ -44,6 +44,7 @@ class game_editor {
 		void load_model(renderer *rend, std::string path);
 		void load_scene(renderer *rend, std::string path);
 		void update_models(renderer *rend);
+		void reload_shaders(renderer *rend);
 		void set_mode(enum mode newmode) { mode = newmode; };
 		void handle_editor_input(renderer *rend, context& ctx, SDL_Event& ev);
 		// TODO: rename 'engine' to 'renderer' or something

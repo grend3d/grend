@@ -57,6 +57,22 @@ bool Shader::load(std::string filename) {
 	return compiled;
 }
 
+bool Shader::reload(void) {
+	if (!filepath.empty()) {
+		return load(filepath);
+	}
+
+	return false;
+}
+
+bool Program::reload(void) {
+	if (vertex && fragment) {
+		return vertex->reload() && fragment->reload();
+	}
+
+	return false;
+}
+
 #define LOOKUP(U) \
 	GLint u = lookup(uniform); \
 	if (u < 0) return;

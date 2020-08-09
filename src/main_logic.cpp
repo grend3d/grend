@@ -98,38 +98,40 @@ void game_state::load_models(void) {
 
 void game_state::load_shaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-	skybox_shader = load_program(
+	rend.shaders["skybox"] = load_program(
 		"shaders/out/skybox.vert",
 		"shaders/out/skybox.frag"
 	);
 
-	glBindAttribLocation(skybox_shader->obj, 0, "v_position");
-	link_program(skybox_shader);
+	glBindAttribLocation(rend.shaders["skybox"]->obj, 0, "v_position");
+	link_program(rend.shaders["skybox"]);
 
 #if GLSL_VERSION < 300
-	main_shader = load_program(
+	rend.shaders["main"] = load_program(
 		"shaders/out/vertex-shading.vert",
 		"shaders/out/vertex-shading.frag"
 	);
 #else
-	main_shader = load_program(
+	rend.shaders["main"] = load_program(
 		"shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"
 		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 #endif
 
-	refprobe_shader = load_program(
+	rend.shaders["refprobe"] = load_program(
 		"shaders/out/ref_probe.vert",
 		"shaders/out/ref_probe.frag"
 	);
 
-	refprobe_debug = load_program(
+	rend.shaders["refprobe_debug"] = load_program(
 		"shaders/out/ref_probe_debug.vert",
 		"shaders/out/ref_probe_debug.frag"
 	);
 
-	for (auto& s : {main_shader, refprobe_shader, refprobe_debug}) {
+	for (auto& name : {"main", "refprobe", "refprobe_debug"}) {
+		Program::ptr s = rend.shaders[name];
+
 		glBindAttribLocation(s->obj, 0, "in_Position");
 		glBindAttribLocation(s->obj, 1, "v_normal");
 		glBindAttribLocation(s->obj, 2, "v_tangent");
@@ -138,28 +140,28 @@ void game_state::load_shaders(void) {
 		link_program(s);
 	}
 
-	shadow_shader = load_program(
+	rend.shaders["shadow"] = load_program(
 		"shaders/out/depth.vert",
 		"shaders/out/depth.frag"
 	);
-	glBindAttribLocation(shadow_shader->obj, 0, "v_position");
-	link_program(shadow_shader);
+	glBindAttribLocation(rend.shaders["shadow"]->obj, 0, "v_position");
+	link_program(rend.shaders["shadow"]);
 
 	Vao::ptr orig_vao = rend.glman.current_vao;
 	rend.glman.bind_vao(rend.glman.screenquad_vao);
 
-	post_shader = load_program(
+	rend.shaders["post"] = load_program(
 		"shaders/out/postprocess.vert",
 		"shaders/out/postprocess.frag"
 	);
 
-	glBindAttribLocation(post_shader->obj, 0, "v_position");
-	glBindAttribLocation(post_shader->obj, 1, "v_texcoord");
+	glBindAttribLocation(rend.shaders["post"]->obj, 0, "v_position");
+	glBindAttribLocation(rend.shaders["post"]->obj, 1, "v_texcoord");
 	DO_ERROR_CHECK();
-	link_program(post_shader);
+	link_program(rend.shaders["post"]);
 
 	rend.glman.bind_vao(orig_vao);
-	rend.set_shader(main_shader);
+	rend.set_shader(rend.shaders["main"]);
 }
 
 void game_state::init_framebuffers(void) {
@@ -258,7 +260,7 @@ game_state::~game_state() {
 }
 
 void game_state::render_skybox(context& ctx) {
-	rend.set_shader(skybox_shader);
+	rend.set_shader(rend.shaders["skybox"]);
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LEQUAL);
 
@@ -310,7 +312,7 @@ static const glm::vec3 cube_up[] = {
 };
 
 void game_state::render_light_maps(context& ctx) {
-	rend.set_shader(refprobe_shader);
+	rend.set_shader(rend.shaders["refprobe"]);
 	rend.update_lights();
 
 	rend.glman.enable(GL_SCISSOR_TEST);
@@ -369,7 +371,7 @@ void game_state::render_light_maps(context& ctx) {
 		}
 	}
 
-	rend.set_shader(shadow_shader);
+	rend.set_shader(rend.shaders["shadow"]);
 
 	// TODO: MRTs for cube maps, only update maps in-frustum
 	for (auto& [id, plit] : rend.point_lights) {
@@ -439,7 +441,7 @@ void game_state::render_light_maps(context& ctx) {
 }
 
 void game_state::render_light_info(context& ctx) {
-	rend.set_shader(refprobe_debug);
+	rend.set_shader(rend.shaders["refprobe_debug"]);
 
 	glActiveTexture(GL_TEXTURE0);
 	rend.reflection_atlas->color_tex->bind();
@@ -511,7 +513,7 @@ void game_state::render_postprocess(context& ctx) {
 	Framebuffer().bind();
 	rend.glman.bind_vao(rend.glman.screenquad_vao);
 	glViewport(0, 0, screen_x, screen_y);
-	rend.set_shader(post_shader);
+	rend.set_shader(rend.shaders["post"]);
 	// TODO: should the shader_obj be automatically set the same way 'shader' is...
 
 	glClearColor(0, 0, 0, 1.0);
@@ -593,7 +595,7 @@ void game_state::render(context& ctx) {
 
 	render_light_info(ctx);
 
-	rend.set_shader(main_shader);
+	rend.set_shader(rend.shaders["main"]);
 	rend.update_lights();
 
 #ifdef ENABLE_FACE_CULLING

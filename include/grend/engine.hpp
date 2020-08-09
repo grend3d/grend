@@ -169,6 +169,9 @@ class renderer {
 		std::unique_ptr<atlas> reflection_atlas;
 		std::unique_ptr<atlas> shadow_atlas;
 
+		// XXX: loaded shaders, here so they can be accessed from the editor
+		std::map<std::string, Program::ptr> shaders;
+
 	protected:
 		Program::ptr shader;
 		gl_manager glman;

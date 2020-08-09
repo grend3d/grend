@@ -79,23 +79,7 @@ class game_state {
 		grendx::scene static_models;
 
 		// sky box
-		// TODO: should this be in the engine?
 		Texture::ptr skybox;
-		Program::ptr skybox_shader;
-
-		// main rendering shader
-		Program::ptr main_shader;
-
-		// post-processing shader
-		Program::ptr post_shader;
-
-		// simplified lighting probes for calculating reflection/shadow maps
-		Program::ptr refprobe_shader;
-		Program::ptr lightprobe_shader;
-		Program::ptr shadow_shader;
-
-		// debug shaders for light/reflection probes
-		Program::ptr refprobe_debug;
 
 		// main rendering framebuffer
 		Framebuffer::ptr rend_fb;

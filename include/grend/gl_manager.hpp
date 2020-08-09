@@ -147,6 +147,7 @@ class Shader : public Obj {
 		typedef std::shared_ptr<Shader> ptr;
 		Shader(GLuint o, std::string p = "");
 		bool load(std::string path);
+		bool reload(void);
 		std::string filepath;
 };
 
@@ -154,6 +155,7 @@ class Program : public Obj {
 	public:
 		typedef std::shared_ptr<Program> ptr;
 		Program(GLuint o) : Obj(o, Obj::type::Program) {}
+		bool reload(void);
 
 		Shader::ptr vertex, fragment;
 		void bind(void) {

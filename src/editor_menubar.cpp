@@ -85,7 +85,7 @@ void game_editor::menubar(renderer *rend) {
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders")) {}
+			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reload_shaders(rend); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}

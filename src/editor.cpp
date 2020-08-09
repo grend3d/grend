@@ -53,10 +53,22 @@ void game_editor::update_models(renderer *rend) {
 	edit_model = glman.cooked_models.begin();
 }
 
+void game_editor::reload_shaders(renderer *rend) {
+	for (auto& [name, shader] : rend->shaders) {
+		if (shader->reload()) {
+			link_program(shader);
+
+		} else {
+			std::cerr << ">> couldn't reload shader: " << name << std::endl;
+		}
+	}
+}
+
 void game_editor::handle_editor_input(renderer *rend,
                                       context& ctx,
                                       SDL_Event& ev)
 {
+	static bool control = false;
 	const gl_manager& glman = rend->get_glman();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui_ImplSDL2_ProcessEvent(&ev);
@@ -64,6 +76,11 @@ void game_editor::handle_editor_input(renderer *rend,
 	if (!io.WantCaptureKeyboard) {
 		if (ev.type == SDL_KEYDOWN) {
 			switch (ev.key.keysym.sym) {
+				case SDLK_RCTRL:
+				case SDLK_LCTRL:
+					control = true;
+					break;
+
 				case SDLK_w: cam.velocity.z =  movement_speed; break;
 				case SDLK_s: cam.velocity.z = -movement_speed; break;
 				case SDLK_a: cam.velocity.x =  movement_speed; break;
@@ -127,10 +144,16 @@ void game_editor::handle_editor_input(renderer *rend,
 					break;
 
 				case SDLK_r:
-					if (edit_model == glman.cooked_models.begin()) {
-					    edit_model = glman.cooked_models.end();
+					if (control) {
+						reload_shaders(rend);
+
+					} else {
+						// scroll forward through models
+						if (edit_model == glman.cooked_models.begin()) {
+							edit_model = glman.cooked_models.end();
+						}
+						edit_model--;
 					}
-					edit_model--;
 					break;
 
 				case SDLK_f:
@@ -151,6 +174,11 @@ void game_editor::handle_editor_input(renderer *rend,
 
 		else if (ev.type == SDL_KEYUP) {
 			switch (ev.key.keysym.sym) {
+				case SDLK_RCTRL:
+				case SDLK_LCTRL:
+					control = false;
+					break;
+
 				case SDLK_w:
 				case SDLK_s:
 					cam.velocity.z = 0;
