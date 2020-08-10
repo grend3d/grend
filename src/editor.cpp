@@ -391,6 +391,14 @@ void game_editor::render_editor(renderer *rend,
 		}
 
 		if (show_refprobe_window) {
+			for (const auto& [id, probe] : rend->ref_probes) {
+				rend->dqueue_draw_model({
+					.name = "unit_cube",
+					.transform = glm::translate(glm::vec3(probe.position))
+						//* glm::scale(glm::vec3(0.5))
+				});
+			}
+
 			refprobes_window(rend, ctx);
 		}
 

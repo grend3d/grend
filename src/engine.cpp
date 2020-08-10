@@ -14,8 +14,8 @@ static std::map<std::string, material> default_materials = {
 				   .diffuse = {0.75, 0.75, 0.75, 1},
 				   .ambient = {1, 1, 1, 1},
 				   .specular = {0.5, 0.5, 0.5, 1},
-				   .roughness = 0.5,
-				   .metalness = 0.5,
+				   .roughness = 0.9,
+				   .metalness = 0.0,
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 

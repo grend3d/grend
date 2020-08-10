@@ -17,6 +17,7 @@ precision mediump samplerCube;
 #include <lib/attenuation.glsl>
 #include <lib/tonemapping.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
+#include <lib/shadows.glsl>
 
 void main(void) {
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
@@ -29,11 +30,16 @@ void main(void) {
 
 	for (int i = 0; i < active_point_lights; i++) {
 		float atten = point_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(point_lights[i].position, point_lights[i].diffuse, 
-		                        vec3(f_position), view_dir,
-		                        albedo, f_normal, metallic, roughness);
+		float shadow = point_shadow(i, vec3(f_position));
 
-		total_light += lum*atten;
+		vec3 lum =
+			mix(vec3(0.0),
+				mrp_lighting(point_lights[i].position, point_lights[i].diffuse,
+				             vec3(f_position), view_dir,
+				             albedo, f_normal, metallic, roughness),
+				shadow*atten);
+
+		total_light += lum;
 	}
 
 	for (int i = 0; i < active_spot_lights; i++) {

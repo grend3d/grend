@@ -344,17 +344,6 @@ static const glm::vec3 cube_up[] = {
 };
 
 void game_state::render_light_maps(context& ctx) {
-	rend.set_shader(rend.shaders["refprobe"]);
-	rend.update_lights();
-
-	rend.glman.enable(GL_SCISSOR_TEST);
-	rend.glman.enable(GL_DEPTH_TEST);
-	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LESS);
-
-	rend.shader->set("skytexture", 4);
-	rend.shader->set("time_ms", SDL_GetTicks() * 1.f);
-
 	float fov_x = 90.f;
 	//float fov_y = (fov_x * 256.0)/256.0;
 	float fov_y = fov_x;
@@ -362,115 +351,137 @@ void game_state::render_light_maps(context& ctx) {
 	glm::mat4 view;
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), 1.f, 0.1f, 100.f);
 
-	for (auto& [id, probe] : rend.ref_probes) {
-		if (probe.is_static && probe.have_map)
-			continue;
+	rend.glman.enable(GL_SCISSOR_TEST);
+	rend.glman.enable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
 
-		for (unsigned i = 0; i < 6; i++) {
-			if (!rend.reflection_atlas->bind_atlas_fb(probe.faces[i])) {
-				std::cerr
-					<< "render_light_maps(): couldn't bind reflection FB"
-					<< std::endl;
+	// TODO: split these into their own functions
+	// TODO: consider moving these into the renderer class somehow
+
+	{
+		rend.set_shader(rend.shaders["shadow"]);
+
+		// TODO: MRTs for cube maps, only update maps in-frustum
+		for (auto& [id, plit] : rend.point_lights) {
+			if (!plit.casts_shadows || (plit.static_shadows && plit.shadows_rendered))
 				continue;
+
+			for (unsigned i = 0; i < 6; i++) {
+				if (!rend.shadow_atlas->bind_atlas_fb(plit.shadowmap[i])) {
+					std::cerr
+						<< "render_light_maps(): couldn't bind shadowmap FB"
+						<< std::endl;
+					continue;
+				}
+
+				view = glm::lookAt(plit.position,
+						plit.position + cube_dirs[i],
+						cube_up[i]);
+				rend.set_mvp(glm::mat4(1), view, projection);
+				glClear(GL_DEPTH_BUFFER_BIT);
+
+				render_static(ctx);
+				render_players(ctx);
+				render_dynamic(ctx);
+				editor.render_map_models(&rend, ctx);
+				rend.dqueue_sort_draws(plit.position);
+				rend.dqueue_flush_draws();
+				DO_ERROR_CHECK();
 			}
 
-			rend.set_shader(rend.shaders["refprobe"]);
-			view = glm::lookAt(probe.position,
-					probe.position + cube_dirs[i],
-					cube_up[i]);
-			rend.set_mvp(glm::mat4(1), view, projection);
-
-			/*
-			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-				SDL_Die("incomplete!");
-			}
-			*/
-
-			glm::vec3 bugc = (cube_dirs[i] + glm::vec3(1)) / glm::vec3(2);
-
-			glClearColor(bugc.x, bugc.y, bugc.z, 1);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			DO_ERROR_CHECK();
-
-			render_static(ctx);
-			render_players(ctx);
-			render_dynamic(ctx);
-			editor.render_map_models(&rend, ctx);
-			rend.dqueue_sort_draws(probe.position);
-			rend.dqueue_flush_draws();
-			DO_ERROR_CHECK();
-			render_refprobe_skybox(ctx, view, projection);
-
-			probe.have_map = true;
+			plit.shadows_rendered = true;
 		}
-	}
 
-	rend.set_shader(rend.shaders["shadow"]);
+		for (auto& [id, slit] : rend.spot_lights) {
+			if (!slit.casts_shadows || (slit.static_shadows && slit.shadows_rendered))
+				continue;
 
-	// TODO: MRTs for cube maps, only update maps in-frustum
-	for (auto& [id, plit] : rend.point_lights) {
-		if (!plit.casts_shadows || (plit.static_shadows && plit.shadows_rendered))
-			continue;
-
-		for (unsigned i = 0; i < 6; i++) {
-			if (!rend.shadow_atlas->bind_atlas_fb(plit.shadowmap[i])) {
+			if (!rend.shadow_atlas->bind_atlas_fb(slit.shadowmap)) {
 				std::cerr
 					<< "render_light_maps(): couldn't bind shadowmap FB"
 					<< std::endl;
 				continue;
 			}
 
-			view = glm::lookAt(plit.position,
-					plit.position + cube_dirs[i],
-					cube_up[i]);
-			rend.set_mvp(glm::mat4(1), view, projection);
 			glClear(GL_DEPTH_BUFFER_BIT);
+
+			//glm::vec3 right = glm::vec3(slit.direction.y, slit.direction.z, slit.direction.x);
+			//glm::vec3 up = glm::normalize(glm::cross(slit.direction, right));
+			glm::vec3 up = glm::vec3(0, 0, 1);
+			view = glm::lookAt(slit.position,
+					slit.position - slit.direction,
+					up);
+
+			// TODO: adjust perspective to spot light angle
+			// float angle = acos(slit.angle);
+			projection = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
+			rend.set_mvp(glm::mat4(1), view, projection);
 
 			render_static(ctx);
 			render_players(ctx);
 			render_dynamic(ctx);
-			editor.render_map_models(&rend, ctx);
-			rend.dqueue_sort_draws(plit.position);
+			rend.dqueue_sort_draws(slit.position);
 			rend.dqueue_flush_draws();
 			DO_ERROR_CHECK();
-		}
 
-		plit.shadows_rendered = true;
+			slit.shadows_rendered = true;
+		}
 	}
 
-	for (auto& [id, slit] : rend.spot_lights) {
-		if (!slit.casts_shadows || (slit.static_shadows && slit.shadows_rendered))
-			continue;
+	{
+		rend.set_shader(rend.shaders["refprobe"]);
+		rend.update_lights();
 
-		if (!rend.shadow_atlas->bind_atlas_fb(slit.shadowmap)) {
-			std::cerr
-				<< "render_light_maps(): couldn't bind shadowmap FB"
-				<< std::endl;
-			continue;
+		glActiveTexture(GL_TEXTURE7);
+		rend.shadow_atlas->depth_tex->bind();
+		rend.shader->set("shadowmap_atlas", 7);
+
+		rend.shader->set("skytexture", 4);
+		rend.shader->set("time_ms", SDL_GetTicks() * 1.f);
+
+		for (auto& [id, probe] : rend.ref_probes) {
+			if (probe.is_static && probe.have_map)
+				continue;
+
+			for (unsigned i = 0; i < 6; i++) {
+				if (!rend.reflection_atlas->bind_atlas_fb(probe.faces[i])) {
+					std::cerr
+						<< "render_light_maps(): couldn't bind reflection FB"
+						<< std::endl;
+					continue;
+				}
+
+				rend.set_shader(rend.shaders["refprobe"]);
+				view = glm::lookAt(probe.position,
+						probe.position + cube_dirs[i],
+						cube_up[i]);
+				rend.set_mvp(glm::mat4(1), view, projection);
+
+				/*
+				   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+				   SDL_Die("incomplete!");
+				   }
+				   */
+
+				glm::vec3 bugc = (cube_dirs[i] + glm::vec3(1)) / glm::vec3(2);
+
+				glClearColor(bugc.x, bugc.y, bugc.z, 1);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				DO_ERROR_CHECK();
+
+				render_static(ctx);
+				render_players(ctx);
+				render_dynamic(ctx);
+				editor.render_map_models(&rend, ctx);
+				rend.dqueue_sort_draws(probe.position);
+				rend.dqueue_flush_draws();
+				DO_ERROR_CHECK();
+				render_refprobe_skybox(ctx, view, projection);
+
+				probe.have_map = true;
+			}
 		}
-
-		glClear(GL_DEPTH_BUFFER_BIT);
-
-		//glm::vec3 right = glm::vec3(slit.direction.y, slit.direction.z, slit.direction.x);
-		//glm::vec3 up = glm::normalize(glm::cross(slit.direction, right));
-		glm::vec3 up = glm::vec3(0, 0, 1);
-		view = glm::lookAt(slit.position,
-		                   slit.position - slit.direction,
-		                   up);
-
-		// TODO: adjust perspective to spot light angle
-		// float angle = acos(slit.angle);
-		projection = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 100.f);
-		rend.set_mvp(glm::mat4(1), view, projection);
-
-		render_static(ctx);
-		render_players(ctx);
-		render_dynamic(ctx);
-		rend.dqueue_sort_draws(slit.position);
-		rend.dqueue_flush_draws();
-		DO_ERROR_CHECK();
-
-		slit.shadows_rendered = true;
 	}
 }
 
@@ -627,6 +638,7 @@ void game_state::render(context& ctx) {
 	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// XXX: left here for debugging in the future
 	//render_light_info(ctx);
 
 	rend.set_shader(rend.shaders["main"]);
