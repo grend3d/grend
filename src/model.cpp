@@ -690,16 +690,20 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 				auto& acc = tgltf_model.accessors[elements];
 				assert_type(acc.type, TINYGLTF_TYPE_SCALAR);
+				/*
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+					*/
 
 				size_t vsize = ret[mesh.name].vertices.size();
 				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
 				//gltf_unpack_buffer(tgltf_model, elements, submesh);
 				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
 					gltf_unpack_ushort_to_uint(tgltf_model, elements, submesh);
-				} else {
+				} else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
 					gltf_unpack_buffer(tgltf_model, elements, submesh);
+				} else {
+					assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT);
 				}
 
 				// adjust element indices for vertices already in the model
