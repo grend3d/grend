@@ -287,6 +287,38 @@ void game_state::render_skybox(context& ctx) {
 	glDepthMask(GL_TRUE);
 }
 
+void game_state::render_refprobe_skybox(context& ctx,
+                                        glm::mat4 view,
+                                        glm::mat4 proj)
+{
+	rend.set_shader(rend.shaders["skybox"]);
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);
+
+#ifdef ENABLE_FACE_CULLING
+	// TODO: toggle per-model
+	rend.glman.disable(GL_CULL_FACE);
+#endif
+
+	glActiveTexture(GL_TEXTURE4);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, skybox.first);
+	skybox->bind(GL_TEXTURE_CUBE_MAP);
+	rend.shader->set("skytexture", 4);
+	//shader_obj.set("skytexture", 4);
+	DO_ERROR_CHECK();
+
+	rend.set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), proj);
+	//draw_model("unit_cube", glm::mat4(1));
+	//draw_mesh("unit_cube.default", glm::mat4(0));
+	struct renderer::draw_attributes attrs = {
+		.name = "unit_cube",
+		.transform = glm::mat4(0),
+	};
+	rend.draw_mesh("unit_cube.default", &attrs);
+	glDepthMask(GL_TRUE);
+}
+
+
 static const glm::vec3 cube_dirs[] = {
 	// negative X, Y, Z
 	{-1,  0,  0},
@@ -342,6 +374,7 @@ void game_state::render_light_maps(context& ctx) {
 				continue;
 			}
 
+			rend.set_shader(rend.shaders["refprobe"]);
 			view = glm::lookAt(probe.position,
 					probe.position + cube_dirs[i],
 					cube_up[i]);
@@ -366,6 +399,7 @@ void game_state::render_light_maps(context& ctx) {
 			rend.dqueue_sort_draws(probe.position);
 			rend.dqueue_flush_draws();
 			DO_ERROR_CHECK();
+			render_refprobe_skybox(ctx, view, projection);
 
 			probe.have_map = true;
 		}
@@ -593,7 +627,7 @@ void game_state::render(context& ctx) {
 	glClearColor(0.1, 0.1, 0.1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	render_light_info(ctx);
+	//render_light_info(ctx);
 
 	rend.set_shader(rend.shaders["main"]);
 	rend.update_lights();

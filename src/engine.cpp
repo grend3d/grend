@@ -275,10 +275,43 @@ void renderer::set_m(glm::mat4 mod) {
 	shader->set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
 
+void renderer::set_reflection_probe(const struct draw_attributes *attr) {
+	glm::vec4 pos = attr->transform * glm::vec4(1);
+	struct reflection_probe *probe = get_nearest_refprobe(glm::vec3(pos) / pos.w);
+
+	if (probe) {
+		for (unsigned i = 0; i < 6; i++) {
+			std::string sloc = "reflection_probe[" + std::to_string(i) + "]";
+			glm::vec3 facevec = reflection_atlas->tex_vector(probe->faces[i]); 
+			shader->set(sloc, facevec);
+			DO_ERROR_CHECK();
+		}
+	}
+}
+
+struct reflection_probe *renderer::get_nearest_refprobe(glm::vec3 pos) {
+	struct reflection_probe *ret = nullptr;
+	float mindist = 1024.0;
+
+	// TODO: optimize this, O(N) is meh
+	for (auto& [id, p] : ref_probes) {
+		float dist = glm::distance(pos, p.position);
+		if (!ret || dist < mindist) {
+			mindist = dist;
+			ret = &p;
+		}
+	}
+
+	return ret;
+}
+
 void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
 	set_m(attr->transform);
+
+	// TODO: might be a performance issue, toggleable
+	set_reflection_probe(attr);
 
 	glman.set_face_order(attr->face_order);
 	glman.bind_vao(foo.vao);

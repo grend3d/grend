@@ -81,11 +81,13 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	//float a = alpha(roughness);
-	float a = roughness;
+	float a = alpha(roughness);
+	//float a = roughness;
 	// TODO: s/8.0/max LOD/
 	vec3 refdir = reflect(-view_dir, normal_dir);
-	vec3 env = vec3(textureLod(skytexture, refdir, 8.0*a));
+	//vec3 env = vec3(textureLod(skytexture, refdir, 8.0*a));
+	// TODO: mipmap
+	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
 
 	total_light += 0.5 * (1.0 - a) * env * Fb;
@@ -94,10 +96,19 @@ void main(void) {
 	vec3 ref_light = vec3(0);
 
 	if (anmaterial.opacity < 1.0) {
+		// TODO: handle refraction indexes
+		vec3 dir = refract(-view_dir, normal_dir, 1.0/1.5);
+		vec3 ref = textureCubeAtlas(reflection_atlas, reflection_probe, dir).rgb;
+		//ref_light = anmaterial.diffuse.xyz * 0.5*ref;
+		ref_light = 0.9*ref;
+	}
+/*
+	if (anmaterial.opacity < 1.0) {
 		ref_light = anmaterial.diffuse.xyz
 			* 0.5*vec3(textureCube(skytexture,
 			                       refract(-view_dir, normal_dir, 1.0/1.5)));
 	}
+*/
 
 	total_light += ref_light;
 #endif

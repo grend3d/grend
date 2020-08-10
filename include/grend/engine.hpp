@@ -133,6 +133,7 @@ class renderer {
 		uint32_t add_light(struct point_light lit);
 		uint32_t add_light(struct spot_light lit);
 		uint32_t add_light(struct directional_light lit);
+
 		uint32_t add_reflection_probe(struct reflection_probe ref);
 		void free_reflection_probe(uint32_t id);
 
@@ -147,6 +148,7 @@ class renderer {
 		void set_shader(Program::ptr shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
+		void set_reflection_probe(const struct draw_attributes *attr);
 		gl_manager& get_glman(void){ return glman; };
 
 		bool running = true;
@@ -173,6 +175,7 @@ class renderer {
 		std::map<std::string, Program::ptr> shaders;
 
 	protected:
+		struct reflection_probe *get_nearest_refprobe(glm::vec3 pos);
 		Program::ptr shader;
 		gl_manager glman;
 
