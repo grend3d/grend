@@ -11,6 +11,9 @@ precision mediump samplerCube;
 #define ENABLE_SKYBOX 1
 #define ENABLE_REFRACTION 1
 
+// TODO: maybe make this a uniform (probably not though)
+#define NORMAL_WEIGHT 0.85
+
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
@@ -25,8 +28,9 @@ void main(void) {
 	vec3 ambient_light = vec3(0.1);
 	// TODO: normal mapping still borked
 	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
-	vec3 normal_dir = vec3(1, -1, 1) * normalize(normidx * 2.0 - 1.0);
-	normal_dir = normalize(TBN * normal_dir);
+	vec3 normal_dir = normalize(normidx * 2.0 - 1.0);
+	//normal_dir = normalize(TBN * normal_dir);
+	normal_dir = mix(f_normal, normalize(TBN * normal_dir), NORMAL_WEIGHT);
 
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
 	mat4 mvp = p*v*m;
