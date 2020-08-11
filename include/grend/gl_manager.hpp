@@ -134,6 +134,8 @@ class Vbo : public Obj {
 class Texture : public Obj {
 	public:
 		typedef std::shared_ptr<Texture> ptr;
+		typedef std::weak_ptr<Texture> weakptr;
+
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
 		void buffer(const material_texture& tex, bool srgb=false);
 		void cubemap(std::string directory, std::string extension=".jpg");
@@ -253,6 +255,7 @@ class gl_manager {
 				void *bitangents_offset;
 		};
 		typedef std::map<std::string, compiled_model> cooked_model_map;
+		Texture::ptr texcache(const material_texture& tex, bool srgb = false);
 
 		void compile_meshes(std::string objname, const mesh_map& meshies);
 		void compile_model(std::string name, const model& mod);
@@ -287,6 +290,9 @@ class gl_manager {
 		// current state
 		Vao::ptr current_vao;
 		GLenum   current_face_order;
+
+	private:
+		std::map<uint32_t, Texture::weakptr> texture_cache;
 };
 
 Vao::ptr         gen_vao(void);

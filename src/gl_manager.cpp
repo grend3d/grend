@@ -49,6 +49,65 @@ void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
 // TODO: move
 static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[4]) + sizeof(glm::vec2));
 
+static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
+	uint32_t ret = 1543;
+
+	unsigned sample_offset;
+	unsigned tag = 0;
+	unsigned sq = sqrt(pixels.size()/4 /* assume RGBA */);
+
+	// choose sample offsets to keep sample rate roughly consistent
+	// between different texture sizes, smaller textures need smaller offsets
+	// `tag` encodes the texture size in the upper two bits of the hash
+	if (sq <= 256) {
+		sample_offset = 593;
+		tag = 0;
+
+	} else if (sq <= 512) {
+		sample_offset = 1031;
+		tag = 1;
+
+	} else if (sq <= 2048) {
+		sample_offset = 4159;
+		tag = 2;
+
+	} else {
+		sample_offset = 8101;
+		tag = 3;
+	}
+
+	for (unsigned i = 0; i < pixels.size(); i += sample_offset) {
+		ret = ((ret << 7) + ret + pixels[i]);
+	}
+
+	return (tag << 30) | (ret & ((1 << 30) - 1));
+}
+
+Texture::ptr gl_manager::texcache(const material_texture& tex, bool srgb) {
+	if (!tex.loaded()) {
+		return nullptr;
+	}
+
+	uint32_t hash = dumbhash(tex.pixels);
+	auto it = texture_cache.find(hash);
+
+	if (it != texture_cache.end()) {
+		if (auto observe = it->second.lock()) {
+			static const unsigned sizes[4] = {256, 512, 2048, 4096};
+			fprintf(stderr, "texture cache hit: %08x (%uK)\n",
+			        hash, sizes[hash >> 30]);
+			return observe;
+		}
+	}
+
+	Texture::ptr ret = gen_texture();
+
+	texture_cache[hash] = ret;
+	ret->buffer(tex, srgb);
+
+	return ret;
+}
+
 void gl_manager::compile_model(std::string name, const model& mod) {
 	std::cerr << " >>> compiling " << name << std::endl;
 
@@ -101,27 +160,20 @@ void gl_manager::compile_model(std::string name, const model& mod) {
 		//obj.materials[name] = mat;
 		obj.materials[name].copy_properties(mat);
 
-		// TODO: is there a less tedious way to do this?
-		//       like could load all of the textures into a map then iterate over
-		//       the map rather than do this for each map type...
 		if (mat.diffuse_map.loaded()) {
-			obj.mat_textures[name] = gen_texture();
-			obj.mat_textures[name]->buffer(mat.diffuse_map, true /* srgb */);
+			obj.mat_textures[name] = texcache(mat.diffuse_map, true/*srgb*/);
 		}
 
 		if (mat.metal_roughness_map.loaded()) {
-			obj.mat_specular[name] = gen_texture();
-			obj.mat_specular[name]->buffer(mat.metal_roughness_map);
+			obj.mat_specular[name] = texcache(mat.metal_roughness_map);
 		}
 
 		if (mat.normal_map.loaded()) {
-			obj.mat_normal[name] = gen_texture();
-			obj.mat_normal[name]->buffer(mat.normal_map);
+			obj.mat_normal[name]   = texcache(mat.normal_map);
 		}
 
 		if (mat.ambient_occ_map.loaded()) {
-			obj.mat_ao[name] = gen_texture();
-			obj.mat_ao[name]->buffer(mat.ambient_occ_map);
+			obj.mat_ao[name]       = texcache(mat.ambient_occ_map);
 		}
 	}
 
