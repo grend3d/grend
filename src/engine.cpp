@@ -305,6 +305,19 @@ struct reflection_probe *renderer::get_nearest_refprobe(glm::vec3 pos) {
 	return ret;
 }
 
+void renderer::newframe(void) {
+	drawn_counter = 0;
+}
+
+struct draw_class renderer::index(unsigned idx) {
+	if (idx > 0 && idx <= drawn_counter) {
+		puts("got here");
+		return drawn_entities[idx - 1];
+	}
+
+	return {0, 0};
+}
+
 void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
@@ -312,6 +325,14 @@ void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
 
 	// TODO: might be a performance issue, toggleable
 	set_reflection_probe(attr);
+
+	if (drawn_counter < 0xff) {
+		drawn_entities[drawn_counter] = attr->dclass;
+		drawn_counter++;
+		glStencilFunc(GL_ALWAYS, drawn_counter, ~0);
+	} else {
+		glStencilFunc(GL_ALWAYS, 0, ~0);
+	}
 
 	glman.set_face_order(attr->face_order);
 	glman.bind_vao(foo.vao);
@@ -357,7 +378,7 @@ void renderer::draw_model(const struct draw_attributes *attr) {
 }
 
 void renderer::draw_model(struct draw_attributes attr) {
-	draw_model(attr);
+	draw_model(&attr);
 }
 
 void renderer::draw_model_lines(const struct draw_attributes *attr) {

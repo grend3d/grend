@@ -7,6 +7,33 @@
 
 using namespace grendx;
 
+static void draw_indicator(renderer *rend, glm::mat4 trans,
+                           glm::vec3 pos, glm::quat rot)
+{
+	static std::string ind[] = {
+		"X-Axis-Pointer",
+		"Y-Axis-Pointer",
+		"Z-Axis-Pointer",
+		"X-Axis-Rotation-Spinner",
+		"Y-Axis-Rotation-Spinner",
+		"Z-Axis-Rotation-Spinner",
+	};
+
+	glm::vec4 temp = trans * glm::vec4(1);
+	glm::vec3 tpos = glm::vec3(temp) / temp.z;
+
+	for (unsigned i = 0; i < 6; i++) {
+		rend->draw_model((struct draw_attributes) {
+			.name = ind[i],
+			.transform =
+				glm::translate(pos)
+				* glm::mat4_cast(rot)
+				* glm::scale(glm::vec3(0.5)),
+			.dclass = {DRAWATTR_CLASS_UI, i},
+		});
+	}
+}
+
 void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 	ImGui::Begin("Objects", &show_map_window);
 	ImGui::Columns(2);
@@ -51,6 +78,7 @@ void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 					* glm::scale(glm::vec3(1.05)),
 			});
 
+			draw_indicator(rend, ent.transform, ent.position, ent.rotation);
 		}
 		ImGui::NextColumn();
 	}
@@ -80,6 +108,8 @@ void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 			//ImGui::InputFloat3("acceleration", glm::value_ptr(obj.acceleration));
 			//ImGui::InputFloat3("scale", glm::value_ptr(obj.scale));
 			ImGui::InputFloat4("rotation (quat)", glm::value_ptr(obj.rotation));
+
+			draw_indicator(rend, glm::mat4(1), obj.position, obj.rotation);
 		}
 		ImGui::NextColumn();
 	}

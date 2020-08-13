@@ -82,6 +82,31 @@ struct reflection_probe {
 	// TODO: maybe non-static with update frequency
 };
 
+// indicators for objects (to help identify objects from the stencil index
+// after drawing all the meshes)
+enum drawattr_class {
+	DRAWATTR_CLASS_NONE,
+	DRAWATTR_CLASS_MAP,
+	DRAWATTR_CLASS_PHYSICS,
+	DRAWATTR_CLASS_UI,
+	DRAWATTR_CLASS_UI_LIGHT,
+	DRAWATTR_CLASS_UI_REFPROBE,
+};
+
+struct draw_class {
+	unsigned class_id = 0;
+	unsigned obj_id = 0;
+};
+
+struct draw_attributes {
+	std::string name;
+	glm::mat4 transform;
+	GLenum face_order = GL_CCW;
+	bool cull_faces = true;
+
+	struct draw_class dclass;
+};
+
 class renderer {
 	friend class text_renderer;
 	friend class game_state;
@@ -90,12 +115,10 @@ class renderer {
 		renderer();
 		~renderer() { };
 
-		struct draw_attributes {
-			std::string name;
-			glm::mat4 transform;
-			GLenum face_order = GL_CCW;
-			bool cull_faces = true;
-		};
+		// TODO: 
+		// see drawn_entities below
+		void newframe(void);
+		struct draw_class index(unsigned idx);
 
 		void draw_mesh(std::string mesh, const struct draw_attributes *attr);
 		void draw_mesh_lines(std::string mesh, const struct draw_attributes *attr);
@@ -190,6 +213,10 @@ class renderer {
 		// dqueue_flush_draws(), this is sorted back-to-front rather than
 		// front-to-back
 		std::vector<std::pair<std::string, draw_attributes>> transparent_draws;
+
+		// lookup indexes for objects drawn to the framebuffer
+		unsigned drawn_counter = 0;
+		struct draw_class drawn_entities[256];
 
 		std::string fallback_material = "(null)";
 

@@ -54,8 +54,14 @@ model_map load_library(std::string dir) {
 }
 
 static std::pair<std::string, std::string> obj_models[] = {
-	{"person",       "assets/obj/low-poly-character-rpg/boy.obj"},
-	{"smoothsphere", "assets/obj/smoothsphere.obj"},
+	{"person",                  "assets/obj/low-poly-character-rpg/boy.obj"},
+	{"smoothsphere",            "assets/obj/smoothsphere.obj"},
+	{"X-Axis-Pointer",          "assets/obj/UI/X-Axis-Pointer.obj"},
+	{"Y-Axis-Pointer",          "assets/obj/UI/Y-Axis-Pointer.obj"},
+	{"Z-Axis-Pointer",          "assets/obj/UI/Z-Axis-Pointer.obj"},
+	{"X-Axis-Rotation-Spinner", "assets/obj/UI/X-Axis-Rotation-Spinner.obj"},
+	{"Y-Axis-Rotation-Spinner", "assets/obj/UI/Y-Axis-Rotation-Spinner.obj"},
+	{"Z-Axis-Rotation-Spinner", "assets/obj/UI/Z-Axis-Rotation-Spinner.obj"},
 };
 
 static model_map gen_internal_models(void) {
@@ -279,7 +285,7 @@ void game_state::render_skybox(context& ctx) {
 	rend.set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), projection);
 	//draw_model("unit_cube", glm::mat4(1));
 	//draw_mesh("unit_cube.default", glm::mat4(0));
-	struct renderer::draw_attributes attrs = {
+	struct draw_attributes attrs = {
 		.name = "unit_cube",
 		.transform = glm::mat4(0),
 	};
@@ -310,7 +316,7 @@ void game_state::render_refprobe_skybox(context& ctx,
 	rend.set_mvp(glm::mat4(0), glm::mat4(glm::mat3(view)), proj);
 	//draw_model("unit_cube", glm::mat4(1));
 	//draw_mesh("unit_cube.default", glm::mat4(0));
-	struct renderer::draw_attributes attrs = {
+	struct draw_attributes attrs = {
 		.name = "unit_cube",
 		.transform = glm::mat4(0),
 	};
@@ -502,7 +508,7 @@ void game_state::render_light_info(context& ctx) {
 			DO_ERROR_CHECK();
 		}
 
-		struct renderer::draw_attributes foo = {
+		struct draw_attributes foo = {
 			.name = "smoothsphere",
 			.transform = glm::translate(probe.position),
 		};
@@ -511,12 +517,15 @@ void game_state::render_light_info(context& ctx) {
 }
 
 void game_state::render_static(context& ctx) {
-	for (auto& thing : static_models.nodes) {
-		//draw_model(thing.name, thing.transform);
+	//for (auto& thing : static_models.nodes) {
+	for (unsigned i = 0; i < static_models.nodes.size(); i++) {
+		auto& thing = static_models.nodes[i];
+
 		rend.dqueue_draw_model({
 			.name = thing.name,
 			.transform = thing.transform,
 			.face_order = thing.inverted? GL_CW : GL_CCW,
+			.dclass = (struct draw_class){DRAWATTR_CLASS_MAP, i},
 		});
 	}
 }
@@ -537,7 +546,11 @@ void game_state::render_players(context& ctx) {
 		* glm::scale(glm::vec3(0.75f, 0.75f, 0.75f))
 		;
 
-	rend.dqueue_draw_model({ "person", bizz });
+	rend.dqueue_draw_model({
+		.name = "person",
+		.transform = bizz,
+		.dclass = (struct draw_class){DRAWATTR_CLASS_PHYSICS, player_phys_id}
+	});
 }
 
 void game_state::render_dynamic(context& ctx) {
@@ -549,7 +562,11 @@ void game_state::render_dynamic(context& ctx) {
 			glm::mat4 transform =
 				glm::translate(obj.position) * glm::mat4_cast(obj.rotation);
 
-			rend.dqueue_draw_model({ obj.model_name, transform });
+			rend.dqueue_draw_model({
+				.name = obj.model_name,
+				.transform = transform,
+				.dclass = (struct draw_class){DRAWATTR_CLASS_PHYSICS, id},
+			});
 		}
 	}
 }
@@ -623,9 +640,12 @@ void game_state::render(context& ctx) {
 	rend.glman.enable(GL_SCISSOR_TEST);
 #endif
 
+	rend.newframe();
 	rend.glman.enable(GL_DEPTH_TEST);
+	rend.glman.enable(GL_STENCIL_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 #if 0
 	// TODO: debug flag to toggle checks like this
@@ -636,7 +656,8 @@ void game_state::render(context& ctx) {
 
 	//glClearColor(0.7, 0.9, 1, 1);
 	glClearColor(0.1, 0.1, 0.1, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearStencil(0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// XXX: left here for debugging in the future
 	//render_light_info(ctx);
@@ -795,6 +816,82 @@ void game_state::input(context& ctx) {
 													  */
 					}
 					break;
+			}
+		}
+
+		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
+			if (ev.button.button == SDL_BUTTON_LEFT) {
+				GLbyte color[4];
+				GLfloat depth;
+				GLuint index;
+
+				int x, y;
+				int win_x, win_y;
+				Uint32 buttons = SDL_GetMouseState(&x, &y);
+				buttons = buttons; // XXX: make the compiler shut up about the unused variable
+				SDL_GetWindowSize(ctx.window, &win_x, &win_y);
+
+				// adjust coordinates for window/resolution scaling
+				x = rend_x * ((1.*x)/(1.*win_x)) * dsr_scale_x;
+				y = (rend_y - (rend_y * ((1.*y)/(1.*win_y))) - 1) * dsr_scale_y;
+
+				rend_fb->bind();
+				glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, color);
+				glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+				glReadPixels(x, y, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &index);
+
+				struct draw_class obj = rend.index(index);
+				fprintf(stderr, "clicked %d, %d, class: %u, id: %u, color: #%02x%02x%02x:%u, depth: %f, index: %u\n",
+						x, y,
+						obj.class_id, obj.obj_id,
+						color[0]&0xff, color[1]&0xff, color[2]&0xff, color[3]&0xff,
+						depth, index);
+
+				// XXX: TODO: not this
+				switch (obj.class_id) {
+					case DRAWATTR_CLASS_MAP:
+						editor.selected_object = obj.obj_id;
+						editor.selected_light = -1;
+						editor.selected_refprobe = -1;
+						break;
+
+					case DRAWATTR_CLASS_PHYSICS:
+						editor.selected_object = -(int)obj.obj_id - 0x8000;
+						editor.selected_light = -1;
+						editor.selected_refprobe = -1;
+						break;
+
+					case DRAWATTR_CLASS_UI_LIGHT:
+						editor.selected_light = obj.obj_id;
+						editor.selected_refprobe = -1;
+						editor.selected_object = -1;
+						break;
+
+					case DRAWATTR_CLASS_UI_REFPROBE:
+						editor.selected_refprobe = obj.obj_id;
+						editor.selected_object = -1;
+						editor.selected_light = -1;
+						break;
+
+					case DRAWATTR_CLASS_UI:
+						{
+							static const char *axis[] = {"X", "Y", "Z"};
+							static const char *indicator[] = {
+								"pointer", 
+								"rotation spinner"
+							};
+
+							fprintf(stderr, "clicked %s axis %s\n",
+								axis[obj.obj_id % 3], indicator[obj.obj_id / 3]);
+						}
+						break;
+
+					default:
+						editor.selected_object = -1;
+						editor.selected_light = -1;
+						editor.selected_refprobe = -1;
+						break;
+				}
 			}
 		}
 

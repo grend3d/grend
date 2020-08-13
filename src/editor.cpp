@@ -348,7 +348,8 @@ void game_editor::render_imgui(renderer *rend, context& ctx) {
 
 
 void game_editor::render_map_models(renderer *rend, context& ctx) {
-	for (auto& v : dynamic_models) {
+	for (unsigned i = 0; i < dynamic_models.size(); i++) {
+		auto& v = dynamic_models[i];
 		glm::mat4 trans = glm::translate(v.position)
 			* glm::mat4_cast(v.rotation)
 			* glm::scale(v.scale)
@@ -359,6 +360,7 @@ void game_editor::render_map_models(renderer *rend, context& ctx) {
 			.transform = trans,
 			.face_order = v.inverted? GL_CW : GL_CCW,
 			.cull_faces = true,
+			.dclass = {DRAWATTR_CLASS_MAP, i},
 		});
 
 		DO_ERROR_CHECK();
@@ -384,6 +386,7 @@ void game_editor::render_editor(renderer *rend,
 					.name = "smoothsphere",
 					.transform = glm::translate(glm::vec3(plit.position))
 						* glm::scale(glm::vec3(plit.radius)),
+					.dclass = (struct draw_class){DRAWATTR_CLASS_UI_LIGHT, id},
 				});
 			}
 
@@ -394,8 +397,9 @@ void game_editor::render_editor(renderer *rend,
 			for (const auto& [id, probe] : rend->ref_probes) {
 				rend->dqueue_draw_model({
 					.name = "unit_cube",
-					.transform = glm::translate(glm::vec3(probe.position))
+					.transform = glm::translate(glm::vec3(probe.position)),
 						//* glm::scale(glm::vec3(0.5))
+					.dclass = (struct draw_class){DRAWATTR_CLASS_UI_REFPROBE, id},
 				});
 			}
 
@@ -407,7 +411,7 @@ void game_editor::render_editor(renderer *rend,
 		}
 
 		if (mode == mode::AddObject) {
-			struct renderer::draw_attributes attrs = {
+			struct draw_attributes attrs = {
 				.name = edit_model->first,
 				.transform = glm::translate(entbuf.position) * entbuf.transform,
 			};
