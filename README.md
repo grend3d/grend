@@ -1,7 +1,7 @@
 ### A lightweight OpenGL 3D game engine
 (very much a work in progress)
 
-![Demo Screenshot](https://mushrom.codes/data/post5-data/sponza-highlight2-6-11.png)
+![Demo Screenshot](http://lisp.us.to/data/post5-data/sponza-highlight2-6-11.png)
 
 ### Features
 - Metal-roughness PBR
