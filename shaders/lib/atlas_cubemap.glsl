@@ -3,7 +3,7 @@
 #include <lib/atlas.glsl>
 #include <lib/compat.glsl>
 
-struct cubeUV textureCubeAtlasUV(vec3 dir) {
+vec3 textureCubeAtlasUV(vec3 dir) {
 	vec3 ab = abs(dir);
 	vec2 f_uv;
 	int face;
@@ -21,14 +21,13 @@ struct cubeUV textureCubeAtlasUV(vec3 dir) {
 		f_uv = vec2((dir.z < 0.0)? dir.x : -dir.x, dir.y) / ab.z;
 	}
 
-	//return vec3((f_uv + 1.0) * 0.5, float(face));
-	struct cubeUV ret;
-	ret.uv = (f_uv + 1.0) * 0.5;
-	ret.face = face;
-	return ret;
+	return vec3((f_uv + 1.0) * 0.5, float(face));
 }
 
 vec4 textureCubeAtlas(in sampler2D atlas, vec3 cube[6], vec3 dir) {
-	struct cubeUV dat = textureCubeAtlasUV(dir);
-	return texture2DAtlas(atlas, cube[dat.face], dat.uv);
+	vec3 dat = textureCubeAtlasUV(dir);
+	vec2 uv = dat.xy;
+	int  face = int(dat.z);
+
+	return texture2DAtlas(atlas, cube[face], uv);
 }

@@ -89,11 +89,14 @@ float point_shadow(int i, vec3 pos) {
 	vec3 light_vertex = point_lights[i].position - pos;
 	vec3 light_dir = normalize(light_vertex);
 
-	struct cubeUV dat = textureCubeAtlasUV(-light_dir);
+	vec3 dat = textureCubeAtlasUV(-light_dir);
+	vec2 uv = dat.xy;
+	int  face = int(dat.z);
+
 	return SHADOW_FILTER(shadowmap_atlas,
-	                     point_lights[i].shadowmap[dat.face],
+	                     point_lights[i].shadowmap[face],
 	                     light_vertex,
-	                     dat.uv);
+	                     uv);
 }
 
 float spot_shadow(int i, vec3 pos) {

@@ -1,10 +1,5 @@
 #pragma once
 
-struct cubeUV {
-	vec2 uv;
-	int  face;
-};
-
 vec2 atlasUV(vec3 transform, vec2 uv) {
 	return vec2(
 		transform.z * uv.x + transform.x,
