@@ -28,18 +28,18 @@ gl_manager::gl_manager() {
 	cooked_element_vbo = gen_vbo();
 }
 
-void gl_manager::compile_meshes(std::string objname, const mesh_map& meshies) {
-	for (const auto& x : meshies) {
+void gl_manager::compile_meshes(std::string objname, mesh_map& meshies) {
+	for (const auto& [name, mesh] : meshies) {
 		compiled_mesh foo;
-		std::string meshname = objname + "." + x.first;
+		std::string meshname = objname + "." + name;
 
 		//foo.elements_size = x.second.faces.size() * sizeof(GLushort);
-		foo.elements_size = x.second.faces.size();
+		foo.elements_size = mesh->faces.size();
 		foo.elements_offset = reinterpret_cast<void*>
 		                      (cooked_elements.size() * sizeof(GLuint));
-		cooked_elements.insert(cooked_elements.end(), x.second.faces.begin(),
-		                                              x.second.faces.end());
-		foo.material = x.second.material;
+		cooked_elements.insert(cooked_elements.end(), mesh->faces.begin(),
+		                                              mesh->faces.end());
+		foo.material = mesh->material;
 
 		cooked_meshes[meshname] = foo;
 	}
@@ -83,7 +83,7 @@ static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	return (tag << 30) | (ret & ((1 << 30) - 1));
 }
 
-Texture::ptr gl_manager::texcache(const material_texture& tex, bool srgb) {
+Texture::ptr gl_manager::texcache(const materialTexture& tex, bool srgb) {
 	if (!tex.loaded()) {
 		return nullptr;
 	}
@@ -108,16 +108,16 @@ Texture::ptr gl_manager::texcache(const material_texture& tex, bool srgb) {
 	return ret;
 }
 
-void gl_manager::compile_model(std::string name, const model& mod) {
+void gl_manager::compile_model(std::string name, gameModel::ptr model) {
 	std::cerr << " >>> compiling " << name << std::endl;
 
-	assert(mod.vertices.size() == mod.normals.size());
-	assert(mod.vertices.size() == mod.texcoords.size());
-	//assert(mod.vertices.size() == mod.tangents.size());
-	//assert(mod.vertices.size() == mod.bitangents.size());
+	assert(model->vertices.size() == model->normals.size());
+	assert(model->vertices.size() == model->texcoords.size());
+	//assert(model->vertices.size() == model->tangents.size());
+	//assert(model->vertices.size() == model->bitangents.size());
 
 	compiled_model obj;
-	obj.vertices_size = mod.vertices.size() * VERTPROP_SIZE;
+	obj.vertices_size = model->vertices.size() * VERTPROP_SIZE;
 
 	size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
 
@@ -131,32 +131,43 @@ void gl_manager::compile_model(std::string name, const model& mod) {
 	obj.bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
 	obj.texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
 
-	for (unsigned i = 0; i < mod.vertices.size(); i++) {
+	for (unsigned i = 0; i < model->vertices.size(); i++) {
 		// XXX: glm vectors don't have an iterator
 		auto push_vec = [&] (const auto& vec) {
-			for (unsigned k = 0; k < vec.length(); k++) {
+			for (int k = 0; k < vec.length(); k++) {
 				cooked_vertprops.push_back(vec[k]);
 			}
 		};
 
-		push_vec(mod.vertices[i]);
-		push_vec(mod.normals[i]);
-		push_vec(mod.tangents[i]);
-		push_vec(mod.bitangents[i]);
-		push_vec(mod.texcoords[i]);
+		push_vec(model->vertices[i]);
+		push_vec(model->normals[i]);
+		push_vec(model->tangents[i]);
+		push_vec(model->bitangents[i]);
+		push_vec(model->texcoords[i]);
 	}
 
-	compile_meshes(name, mod.meshes);
+	// collect mesh subnodes from the model
+	mesh_map meshes;
+	for (auto& [name, ptr] : model->nodes) {
+		if (ptr->type == gameObject::objType::Mesh) {
+			meshes[name] = std::dynamic_pointer_cast<gameMesh>(ptr);
+		}
+	}
 
+	//compile_meshes(name, model->meshes);
+	compile_meshes(name, meshes);
+
+	/*
 	// copy mesh names
-	for (const auto& m : mod.meshes) {
+	for (const auto& m : model->meshes) {
 		std::string asdf = name + "." + m.first;
 		std::cerr << " > have cooked mesh " << asdf << std::endl;
 		obj.meshes.push_back(asdf);
 	}
+	*/
 
 	// copy materials
-	for (const auto& [name, mat] : mod.materials) {
+	for (const auto& [name, mat] : model->materials) {
 		//obj.materials[name] = mat;
 		obj.materials[name].copy_properties(mat);
 
@@ -384,7 +395,7 @@ GLenum surface_gl_format(SDL_Surface *surf) {
 	return GL_RGBA;
 }
 
-GLenum surface_gl_format(const material_texture& tex) {
+GLenum surface_gl_format(const materialTexture& tex) {
 	switch (tex.channels) {
 		case 1: return GL_RED;
 		case 2: return GL_RG;

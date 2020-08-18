@@ -7,10 +7,12 @@
 
 using namespace grendx;
 
-void game_editor::refprobes_window(renderer *rend, context& ctx) {
+void game_editor::refprobes_window(gameMain *game) {
 	ImGui::Begin("Reflection probes", &show_refprobe_window);
 	ImGui::Columns(2);
 
+	// TODO: node tree selection
+#if 0
 	for (auto& [id, probe] : rend->ref_probes) {
 		std::string name = "reflection probe " + std::to_string(id);
 
@@ -40,6 +42,7 @@ void game_editor::refprobes_window(renderer *rend, context& ctx) {
 	if (ImGui::Button("Delete reflection probe")) {
 		rend->free_reflection_probe(selected_refprobe);
 	}
+#endif
 
 	ImGui::End();
 }

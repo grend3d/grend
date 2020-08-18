@@ -2,7 +2,7 @@
 #include <grend/sdl-context.hpp>
 #include <grend/opengl-includes.hpp>
 #include <grend/glm-includes.hpp>
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 
 #include <vector>
 #include <map>
@@ -137,7 +137,7 @@ class Texture : public Obj {
 		typedef std::weak_ptr<Texture> weakptr;
 
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
-		void buffer(const material_texture& tex, bool srgb=false);
+		void buffer(const materialTexture& tex, bool srgb=false);
 		void cubemap(std::string directory, std::string extension=".jpg");
 		void bind(GLenum target = GL_TEXTURE_2D) {
 			glBindTexture(target, obj);
@@ -255,10 +255,10 @@ class gl_manager {
 				void *bitangents_offset;
 		};
 		typedef std::map<std::string, compiled_model> cooked_model_map;
-		Texture::ptr texcache(const material_texture& tex, bool srgb = false);
+		Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
 
-		void compile_meshes(std::string objname, const mesh_map& meshies);
-		void compile_model(std::string name, const model& mod);
+		void compile_meshes(std::string objname, mesh_map& meshies);
+		void compile_model(std::string name, gameModel::ptr mod);
 		void compile_models(model_map& models);
 		Vao::ptr preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh);
 		Vao::ptr preload_model_vao(compiled_model& mesh);
@@ -312,7 +312,7 @@ Program::ptr link_program(Program::ptr program);
 
 GLenum surface_gl_format(SDL_Surface *surf);
 GLenum surface_gl_format(int channels);
-GLenum surface_gl_format(const material_texture& tex);
+GLenum surface_gl_format(const materialTexture& tex);
 
 // namespace grendx
 }

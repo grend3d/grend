@@ -1,9 +1,9 @@
 #pragma once
 
 #include <grend/glm-includes.hpp>
-#include <grend/model.hpp>
-
 #include <stdint.h>
+
+#include <map>
 
 namespace grendx {
 

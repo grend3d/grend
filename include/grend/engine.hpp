@@ -1,11 +1,13 @@
 #pragma once
 
+#include <grend/gameObject.hpp>
 #include <grend/gl_manager.hpp>
 #include <grend/sdl-context.hpp>
 #include <grend/glm-includes.hpp>
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 #include <grend/texture-atlas.hpp>
 #include <grend/quadtree.hpp>
+#include <grend/camera.hpp>
 
 #include <list>
 #include <memory>
@@ -16,6 +18,7 @@ static const size_t MAX_LIGHTS = 16;
 
 namespace grendx {
 
+	/*
 struct point_light {
 	glm::vec3 position;
 	glm::vec4 diffuse;
@@ -59,6 +62,7 @@ struct directional_light {
 	bool static_shadows = false;
 	bool shadows_rendered = false;
 };
+*/
 
 // TODO: revisit parabolic maps at some point, but for now they're
 //       not ideal:
@@ -73,6 +77,7 @@ struct directional_light {
 //         rendered in one shot, real-time reflections can just be disabled
 //         on gles2 (and the platforms that gles2 would be used for probably
 //         can't handle rendering real-time reflections to begin with anyway)
+/*
 struct reflection_probe {
 	glm::vec3 position;
 	quadtree::node_id faces[6];
@@ -97,14 +102,40 @@ struct draw_class {
 	unsigned class_id = 0;
 	unsigned obj_id = 0;
 };
+*/
 
+/*
 struct draw_attributes {
 	std::string name;
 	glm::mat4 transform;
 	GLenum face_order = GL_CCW;
 	bool cull_faces = true;
+};
+*/
 
-	struct draw_class dclass;
+class renderQueue {
+	public:
+		renderQueue(camera::ptr cam) { setCamera(cam); };
+		renderQueue(renderQueue& other) {
+			meshes = other.meshes;
+			lights = other.lights;
+			probes = other.probes;
+			cam    = other.cam;
+		}
+
+		void add(gameObject::ptr obj);
+		void sort(void);
+		void cull(void);
+		void flush(Program::ptr program);
+		void shaderSync(Program::ptr program);
+		void setCamera(camera::ptr newcam) { cam = newcam; };
+
+		camera::ptr cam = nullptr;
+	
+		// mat4 is calculated transform for the position of the node in the tree
+		std::vector<std::pair<glm::mat4, gameMesh::ptr>> meshes;
+		std::vector<std::pair<glm::mat4, gameLight::ptr>> lights;
+		std::vector<std::pair<glm::mat4, gameReflectionProbe::ptr>> probes;
 };
 
 class renderer {
@@ -112,14 +143,18 @@ class renderer {
 	friend class game_state;
 
 	public:
-		renderer();
+		renderer(context& ctx);
 		~renderer() { };
+		void loadShaders(void);
+		void initFramebuffers(void);
 
 		// TODO: 
 		// see drawn_entities below
 		void newframe(void);
-		struct draw_class index(unsigned idx);
+		// look up stencil buffer index in drawn objects
+		gameMesh::ptr index(unsigned idx);
 
+		/*
 		void draw_mesh(std::string mesh, const struct draw_attributes *attr);
 		void draw_mesh_lines(std::string mesh, const struct draw_attributes *attr);
 		void draw_model(const struct draw_attributes *attr);
@@ -134,6 +169,25 @@ class renderer {
 		void dqueue_sort_draws(glm::vec3 camera);
 		void dqueue_cull_models(glm::vec3 camera);
 		void dqueue_flush_draws(void);
+		*/
+
+		void draw_screenquad(void);
+
+		void updateObjects(gameObject::ptr root);
+		void draw(gameMesh::ptr mesh);
+		void draw(gameModel::ptr mesh);
+		void drawLines(gameMesh::ptr mesh);
+		void drawLines(gameModel::ptr mesh);
+		void cullDraws(void);
+		void sortDraws(void);
+		void flushDraws(void);
+
+		void drawSkybox(void);
+		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
+		void drawShadowCubeMap(gameLightPoint::ptr light);
+		void drawShadowMap(gameLightSpot::ptr light);
+		void drawShadowMap(gameLightDirectional::ptr light);
+		void drawReflectionProbe(gameReflectionProbe::ptr probe);
 
 		void set_material(gl_manager::compiled_model& obj, std::string mat_name);
 		void set_default_material(std::string mat_name);
@@ -143,54 +197,39 @@ class renderer {
 		//void init_lights(void);
 		void compile_lights(void);
 		void update_lights(void);
-		void touch_light_shadowmaps(void);
-		void touch_light_refprobes(void);
-		void sync_point_lights(const std::vector<uint32_t>& lights);
-		void sync_spot_lights(const std::vector<uint32_t>& lights);
-		void sync_directional_lights(const std::vector<uint32_t>& lights);
+		void syncLights(void);
 
-		bool is_valid_light(uint32_t id);
-		uint32_t alloc_light(void) { return ++light_ids; };
-		void free_light(uint32_t id);
-
-		uint32_t add_light(struct point_light lit);
-		uint32_t add_light(struct spot_light lit);
-		uint32_t add_light(struct directional_light lit);
+		/* * TODO: touch maps when i
+		void touch_shadowmaps(void);
+		void touch_refprobes(void);
+		*/
 
 		uint32_t add_reflection_probe(struct reflection_probe ref);
 		void free_reflection_probe(uint32_t id);
 
-		struct point_light       get_point_light(uint32_t id);
-		struct spot_light        get_spot_light(uint32_t id);
-		struct directional_light get_directional_light(uint32_t id);
-
-		void set_point_light(uint32_t id, struct point_light *lit);
-		void set_spot_light(uint32_t id, struct spot_light *lit);
-		void set_directional_light(uint32_t id, struct directional_light *lit);
-
 		void set_shader(Program::ptr shd);
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
-		void set_reflection_probe(const struct draw_attributes *attr);
+		void set_reflection_probe(glm::vec3 position);
 		gl_manager& get_glman(void){ return glman; };
 
-		bool running = true;
+		// main rendering framebuffer
+		Framebuffer::ptr rend_fb;
+		Texture::ptr     rend_tex;
+		Texture::ptr     rend_depth;
+		int rend_x, rend_y; // framebuffer dimensions
 
-		// map light IDs to light structures
-		uint32_t light_ids = 0;
-		struct std::map<uint32_t, struct point_light> point_lights;
-		struct std::map<uint32_t, struct spot_light> spot_lights;
-		struct std::map<uint32_t, struct directional_light> directional_lights;
+		// (actual) screen size
+		int screen_x, screen_y;
 
-		struct {
-			// index into light struct maps
-			std::vector<uint32_t> point;
-			std::vector<uint32_t> spot;
-			std::vector<uint32_t> directional;
-		} active_lights;
+		// previous frame info
+		Uint32 last_frame;
+		Framebuffer::ptr last_frame_fb; // same dimensions as rend_fb
+		Texture::ptr     last_frame_tex; // same dimensions as rend_fb
 
-		uint32_t refprobe_ids = 0;
-		std::map<uint32_t, struct reflection_probe> ref_probes;
+		// sky box
+		Texture::ptr skybox;
+
 		std::unique_ptr<atlas> reflection_atlas;
 		std::unique_ptr<atlas> shadow_atlas;
 
@@ -198,7 +237,7 @@ class renderer {
 		std::map<std::string, Program::ptr> shaders;
 
 	protected:
-		struct reflection_probe *get_nearest_refprobe(glm::vec3 pos);
+		gameReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
 		Program::ptr shader;
 		gl_manager glman;
 
@@ -208,18 +247,21 @@ class renderer {
 		//       possible solution is to have a global namespace for materials,
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
-		std::vector<std::pair<std::string, draw_attributes>> draw_queue;
+		std::vector<gameMesh::ptr> draw_queue;
 		// sorted after dqueue_sort_draws(), and flushed along with
 		// dqueue_flush_draws(), this is sorted back-to-front rather than
 		// front-to-back
-		std::vector<std::pair<std::string, draw_attributes>> transparent_draws;
+		std::vector<gameMesh::ptr> transparent_draws;
+		std::vector<gameLight::ptr> active_lights;
+		std::vector<gameReflectionProbe::ptr> active_refprobes;
 
-		// lookup indexes for objects drawn to the framebuffer
+		// lookup indexes for meshes drawn to the framebuffer
 		unsigned drawn_counter = 0;
-		struct draw_class drawn_entities[256];
+		gameMesh::ptr drawn_entities[256];
 
 		std::string fallback_material = "(null)";
 
+		// handles for default material textures
 		std::map<std::string, Texture::ptr> diffuse_handles;
 		std::map<std::string, Texture::ptr> specular_handles;
 		std::map<std::string, Texture::ptr> normmap_handles;

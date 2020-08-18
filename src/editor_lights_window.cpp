@@ -7,10 +7,14 @@
 
 using namespace grendx;
 
-void game_editor::lights_window(renderer *rend, context& ctx) {
+void game_editor::lights_window(gameMain *main) {
 	ImGui::Begin("Lights", &show_lights_window);
 	ImGui::Columns(2);
 
+	// TODO: probably don't need this, can have in "inspector" window
+	//       that displays object info
+
+#if 0
 	for (auto& [id, light] : rend->point_lights) {
 		std::string name = "Point light " + std::to_string(id);
 
@@ -122,6 +126,8 @@ void game_editor::lights_window(renderer *rend, context& ctx) {
 	if (ImGui::Button("Delete Light")) {
 		rend->free_light(selected_light);
 	}
+	*/
+#endif
 
 	ImGui::End();
 }

@@ -1,6 +1,15 @@
 #pragma once
+#include <grend/glm-includes.hpp>
+#include <grend/opengl-includes.hpp>
+#include <grend/sdl-context.hpp>
+// TODO: move, for lights
 #include <grend/quadtree.hpp>
-#include <grend/gl_manager.hpp>
+
+#include <memory>
+#include <map>
+#include <vector>
+#include <string>
+#include <utility>
 
 namespace grendx {
 
@@ -13,17 +22,18 @@ class gameObject {
 		enum objType {
 			None,
 			Model,           // generic model, static/dynamic/etc subclasses
+			Mesh,            // meshes that make up a model
 			Particles,       // particle system
-			Mesh,            // dynamic/streamed mesh (eg. water)
 			Light,           // Light object, has Point/Spot/etc subclasses
 			ReflectionProbe, // Full reflection probe
 			Lightprobe,      // diffuse light probe
+			Camera,          // TODO: camera position marker
 		} type = objType::None;
 
 		typedef std::shared_ptr<gameObject> ptr;
 		typedef std::weak_ptr<gameObject> weakptr;
 
-		gameObject(enum objType t) : type(t) {};
+		gameObject(enum objType t = objType::None) : type(t) {};
 
 		// handlers for basic input events
 		virtual void onLeftClick() {};
@@ -54,15 +64,29 @@ class gameObject {
 		glm::vec3 scale    = glm::vec3(1, 1, 1);
 };
 
+/*
+// defined in gameModel.hpp
+class gameMesh : public gameObject {
+	public:
+		typedef std::shared_ptr<gameModel> ptr;
+		typedef std::weak_ptr<gameModel> weakptr;
+
+		gameModel() : gameObject(objType::Model) {};
+		std::string meshName = "unit_cube:default";
+};
+
 class gameModel : public gameObject {
 	public:
 		typedef std::shared_ptr<gameModel> ptr;
 		typedef std::weak_ptr<gameModel> weakptr;
 
 		gameModel() : gameObject(objType::Model) {};
-		std::string  modelName = "unit_cube";
+		std::string modelName = "unit_cube";
+		std::string sourceFile = "";
 		Program::ptr shader = nullptr;
 };
+*/
+
 
 class gameLight : public gameObject {
 	public:
@@ -72,7 +96,7 @@ class gameLight : public gameObject {
 		enum lightType {
 			None,
 			Point,
-			Spotlight,
+			Spot,
 			Directional,
 			Rectangular,  // TODO:
 			Area,         // TODO:
@@ -96,9 +120,41 @@ class gameLightPoint : public gameLight {
 		float radius;
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap[6];
-		bool changed;
-		bool static_shadows;
-		bool shadows_rendered;
+		bool changed = true;
+		bool static_shadows = false;
+		bool shadows_rendered = false;
+};
+
+class gameLightSpot : public gameLight {
+	public:
+		typedef std::shared_ptr<gameLightSpot> ptr;
+		typedef std::weak_ptr<gameLightSpot> weakptr;
+
+		gameLightSpot() : gameLight(lightType::Spot) {};
+		glm::vec3 direction;
+		float radius;
+		float angle;
+
+		// TODO: maybe abstract atlas textures more
+		quadtree::node_id shadowmap;
+		bool changed = true;
+		bool static_shadows = false;
+		bool shadows_rendered = true;
+};
+
+class gameLightDirectional : public gameLight {
+	public:
+		typedef std::shared_ptr<gameLightDirectional> ptr;
+		typedef std::weak_ptr<gameLightDirectional> weakptr;
+
+		gameLightDirectional() : gameLight(lightType::Directional) {};
+		glm::vec3 direction;
+
+		// TODO: maybe abstract atlas textures more
+		quadtree::node_id shadowmap;
+		bool changed = true;
+		bool static_shadows = false;
+		bool shadows_rendered = true;
 };
 
 class gameReflectionProbe : public gameObject {

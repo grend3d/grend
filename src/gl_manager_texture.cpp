@@ -14,7 +14,7 @@
 
 namespace grendx {
 
-void Texture::buffer(const material_texture& tex, bool srgb) {
+void Texture::buffer(const materialTexture& tex, bool srgb) {
 	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
 	        tex.width, tex.height, tex.channels);
 

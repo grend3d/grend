@@ -1,4 +1,5 @@
 #include <grend/physics.hpp>
+#include <bullet/btBulletDynamicsCommon.h>
 
 using namespace grendx;
 

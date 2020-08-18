@@ -18,19 +18,19 @@ static file_dialog import_model_dialog("Import Model");
 static file_dialog import_scene_dialog("Import Scene");
 static file_dialog import_map_dialog("Import Map");
 
-static void handle_prompts(game_editor *editor, renderer *rend) {
+static void handle_prompts(game_editor *editor, gameMain *game) {
 	if (open_dialog.prompt_filename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
-		editor->clear(rend);
-		editor->load_map(rend, open_dialog.selection);
+		editor->clear(game);
+		editor->load_map(game, open_dialog.selection);
 	}
 
 	if (save_as_dialog.prompt_filename()) {
 		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 
-		editor->save_map(rend, save_as_dialog.selection);
+		editor->save_map(game, save_as_dialog.selection);
 		save_as_dialog.clear();
 	}
 
@@ -40,10 +40,10 @@ static void handle_prompts(game_editor *editor, renderer *rend) {
 		import_model_dialog.clear();
 
 		// TODO: XXX: no need for const if it's just being casted away anyway...
-		auto& glman = (gl_manager&)rend->get_glman();
-		editor->load_model(rend, import_model_dialog.selection);
+		auto& glman = (gl_manager&)game->rend->get_glman();
+		editor->load_model(game, import_model_dialog.selection);
 		glman.bind_cooked_meshes();
-		editor->update_models(rend);
+		editor->update_models(game);
 	}
 
 	if (import_scene_dialog.prompt_filename()) {
@@ -51,10 +51,10 @@ static void handle_prompts(game_editor *editor, renderer *rend) {
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 
-		auto& glman = (gl_manager&)rend->get_glman();
-		editor->load_scene(rend, import_scene_dialog.selection);
+		auto& glman = (gl_manager&)game->rend->get_glman();
+		editor->load_scene(game, import_scene_dialog.selection);
 		glman.bind_cooked_meshes();
-		editor->update_models(rend);
+		editor->update_models(game);
 	}
 
 	if (import_map_dialog.prompt_filename()) {
@@ -64,7 +64,7 @@ static void handle_prompts(game_editor *editor, renderer *rend) {
 	}
 }
 
-void game_editor::menubar(renderer *rend) {
+void game_editor::menubar(gameMain *game) {
 	static bool demo_window = false;
 
 	if (ImGui::BeginMainMenuBar()) {
@@ -85,7 +85,7 @@ void game_editor::menubar(renderer *rend) {
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reload_shaders(rend); }
+			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reload_shaders(game); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
@@ -161,5 +161,5 @@ void game_editor::menubar(renderer *rend) {
 		ImGui::ShowDemoWindow(&demo_window);
 	}
 
-	handle_prompts(this, rend);
+	handle_prompts(this, game);
 }

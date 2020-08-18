@@ -121,7 +121,27 @@ static std::map<std::string, material> default_materials = {
 			   }},
 };
 
-renderer::renderer() {
+renderer::renderer(context& ctx) {
+	rend.glman.enable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	Framebuffer().bind();
+	DO_ERROR_CHECK();
+
+#ifdef __EMSCRIPTEN__
+	screen_x = SCREEN_SIZE_X;
+	screen_y = SCREEN_SIZE_Y;
+	std::cerr << "also got here" << std::endl;
+#else
+	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
+#endif
+
+	// TODO: skybox should be a setable node object
+	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
+	skybox = gen_texture();
+	skybox->cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
+	std::cerr << "loaded cubemap" << std::endl;
+
 	for (auto& [name, tex] : default_materials) {
 		std::cerr << __func__ << ": loading materials for "
 			<< name << std::endl;
@@ -147,10 +167,100 @@ renderer::renderer() {
 		}
 	}
 
+	loadShaders();
+	initFramebuffers();
+
 	reflection_atlas = std::unique_ptr<atlas>(new atlas(2048));
 	shadow_atlas = std::unique_ptr<atlas>(new atlas(2048, atlas::mode::Depth));
 
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
+}
+
+void renderer::loadShaders(void) {
+	std::cerr << "loading shaders" << std::endl;
+	shaders["skybox"] = load_program(
+		"shaders/out/skybox.vert",
+		"shaders/out/skybox.frag"
+	);
+
+	glBindAttribLocation(shaders["skybox"]->obj, 0, "v_position");
+	link_program(shaders["skybox"]);
+
+#if GLSL_VERSION < 300
+	shaders["main"] = load_program(
+		"shaders/out/vertex-shading.vert",
+		"shaders/out/vertex-shading.frag"
+	);
+#else
+	shaders["main"] = load_program(
+		"shaders/out/pixel-shading.vert",
+		//"shaders/out/pixel-shading.frag"
+		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
+	);
+#endif
+
+	shaders["refprobe"] = load_program(
+		"shaders/out/ref_probe.vert",
+		"shaders/out/ref_probe.frag"
+	);
+
+	shaders["refprobe_debug"] = load_program(
+		"shaders/out/ref_probe_debug.vert",
+		"shaders/out/ref_probe_debug.frag"
+	);
+
+	for (auto& name : {"main", "refprobe", "refprobe_debug"}) {
+		Program::ptr s = shaders[name];
+
+		glBindAttribLocation(s->obj, 0, "in_Position");
+		glBindAttribLocation(s->obj, 1, "v_normal");
+		glBindAttribLocation(s->obj, 2, "v_tangent");
+		glBindAttribLocation(s->obj, 3, "v_bitangent");
+		glBindAttribLocation(s->obj, 4, "texcoord");
+		link_program(s);
+	}
+
+	shaders["shadow"] = load_program(
+		"shaders/out/depth.vert",
+		"shaders/out/depth.frag"
+	);
+	glBindAttribLocation(shaders["shadow"]->obj, 0, "v_position");
+	link_program(shaders["shadow"]);
+
+	Vao::ptr orig_vao = glman.current_vao;
+	glman.bind_vao(glman.screenquad_vao);
+
+	shaders["post"] = load_program(
+		"shaders/out/postprocess.vert",
+		"shaders/out/postprocess.frag"
+	);
+
+	glBindAttribLocation(shaders["post"]->obj, 0, "v_position");
+	glBindAttribLocation(shaders["post"]->obj, 1, "v_texcoord");
+	DO_ERROR_CHECK();
+	link_program(shaders["post"]);
+
+	glman.bind_vao(orig_vao);
+	set_shader(rend.shaders["main"]);
+}
+
+void renderer::initFramebuffers(void) {
+	// set up the render framebuffer
+	rend_fb = gen_framebuffer();
+	rend_x = screen_x, rend_y = screen_y;
+
+	//rend.glman.bind_framebuffer(rend_fb);
+	rend_fb->bind();
+	rend_tex = rend_fb->attach(GL_COLOR_ATTACHMENT0,
+	                 gen_texture_color(rend_x, rend_y, GL_RGBA16F));
+	rend_depth = rend_fb->attach(GL_DEPTH_STENCIL_ATTACHMENT,
+	                 gen_texture_depth_stencil(rend_x, rend_y));
+
+	// and framebuffer holding the previously drawn frame
+	last_frame_fb = gen_framebuffer();
+	last_frame_fb->bind();
+	last_frame_tex = last_frame_fb->attach(GL_COLOR_ATTACHMENT0,
+		                 gen_texture_color(rend_x, rend_y));
 }
 
 void renderer::set_material(gl_manager::compiled_model& obj, std::string mat_name) {

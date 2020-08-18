@@ -36,14 +36,19 @@ static inline T parse_vec(std::string& str) {
 	return ret;
 }
 
-void game_editor::load_map(renderer *rend, std::string name) {
+void game_editor::load_map(gameMain *game, std::string name) {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 	bool imported_models = false;
+	unsigned counter = 0;
 
 	if (!foo.good()) {
 		std::cerr << "couldn't open save file" << name << std::endl;
 		return;
+	}
+
+	if (selectedNode == nullptr) {
+		selectedNode = game->state->rootnode;
 	}
 
 	// TODO: split this into smaller functions
@@ -55,12 +60,12 @@ void game_editor::load_map(renderer *rend, std::string name) {
 		}
 
 		if (statement[0] == "objfile" && statement.size() == 2) {
-			load_model(rend, statement[1]);
+			load_model(game, statement[1]);
 			imported_models = true;
 		}
 
 		if (statement[0] == "scene" && statement.size() == 2) {
-			load_model(rend, statement[1]);
+			load_model(game, statement[1]);
 			imported_models = true;
 		}
 
@@ -86,10 +91,11 @@ void game_editor::load_map(renderer *rend, std::string name) {
 			// TODO: size check
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 
-			rend->add_reflection_probe((struct reflection_probe) {
-				.position = pos,
-				.changed = true,
-			});
+			auto ptr = gameReflectionProbe::ptr(new gameReflectionProbe());
+			ptr->position = pos;
+
+			std::string name = "reflection probe " + std::to_string(counter++);
+			selectedNode->setNode(name, ptr);
 		}
 
 		if (statement[0] == "point_light" && statement.size() == 7) {
@@ -100,6 +106,19 @@ void game_editor::load_map(renderer *rend, std::string name) {
 			bool casts_shadows = std::stoi(statement[5]);
 			bool static_shadows = std::stoi(statement[6]);
 
+			auto ptr = gameLightPoint::ptr(new gameLightPoint());
+			ptr->position = pos;
+			ptr->radius = radius;
+			ptr->intensity = intensity;
+			ptr->casts_shadows = casts_shadows;
+			ptr->static_shadows = static_shadows;
+			ptr->diffuse = diffuse;
+
+			std::string name = "point light " + std::to_string(counter++);
+			selectedNode->setNode(name, ptr);
+
+
+			/*
 			uint32_t nlit = rend->add_light((struct point_light){
 				.position = pos,
 				.diffuse = diffuse,
@@ -110,8 +129,11 @@ void game_editor::load_map(renderer *rend, std::string name) {
 			});
 
 			edit_lights.point.push_back(nlit);
+			*/
 		}
 
+		// TODO: other light types
+#if 0
 		if (statement[0] == "spot_light" && statement.size() == 9) {
 			glm::vec3 pos = parse_vec<glm::vec3>(statement[1]);
 			glm::vec4 diffuse = parse_vec<glm::vec4>(statement[2]);
@@ -155,13 +177,14 @@ void game_editor::load_map(renderer *rend, std::string name) {
 
 			edit_lights.spot.push_back(nlit);
 		}
+#endif
 	}
 
 	if (imported_models) {
 		// TODO: XXX: no need for const
-		auto& glman = (gl_manager&)rend->get_glman();
+		auto& glman = (gl_manager&)game->rend->get_glman();
 		glman.bind_cooked_meshes();
-		update_models(rend);
+		update_models(game);
 	}
 }
 
@@ -189,9 +212,10 @@ static inline std::string format_mat(T& mtx) {
 	return ret;
 }
 
-void game_editor::save_map(renderer *rend, std::string name) {
+void game_editor::save_map(gameMain *game, std::string name) {
 	std::ofstream foo(name);
 	std::cerr << "saving map " << name << std::endl;
+	std::cerr << "TODO: reimplement saving maps" << std::endl;
 
 	if (!foo.good()) {
 		std::cerr << "couldn't open save file" << name << std::endl;
@@ -200,6 +224,7 @@ void game_editor::save_map(renderer *rend, std::string name) {
 
 	foo << "### test scene save file" << std::endl;
 
+#if 0
 	for (auto& path : editor_model_files) {
 		foo << "objfile\t" << path << std::endl;
 	}
@@ -272,4 +297,5 @@ void game_editor::save_map(renderer *rend, std::string name) {
 			    << std::endl;
 		}
 	}
+#endif
 }

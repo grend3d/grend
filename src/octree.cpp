@@ -138,23 +138,31 @@ void octree::add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]) {
 	}
 }
 
-void octree::add_model(const model& mod, glm::mat4 transform) {
+void octree::add_model(gameModel::ptr mod, glm::mat4 transform) {
 	// TODO: range check on vertices
-	auto& verts = mod.vertices;
-	auto& normals = mod.normals;
+	auto& verts = mod->vertices;
+	auto& normals = mod->normals;
 
-	for (auto& [key, mesh] : mod.meshes) {
-		for (unsigned i = 0; i < mesh.faces.size(); i += 3) {
+	for (auto& [key, ptr] : mod->nodes) {
+		if (ptr->type != gameObject::objType::Mesh) {
+			continue;
+		}
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+
+		// TODO: what happens when degenerate meshes without a full triangle
+		//       are loaded here? might account for the sporadic bugs this has...
+		//       should check for those here
+		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
 			glm::vec3 tri[3] = {
-				verts[mesh.faces[i]],
-				verts[mesh.faces[i+1]],
-				verts[mesh.faces[i+2]]
+				verts[mesh->faces[i]],
+				verts[mesh->faces[i+1]],
+				verts[mesh->faces[i+2]]
 			};
 
 			glm::vec3 norms[3] = {
-				normals[mesh.faces[i]],
-				normals[mesh.faces[i+1]],
-				normals[mesh.faces[i+2]]
+				normals[mesh->faces[i]],
+				normals[mesh->faces[i+1]],
+				normals[mesh->faces[i+2]]
 			};
 
 			for (auto& t : tri) {

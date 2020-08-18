@@ -1,4 +1,4 @@
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/scene.hpp>
 
@@ -17,25 +17,22 @@
 
 namespace grendx {
 
-model::model(std::string filename) {
-	load_object(filename);
-}
-
-void model::clear(void) {
-	meshes.clear();
-}
-
-void model::gen_normals(void) {
+void gameModel::genNormals(void) {
 	std::cerr << " > generating new normals... " << vertices.size() << std::endl;
 	normals.resize(vertices.size(), glm::vec3(0));
 
-	for (auto& thing : meshes) {
-		for (unsigned i = 0; i < thing.second.faces.size(); i += 3) {
+	for (auto& [name, ptr] : nodes) {
+		if (ptr->type != gameObject::objType::Mesh) {
+			continue;
+		}
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+
+		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
 			// TODO: bounds check
 			GLuint elms[3] = {
-				thing.second.faces[i],
-				thing.second.faces[i+1],
-				thing.second.faces[i+2]
+				mesh->faces[i],
+				mesh->faces[i+1],
+				mesh->faces[i+2]
 			};
 
 			glm::vec3 normal = glm::normalize(
@@ -48,15 +45,19 @@ void model::gen_normals(void) {
 	}
 }
 
-void model::gen_texcoords(void) {
+void gameModel::genTexcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
 	texcoords.resize(vertices.size());
 
-	for (auto& meshkey : meshes) {
-		auto& mesh = meshkey.second;
-		for (unsigned i = 0; i < mesh.faces.size(); i++) {
+	for (auto& [name, ptr] : nodes) {
+		if (ptr->type != gameObject::objType::Mesh) {
+			continue;
+		}
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+
+		for (unsigned i = 0; i < mesh->faces.size(); i++) {
 			// TODO: bounds check
-			GLuint elm = mesh.faces[i];
+			GLuint elm = mesh->faces[i];
 
 			glm::vec3& foo = vertices[elm];
 			texcoords[elm] = {foo.x, foo.y};
@@ -64,7 +65,7 @@ void model::gen_texcoords(void) {
 	}
 }
 
-void model::gen_tangents(void) {
+void gameModel::genTangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
 	// allocate a little bit extra to make sure we don't overrun the buffer...
 	// XXX:
@@ -77,12 +78,15 @@ void model::gen_tangents(void) {
 	bitangents.resize(vertices.size(), glm::vec3(0));
 
 	// generate tangents for each triangle
-	for (auto& meshkey : meshes) {
-		auto& mesh = meshkey.second;
+	for (auto& [name, ptr] : nodes) {
+		if (ptr->type != gameObject::objType::Mesh) {
+			continue;
+		}
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
 
-		for (std::size_t i = 0; i+2 < mesh.faces.size(); i += 3) {
+		for (std::size_t i = 0; i+2 < mesh->faces.size(); i += 3) {
 			// TODO: bounds check
-			GLuint elms[3] = {mesh.faces[i], mesh.faces[i+1], mesh.faces[i+2]};
+			GLuint elms[3] = {mesh->faces[i], mesh->faces[i+1], mesh->faces[i+2]};
 
 			glm::vec3& a = vertices[elms[0]];
 			glm::vec3& b = vertices[elms[1]];
@@ -124,13 +128,14 @@ static std::string base_dir(std::string filename) {
 	return filename;
 }
 
-void model::load_object(std::string filename) {
+gameModel::ptr load_object(std::string filename) {
 	std::cerr << " > loading " << filename << std::endl;
 	std::ifstream input(filename);
 	std::string line;
 	std::string mesh_name = "default";
 	std::string mesh_material = "(null)";
-	std::string current_mesh = mesh_name + ":" + mesh_material;
+	std::string current_mesh_name = mesh_name + ":" + mesh_material;
+	gameMesh::ptr current_mesh = nullptr;
 
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
@@ -139,11 +144,10 @@ void model::load_object(std::string filename) {
 	if (!input.good()) {
 		// TODO: exception
 		std::cerr << " ! couldn't load object from " << filename << std::endl;
-		return;
+		return nullptr;
 	}
 
-	// in case we're reloading over a previously-loaded object
-	clear();
+	gameModel::ptr ret = gameModel::ptr(new gameModel());
 
 	// TODO: split this into a seperate parse function
 	while (std::getline(input, line)) {
@@ -157,19 +161,24 @@ void model::load_object(std::string filename) {
 			// TODO: should current_mesh just be defined at the top
 			//       of this loop?
 			mesh_name = statement[1];
-			current_mesh = mesh_name + ":(null)";
+			current_mesh_name = mesh_name + ":(null)";
+			current_mesh = gameMesh::ptr(new gameMesh());
+			ret->setNode(current_mesh_name, current_mesh);
 		}
 
 		else if (statement[0] == "mtllib") {
 			std::string temp = base_dir(filename) + statement[1];
 			std::cerr << " > using material " << temp << std::endl;
-			load_materials(temp);
+			load_materials(ret, temp);
 		}
 
 		else if (statement[0] == "usemtl") {
 			std::cerr << " > using material " << statement[1] << std::endl;
-			current_mesh = mesh_name + ":" + statement[1];
-			meshes[current_mesh].material = statement[1];
+			current_mesh_name = mesh_name + ":" + statement[1];
+			current_mesh = gameMesh::ptr(new gameMesh());
+			current_mesh->material = statement[1];
+
+			ret->setNode(current_mesh_name, current_mesh);
 		}
 
 		else if (statement[0] == "v") {
@@ -187,16 +196,16 @@ void model::load_object(std::string filename) {
 				auto spec = split_string(statement, '/');
 				unsigned vert_index = std::stoi(spec[0]) - 1;
 
-				vertices.push_back(vertbuf[vert_index]);
-				meshes[current_mesh].faces.push_back(vertices.size() - 1);
+				ret->vertices.push_back(vertbuf[vert_index]);
+				current_mesh->faces.push_back(ret->vertices.size() - 1);
 
-				if (have_texcoords && spec.size() > 1 && !spec[1].empty()) {
+				if (ret->haveTexcoords && spec.size() > 1 && !spec[1].empty()) {
 					unsigned buf_index = std::stoi(spec[1]) - 1;
-					texcoords.push_back(texbuf[buf_index]);
+					ret->texcoords.push_back(texbuf[buf_index]);
 				}
 
-				if (have_normals && spec.size() > 2 && !spec[2].empty()) {
-					normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
+				if (ret->haveNormals && spec.size() > 2 && !spec[2].empty()) {
+					ret->normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
 				}
 			};
 
@@ -215,62 +224,64 @@ void model::load_object(std::string filename) {
 			                        std::stof(statement[3]));
 			//normals.push_back(glm::normalize(v));
 			normbuf.push_back(v);
-			have_normals = true;
+			ret->haveNormals = true;
 		}
 
 		else if (statement[0] == "vt") {
 			texbuf.push_back({std::stof(statement[1]), std::stof(statement[2])});
-			have_texcoords = true;
+			ret->haveTexcoords = true;
 		}
 
 	}
 
-	for (const auto& thing : meshes) {
-		std::cerr << " > > have mesh " << thing.first << std::endl; 
+	for (const auto& [name, ptr] : ret->nodes) {
+		std::cerr << " > > have mesh node " << name << std::endl; 
 	}
 
 	// TODO: check that normals size == vertices size and fill in the difference
-	if (!have_normals) {
-		gen_normals();
+	if (!ret->haveNormals) {
+		ret->genNormals();
 	}
 
-	if (!have_texcoords) {
-		gen_texcoords();
+	if (!ret->haveTexcoords) {
+		ret->genTexcoords();
 	}
 
-	gen_tangents();
+	ret->genTangents();
 
-	if (normals.size() != vertices.size()) {
+	if (ret->normals.size() != ret->vertices.size()) {
 		std::cerr << " ? mismatched normals and vertices: "
-			<< normals.size() << ", "
-			<< vertices.size()
+			<< ret->normals.size() << ", "
+			<< ret->vertices.size()
 			<< std::endl;
 		// TODO: should handle this
 	}
 
-	if (texcoords.size() != vertices.size()) {
+	if (ret->texcoords.size() != ret->vertices.size()) {
 		std::cerr << " ? mismatched texcoords and vertices: "
-			<< texcoords.size() << ", "
-			<< vertices.size()
+			<< ret->texcoords.size() << ", "
+			<< ret->vertices.size()
 			<< std::endl;
 		// TODO: should handle this
 	}
 
-	if (tangents.size() != vertices.size()
-	    || bitangents.size() != vertices.size())
+	if (ret->tangents.size() != ret->vertices.size()
+	    || ret->bitangents.size() != ret->vertices.size())
 	{
 		std::cerr << " ? mismatched tangents and vertices: "
-			<< tangents.size() << ", "
-			<< vertices.size()
+			<< ret->tangents.size() << ", "
+			<< ret->vertices.size()
 			<< std::endl;
 	}
+
+	return ret;
 }
 
-material_texture::material_texture(std::string filename) {
+materialTexture::materialTexture(std::string filename) {
 	load_texture(filename);
 }
 
-void material_texture::load_texture(std::string filename) {
+void materialTexture::load_texture(std::string filename) {
 	uint8_t *datas = stbi_load(filename.c_str(), &width,
 	                           &height, &channels, 0);
 
@@ -287,7 +298,7 @@ void material_texture::load_texture(std::string filename) {
 	stbi_image_free(datas);
 }
 
-void model::load_materials(std::string filename) {
+void load_materials(gameModel::ptr model, std::string filename) {
 	std::ifstream input(filename);
 	std::string current_material = "default";
 	std::string line;
@@ -314,14 +325,14 @@ void model::load_materials(std::string filename) {
 		}
 
 		else if (statement[0] == "Ka") {
-			materials[current_material].ambient =
+			model->materials[current_material].ambient =
 				glm::vec4(std::stof(statement[1]),
 			              std::stof(statement[2]),
 			              std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "Kd") {
-			materials[current_material].diffuse =
+			model->materials[current_material].diffuse =
 				glm::vec4(std::stof(statement[1]),
 			              std::stof(statement[2]),
 			              std::stof(statement[3]), 1);
@@ -329,18 +340,19 @@ void model::load_materials(std::string filename) {
 		}
 
 		else if (statement[0] == "Ks") {
-			materials[current_material].specular =
+			model->materials[current_material].specular =
 				glm::vec4(std::stof(statement[1]),
 			             std::stof(statement[2]),
 			             std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "d") {
-			materials[current_material].opacity = std::stof(statement[1]);
+			model->materials[current_material].opacity
+				= std::stof(statement[1]);
 		}
 
 		else if (statement[0] == "Ns") {
-			materials[current_material].roughness =
+			model->materials[current_material].roughness =
 				1.f - std::stof(statement[1])/1000.f;
 		}
 
@@ -352,39 +364,41 @@ void model::load_materials(std::string filename) {
 				case 6:
 				case 7:
 				case 9:
-					materials[current_material].blend = material::blend_mode::Blend;
+					model->materials[current_material].blend
+						= material::blend_mode::Blend;
 					break;
 
 				default:
-					materials[current_material].blend = material::blend_mode::Opaque;
+					model->materials[current_material].blend
+						= material::blend_mode::Opaque;
 					break;
 			}
 		}
 
 		else if (statement[0] == "map_Kd") {
 			//materials[current_material].diffuse_map = base_dir(filename) + statement[1];
-			materials[current_material].diffuse_map.
+			model->materials[current_material].diffuse_map.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
 			//materials[current_material].specular_map = base_dir(filename) + statement[1];
-			materials[current_material].metal_roughness_map.
+			model->materials[current_material].metal_roughness_map.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
 			//materials[current_material].ambient_occ_map = base_dir(filename) + statement[1];
-			materials[current_material].ambient_occ_map.
+			model->materials[current_material].ambient_occ_map.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
 			//materials[current_material].normal_map = base_dir(filename) + statement[1];
-			materials[current_material].normal_map.
+			model->materials[current_material].normal_map.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
@@ -555,9 +569,9 @@ static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
 	}
 }
 
-static grendx::material_texture
+static grendx::materialTexture
 gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
-	grendx::material_texture ret;
+	grendx::materialTexture ret;
 
 	auto& tex = gltf_texture(gltf_model, tex_idx);
 	std::cerr << "        + texture source: " << tex.source << std::endl;
@@ -578,16 +592,19 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 }
 
 static void gltf_load_material(tinygltf::Model& gltf_model,
-                               grendx::model& out_model,
+                               grendx::gameModel::ptr out_model,
                                int material_idx,
                                std::string mesh_name)
 {
 	// TODO: maybe should pass sub-mesh name as an argument
 	std::string temp_name = mesh_name + ":" + std::to_string(material_idx);
+	struct grendx::material mod_mat;
 	auto& mat = gltf_material(gltf_model, material_idx);
 
-	struct grendx::material mod_mat;
-	out_model.meshes[temp_name].material = mat.name;
+	assert(out_model->hasNode(temp_name));
+	grendx::gameMesh::ptr mesh
+		= std::dynamic_pointer_cast<grendx::gameMesh>(out_model->nodes[temp_name]);
+	mesh->material = mat.name;
 
 	auto& pbr = mat.pbrMetallicRoughness;
 	auto& base_color = pbr.baseColorFactor;
@@ -646,13 +663,17 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 
 	mod_mat.roughness = pbr.roughnessFactor;
 	mod_mat.diffuse = mat_diffuse;
-	out_model.materials[mat.name] = mod_mat;
+	out_model->materials[mat.name] = mod_mat;
 }
 
 grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 	model_map ret;
 
 	for (auto& mesh : tgltf_model.meshes) {
+		grendx::gameModel::ptr curModel =
+			grendx::gameModel::ptr(new grendx::gameModel());
+		ret[mesh.name] = curModel;
+
 		std::cerr << " GLTF > have mesh " << mesh.name << std::endl;
 		std::cerr << "      > primitives: " << std::endl;
 
@@ -665,12 +686,16 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			std::cerr << "        indices: " << prim.indices << std::endl;
 			std::cerr << "        mode: " << prim.mode << std::endl;
 
+			grendx::gameMesh::ptr modmesh = grendx::gameMesh::ptr(new grendx::gameMesh());
+			curModel->setNode(temp_name, modmesh);
+
 			if (prim.material >= 0) {
-				gltf_load_material(tgltf_model, ret[mesh.name],
+				gltf_load_material(tgltf_model, curModel,
 				                   prim.material, mesh.name);
 
 			} else {
-				ret[mesh.name].meshes[temp_name].material = "(null)";
+				modmesh->material = "(null)";
+				//ret[mesh.name].meshes[temp_name].material = "(null)";
 			}
 
 			// accessor indices
@@ -695,8 +720,8 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 					*/
 
-				size_t vsize = ret[mesh.name].vertices.size();
-				auto& submesh = ret[mesh.name].meshes[temp_name].faces;
+				size_t vsize = curModel->vertices.size();
+				auto& submesh = modmesh->faces;
 				//gltf_unpack_buffer(tgltf_model, elements, submesh);
 				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
 					gltf_unpack_ushort_to_uint(tgltf_model, elements, submesh);
@@ -716,8 +741,8 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			if (normals >= 0) {
 				check_index(tgltf_model.accessors, normals);
 
-				gltf_unpack_buffer(tgltf_model, normals, ret[mesh.name].normals);
-				ret[mesh.name].have_normals = true;
+				gltf_unpack_buffer(tgltf_model, normals, curModel->normals);
+				curModel->haveNormals = true;
 			}
 
 			if (position >= 0) {
@@ -728,7 +753,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				gltf_unpack_buffer(tgltf_model, position, ret[mesh.name].vertices);
+				gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
 			}
 
 			if (texcoord >= 0) {
@@ -739,20 +764,21 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				gltf_unpack_buffer(tgltf_model, texcoord, ret[mesh.name].texcoords);
-				ret[mesh.name].have_texcoords = true;
+				gltf_unpack_buffer(tgltf_model, texcoord, curModel->texcoords);
+				curModel->haveTexcoords = true;
 			}
 		}
 
-		if (!ret[mesh.name].have_normals) {
-			ret[mesh.name].gen_normals();
+		if (!curModel->haveNormals) {
+			curModel->genNormals();
 		}
 
-		if (!ret[mesh.name].have_texcoords) {
-			ret[mesh.name].gen_texcoords();
+		if (!curModel->haveTexcoords) {
+			curModel->genTexcoords();
 		}
 
-		ret[mesh.name].gen_tangents();
+		// TODO: parse tangents from gltf, if available
+		curModel->genTangents();
 	}
 
 	return ret;

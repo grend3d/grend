@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend/glm-includes.hpp>
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 #include <grend/octree.hpp>
 
 #include <unordered_map>
@@ -57,7 +57,7 @@ class imp_physics {
 
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
-		uint64_t add_static_model(std::string modname, model& mod,
+		uint64_t add_static_model(std::string modname, gameModel::ptr mod,
 		                          glm::mat4 transform);
 
 		// dynamic geometry, collisions with AABB tree
@@ -66,7 +66,7 @@ class imp_physics {
 		                 double length, double width, double height);
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		std::map<std::string, uint64_t> add_model_mesh_boxes(model& mod);
+		std::map<std::string, uint64_t> add_model_mesh_boxes(gameModel::ptr mod);
 		void remove(uint64_t id);
 
 		void set_acceleration(uint64_t id, glm::vec3 accel);

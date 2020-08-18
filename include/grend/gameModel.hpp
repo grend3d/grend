@@ -1,4 +1,6 @@
 #pragma once
+
+#include <grend/gameObject.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/opengl-includes.hpp>
 #include <grend/scene.hpp>
@@ -13,10 +15,10 @@ namespace grendx {
 
 // TODO: need a material cache, having a way to lazily load/unload texture
 //       would be a very good thing
-class material_texture {
+class materialTexture {
 	public:
-		material_texture() { };
-		material_texture(std::string filename);
+		materialTexture() { };
+		materialTexture(std::string filename);
 		void load_texture(std::string filename);
 		bool loaded(void) const { return channels != 0; };
 
@@ -53,53 +55,62 @@ struct material {
 		blend = other.blend;
 	}
 
-	material_texture diffuse_map;
-	material_texture metal_roughness_map;
-	material_texture normal_map;
-	material_texture ambient_occ_map;
+	materialTexture diffuse_map;
+	materialTexture metal_roughness_map;
+	materialTexture normal_map;
+	materialTexture ambient_occ_map;
 };
 
-class model_submesh {
+class gameMesh : public gameObject {
 	public:
+		typedef std::shared_ptr<gameMesh> ptr;
+		typedef std::weak_ptr<gameMesh> weakptr;
+
+		gameMesh() : gameObject(objType::Mesh) {};
+
+		std::string meshName = "unit_cube:default";
 		std::string material = "(null)";
 		std::vector<GLuint> faces;
 };
 
-class model {
+class gameModel : public gameObject {
 	public:
-		model(){
-			vertices.clear();
-			normals.clear();
-			tangents.clear();
-			bitangents.clear();
-			texcoords.clear();
-		};
-		model(std::string filename);
-		void load_object(std::string filename);
-		void load_materials(std::string filename);
-		void clear(void);
+		typedef std::shared_ptr<gameModel> ptr;
+		typedef std::weak_ptr<gameModel> weakptr;
 
-		void gen_all(void);
-		void gen_normals(void);
-		void gen_texcoords(void);
-		void gen_tangents(void);
+		gameModel() : gameObject(objType::Model) {};
+		void genInfo(void);
+		void genNormals(void);
+		void genTexcoords(void);
+		void genTangents(void);
 
+		std::string modelName = "unit_cube";
+		// TODO: allow attaching shaders to objects
+		//Program::ptr shader = nullptr;
+
+		// TODO: vertex data can be freed after compiling, can keep a
+		//       reference to the compiled model, which would also make it
+		//       much easier to free models from the GPU
 		std::vector<glm::vec3> vertices;
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
 		std::vector<glm::vec2> texcoords;
 
-		std::map<std::string, model_submesh> meshes = {};
-		std::map<std::string, material> materials = {};
+		// TODO: maybe materials can be subnodes...
+		std::map<std::string, material> materials;
 
-		bool have_normals = false;
-		bool have_texcoords = false;
+		// used to determine if normals, etc need to be generated
+		bool haveNormals = false;
+		bool haveTexcoords = false;
+		bool haveTangents = false;
 };
 
-typedef std::map<std::string, model_submesh> mesh_map;
-typedef std::map<std::string, model> model_map;
+typedef std::map<std::string, gameMesh::ptr> mesh_map;
+typedef std::map<std::string, gameModel::ptr> model_map;
 
+gameModel::ptr load_object(std::string filename);
+void           load_materials(gameModel::ptr model, std::string filename);
 model_map load_gltf_models(std::string filename);
 model_map load_gltf_models(tinygltf::Model& tgltf_model);
 std::pair<scene, model_map> load_gltf_scene(std::string filename);

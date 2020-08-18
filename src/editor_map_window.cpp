@@ -7,9 +7,10 @@
 
 using namespace grendx;
 
-static void draw_indicator(renderer *rend, glm::mat4 trans,
+static void draw_indicator(gameMain *rend, glm::mat4 trans,
                            glm::vec3 pos, glm::quat rot)
 {
+	// TODO: should load indicator models as part of the editor constructor
 	static std::string ind[] = {
 		"X-Axis-Pointer",
 		"Y-Axis-Pointer",
@@ -23,6 +24,8 @@ static void draw_indicator(renderer *rend, glm::mat4 trans,
 	glm::vec3 tpos = glm::vec3(temp) / temp.z;
 
 	for (unsigned i = 0; i < 6; i++) {
+		// TODO: and draw them here
+		/*
 		rend->draw_model((struct draw_attributes) {
 			.name = ind[i],
 			.transform =
@@ -31,10 +34,11 @@ static void draw_indicator(renderer *rend, glm::mat4 trans,
 				* glm::scale(glm::vec3(0.5)),
 			.dclass = {DRAWATTR_CLASS_UI, i},
 		});
+		*/
 	}
 }
 
-void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
+void game_editor::map_window(gameMain *game) {
 	ImGui::Begin("Objects", &show_map_window);
 	ImGui::Columns(2);
 
@@ -49,6 +53,8 @@ void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 	ImGui::NextColumn();
 	*/
 
+	// TODO: going to be replaced with node tree
+#if 0
 	for (int i = 0; i < (int)dynamic_models.size(); i++) {
 		auto& ent = dynamic_models[i];
 
@@ -127,6 +133,7 @@ void game_editor::map_window(renderer *rend, imp_physics *phys, context& ctx) {
 			dynamic_models.erase(dynamic_models.begin() + selected_object);
 		}
 	}
+#endif
 
 	ImGui::End();
 }

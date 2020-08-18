@@ -25,9 +25,6 @@ class gameMainDevWindow : public gameMain {
 
 		std::shared_ptr<gameView> player;
 		std::shared_ptr<gameView> editor;
-
-		// FPS info
-		sma_counter frame_timer;
 };
 
 // namespace grendx

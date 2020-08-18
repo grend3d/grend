@@ -1,4 +1,5 @@
-#include <grend/main_logic.hpp>
+#include <grend/gameState.hpp>
+#include <grend/game_editor.hpp>
 
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
 #include <imgui/imgui.h>
@@ -7,13 +8,27 @@
 
 using namespace grendx;
 
-void game_editor::load_model(renderer *rend, std::string path) {
+void game_editor::initImgui(gameMain *game) {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
+	// TODO: make the glsl version here depend on GL version/the string in
+	//       shaders/version.glsl
+	//ImGui_ImplOpenGL3_Init("#version 130");
+	//ImGui_ImplOpenGL3_Init("#version 300 es");
+	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
+}
+
+void game_editor::load_model(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
 	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)rend->get_glman();
+	auto& glman = (gl_manager&)game->rend->get_glman();
 
 	if (ext == ".obj") {
-		model m(path);
+		//model m(path);
+		gameModel::ptr m = load_object(path);
 		glman.compile_model(path, m);
 	}
 
@@ -22,17 +37,19 @@ void game_editor::load_model(renderer *rend, std::string path) {
 		glman.compile_models(models);
 	}
 
+	// TODO: keep track of source files in model
 	editor_model_files.push_back(path);
 }
 
-void game_editor::load_scene(renderer *rend, std::string path) {
+void game_editor::load_scene(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
 	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)rend->get_glman();
+	auto& glman = (gl_manager&)game->rend->get_glman();
 
 	if (ext == ".gltf") {
 		auto [scene, models] = load_gltf_scene(path);
 
+		/*
 		for (auto& node : scene.nodes) {
 			dynamic_models.push_back((struct editor_entry) {
 				.name = node.name,
@@ -41,6 +58,18 @@ void game_editor::load_scene(renderer *rend, std::string path) {
 				.inverted = node.inverted,
 			});
 		}
+		*/
+
+		if (selectedNode == nullptr) {
+			selectedNode = game->state->rootnode;
+		}
+
+		for (auto& node : scene.nodes) {
+			// TODO: need to be able to have the same model with different
+			//       position/rotation/scale
+			//       hmm... why not just use a wrapper gameObject?
+			selectedNode->setNode(node.name, models[node.name]);
+		}
 
 		glman.compile_models(models);
 	}
@@ -48,13 +77,13 @@ void game_editor::load_scene(renderer *rend, std::string path) {
 	editor_scene_files.push_back(path);
 }
 
-void game_editor::update_models(renderer *rend) {
-	const gl_manager& glman = rend->get_glman();
-	edit_model = glman.cooked_models.begin();
+void game_editor::update_models(gameMain *game) {
+	//const gl_manager& glman = game->rend->get_glman();
+	//edit_model = glman.cooked_models.begin();
 }
 
-void game_editor::reload_shaders(renderer *rend) {
-	for (auto& [name, shader] : rend->shaders) {
+void game_editor::reload_shaders(gameMain *game) {
+	for (auto& [name, shader] : game->rend->shaders) {
 		if (shader->reload()) {
 			link_program(shader);
 
@@ -64,12 +93,10 @@ void game_editor::reload_shaders(renderer *rend) {
 	}
 }
 
-void game_editor::handle_editor_input(renderer *rend,
-                                      context& ctx,
-                                      SDL_Event& ev)
+void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	static bool control = false;
-	const gl_manager& glman = rend->get_glman();
+	const gl_manager& glman = game->rend->get_glman();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui_ImplSDL2_ProcessEvent(&ev);
 
@@ -90,8 +117,8 @@ void game_editor::handle_editor_input(renderer *rend,
 
 				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
 				case SDLK_m: mode = mode::Inactive; break;
-				case SDLK_i: load_map(rend); break;
-				case SDLK_o: save_map(rend); break;
+				case SDLK_i: load_map(game); break;
+				case SDLK_o: save_map(game); break;
 
 				case SDLK_g:
 					//edit_rotation -= M_PI/4;
@@ -145,7 +172,7 @@ void game_editor::handle_editor_input(renderer *rend,
 
 				case SDLK_r:
 					if (control) {
-						reload_shaders(rend);
+						reload_shaders(game);
 
 					} else {
 						// scroll forward through models
@@ -205,7 +232,7 @@ void game_editor::handle_editor_input(renderer *rend,
 			// TODO: generic functions to do SO(3) rotation (does glm do it?
 			//       probably, also maybe should be quarternions...)
 			int win_x, win_y;
-			SDL_GetWindowSize(ctx.window, &win_x, &win_y);
+			SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
 			x = (x > 0)? x : win_x/2;
 			y = (x > 0)? y : win_y/2;
@@ -231,6 +258,8 @@ void game_editor::handle_editor_input(renderer *rend,
 		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
 			if (ev.button.button == SDL_BUTTON_LEFT) {
 				switch (mode) {
+// TODO:
+#if 0
 					case mode::AddObject:
 						/*
 						dynamic_models.push_back({
@@ -295,6 +324,7 @@ void game_editor::handle_editor_input(renderer *rend,
 						});
 						set_mode(mode::View);
 						break;
+#endif
 
 					default:
 						break;
@@ -311,7 +341,7 @@ void game_editor::handle_editor_input(renderer *rend,
 	}
 }
 
-void game_editor::logic(context& ctx, float delta) {
+void game_editor::logic(float delta) {
 	// TODO: should time-dependent position updates be part of the camera
 	//       class? (probably)
 	cam.position += cam.velocity.z*cam.direction*delta;
@@ -319,34 +349,27 @@ void game_editor::logic(context& ctx, float delta) {
 	cam.position += cam.velocity.x*cam.right*delta;
 }
 
-void game_editor::clear(renderer *rend) {
+void game_editor::clear(gameMain *game) {
 	cam.position = {0, 0, 0};
-	dynamic_models.clear();
+	//dynamic_models.clear();
 	editor_model_files.clear();
 
-	for (auto& vec : {edit_lights.point, edit_lights.spot, edit_lights.directional}) {
-		for (uint32_t id : vec) {
-			rend->free_light(id);
-		}
-	}
-
-	edit_lights.point.clear();
-	edit_lights.spot.clear();
-	edit_lights.directional.clear();
-
-	rend->ref_probes.clear();
+	// TODO: clear() for state
+	game->state->rootnode = gameObject::ptr(new gameObject());
+	//game->rend->ref_probes.clear();
 }
 
 // TODO: rename 'renderer' to 'rend' or something
-void game_editor::render_imgui(renderer *rend, context& ctx) {
+void game_editor::render_imgui(gameMain *game) {
 	if (mode != mode::Inactive) {
-		menubar(rend);
+		menubar(game);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 }
 
-
+// don't think this is needed anymore...
+/*
 void game_editor::render_map_models(renderer *rend, context& ctx) {
 	for (unsigned i = 0; i < dynamic_models.size(); i++) {
 		auto& v = dynamic_models[i];
@@ -366,20 +389,19 @@ void game_editor::render_map_models(renderer *rend, context& ctx) {
 		DO_ERROR_CHECK();
 	}
 }
+*/
 
-void game_editor::render_editor(renderer *rend,
-                                imp_physics *phys,
-                                context& ctx)
-{
+void game_editor::render_editor(gameMain *game) {
 	if (mode != mode::Inactive) {
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(ctx.window);
+		ImGui_ImplSDL2_NewFrame(game->ctx.window);
 		ImGui::NewFrame();
 
 		if (show_map_window) {
-			map_window(rend, phys, ctx);
+			map_window(game);
 		}
 
+#if 0
 		if (show_lights_window) {
 			for (const auto& [id, plit] : rend->point_lights) {
 				rend->dqueue_draw_model({
@@ -454,5 +476,6 @@ void game_editor::render_editor(renderer *rend,
 				.transform = glm::translate(entbuf.position),
 			});
 		}
+#endif
 	}
 }

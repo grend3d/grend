@@ -7,8 +7,8 @@
 
 using namespace grendx;
 
-void game_editor::object_select_window(renderer *rend, context& ctx) {
-	const gl_manager& glman = rend->get_glman();
+void game_editor::object_select_window(gameMain *game) {
+	const gl_manager& glman = game->rend->get_glman();
 	ImGui::Begin("Loaded Objects", &show_object_select_window);
 
 	for (auto it = glman.cooked_models.begin();

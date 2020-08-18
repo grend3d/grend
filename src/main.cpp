@@ -1,4 +1,4 @@
-#include <grend/main_logic.hpp>
+#include <grend/gameMainDevWindow.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,35 +10,10 @@
 
 using namespace grendx;
 
-context ctx("grend test");
-game_state *gscene = nullptr;
+gameMain *game = new gameMainDevWindow();
 
 int render_step(double time, void *data) {
-	gscene->frame_timer.start();
-	gscene->input(ctx);
-
-	if (gscene->running) {
-		gscene->physics(ctx);
-		gscene->logic(ctx);
-		gscene->render(ctx);
-
-		//auto minmax = framems_minmax();
-		std::pair<float, float> minmax = {0, 0}; // TODO: implementation
-		float fps = gscene->frame_timer.average();
-
-		std::string foo =
-			std::to_string(fps) + " FPS "
-			+ "(" + std::to_string(1.f/fps * 1000) + "ms/frame) "
-			+ "(min: " + std::to_string(minmax.first) + ", "
-			+ "max: " + std::to_string(minmax.second) + ")"
-			;
-
-		gscene->draw_debug_string(foo);
-		SDL_GL_SwapWindow(ctx.window);
-		gscene->frame_timer.stop();
-	}
-
-	return gscene->running;
+	return game->step();
 }
 
 #ifdef __EMSCRIPTEN__
@@ -51,15 +26,11 @@ int main(int argc, char *argv[]) {
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
 
-	gscene = new game_state(ctx);
-
 #ifdef __EMSCRIPTEN__
 	emscripten_request_animation_frame_loop(&render_step, nullptr);
 
 #else
-	while (gscene->running) {
-		render_step(0, nullptr);
-	}
+	game->run();
 #endif
 
 	return 0;
