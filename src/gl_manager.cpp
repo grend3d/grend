@@ -1,4 +1,5 @@
 #include <grend/gl_manager.hpp>
+#include <grend/gameModel.hpp>
 
 #include <string>
 #include <vector>
@@ -10,7 +11,27 @@
 
 namespace grendx {
 
-gl_manager::gl_manager() {
+static cooked_mesh_map  cooked_meshes;
+static cooked_model_map cooked_models;
+
+static std::vector<GLfloat> cooked_vertprops;
+static std::vector<GLuint> cooked_elements;
+
+static Vbo::ptr cooked_vertprops_vbo;
+static Vbo::ptr cooked_element_vbo;
+static Vbo::ptr screenquad_vbo;
+static Vao::ptr screenquad_vao;
+
+// cache of features currently enabled
+static std::set<GLenum> feature_cache;
+
+// current state
+static Vao::ptr current_vao;
+static GLenum   current_face_order;
+
+std::map<uint32_t, Texture::weakptr> texture_cache;
+
+void initialize_opengl(void) {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	std::cerr << " # maximum texture units: " << GL_MAX_TEXTURE_UNITS << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
@@ -28,19 +49,22 @@ gl_manager::gl_manager() {
 	cooked_element_vbo = gen_vbo();
 }
 
-void gl_manager::compile_meshes(std::string objname, mesh_map& meshies) {
+void compile_meshes(std::string objname, mesh_map& meshies) {
 	for (const auto& [name, mesh] : meshies) {
-		compiled_mesh foo;
+		compiled_mesh::ptr foo = compiled_mesh::ptr(new compiled_mesh());
 		std::string meshname = objname + "." + name;
+		std::cerr << ">>> compiling mesh " << meshname << std::endl;
+
+		mesh->comped_mesh = foo;
+		mesh->compiled = true;
 
 		//foo.elements_size = x.second.faces.size() * sizeof(GLushort);
-		foo.elements_size = mesh->faces.size();
-		foo.elements_offset = reinterpret_cast<void*>
+		foo->elements_size = mesh->faces.size();
+		foo->elements_offset = reinterpret_cast<void*>
 		                      (cooked_elements.size() * sizeof(GLuint));
 		cooked_elements.insert(cooked_elements.end(), mesh->faces.begin(),
 		                                              mesh->faces.end());
-		foo.material = mesh->material;
-
+		foo->material = mesh->material;
 		cooked_meshes[meshname] = foo;
 	}
 	//fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
@@ -83,7 +107,7 @@ static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	return (tag << 30) | (ret & ((1 << 30) - 1));
 }
 
-Texture::ptr gl_manager::texcache(const materialTexture& tex, bool srgb) {
+Texture::ptr texcache(const materialTexture& tex, bool srgb) {
 	if (!tex.loaded()) {
 		return nullptr;
 	}
@@ -108,7 +132,7 @@ Texture::ptr gl_manager::texcache(const materialTexture& tex, bool srgb) {
 	return ret;
 }
 
-void gl_manager::compile_model(std::string name, gameModel::ptr model) {
+void compile_model(std::string name, gameModel::ptr model) {
 	std::cerr << " >>> compiling " << name << std::endl;
 
 	assert(model->vertices.size() == model->normals.size());
@@ -116,8 +140,11 @@ void gl_manager::compile_model(std::string name, gameModel::ptr model) {
 	//assert(model->vertices.size() == model->tangents.size());
 	//assert(model->vertices.size() == model->bitangents.size());
 
-	compiled_model obj;
-	obj.vertices_size = model->vertices.size() * VERTPROP_SIZE;
+	compiled_model::ptr obj = compiled_model::ptr(new compiled_model());
+	model->comped_model = obj;
+	model->compiled = true;
+	// TODO: might be able to clear vertex info after compiling here
+	obj->vertices_size = model->vertices.size() * VERTPROP_SIZE;
 
 	size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
 
@@ -125,11 +152,11 @@ void gl_manager::compile_model(std::string name, gameModel::ptr model) {
 		return reinterpret_cast<void*>(off);
 	};
 
-	obj.vertices_offset   = offset_ptr(offset);
-	obj.normals_offset    = offset_ptr(offset + sizeof(glm::vec3[1]));
-	obj.tangents_offset   = offset_ptr(offset + sizeof(glm::vec3[2]));
-	obj.bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
-	obj.texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
+	obj->vertices_offset   = offset_ptr(offset);
+	obj->normals_offset    = offset_ptr(offset + sizeof(glm::vec3[1]));
+	obj->tangents_offset   = offset_ptr(offset + sizeof(glm::vec3[2]));
+	obj->bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
+	obj->texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
 
 	for (unsigned i = 0; i < model->vertices.size(); i++) {
 		// XXX: glm vectors don't have an iterator
@@ -148,9 +175,14 @@ void gl_manager::compile_model(std::string name, gameModel::ptr model) {
 
 	// collect mesh subnodes from the model
 	mesh_map meshes;
-	for (auto& [name, ptr] : model->nodes) {
+	for (auto& [meshname, ptr] : model->nodes) {
 		if (ptr->type == gameObject::objType::Mesh) {
-			meshes[name] = std::dynamic_pointer_cast<gameMesh>(ptr);
+			// TODO: mesh naming is kind of crap
+			std::string asdf = name + "." + meshname;
+			std::cerr << " > have cooked mesh " << asdf << std::endl;
+			//obj->meshes.push_back(asdf);
+			obj->meshes.push_back(asdf);
+			meshes[meshname] = std::dynamic_pointer_cast<gameMesh>(ptr);
 		}
 	}
 
@@ -159,46 +191,50 @@ void gl_manager::compile_model(std::string name, gameModel::ptr model) {
 
 	/*
 	// copy mesh names
-	for (const auto& m : model->meshes) {
-		std::string asdf = name + "." + m.first;
+	for (const auto& [name, ptr] : meshes) {
+		std::string asdf = name + "." + name;
 		std::cerr << " > have cooked mesh " << asdf << std::endl;
-		obj.meshes.push_back(asdf);
+		obj->meshes.push_back(asdf);
 	}
 	*/
 
 	// copy materials
 	for (const auto& [name, mat] : model->materials) {
-		//obj.materials[name] = mat;
-		obj.materials[name].copy_properties(mat);
+		//obj->materials[name] = mat;
+		obj->materials[name].copy_properties(mat);
 
 		if (mat.diffuse_map.loaded()) {
-			obj.mat_textures[name] = texcache(mat.diffuse_map, true/*srgb*/);
+			obj->mat_textures[name] = texcache(mat.diffuse_map, true/*srgb*/);
 		}
 
 		if (mat.metal_roughness_map.loaded()) {
-			obj.mat_specular[name] = texcache(mat.metal_roughness_map);
+			obj->mat_specular[name] = texcache(mat.metal_roughness_map);
 		}
 
 		if (mat.normal_map.loaded()) {
-			obj.mat_normal[name]   = texcache(mat.normal_map);
+			obj->mat_normal[name]   = texcache(mat.normal_map);
 		}
 
 		if (mat.ambient_occ_map.loaded()) {
-			obj.mat_ao[name]       = texcache(mat.ambient_occ_map);
+			obj->mat_ao[name]       = texcache(mat.ambient_occ_map);
 		}
 	}
 
 	cooked_models[name] = obj;
 }
 
-void gl_manager::compile_models(model_map& models) {
+void compile_models(model_map& models) {
 	for (const auto& x : models) {
 		compile_model(x.first, x.second);
 	}
 }
 
-Vao::ptr
-gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
+Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
+	if (mesh == nullptr) {
+		std::cerr << "/!\\ Have broken mesh name..." << std::endl;
+		return current_vao;
+	}
+
 	Vao::ptr orig_vao = current_vao;
 	Vao::ptr ret = bind_vao(gen_vao());
 
@@ -207,52 +243,53 @@ gl_manager::preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh) {
 	//bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj.vertices_offset);
+	                      obj->vertices_offset);
 
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj.normals_offset);
+	                      obj->normals_offset);
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj.tangents_offset);
+	                      obj->tangents_offset);
 
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj.bitangents_offset);
+	                      obj->bitangents_offset);
 
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj.texcoords_offset);
+	                      obj->texcoords_offset);
 
 	//bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
 	cooked_element_vbo->bind(GL_ELEMENT_ARRAY_BUFFER);
 	glEnableVertexAttribArray(5);
 	glVertexAttribPointer(5, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
-	                      mesh.elements_offset);
+	                      mesh->elements_offset);
 
 	bind_vao(orig_vao);
 	return ret;
 }
 
-Vao::ptr gl_manager::preload_model_vao(compiled_model& obj) {
+Vao::ptr preload_model_vao(compiled_model::ptr obj) {
 	Vao::ptr orig_vao = current_vao;
 
-	for (std::string& mesh_name : obj.meshes) {
-		std::cerr << " # binding " << mesh_name << std::endl;
-		cooked_meshes[mesh_name].vao = preload_mesh_vao(obj, cooked_meshes[mesh_name]);
+	for (std::string& mesh_name : obj->meshes) {
+		std::cerr << " # binding mesh " << mesh_name << std::endl;
+		cooked_meshes[mesh_name]->vao
+			= preload_mesh_vao(obj, cooked_meshes[mesh_name]);
 	}
 
 	return orig_vao;
 }
 
-void gl_manager::bind_cooked_meshes(void) {
+void bind_cooked_meshes(void) {
 	cooked_vertprops_vbo->buffer(GL_ARRAY_BUFFER, cooked_vertprops);
 	cooked_element_vbo->buffer(GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 
-	for (auto& x : cooked_models) {
-		std::cerr << " # binding " << x.first << std::endl;
-		x.second.vao = preload_model_vao(x.second);
+	for (auto& [name, ptr] : cooked_models) {
+		std::cerr << " # binding " << name << std::endl;
+		ptr->vao = preload_model_vao(ptr);
 	}
 }
 
@@ -266,7 +303,7 @@ static std::vector<GLfloat> screenquad_data = {
 	-1, -1,  0, 0, 0,
 };
 
-void gl_manager::preload_screenquad(void) {
+void preload_screenquad(void) {
 	screenquad_vbo = gen_vbo();
 	Vao::ptr orig_vao = current_vao;
 	screenquad_vao = bind_vao(gen_vao());
@@ -308,7 +345,9 @@ void check_errors(int line, const char *func) {
 		}
 
 		std::cerr << std::endl;
+		*(int*)NULL = 1234;
 	}
+
 }
 
 Vao::ptr gen_vao(void) {
@@ -376,7 +415,15 @@ gen_texture_depth_stencil(unsigned width, unsigned height, GLenum format) {
 	return ret;
 }
 
-Vao::ptr gl_manager::bind_vao(Vao::ptr v) {
+Vao::ptr get_current_vao(void) {
+	return current_vao;
+}
+
+Vao::ptr get_screenquad_vao(void) {
+	return screenquad_vao;
+}
+
+Vao::ptr bind_vao(Vao::ptr v) {
 	current_vao = v;
 	v->bind();
 	DO_ERROR_CHECK();
@@ -458,21 +505,21 @@ Program::ptr link_program(Program::ptr program) {
 	return program;
 }
 
-void gl_manager::set_face_order(GLenum face_order) {
+void set_face_order(GLenum face_order) {
 	if (face_order != current_face_order) {
 		current_face_order = face_order;
 		glFrontFace(face_order);
 	}
 }
 
-void gl_manager::enable(GLenum feature) {
+void enable(GLenum feature) {
 	if (feature_cache.find(feature) == feature_cache.end()) {
 		glEnable(feature);
 		feature_cache.insert(feature);
 	}
 }
 
-void gl_manager::disable(GLenum feature) {
+void disable(GLenum feature) {
 	auto it = feature_cache.find(feature);
 
 	if (it != feature_cache.end()) {

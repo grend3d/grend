@@ -65,7 +65,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 		}
 
 		if (statement[0] == "scene" && statement.size() == 2) {
-			load_model(game, statement[1]);
+			load_scene(game, statement[1]);
 			imported_models = true;
 		}
 
@@ -96,6 +96,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 
 			std::string name = "reflection probe " + std::to_string(counter++);
 			selectedNode->setNode(name, ptr);
+			ptr->parent = selectedNode; // TODO: better
 		}
 
 		if (statement[0] == "point_light" && statement.size() == 7) {
@@ -116,7 +117,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 
 			std::string name = "point light " + std::to_string(counter++);
 			selectedNode->setNode(name, ptr);
-
+			ptr->parent = selectedNode; // TODO: better
 
 			/*
 			uint32_t nlit = rend->add_light((struct point_light){
@@ -181,9 +182,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 	}
 
 	if (imported_models) {
-		// TODO: XXX: no need for const
-		auto& glman = (gl_manager&)game->rend->get_glman();
-		glman.bind_cooked_meshes();
+		bind_cooked_meshes();
 		update_models(game);
 	}
 }

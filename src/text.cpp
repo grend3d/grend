@@ -19,8 +19,8 @@ text_renderer::text_renderer(renderer *eng,
 	text_vbo = gen_vbo();
 	text_texture = gen_texture();
 
-	Vao::ptr orig_vao = rend->glman.current_vao;
-	text_vao = rend->glman.bind_vao(gen_vao());
+	Vao::ptr orig_vao = get_current_vao();
+	text_vao = bind_vao(gen_vao());
 
 	text_vbo->bind(GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(0);
@@ -39,7 +39,7 @@ text_renderer::text_renderer(renderer *eng,
 	link_program(text_shader);
 	DO_ERROR_CHECK();
 
-	rend->glman.bind_vao(orig_vao);
+	bind_vao(orig_vao);
 	DO_ERROR_CHECK();
 }
 
@@ -51,8 +51,9 @@ void text_renderer::render(glm::vec3 pos,
                            std::string str,
                            SDL_Color color)
 {
-	rend->glman.bind_vao(text_vao);
-	rend->set_shader(text_shader);
+	bind_vao(text_vao);
+	text_shader->bind();
+	//rend->set_shader(text_shader);
 
 	// TODO: make this a parameter
 	//SDL_Surface *surf = TTF_RenderUTF8_Solid(ttf, str.c_str(), {255, 255, 0, 255});

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <grend/gameState.hpp> // TODO: rename to gameState.h
-#include <grend/engine.hpp>     // TODO: rename to renderer.h
+#include <grend/gameState.hpp>   // TODO: rename to gameState.h
+#include <grend/engine.hpp>      // TODO: rename to renderer.h
+#include <grend/game_editor.hpp> // TODO: gameEditor
 #include <grend/gameMain.hpp>
 #include <grend/gameView.hpp>
 #include <grend/playerView.hpp>
@@ -16,15 +17,16 @@ class gameMainDevWindow : public gameMain {
 	public:
 		gameMainDevWindow() : gameMain("[grend editor]") {
 			player = gameView::ptr(new playerView());
-			/*
-			editor = gameView::ptr(new editorView());
+			editor = gameView::ptr(new game_editor(this));
 			view   = editor;
-			*/
+
+			state = game_state::ptr(new game_state());
+			rend  = renderer::ptr(new renderer(ctx));
 		}
 		virtual void handleInput(void);
 
-		std::shared_ptr<gameView> player;
-		std::shared_ptr<gameView> editor;
+		gameView::ptr player;
+		gameView::ptr editor;
 };
 
 // namespace grendx

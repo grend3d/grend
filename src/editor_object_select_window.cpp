@@ -8,9 +8,10 @@
 using namespace grendx;
 
 void game_editor::object_select_window(gameMain *game) {
-	const gl_manager& glman = game->rend->get_glman();
 	ImGui::Begin("Loaded Objects", &show_object_select_window);
 
+	// TODO: another way to select from loaded models
+	/*
 	for (auto it = glman.cooked_models.begin();
 	     it != glman.cooked_models.end();
 	     it++)
@@ -25,6 +26,7 @@ void game_editor::object_select_window(gameMain *game) {
 		std::string mstr = "(" + std::to_string(obj.meshes.size()) + " meshes)";
 		ImGui::Text(mstr.c_str());
 	}
+	*/
 
 	ImGui::End();
 }

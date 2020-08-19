@@ -61,12 +61,20 @@ struct material {
 	materialTexture ambient_occ_map;
 };
 
+// TODO: camelCase
+// defined in gl_manager.hpp
+class compiled_mesh;
+class compiled_model;
+
 class gameMesh : public gameObject {
 	public:
 		typedef std::shared_ptr<gameMesh> ptr;
 		typedef std::weak_ptr<gameMesh> weakptr;
 
 		gameMesh() : gameObject(objType::Mesh) {};
+
+		std::shared_ptr<compiled_mesh> comped_mesh;
+		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
 		std::string material = "(null)";
@@ -85,6 +93,9 @@ class gameModel : public gameObject {
 		void genTangents(void);
 
 		std::string modelName = "unit_cube";
+		bool compiled = false;
+		std::shared_ptr<compiled_model> comped_model;
+
 		// TODO: allow attaching shaders to objects
 		//Program::ptr shader = nullptr;
 
@@ -118,3 +129,6 @@ std::pair<scene, model_map> load_gltf_scene(std::string filename);
 
 // namespace grendx
 }
+
+// handle forward declaration of compiled_model
+#include <grend/gl_manager.hpp>

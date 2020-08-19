@@ -1,5 +1,5 @@
 #include <grend/engine.hpp>
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
 
 #include <vector>
@@ -9,21 +9,27 @@
 
 using namespace grendx;
 
-static std::map<std::string, material> default_materials = {
-	{"(null)", {
-				   .diffuse = {0.75, 0.75, 0.75, 1},
-				   .ambient = {1, 1, 1, 1},
-				   .specular = {0.5, 0.5, 0.5, 1},
-				   .roughness = 0.9,
-				   .metalness = 0.0,
-				   .opacity = 1,
-				   .refract_idx = 1.5,
+material default_material = {
+	.diffuse = {0.75, 0.75, 0.75, 1},
+	.ambient = {1, 1, 1, 1},
+	.specular = {0.5, 0.5, 0.5, 1},
+	.roughness = 0.9,
+	.metalness = 0.0,
+	.opacity = 1,
+	.refract_idx = 1.5,
 
-				   .diffuse_map     = material_texture("assets/tex/white.png"),
-				   .metal_roughness_map    = material_texture("assets/tex/white.png"),
-				   .normal_map      = material_texture("assets/tex/lightblue-normal.png"),
-				   .ambient_occ_map = material_texture("assets/tex/white.png"),
-			   }},
+	.diffuse_map         = materialTexture("assets/tex/white.png"),
+	.metal_roughness_map = materialTexture("assets/tex/white.png"),
+	.normal_map          = materialTexture("assets/tex/lightblue-normal.png"),
+	.ambient_occ_map     = materialTexture("assets/tex/white.png"),
+};
+
+Texture::ptr default_diffuse, default_metal_roughness;
+Texture::ptr default_normmap, default_aomap;
+
+#if 0
+static std::map<std::string, material> default_materials = {
+	{"(null)", },
 
 	{"Black",  {
 				   .diffuse = {1, 0.8, 0.2, 1},
@@ -71,9 +77,9 @@ static std::map<std::string, material> default_materials = {
 				   .ambient_occ_map = "assets/tex/white.png",
 				   */
 
-				   .diffuse_map  = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png"),
-				   .metal_roughness_map = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
-				   .normal_map   = material_texture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png"),
+				   .diffuse_map  = materialTexture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-basecolor.png"),
+				   .metal_roughness_map = materialTexture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-metalness.png"),
+				   .normal_map   = materialTexture("assets/tex/iron-rusted4-Unreal-Engine/iron-rusted4-normal.png"),
 			   }},
 
 	{"Wood",  {
@@ -85,14 +91,14 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1,
 				   .refract_idx = 1.5,
 
-				   .diffuse_map = material_texture("assets/tex/white.png"),
+				   .diffuse_map = materialTexture("assets/tex/white.png"),
 				   //.diffuse_map  = "assets/tex/rubberduck-tex/199.JPG",
-				   //.diffuse_map  = material_texture("assets/tex/dims/Textures/Boards.JPG"),
-				   .metal_roughness_map = material_texture("assets/tex/white.png"),
-				   //.normal_map   = material_texture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
-				   .normal_map = material_texture("assets/tex/white.png"),
+				   //.diffuse_map  = materialTexture("assets/tex/dims/Textures/Boards.JPG"),
+				   .metal_roughness_map = materialTexture("assets/tex/white.png"),
+				   //.normal_map   = materialTexture("assets/tex/dims/Textures/Textures_N/Boards_N.jpg"),
+				   .normal_map = materialTexture("assets/tex/white.png"),
 				   //.normal_map   = "assets/tex/rubberduck-tex/199_norm.JPG",
-				   .ambient_occ_map = material_texture("assets/tex/white.png"),
+				   .ambient_occ_map = materialTexture("assets/tex/white.png"),
 			   }},
 
 	{"Glass",  {
@@ -116,13 +122,14 @@ static std::map<std::string, material> default_materials = {
 				   .opacity = 1.0,
 				   .refract_idx = 1.5,
 
-				   //.diffuse_map  = material_texture("assets/tex/Earthmap720x360_grid.jpg"),
-				   .diffuse_map = material_texture("assets/tex/white.png"),
+				   //.diffuse_map  = materialTexture("assets/tex/Earthmap720x360_grid.jpg"),
+				   .diffuse_map = materialTexture("assets/tex/white.png"),
 			   }},
 };
+#endif
 
 renderer::renderer(context& ctx) {
-	rend.glman.enable(GL_DEPTH_TEST);
+	enable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	Framebuffer().bind();
@@ -136,12 +143,26 @@ renderer::renderer(context& ctx) {
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 #endif
 
+	framebuffer =
+		renderFramebuffer::ptr(new renderFramebuffer(screen_x, screen_y));
+
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	skybox = gen_texture();
 	skybox->cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
 	std::cerr << "loaded cubemap" << std::endl;
 
+	default_diffuse         = gen_texture();
+	default_metal_roughness = gen_texture();
+	default_normmap         = gen_texture();
+	default_aomap           = gen_texture();
+
+	default_diffuse->buffer(default_material.diffuse_map, true);
+	default_metal_roughness->buffer(default_material.metal_roughness_map);
+	default_normmap->buffer(default_material.normal_map);
+	default_aomap->buffer(default_material.ambient_occ_map);
+
+#if 0
 	for (auto& [name, tex] : default_materials) {
 		std::cerr << __func__ << ": loading materials for "
 			<< name << std::endl;
@@ -166,9 +187,9 @@ renderer::renderer(context& ctx) {
 			aomap_handles[name]->buffer(tex.ambient_occ_map);
 		}
 	}
+#endif
 
 	loadShaders();
-	initFramebuffers();
 
 	reflection_atlas = std::unique_ptr<atlas>(new atlas(2048));
 	shadow_atlas = std::unique_ptr<atlas>(new atlas(2048, atlas::mode::Depth));
@@ -227,8 +248,8 @@ void renderer::loadShaders(void) {
 	glBindAttribLocation(shaders["shadow"]->obj, 0, "v_position");
 	link_program(shaders["shadow"]);
 
-	Vao::ptr orig_vao = glman.current_vao;
-	glman.bind_vao(glman.screenquad_vao);
+	Vao::ptr orig_vao = get_current_vao();
+	bind_vao(get_screenquad_vao());
 
 	shaders["post"] = load_program(
 		"shaders/out/postprocess.vert",
@@ -240,10 +261,12 @@ void renderer::loadShaders(void) {
 	DO_ERROR_CHECK();
 	link_program(shaders["post"]);
 
-	glman.bind_vao(orig_vao);
-	set_shader(rend.shaders["main"]);
+	bind_vao(orig_vao);
+	//set_shader(shaders["main"]);
+	shaders["main"]->bind();
 }
 
+#if 0
 void renderer::initFramebuffers(void) {
 	// set up the render framebuffer
 	rend_fb = gen_framebuffer();
@@ -256,74 +279,107 @@ void renderer::initFramebuffers(void) {
 	rend_depth = rend_fb->attach(GL_DEPTH_STENCIL_ATTACHMENT,
 	                 gen_texture_depth_stencil(rend_x, rend_y));
 
+	/*
 	// and framebuffer holding the previously drawn frame
 	last_frame_fb = gen_framebuffer();
 	last_frame_fb->bind();
 	last_frame_tex = last_frame_fb->attach(GL_COLOR_ATTACHMENT0,
 		                 gen_texture_color(rend_x, rend_y));
+						 */
 }
+#endif
 
-void renderer::set_material(gl_manager::compiled_model& obj, std::string mat_name) {
-	if (obj.materials.find(mat_name) == obj.materials.end()) {
+void grendx::set_material(Program::ptr program,
+                          compiled_model::ptr obj,
+                          std::string mat_name)
+{
+	if (obj->materials.find(mat_name) == obj->materials.end()) {
 		// TODO: maybe show a warning
-		set_default_material(mat_name);
+		set_default_material(program);
 		//std::cerr << " ! couldn't find material " << mat_name << std::endl;
 		return;
 	}
 
-	material& mat = obj.materials[mat_name];
+	material& mat = obj->materials[mat_name];
 
-	shader->set("anmaterial.diffuse", mat.diffuse);
-	shader->set("anmaterial.ambient", mat.ambient);
-	shader->set("anmaterial.specular", mat.specular);
-	shader->set("anmaterial.roughness", mat.roughness);
-	shader->set("anmaterial.metalness", mat.metalness);
-	shader->set("anmaterial.opacity", mat.opacity);
+	program->set("anmaterial.diffuse", mat.diffuse);
+	program->set("anmaterial.ambient", mat.ambient);
+	program->set("anmaterial.specular", mat.specular);
+	program->set("anmaterial.roughness", mat.roughness);
+	program->set("anmaterial.metalness", mat.metalness);
+	program->set("anmaterial.opacity", mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (obj.mat_textures.find(mat_name) != obj.mat_textures.end()) {
-		obj.mat_textures[mat_name]->bind();
-		shader->set("diffuse_map", 0);
+	if (obj->mat_textures.find(mat_name) != obj->mat_textures.end()) {
+		obj->mat_textures[mat_name]->bind();
+		program->set("diffuse_map", 0);
 
 	} else {
-		diffuse_handles[fallback_material]->bind();
-		shader->set("diffuse_map", 0);
+		default_diffuse->bind();
+		program->set("diffuse_map", 0);
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (obj.mat_specular.find(mat_name) != obj.mat_specular.end()) {
-		obj.mat_specular[mat_name]->bind();
-		shader->set("specular_map", 1);
+	if (obj->mat_specular.find(mat_name) != obj->mat_specular.end()) {
+		obj->mat_specular[mat_name]->bind();
+		program->set("specular_map", 1);
 
 	} else {
-		specular_handles[fallback_material]->bind();
-		shader->set("specular_map", 1);
+		default_metal_roughness->bind();
+		program->set("specular_map", 1);
 	}
 
 	glActiveTexture(GL_TEXTURE2);
-	if (obj.mat_normal.find(mat_name) != obj.mat_normal.end()) {
-		obj.mat_normal[mat_name]->bind();
-		shader->set("normal_map", 2);
+	if (obj->mat_normal.find(mat_name) != obj->mat_normal.end()) {
+		obj->mat_normal[mat_name]->bind();
+		program->set("normal_map", 2);
 
 	} else {
-		normmap_handles[fallback_material]->bind();
-		shader->set("normal_map", 2);
+		default_normmap->bind();
+		program->set("normal_map", 2);
 	}
 
 	glActiveTexture(GL_TEXTURE3);
-	if (obj.mat_ao.find(mat_name) != obj.mat_ao.end()) {
-		obj.mat_ao[mat_name]->bind();
-		shader->set("ambient_occ_map", 3);
+	if (obj->mat_ao.find(mat_name) != obj->mat_ao.end()) {
+		obj->mat_ao[mat_name]->bind();
+		program->set("ambient_occ_map", 3);
 
 	} else {
-		aomap_handles[fallback_material]->bind();
-		shader->set("ambient_occ_map", 3);
+		default_aomap->bind();
+		program->set("ambient_occ_map", 3);
 	}
 
 	DO_ERROR_CHECK();
 }
 
-void renderer::set_default_material(std::string mat_name) {
+void grendx::set_default_material(Program::ptr program) {
+	material& mat = default_material;
+
+	program->set("anmaterial.diffuse", mat.diffuse);
+	program->set("anmaterial.ambient", mat.ambient);
+	program->set("anmaterial.specular", mat.specular);
+	program->set("anmaterial.roughness", mat.roughness);
+	program->set("anmaterial.metalness", mat.metalness);
+	program->set("anmaterial.opacity", mat.opacity);
+
+	glActiveTexture(GL_TEXTURE0);
+	default_diffuse->bind();
+	program->set("diffuse_map", 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	default_metal_roughness->bind();
+	// TODO: rename to metal_roughness_map in shaders
+	program->set("specular_map", 1);
+
+	glActiveTexture(GL_TEXTURE2);
+	default_normmap->bind();
+	program->set("normal_map", 2);
+
+	glActiveTexture(GL_TEXTURE3);
+	default_aomap->bind();
+	program->set("ambient_occ_map", 3);
+
+#if 0
 	if (default_materials.find(mat_name) == default_materials.end()) {
 		mat_name = fallback_material;
 		puts("asdf");
@@ -331,12 +387,12 @@ void renderer::set_default_material(std::string mat_name) {
 
 	material& mat = default_materials[mat_name];
 
-	shader->set("anmaterial.diffuse", mat.diffuse);
-	shader->set("anmaterial.ambient", mat.ambient);
-	shader->set("anmaterial.specular", mat.specular);
-	shader->set("anmaterial.roughness", mat.roughness);
-	shader->set("anmaterial.metalness", mat.metalness);
-	shader->set("anmaterial.opacity", mat.opacity);
+	program->set("anmaterial.diffuse", mat.diffuse);
+	program->set("anmaterial.ambient", mat.ambient);
+	program->set("anmaterial.specular", mat.specular);
+	program->set("anmaterial.roughness", mat.roughness);
+	program->set("anmaterial.metalness", mat.metalness);
+	program->set("anmaterial.opacity", mat.opacity);
 
 	auto loaded_or_fallback = [&] (auto tex) {
 		if (tex.loaded()) {
@@ -348,21 +404,23 @@ void renderer::set_default_material(std::string mat_name) {
 
 	glActiveTexture(GL_TEXTURE0);
 	diffuse_handles[loaded_or_fallback(mat.diffuse_map)]->bind();
-	shader->set("diffuse_map", 0);
+	program->set("diffuse_map", 0);
 
 	glActiveTexture(GL_TEXTURE1);
 	specular_handles[loaded_or_fallback(mat.metal_roughness_map)]->bind();
-	shader->set("specular_map", 1);
+	program->set("specular_map", 1);
 
 	glActiveTexture(GL_TEXTURE2);
 	normmap_handles[loaded_or_fallback(mat.normal_map)]->bind();
-	shader->set("normal_map", 2);
+	program->set("normal_map", 2);
 
 	glActiveTexture(GL_TEXTURE3);
 	aomap_handles[loaded_or_fallback(mat.ambient_occ_map)]->bind();
-	shader->set("ambient_occ_map", 3);
+	program->set("ambient_occ_map", 3);
+#endif
 }
 
+/*
 void renderer::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	glm::mat4 v_inv = glm::inverse(view);
 
@@ -372,19 +430,23 @@ void renderer::set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection) {
 	shader->set("v_inv", v_inv);
 }
 
-static glm::mat4 model_to_world(glm::mat4 model) {
-	glm::quat rotation = glm::quat_cast(model);
-
-	return glm::mat4_cast(rotation);
-}
-
 void renderer::set_m(glm::mat4 mod) {
 	glm::mat3 m_3x3_inv_transp = glm::transpose(glm::inverse(model_to_world(mod)));
 
 	shader->set("m", mod);
 	shader->set("m_3x3_inv_transp", m_3x3_inv_transp);
 }
+*/
 
+glm::mat4 grendx::model_to_world(glm::mat4 model) {
+	glm::quat rotation = glm::quat_cast(model);
+
+	return glm::mat4_cast(rotation);
+}
+
+/*
+// leaving refprobe code commented here so it can be move to the new
+// probe code once things are building
 void renderer::set_reflection_probe(const struct draw_attributes *attr) {
 	glm::vec4 pos = attr->transform * glm::vec4(1);
 	struct reflection_probe *probe = get_nearest_refprobe(glm::vec3(pos) / pos.w);
@@ -414,20 +476,9 @@ struct reflection_probe *renderer::get_nearest_refprobe(glm::vec3 pos) {
 
 	return ret;
 }
+*/
 
-void renderer::newframe(void) {
-	drawn_counter = 0;
-}
-
-struct draw_class renderer::index(unsigned idx) {
-	if (idx > 0 && idx <= drawn_counter) {
-		puts("got here");
-		return drawn_entities[idx - 1];
-	}
-
-	return {0, 0};
-}
-
+#if 0
 void renderer::draw_mesh(std::string name, const struct draw_attributes *attr) {
 	DO_ERROR_CHECK();
 	gl_manager::compiled_mesh& foo = glman.cooked_meshes[name];
@@ -505,6 +556,7 @@ void renderer::draw_model_lines(const struct draw_attributes *attr) {
 void renderer::draw_model_lines(struct draw_attributes attr) {
 	draw_model_lines(&attr);
 }
+#endif
 
 void renderer::draw_screenquad(void) {
 	// NOTE: assumes that the screenquad vbo has been linked in the
@@ -513,6 +565,7 @@ void renderer::draw_screenquad(void) {
 	DO_ERROR_CHECK();
 }
 
+#if 0
 void
 renderer::dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr) {
 	draw_queue.push_back({mesh, *attr});
@@ -596,7 +649,9 @@ void renderer::dqueue_flush_draws(void) {
 	draw_queue.clear();
 	transparent_draws.clear();
 }
+#endif
 
+#if 0
 bool renderer::is_valid_light(uint32_t id) {
 	//return id < MAX_LIGHTS && id < (int)active_lights && id >= 0;
 	return id && id <= light_ids && (
@@ -806,7 +861,9 @@ void renderer::update_lights(void) {
 	sync_directional_lights(active_lights.directional);
 	DO_ERROR_CHECK();
 }
+#endif
 
+#if 0
 void renderer::touch_light_refprobes(void) {
 	for (auto& [id, probe] : ref_probes) {
 		for (unsigned i = 0; i < 6; i++) {
@@ -849,3 +906,4 @@ float grendx::light_extent(struct point_light *p, float threshold) {
 
 	return 0.0;
 }
+#endif

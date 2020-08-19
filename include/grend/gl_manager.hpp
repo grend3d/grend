@@ -1,8 +1,9 @@
 #pragma once
+// for forward declaration of gameModel
+#include <grend/gameModel.hpp>
 #include <grend/sdl-context.hpp>
 #include <grend/opengl-includes.hpp>
 #include <grend/glm-includes.hpp>
-#include <grend/gameModel.hpp>
 
 #include <vector>
 #include <map>
@@ -216,84 +217,71 @@ class Framebuffer : public Obj {
 		std::map<GLenum, Texture::ptr> attachments;
 };
 
-// TODO: need to split this up somehow
-class gl_manager {
+// TODO: camelCase
+class compiled_mesh {
 	public:
-		gl_manager();
+		typedef std::shared_ptr<compiled_mesh> ptr;
+		typedef std::weak_ptr<compiled_mesh> weakptr;
 
-		class compiled_mesh {
-			public:
-				std::string material;
-				Vao::ptr vao;
+		std::string material;
+		Vao::ptr vao;
 
-				GLint elements_size;
-				void *elements_offset;
-		};
-		typedef std::map<std::string, compiled_mesh> cooked_mesh_map;
-		
-		class compiled_model {
-			public:
-				//rhandle vao;
-				Vao::ptr vao;
-				GLint vertices_size;
-
-				std::vector<std::string> meshes;
-				// NOTE: duplicating materials here because the model may not be valid
-				//       for the lifetime of the compiled model, and there's some possible
-				//       optimizations to be done in buffering all the material info
-				//       to the shaders during initialization
-				std::map<std::string, material> materials   = {};
-				std::map<std::string, Texture::ptr> mat_textures = {};
-				std::map<std::string, Texture::ptr> mat_specular = {};
-				std::map<std::string, Texture::ptr> mat_normal   = {};
-				std::map<std::string, Texture::ptr> mat_ao       = {};
-
-				void *vertices_offset;
-				void *normals_offset;
-				void *texcoords_offset;
-				void *tangents_offset;
-				void *bitangents_offset;
-		};
-		typedef std::map<std::string, compiled_model> cooked_model_map;
-		Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
-
-		void compile_meshes(std::string objname, mesh_map& meshies);
-		void compile_model(std::string name, gameModel::ptr mod);
-		void compile_models(model_map& models);
-		Vao::ptr preload_mesh_vao(compiled_model& obj, compiled_mesh& mesh);
-		Vao::ptr preload_model_vao(compiled_model& mesh);
-		void bind_cooked_meshes(void);
-
-		void preload_screenquad(void);
-
-		cooked_mesh_map  cooked_meshes;
-		cooked_model_map cooked_models;
-
-		std::vector<GLfloat> cooked_vertprops;
-		std::vector<GLuint> cooked_elements;
-
-		Vbo::ptr cooked_vertprops_vbo;
-		Vbo::ptr cooked_element_vbo;
-		Vbo::ptr screenquad_vbo;
-		Vao::ptr screenquad_vao;
-
-		//const shader& get_shader_obj(rhandle& handle);
-		Vao::ptr bind_vao(Vao::ptr vao);
-		void set_face_order(GLenum face_order);
-
-		void enable(GLenum feature);
-		void disable(GLenum feature);
-
-		// cache of features currently enabled
-		std::set<GLenum> feature_cache;
-
-		// current state
-		Vao::ptr current_vao;
-		GLenum   current_face_order;
-
-	private:
-		std::map<uint32_t, Texture::weakptr> texture_cache;
+		GLint elements_size;
+		void *elements_offset;
 };
+
+// TODO: camelCase
+class compiled_model {
+	public:
+		typedef std::shared_ptr<compiled_model> ptr;
+		typedef std::weak_ptr<compiled_model> weakptr;
+
+		//rhandle vao;
+		Vao::ptr vao;
+		GLint vertices_size;
+
+		std::vector<std::string> meshes;
+		// NOTE: duplicating materials here because the model may not be valid
+		//       for the lifetime of the compiled model, and there's some possible
+		//       optimizations to be done in buffering all the material info
+		//       to the shaders during initialization
+		std::map<std::string, material> materials   = {};
+		std::map<std::string, Texture::ptr> mat_textures = {};
+		std::map<std::string, Texture::ptr> mat_specular = {};
+		std::map<std::string, Texture::ptr> mat_normal   = {};
+		std::map<std::string, Texture::ptr> mat_ao       = {};
+
+		void *vertices_offset;
+		void *normals_offset;
+		void *texcoords_offset;
+		void *tangents_offset;
+		void *bitangents_offset;
+};
+
+// TODO: weakptr, once model loading stuff is straightened out
+typedef std::map<std::string, compiled_mesh::ptr> cooked_mesh_map;
+typedef std::map<std::string, compiled_model::ptr> cooked_model_map;
+Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
+
+// defined in gameModel.hpp
+class gameModel;
+
+void initialize_opengl(void);
+void compile_meshes(std::string objname, mesh_map& meshies);
+void compile_model(std::string name, std::shared_ptr<gameModel> mod);
+void compile_models(model_map& models);
+Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh& mesh);
+Vao::ptr preload_model_vao(compiled_model::ptr mesh);
+void bind_cooked_meshes(void);
+Vao::ptr get_current_vao(void);
+Vao::ptr get_screenquad_vao(void);
+Vao::ptr bind_vao(Vao::ptr vao);
+void set_face_order(GLenum face_order);
+
+void enable(GLenum feature);
+void disable(GLenum feature);
+
+void preload_screenquad(void);
 
 Vao::ptr         gen_vao(void);
 Vbo::ptr         gen_vbo(void);
@@ -316,3 +304,4 @@ GLenum surface_gl_format(const materialTexture& tex);
 
 // namespace grendx
 }
+

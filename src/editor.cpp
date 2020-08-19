@@ -1,5 +1,7 @@
 #include <grend/gameState.hpp>
 #include <grend/game_editor.hpp>
+#include <grend/engine.hpp>
+#include <grend/gl_manager.hpp>
 
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
 #include <imgui/imgui.h>
@@ -7,6 +9,58 @@
 #include <imgui/examples/imgui_impl_opengl3.h>
 
 using namespace grendx;
+
+void game_editor::render(gameMain *game) {
+	Framebuffer::ptr fb = Framebuffer::ptr(new Framebuffer());
+	renderFramebuffer::ptr rfb = renderFramebuffer::ptr(new renderFramebuffer(fb, SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	if (game->state->rootnode) {
+		renderQueue que(cam);
+		que.add(game->state->rootnode);
+		//que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
+		que.flush(rfb, game->rend->shaders["main"]);
+	}
+
+	/*
+	Framebuffer().bind();
+	bind_vao(get_screenquad_vao());
+	//glViewport(0, 0, game->rend->framebuffer->width, game->rend->framebuffer->height);
+	glViewport(0, 0, SCREEN_SIZE_X, SCREEN_SIZE_Y);
+	game->rend->shaders["post"]->bind();
+	// TODO: should the shader_obj be automatically set the same way 'shader' is...
+
+	disable(GL_SCISSOR_TEST);
+	glClearColor(0.0, 1.0, 0, 1.0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDepthMask(GL_FALSE);
+	disable(GL_DEPTH_TEST);
+	DO_ERROR_CHECK();
+
+	glActiveTexture(GL_TEXTURE6);
+	game->rend->framebuffer->color->bind();
+	glActiveTexture(GL_TEXTURE7);
+	game->rend->framebuffer->depth->bind();
+	//glActiveTexture(GL_TEXTURE8);
+	//last_frame_tex->bind();
+
+	game->rend->shaders["post"]->set("render_fb", 6);
+	game->rend->shaders["post"]->set("render_depth", 7);
+	game->rend->shaders["post"]->set("last_frame_fb", 8);
+	game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
+	game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
+	game->rend->shaders["post"]->set("screen_x", (float)game->rend->framebuffer->width);
+	game->rend->shaders["post"]->set("screen_y", (float)game->rend->framebuffer->height);
+	game->rend->shaders["post"]->set("rend_x", (float)game->rend->framebuffer->width);
+	game->rend->shaders["post"]->set("rend_y", (float)game->rend->framebuffer->height);
+	//rend.shader->set("exposure", editor.exposure);
+
+	DO_ERROR_CHECK();
+	game->rend->draw_screenquad();
+	*/
+
+	//Framebuffer().bind();
+	render_editor(game);
+	render_imgui(game);
+}
 
 void game_editor::initImgui(gameMain *game) {
 	IMGUI_CHECKVERSION();
@@ -23,18 +77,15 @@ void game_editor::initImgui(gameMain *game) {
 
 void game_editor::load_model(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
-	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)game->rend->get_glman();
-
 	if (ext == ".obj") {
 		//model m(path);
 		gameModel::ptr m = load_object(path);
-		glman.compile_model(path, m);
+		compile_model(path, m);
 	}
 
 	else if (ext == ".gltf") {
 		model_map models = load_gltf_models(path);
-		glman.compile_models(models);
+		compile_models(models);
 	}
 
 	// TODO: keep track of source files in model
@@ -43,11 +94,9 @@ void game_editor::load_model(gameMain *game, std::string path) {
 
 void game_editor::load_scene(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
-	// TODO: XXX: no need for const
-	auto& glman = (gl_manager&)game->rend->get_glman();
-
 	if (ext == ".gltf") {
 		auto [scene, models] = load_gltf_scene(path);
+		std::cerr << "load_scene(): loading scene" << std::endl;
 
 		/*
 		for (auto& node : scene.nodes) {
@@ -65,13 +114,20 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 		}
 
 		for (auto& node : scene.nodes) {
+			std::cerr << "load_scene(): loading node" << std::endl;
 			// TODO: need to be able to have the same model with different
 			//       position/rotation/scale
 			//       hmm... why not just use a wrapper gameObject?
+			glm::vec4 pos = node.transform * glm::vec4(1);
+			glm::vec3 adjpos = glm::vec3(pos);
+
+			models[node.name]->position = adjpos;
+			models[node.name]->scale    = glm::vec3(pos.w);
+			models[node.name]->rotation = glm::quat_cast(node.transform);
 			selectedNode->setNode(node.name, models[node.name]);
 		}
 
-		glman.compile_models(models);
+		compile_models(models);
 	}
 
 	editor_scene_files.push_back(path);
@@ -96,7 +152,6 @@ void game_editor::reload_shaders(gameMain *game) {
 void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	static bool control = false;
-	const gl_manager& glman = game->rend->get_glman();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui_ImplSDL2_ProcessEvent(&ev);
 
@@ -108,12 +163,12 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 					control = true;
 					break;
 
-				case SDLK_w: cam.velocity.z =  movement_speed; break;
-				case SDLK_s: cam.velocity.z = -movement_speed; break;
-				case SDLK_a: cam.velocity.x =  movement_speed; break;
-				case SDLK_d: cam.velocity.x = -movement_speed; break;
-				case SDLK_q: cam.velocity.y =  movement_speed; break;
-				case SDLK_e: cam.velocity.y = -movement_speed; break;
+				case SDLK_w: cam->velocity.z =  movement_speed; break;
+				case SDLK_s: cam->velocity.z = -movement_speed; break;
+				case SDLK_a: cam->velocity.x =  movement_speed; break;
+				case SDLK_d: cam->velocity.x = -movement_speed; break;
+				case SDLK_q: cam->velocity.y =  movement_speed; break;
+				case SDLK_e: cam->velocity.y = -movement_speed; break;
 
 				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
 				case SDLK_m: mode = mode::Inactive; break;
@@ -170,13 +225,15 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 					entbuf.scale *= 1/0.9f;
 					break;
 
+					/*
+				// TODO: another way to explore loaded models
 				case SDLK_r:
 					if (control) {
 						reload_shaders(game);
 
 					} else {
 						// scroll forward through models
-						if (edit_model == glman.cooked_models.begin()) {
+						if (edit_model == cooked_models.begin()) {
 							edit_model = glman.cooked_models.end();
 						}
 						edit_model--;
@@ -189,6 +246,7 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 					    edit_model = glman.cooked_models.begin();
 					}
 					break;
+					*/
 
 				case SDLK_DELETE:
 					// undo, basically
@@ -208,17 +266,17 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 
 				case SDLK_w:
 				case SDLK_s:
-					cam.velocity.z = 0;
+					cam->velocity.z = 0;
 					break;
 
 				case SDLK_a:
 				case SDLK_d:
-					cam.velocity.x = 0;
+					cam->velocity.x = 0;
 					break;
 
 				case SDLK_q:
 				case SDLK_e:
-					cam.velocity.y = 0;
+					cam->velocity.y = 0;
 					break;
 			}
 		}
@@ -244,7 +302,7 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 			float rel_x = ((float)x - center_x) / center_x;
 			float rel_y = ((float)y - center_y) / center_y;
 
-			cam.set_direction(glm::vec3(
+			cam->set_direction(glm::vec3(
 				movement_speed * sin(rel_x*2*M_PI),
 				movement_speed * sin(-rel_y*M_PI/2.f),
 				movement_speed * -cos(rel_x*2*M_PI)
@@ -335,22 +393,22 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 		// TODO: snap to increments
 		auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
 		entbuf.position = glm::vec3(
-			align(cam.direction.x*edit_distance + cam.position.x),
-			align(cam.direction.y*edit_distance + cam.position.y),
-			align(cam.direction.z*edit_distance + cam.position.z));
+			align(cam->direction.x*edit_distance + cam->position.x),
+			align(cam->direction.y*edit_distance + cam->position.y),
+			align(cam->direction.z*edit_distance + cam->position.z));
 	}
 }
 
 void game_editor::logic(float delta) {
 	// TODO: should time-dependent position updates be part of the camera
 	//       class? (probably)
-	cam.position += cam.velocity.z*cam.direction*delta;
-	cam.position += cam.velocity.y*cam.up*delta;
-	cam.position += cam.velocity.x*cam.right*delta;
+	cam->position += cam->velocity.z*cam->direction*delta;
+	cam->position += cam->velocity.y*cam->up*delta;
+	cam->position += cam->velocity.x*cam->right*delta;
 }
 
 void game_editor::clear(gameMain *game) {
-	cam.position = {0, 0, 0};
+	cam->position = {0, 0, 0};
 	//dynamic_models.clear();
 	editor_model_files.clear();
 
@@ -361,11 +419,9 @@ void game_editor::clear(gameMain *game) {
 
 // TODO: rename 'renderer' to 'rend' or something
 void game_editor::render_imgui(gameMain *game) {
-	if (mode != mode::Inactive) {
-		menubar(game);
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	}
+	menubar(game);
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 // don't think this is needed anymore...
@@ -392,7 +448,7 @@ void game_editor::render_map_models(renderer *rend, context& ctx) {
 */
 
 void game_editor::render_editor(gameMain *game) {
-	if (mode != mode::Inactive) {
+	if (true /*mode != mode::Inactive*/) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(game->ctx.window);
 		ImGui::NewFrame();

@@ -1,5 +1,5 @@
 #include <grend/engine.hpp>
-#include <grend/model.hpp>
+#include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
 
 using namespace grendx;

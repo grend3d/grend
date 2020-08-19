@@ -40,9 +40,8 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		import_model_dialog.clear();
 
 		// TODO: XXX: no need for const if it's just being casted away anyway...
-		auto& glman = (gl_manager&)game->rend->get_glman();
 		editor->load_model(game, import_model_dialog.selection);
-		glman.bind_cooked_meshes();
+		bind_cooked_meshes();
 		editor->update_models(game);
 	}
 
@@ -51,9 +50,8 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 
-		auto& glman = (gl_manager&)game->rend->get_glman();
 		editor->load_scene(game, import_scene_dialog.selection);
-		glman.bind_cooked_meshes();
+		bind_cooked_meshes();
 		editor->update_models(game);
 	}
 

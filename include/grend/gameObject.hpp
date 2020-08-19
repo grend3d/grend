@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <stdint.h>
 
 namespace grendx {
 
@@ -57,6 +58,7 @@ class gameObject {
 
 		gameObject::ptr parent = nullptr;
 		std::map<std::string, gameObject::ptr> nodes;
+		uint64_t physics_id = 0; // for unlinking when the object is removed
 
 		// relative to parent
 		glm::vec3 position = glm::vec3(0, 0, 0);
@@ -93,7 +95,7 @@ class gameLight : public gameObject {
 		typedef std::shared_ptr<gameLight> ptr;
 		typedef std::weak_ptr<gameLight> weakptr;
 
-		enum lightType {
+		enum lightTypes {
 			None,
 			Point,
 			Spot,
@@ -101,10 +103,13 @@ class gameLight : public gameObject {
 			Rectangular,  // TODO:
 			Area,         // TODO:
 			BoundedPoint, // TODO:
-		} light_type;
+		} lightType;
 
-		gameLight(enum lightType t)
-			: gameObject(objType::Light), light_type(t) {};
+		gameLight(enum lightTypes t)
+			: gameObject(objType::Light), lightType(t) {};
+
+		virtual float extent(float threshold=0.03) = 0;
+		// TODO: 'within(threshold, pos)' to test if a light affects a given point
 
 		glm::vec4 diffuse = glm::vec4(1);
 		float     intensity = 50.0;
@@ -116,7 +121,9 @@ class gameLightPoint : public gameLight {
 		typedef std::shared_ptr<gameLightPoint> ptr;
 		typedef std::weak_ptr<gameLightPoint> weakptr;
 
-		gameLightPoint() : gameLight(lightType::Point) {};
+		gameLightPoint() : gameLight(lightTypes::Point) {};
+		virtual float extent(float threshold=0.03);
+
 		float radius;
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap[6];
@@ -130,7 +137,9 @@ class gameLightSpot : public gameLight {
 		typedef std::shared_ptr<gameLightSpot> ptr;
 		typedef std::weak_ptr<gameLightSpot> weakptr;
 
-		gameLightSpot() : gameLight(lightType::Spot) {};
+		gameLightSpot() : gameLight(lightTypes::Spot) {};
+		virtual float extent(float threshold=0.03);
+
 		glm::vec3 direction;
 		float radius;
 		float angle;
@@ -147,7 +156,9 @@ class gameLightDirectional : public gameLight {
 		typedef std::shared_ptr<gameLightDirectional> ptr;
 		typedef std::weak_ptr<gameLightDirectional> weakptr;
 
-		gameLightDirectional() : gameLight(lightType::Directional) {};
+		gameLightDirectional() : gameLight(lightTypes::Directional) {};
+		virtual float extent(float threshold=0.03);
+
 		glm::vec3 direction;
 
 		// TODO: maybe abstract atlas textures more

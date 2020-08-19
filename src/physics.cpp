@@ -5,7 +5,7 @@ using namespace grendx;
 
 // each return physics object ID
 uint64_t imp_physics::add_static_model(std::string modname,
-                                      grendx::model& mod,
+                                      gameModel::ptr mod,
                                       glm::mat4 transform)
 {
 	// XXX: for now, don't allocate an object for static meshes,
@@ -17,12 +17,12 @@ uint64_t imp_physics::add_static_model(std::string modname,
 	return ret;
 }
 
-uint64_t imp_physics::add_sphere(std::string modname, glm::vec3 pos, double r)
+uint64_t imp_physics::add_sphere(gameObject::ptr obj, glm::vec3 pos, double r)
 {
 	uint64_t ret = alloc_id();
 
+	objects[ret].obj = obj;
 	objects[ret].id = ret;
-	objects[ret].model_name = modname;
 	objects[ret].type = object::type::Sphere;
 	objects[ret].usphere.radius = r;
 	objects[ret].position = pos;
@@ -32,13 +32,14 @@ uint64_t imp_physics::add_sphere(std::string modname, glm::vec3 pos, double r)
 	return ret;
 }
 
-uint64_t imp_physics::add_box(std::string modname,
+uint64_t imp_physics::add_box(gameObject::ptr obj,
                               glm::vec3 pos,
                               double length,
                               double width,
                               double height)
 {
 	uint64_t ret = alloc_id();
+	// TODO: add_box()
 
 	return ret;
 }

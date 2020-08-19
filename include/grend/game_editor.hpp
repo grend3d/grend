@@ -71,7 +71,7 @@ class game_editor : public gameView {
 		float edit_distance = 5;
 		editor_entry entbuf;
 
-		camera cam;
+		camera::ptr cam = camera::ptr(new camera());
 		gameObject::ptr selectedNode = nullptr;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;
@@ -84,7 +84,7 @@ class game_editor : public gameView {
 		std::vector<std::string> editor_model_files;
 		std::vector<std::string> editor_scene_files;
 
-		gl_manager::cooked_model_map::const_iterator edit_model;
+		cooked_model_map::const_iterator edit_model;
 
 	private:
 		void menubar(gameMain *game);

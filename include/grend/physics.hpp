@@ -37,6 +37,7 @@ class imp_physics {
 				enum type type;
 				union { struct sphere usphere; struct box ubox; };
 
+				gameObject::ptr obj;
 				std::string model_name;
 				glm::vec3 position = {0, 0, 0};
 				glm::vec3 velocity = {0, 0, 0};
@@ -61,8 +62,8 @@ class imp_physics {
 		                          glm::mat4 transform);
 
 		// dynamic geometry, collisions with AABB tree
-		uint64_t add_sphere(std::string modname, glm::vec3 pos, double r);
-		uint64_t add_box(std::string modname, glm::vec3 pos,
+		uint64_t add_sphere(gameObject::ptr obj, glm::vec3 pos, double r);
+		uint64_t add_box(gameObject::ptr obj, glm::vec3 pos,
 		                 double length, double width, double height);
 		// map of submesh name to physics object ID
 		// TODO: multimap?

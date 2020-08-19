@@ -2,6 +2,7 @@
 
 #include <grend/gameState.hpp> // TODO: rename to gameState.h
 #include <grend/engine.hpp>     // TODO: rename to renderer.h
+#include <grend/gl_manager.hpp> // TODO: rename
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
 #include <memory>
@@ -14,7 +15,9 @@ class gameView;
 // abstract class, should be derived from
 class gameMain {
 	public:
-		gameMain(std::string name="[grendx]") : ctx(name.c_str()) {}
+		gameMain(std::string name="[grendx]") : ctx(name.c_str()) {
+			initialize_opengl();
+		}
 		virtual int step(void);
 		virtual int run(void);
 		virtual void physics(void);

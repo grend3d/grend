@@ -113,6 +113,33 @@ struct draw_attributes {
 };
 */
 
+class renderFramebuffer {
+	public:
+		typedef std::shared_ptr<renderFramebuffer> ptr;
+		typedef std::weak_ptr<renderFramebuffer> weakptr;
+
+		renderFramebuffer(int Width, int Height);
+		renderFramebuffer(Framebuffer::ptr fb, int Width, int Height);
+		void clear(void);
+		gameMesh::ptr index(float x, float y);
+		gameMesh::ptr index(unsigned idx);
+
+		Framebuffer::ptr framebuffer;
+		Texture::ptr color;
+		Texture::ptr depth;
+
+		int width = -1, height = -1;
+		struct {
+			float x, y;
+			float min_x, min_y;
+		} scale = {
+			1.0, 1.0,
+			0.5, 0.5,
+		};
+
+		std::vector<gameMesh::ptr> drawn_meshes;
+};
+
 class renderQueue {
 	public:
 		renderQueue(camera::ptr cam) { setCamera(cam); };
@@ -123,10 +150,10 @@ class renderQueue {
 			cam    = other.cam;
 		}
 
-		void add(gameObject::ptr obj);
+		void add(gameObject::ptr obj, glm::mat4 trans = glm::mat4());
 		void sort(void);
 		void cull(void);
-		void flush(Program::ptr program);
+		void flush(renderFramebuffer::ptr fb, Program::ptr program);
 		void shaderSync(Program::ptr program);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
 
@@ -138,15 +165,33 @@ class renderQueue {
 		std::vector<std::pair<glm::mat4, gameReflectionProbe::ptr>> probes;
 };
 
+// this way postprocessing stages can be easily modularized and stacked
+class renderPostStage {
+	public:
+		typedef std::shared_ptr<renderPostStage> ptr;
+		typedef std::weak_ptr<renderPostStage> weakptr;
+
+		renderPostStage(unsigned fb_x, unsigned fb_y) {};
+		void draw(Texture::ptr previous);
+		void draw(renderFramebuffer::ptr previous);
+
+		Framebuffer::ptr framebuffer;
+		Texture::ptr render_tex;
+		Program::ptr shader_prog;
+};
+
 class renderer {
+	// TODO: shouldn't be needed here anymore
 	friend class text_renderer;
 	friend class game_state;
 
 	public:
+		typedef std::shared_ptr<renderer> ptr;
+		typedef std::weak_ptr<renderer> weakptr;
+
 		renderer(context& ctx);
 		~renderer() { };
 		void loadShaders(void);
-		void initFramebuffers(void);
 
 		// TODO: 
 		// see drawn_entities below
@@ -154,33 +199,8 @@ class renderer {
 		// look up stencil buffer index in drawn objects
 		gameMesh::ptr index(unsigned idx);
 
-		/*
-		void draw_mesh(std::string mesh, const struct draw_attributes *attr);
-		void draw_mesh_lines(std::string mesh, const struct draw_attributes *attr);
-		void draw_model(const struct draw_attributes *attr);
-		void draw_model(struct draw_attributes attr);
-		void draw_model_lines(const struct draw_attributes *attr);
-		void draw_model_lines(struct draw_attributes attr);
+		void drawQueue(renderQueue& queue);
 		void draw_screenquad(void);
-
-		void dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr);
-		void dqueue_draw_model(const struct draw_attributes *attr);
-		void dqueue_draw_model(struct draw_attributes attr);
-		void dqueue_sort_draws(glm::vec3 camera);
-		void dqueue_cull_models(glm::vec3 camera);
-		void dqueue_flush_draws(void);
-		*/
-
-		void draw_screenquad(void);
-
-		void updateObjects(gameObject::ptr root);
-		void draw(gameMesh::ptr mesh);
-		void draw(gameModel::ptr mesh);
-		void drawLines(gameMesh::ptr mesh);
-		void drawLines(gameModel::ptr mesh);
-		void cullDraws(void);
-		void sortDraws(void);
-		void flushDraws(void);
 
 		void drawSkybox(void);
 		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
@@ -188,9 +208,6 @@ class renderer {
 		void drawShadowMap(gameLightSpot::ptr light);
 		void drawShadowMap(gameLightDirectional::ptr light);
 		void drawReflectionProbe(gameReflectionProbe::ptr probe);
-
-		void set_material(gl_manager::compiled_model& obj, std::string mat_name);
-		void set_default_material(std::string mat_name);
 
 		// init_lights() will need to be called after the shader is bound
 		// (in whatever subclasses the engine)
@@ -204,6 +221,7 @@ class renderer {
 		void touch_refprobes(void);
 		*/
 
+		/*
 		uint32_t add_reflection_probe(struct reflection_probe ref);
 		void free_reflection_probe(uint32_t id);
 
@@ -211,21 +229,14 @@ class renderer {
 		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
 		void set_m(glm::mat4 mod);
 		void set_reflection_probe(glm::vec3 position);
-		gl_manager& get_glman(void){ return glman; };
+		*/
 
-		// main rendering framebuffer
-		Framebuffer::ptr rend_fb;
-		Texture::ptr     rend_tex;
-		Texture::ptr     rend_depth;
-		int rend_x, rend_y; // framebuffer dimensions
+		// TODO: swap between these
+		renderFramebuffer::ptr framebuffer;
+		//renderFramebuffer last_frame;
 
 		// (actual) screen size
 		int screen_x, screen_y;
-
-		// previous frame info
-		Uint32 last_frame;
-		Framebuffer::ptr last_frame_fb; // same dimensions as rend_fb
-		Texture::ptr     last_frame_tex; // same dimensions as rend_fb
 
 		// sky box
 		Texture::ptr skybox;
@@ -239,7 +250,6 @@ class renderer {
 	protected:
 		gameReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
 		Program::ptr shader;
-		gl_manager glman;
 
 		// list of models to draw
 		// TODO: meshes, need to pair materials with meshes though, which
@@ -254,22 +264,17 @@ class renderer {
 		std::vector<gameMesh::ptr> transparent_draws;
 		std::vector<gameLight::ptr> active_lights;
 		std::vector<gameReflectionProbe::ptr> active_refprobes;
-
-		// lookup indexes for meshes drawn to the framebuffer
-		unsigned drawn_counter = 0;
-		gameMesh::ptr drawn_entities[256];
-
-		std::string fallback_material = "(null)";
-
-		// handles for default material textures
-		std::map<std::string, Texture::ptr> diffuse_handles;
-		std::map<std::string, Texture::ptr> specular_handles;
-		std::map<std::string, Texture::ptr> normmap_handles;
-		std::map<std::string, Texture::ptr> aomap_handles;
 };
 
 float light_extent(struct point_light *p, float threshold=0.03);
 float light_extent(struct spot_light *s, float threshold=0.03);
+glm::mat4 model_to_world(glm::mat4 model);
+
+void set_material(Program::ptr program,
+		// TODO: keep compiled_model reference in model
+                  compiled_model::ptr obj,
+                  std::string mat_name);
+void set_default_material(Program::ptr program);
 
 // namespace grendx
 }
