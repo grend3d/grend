@@ -41,7 +41,7 @@ gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 		}
 	}
 
-	ret->setNode("mesh", mesh);
+	setNode("mesh", ret, mesh);
 
 	//ret->gen_normals();
 	ret->genTangents();
@@ -111,7 +111,7 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 		ret->texcoords.push_back({1, 0});
 	}
 
-	ret->setNode("mesh", mesh);
+	setNode("mesh", ret, mesh);
 	ret->genNormals();
 	ret->genTangents();
 

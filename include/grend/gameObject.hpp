@@ -8,9 +8,12 @@
 #include <memory>
 #include <map>
 #include <vector>
-#include <string>
 #include <utility>
+#include <string>
 #include <stdint.h>
+
+#include <iostream>
+#include <sstream>
 
 namespace grendx {
 
@@ -37,12 +40,33 @@ class gameObject {
 		gameObject(enum objType t = objType::None) : type(t) {};
 
 		// handlers for basic input events
-		virtual void onLeftClick() {};
-		virtual void onMiddleClick() {};
-		virtual void onRightClick() {};
-		virtual void onHover() {};
+		virtual void onLeftClick() {
+			// default handlers just call upwards
+			std::cerr << "left click " << typeString() << std::endl;
+			if (parent) { parent->onLeftClick(); }
+		};
 
-		void setNode(std::string name, gameObject::ptr obj);
+		virtual void onMiddleClick() {
+			std::cerr << "middle click " << typeString() << std::endl;
+			if (parent) { parent->onMiddleClick(); }
+		};
+
+		virtual void onRightClick() {
+			std::cerr << "right click " << typeString() << std::endl;
+			if (parent) { parent->onRightClick(); }
+		};
+
+		virtual void onHover() {
+			std::cerr << "hover " << typeString() << std::endl;
+			if (parent) { parent->onHover(); }
+		};
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[gameObject 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
 
@@ -65,6 +89,14 @@ class gameObject {
 		glm::quat rotation = glm::quat(1, 0, 0, 0);
 		glm::vec3 scale    = glm::vec3(1, 1, 1);
 };
+
+static inline
+void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
+	assert(obj != nullptr && sub != nullptr);
+
+	obj->nodes[name] = sub;
+	sub->parent = obj;
+}
 
 /*
 // defined in gameModel.hpp
@@ -108,6 +140,12 @@ class gameLight : public gameObject {
 		gameLight(enum lightTypes t)
 			: gameObject(objType::Light), lightType(t) {};
 
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Light (abstract) 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		virtual float extent(float threshold=0.03) = 0;
 		// TODO: 'within(threshold, pos)' to test if a light affects a given point
 
@@ -122,6 +160,13 @@ class gameLightPoint : public gameLight {
 		typedef std::weak_ptr<gameLightPoint> weakptr;
 
 		gameLightPoint() : gameLight(lightTypes::Point) {};
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Point light 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		virtual float extent(float threshold=0.03);
 
 		float radius;
@@ -138,6 +183,13 @@ class gameLightSpot : public gameLight {
 		typedef std::weak_ptr<gameLightSpot> weakptr;
 
 		gameLightSpot() : gameLight(lightTypes::Spot) {};
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Spot light 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		virtual float extent(float threshold=0.03);
 
 		glm::vec3 direction;
@@ -157,6 +209,13 @@ class gameLightDirectional : public gameLight {
 		typedef std::weak_ptr<gameLightDirectional> weakptr;
 
 		gameLightDirectional() : gameLight(lightTypes::Directional) {};
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Directional light 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		virtual float extent(float threshold=0.03);
 
 		glm::vec3 direction;
@@ -172,6 +231,12 @@ class gameReflectionProbe : public gameObject {
 	public:
 		typedef std::shared_ptr<gameReflectionProbe> ptr;
 		typedef std::weak_ptr<gameReflectionProbe> weakptr;
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Reflection probe 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
 
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
 		quadtree::node_id faces[6];

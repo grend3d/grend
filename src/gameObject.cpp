@@ -8,10 +8,6 @@ size_t grendx::allocateObjID(void) {
 	return ++counter;
 }
 
-void gameObject::setNode(std::string name, gameObject::ptr obj) {
-	nodes[name] = obj;
-}
-
 void gameObject::removeNode(std::string name) {
 	auto it = nodes.find(name);
 

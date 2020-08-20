@@ -163,8 +163,7 @@ gameModel::ptr load_object(std::string filename) {
 			mesh_name = statement[1];
 			current_mesh_name = mesh_name + ":(null)";
 			current_mesh = gameMesh::ptr(new gameMesh());
-			ret->setNode(current_mesh_name, current_mesh);
-			current_mesh->parent = ret; // TODO: better
+			setNode(current_mesh_name, ret, current_mesh);
 		}
 
 		else if (statement[0] == "mtllib") {
@@ -179,8 +178,7 @@ gameModel::ptr load_object(std::string filename) {
 			current_mesh->material = statement[1];
 			current_mesh_name = mesh_name + ":" + current_mesh->material;
 
-			ret->setNode(current_mesh_name, current_mesh);
-			current_mesh->parent = ret; // TODO: better
+			setNode(current_mesh_name, ret, current_mesh);
 		}
 
 		else if (statement[0] == "v") {
@@ -690,8 +688,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			std::cerr << "        mode: " << prim.mode << std::endl;
 
 			grendx::gameMesh::ptr modmesh = grendx::gameMesh::ptr(new grendx::gameMesh());
-			curModel->setNode(temp_name, modmesh);
-			modmesh->parent = curModel; // TODO: better
+			setNode(temp_name, curModel, modmesh);
 
 			if (prim.material >= 0) {
 				gltf_load_material(tgltf_model, curModel,

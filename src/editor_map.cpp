@@ -95,8 +95,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 			ptr->position = pos;
 
 			std::string name = "reflection probe " + std::to_string(counter++);
-			selectedNode->setNode(name, ptr);
-			ptr->parent = selectedNode; // TODO: better
+			setNode(name, selectedNode, ptr);
 		}
 
 		if (statement[0] == "point_light" && statement.size() == 7) {
@@ -116,8 +115,7 @@ void game_editor::load_map(gameMain *game, std::string name) {
 			ptr->diffuse = diffuse;
 
 			std::string name = "point light " + std::to_string(counter++);
-			selectedNode->setNode(name, ptr);
-			ptr->parent = selectedNode; // TODO: better
+			setNode(name, selectedNode, ptr);
 
 			/*
 			uint32_t nlit = rend->add_light((struct point_light){

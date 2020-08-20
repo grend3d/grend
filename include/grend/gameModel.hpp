@@ -73,6 +73,12 @@ class gameMesh : public gameObject {
 
 		gameMesh() : gameObject(objType::Mesh) {};
 
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Mesh " << meshName << " 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		std::shared_ptr<compiled_mesh> comped_mesh;
 		bool compiled = false;
 
@@ -87,6 +93,13 @@ class gameModel : public gameObject {
 		typedef std::weak_ptr<gameModel> weakptr;
 
 		gameModel() : gameObject(objType::Model) {};
+
+		virtual std::string typeString(void) {
+			std::stringstream strm;
+			strm << "[Model " << modelName << " 0x" << std::hex << this <<  "]";
+			return strm.str();
+		}
+
 		void genInfo(void);
 		void genNormals(void);
 		void genTexcoords(void);

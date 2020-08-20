@@ -11,21 +11,20 @@
 using namespace grendx;
 
 void game_editor::render(gameMain *game) {
-	/*
-	Framebuffer::ptr fb = Framebuffer::ptr(new Framebuffer());
-	renderFramebuffer::ptr rfb = renderFramebuffer::ptr(new renderFramebuffer(fb, SCREEN_SIZE_X, SCREEN_SIZE_Y));
-	*/
+	// TODO: handle this in gameMain or handleInput here
+	int winsize_x, winsize_y;
+	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+
 	if (game->state->rootnode) {
 		renderQueue que(cam);
 		que.add(game->state->rootnode);
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
-		//que.flush(rfb, game->rend->shaders["main"]);
 	}
 
+	// TODO: move to renderPostStage
 	Framebuffer().bind();
 	bind_vao(get_screenquad_vao());
-	//glViewport(0, 0, game->rend->framebuffer->width, game->rend->framebuffer->height);
-	glViewport(0, 0, SCREEN_SIZE_X, SCREEN_SIZE_Y);
+	glViewport(0, 0, winsize_x, winsize_y);
 	game->rend->shaders["post"]->bind();
 	// TODO: should the shader_obj be automatically set the same way 'shader' is...
 
@@ -46,20 +45,12 @@ void game_editor::render(gameMain *game) {
 	//last_frame_tex->bind();
 
 	//game->rend->shaders["post"]->set("last_frame_fb", 8);
-	//game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
-	//game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
-	game->rend->shaders["post"]->set("scale_x", 1.f);
-	game->rend->shaders["post"]->set("scale_y", 1.f);
-	game->rend->shaders["post"]->set("screen_x", (float)1280);
-	game->rend->shaders["post"]->set("screen_y", (float)720);
-	game->rend->shaders["post"]->set("rend_x", (float)1280);
-	game->rend->shaders["post"]->set("rend_y", (float)720);
-	/*
-	game->rend->shaders["post"]->set("screen_x", (float)game->rend->framebuffer->width);
-	game->rend->shaders["post"]->set("screen_y", (float)game->rend->framebuffer->height);
+	game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
+	game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
+	game->rend->shaders["post"]->set("screen_x", (float)winsize_x);
+	game->rend->shaders["post"]->set("screen_y", (float)winsize_y);
 	game->rend->shaders["post"]->set("rend_x", (float)game->rend->framebuffer->width);
 	game->rend->shaders["post"]->set("rend_y", (float)game->rend->framebuffer->height);
-	*/
 	//rend.shader->set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
@@ -136,16 +127,8 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 			obj->position = adjpos/pos.w;
 			obj->scale    = glm::vec3(1.0);
 			obj->rotation = glm::quat_cast(node.transform);
-			obj->setNode(node.name, models[node.name]);
-			selectedNode->setNode(node.name, obj);
-			obj->parent = selectedNode;
-
-			/*
-			models[node.name]->position = adjpos;
-			models[node.name]->scale    = glm::vec3(pos.w);
-			models[node.name]->rotation = glm::quat_cast(node.transform);
-			selectedNode->setNode(node.name, models[node.name]);
-			*/
+			setNode(node.name, obj, models[node.name]);
+			setNode(node.name, selectedNode, obj);
 		}
 
 		compile_models(models);
@@ -336,6 +319,21 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 
 		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
 			if (ev.button.button == SDL_BUTTON_LEFT) {
+				// TODO: functions for this
+				int x, y;
+				int win_x, win_y;
+				Uint32 buttons = SDL_GetMouseState(&x, &y);
+				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+				float fx = x/(1.f*win_x);
+				float fy = y/(1.f*win_y);
+
+				gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
+				std::cerr << "clicked object: " << clicked << std::endl;
+				if (clicked) {
+					clicked->onLeftClick();
+				}
+
 				switch (mode) {
 // TODO:
 #if 0
