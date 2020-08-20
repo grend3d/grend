@@ -11,16 +11,17 @@
 using namespace grendx;
 
 void game_editor::render(gameMain *game) {
+	/*
 	Framebuffer::ptr fb = Framebuffer::ptr(new Framebuffer());
 	renderFramebuffer::ptr rfb = renderFramebuffer::ptr(new renderFramebuffer(fb, SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	*/
 	if (game->state->rootnode) {
 		renderQueue que(cam);
 		que.add(game->state->rootnode);
-		//que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
-		que.flush(rfb, game->rend->shaders["main"]);
+		que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
+		//que.flush(rfb, game->rend->shaders["main"]);
 	}
 
-	/*
 	Framebuffer().bind();
 	bind_vao(get_screenquad_vao());
 	//glViewport(0, 0, game->rend->framebuffer->width, game->rend->framebuffer->height);
@@ -28,7 +29,7 @@ void game_editor::render(gameMain *game) {
 	game->rend->shaders["post"]->bind();
 	// TODO: should the shader_obj be automatically set the same way 'shader' is...
 
-	disable(GL_SCISSOR_TEST);
+	//disable(GL_SCISSOR_TEST);
 	glClearColor(0.0, 1.0, 0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
@@ -37,29 +38,39 @@ void game_editor::render(gameMain *game) {
 
 	glActiveTexture(GL_TEXTURE6);
 	game->rend->framebuffer->color->bind();
+	game->rend->shaders["post"]->set("render_fb", 6);
 	glActiveTexture(GL_TEXTURE7);
 	game->rend->framebuffer->depth->bind();
+	game->rend->shaders["post"]->set("render_depth", 7);
 	//glActiveTexture(GL_TEXTURE8);
 	//last_frame_tex->bind();
 
-	game->rend->shaders["post"]->set("render_fb", 6);
-	game->rend->shaders["post"]->set("render_depth", 7);
-	game->rend->shaders["post"]->set("last_frame_fb", 8);
-	game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
-	game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
+	//game->rend->shaders["post"]->set("last_frame_fb", 8);
+	//game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
+	//game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
+	game->rend->shaders["post"]->set("scale_x", 1.f);
+	game->rend->shaders["post"]->set("scale_y", 1.f);
+	game->rend->shaders["post"]->set("screen_x", (float)1280);
+	game->rend->shaders["post"]->set("screen_y", (float)720);
+	game->rend->shaders["post"]->set("rend_x", (float)1280);
+	game->rend->shaders["post"]->set("rend_y", (float)720);
+	/*
 	game->rend->shaders["post"]->set("screen_x", (float)game->rend->framebuffer->width);
 	game->rend->shaders["post"]->set("screen_y", (float)game->rend->framebuffer->height);
 	game->rend->shaders["post"]->set("rend_x", (float)game->rend->framebuffer->width);
 	game->rend->shaders["post"]->set("rend_y", (float)game->rend->framebuffer->height);
+	*/
 	//rend.shader->set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
 	game->rend->draw_screenquad();
-	*/
 
 	//Framebuffer().bind();
 	render_editor(game);
 	render_imgui(game);
+
+	glDepthMask(GL_TRUE);
+	enable(GL_DEPTH_TEST);
 }
 
 void game_editor::initImgui(gameMain *game) {
@@ -120,11 +131,21 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 			//       hmm... why not just use a wrapper gameObject?
 			glm::vec4 pos = node.transform * glm::vec4(1);
 			glm::vec3 adjpos = glm::vec3(pos);
+			gameObject::ptr obj = gameObject::ptr(new gameObject());
 
+			obj->position = adjpos/pos.w;
+			obj->scale    = glm::vec3(1.0);
+			obj->rotation = glm::quat_cast(node.transform);
+			obj->setNode(node.name, models[node.name]);
+			selectedNode->setNode(node.name, obj);
+			obj->parent = selectedNode;
+
+			/*
 			models[node.name]->position = adjpos;
 			models[node.name]->scale    = glm::vec3(pos.w);
 			models[node.name]->rotation = glm::quat_cast(node.transform);
 			selectedNode->setNode(node.name, models[node.name]);
+			*/
 		}
 
 		compile_models(models);
@@ -399,7 +420,7 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 	}
 }
 
-void game_editor::logic(float delta) {
+void game_editor::logic(gameMain *game, float delta) {
 	// TODO: should time-dependent position updates be part of the camera
 	//       class? (probably)
 	cam->position += cam->velocity.z*cam->direction*delta;

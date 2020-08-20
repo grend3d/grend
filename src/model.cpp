@@ -284,6 +284,7 @@ materialTexture::materialTexture(std::string filename) {
 }
 
 void materialTexture::load_texture(std::string filename) {
+	std::cerr << "loading " << filename << std::endl;
 	uint8_t *datas = stbi_load(filename.c_str(), &width,
 	                           &height, &channels, 0);
 

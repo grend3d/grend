@@ -7,8 +7,13 @@ int gameMain::step(void) {
 	handleInput();
 
 	if (running) {
+		Uint32 cur_ticks = SDL_GetTicks();
+		Uint32 ticks_delta = cur_ticks - last_frame_time;
+		float fticks = ticks_delta / 1000.0f;
+		last_frame_time = cur_ticks;
+
 		physics();
-		logic();
+		view->logic(this, fticks);
 		view->render(this);
 
 		//auto minmax = framems_minmax();

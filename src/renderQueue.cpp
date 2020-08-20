@@ -5,10 +5,10 @@
 using namespace grendx;
 
 void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
-	//glm::mat4 adjTrans = obj->getTransform() * trans;
-	glm::mat4 adjTrans = obj->getTransform();
+	glm::mat4 adjTrans = trans*obj->getTransform();
+	//glm::mat4 adjTrans = obj->getTransform();
 
-	std::cerr << "add(): push" << std::endl;
+	//std::cerr << "add(): push" << std::endl;
 
 	switch (obj->type) {
 		case gameObject::objType::Mesh:
@@ -38,11 +38,11 @@ void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		std::cerr << "add(): subnode " << name << std::endl;
+		//std::cerr << "add(): subnode " << name << std::endl;
 		add(ptr, adjTrans);
 	}
 
-	std::cerr << "add(): pop" << std::endl;
+	//std::cerr << "add(): pop" << std::endl;
 }
 
 void renderQueue::sort(void) {
@@ -63,8 +63,8 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 	glFrontFace(GL_CCW);
-	//glClearColor(0.1, 0.1, 0.1, 1);
-	glClearColor(1.0, 0.1, 0.1, 1);
+	glClearColor(0.1, 0.1, 0.1, 1);
+	//glClearColor(1.0, 0.1, 0.1, 1);
 	glClearStencil(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -83,7 +83,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 	program->set("p", projection);
 	program->set("v_inv", v_inv);
 
-	std::cerr << "got here" << std::endl;
+	//std::cerr << "got here" << std::endl;
 
 	for (auto& [transform, mesh] : meshes) {
 		if (fb->drawn_meshes.size() < 0xff) {
@@ -94,7 +94,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 		}
 
-		std::cerr << "also got here" << std::endl;
+		//std::cerr << "also got here" << std::endl;
 
 		glm::mat3 m_3x3_inv_transp =
 			glm::transpose(glm::inverse(model_to_world(transform)));
@@ -142,9 +142,9 @@ void renderQueue::shaderSync(Program::ptr program) {
 	program->set("active_point_lights", (GLint)active);
 
 	for (size_t i = 0; i < active; i++) {
-		std::cerr << "shaderSync(): setting point light " << i << std::endl;
+		//std::cerr << "shaderSync(): setting point light " << i << std::endl;
 		// TODO: check light index
-		const auto& light = point_lights[i];
+		gameLightPoint::ptr light = point_lights[i];
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work

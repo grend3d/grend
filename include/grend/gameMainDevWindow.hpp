@@ -16,12 +16,12 @@ namespace grendx {
 class gameMainDevWindow : public gameMain {
 	public:
 		gameMainDevWindow() : gameMain("[grend editor]") {
+			state = game_state::ptr(new game_state());
+
 			player = gameView::ptr(new playerView());
 			editor = gameView::ptr(new game_editor(this));
-			view   = editor;
-
-			state = game_state::ptr(new game_state());
 			rend  = renderer::ptr(new renderer(ctx));
+			view   = editor;
 		}
 		virtual void handleInput(void);
 

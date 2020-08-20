@@ -318,12 +318,13 @@ void preload_screenquad(void) {
 	bind_vao(orig_vao);
 }
 
-void check_errors(int line, const char *func) {
+void check_errors(int line, const char *filename, const char *func) {
 	GLenum err;
 
 	// TODO: maybe exceptions or some way to address errors
 	while ((err = glGetError()) != GL_NO_ERROR) {
-		std::cerr << "/!\\ ERROR: " << func << ":" << line << ", ";
+		std::cerr << "/!\\ ERROR: " << filename << ":" << line
+			<< ": " << func << "(): ";
 
 		switch (err) {
 			case GL_INVALID_ENUM:     

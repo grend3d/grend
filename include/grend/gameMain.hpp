@@ -6,6 +6,7 @@
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
 #include <memory>
+#include <stdint.h>
 
 namespace grendx {
 
@@ -32,6 +33,7 @@ class gameMain {
 
 		// FPS info
 		sma_counter frame_timer;
+		uint32_t last_frame_time = 0;
 };
 
 // namespace grendx

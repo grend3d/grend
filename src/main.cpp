@@ -10,7 +10,7 @@
 
 using namespace grendx;
 
-gameMain *game = new gameMainDevWindow();
+gameMain *game;
 
 int render_step(double time, void *data) {
 	return game->step();
@@ -25,6 +25,8 @@ int main(int argc, char *argv[]) {
 	std::cerr << "entering main()" << std::endl;
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
+
+	game = new gameMainDevWindow();
 
 #ifdef __EMSCRIPTEN__
 	emscripten_request_animation_frame_loop(&render_step, nullptr);

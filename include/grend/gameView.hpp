@@ -13,6 +13,7 @@ class gameView {
 		typedef std::weak_ptr<gameView> weakptr;
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev) = 0;
+		virtual void logic(gameMain *game, float delta) {};
 		virtual void render(gameMain *game) = 0;
 		// TODO: game object
 		camera cam;

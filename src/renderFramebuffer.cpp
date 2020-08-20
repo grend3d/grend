@@ -11,6 +11,10 @@ renderFramebuffer::renderFramebuffer(int Width, int Height)
 	            gen_texture_color(width, height, GL_RGBA16F));
 	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
 	            gen_texture_depth_stencil(width, height));
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		SDL_Die("incomplete!");
+	}
 }
 
 renderFramebuffer::renderFramebuffer(Framebuffer::ptr fb, int Width, int Height)

@@ -19,7 +19,7 @@ material default_material = {
 	.refract_idx = 1.5,
 
 	.diffuse_map         = materialTexture("assets/tex/white.png"),
-	.metal_roughness_map = materialTexture("assets/tex/white.png"),
+	.metal_roughness_map = materialTexture("assets/tex/black.png"),
 	.normal_map          = materialTexture("assets/tex/lightblue-normal.png"),
 	.ambient_occ_map     = materialTexture("assets/tex/white.png"),
 };
@@ -260,6 +260,15 @@ void renderer::loadShaders(void) {
 	glBindAttribLocation(shaders["post"]->obj, 1, "v_texcoord");
 	DO_ERROR_CHECK();
 	link_program(shaders["post"]);
+
+	shaders["quadtest"] = load_program(
+		"shaders/out/quadtest.vert",
+		"shaders/out/quadtest.frag"
+	);
+	glBindAttribLocation(shaders["quadtest"]->obj, 0, "v_position");
+	glBindAttribLocation(shaders["quadtest"]->obj, 1, "v_texcoord");
+	DO_ERROR_CHECK();
+	link_program(shaders["quadtest"]);
 
 	bind_vao(orig_vao);
 	//set_shader(shaders["main"]);

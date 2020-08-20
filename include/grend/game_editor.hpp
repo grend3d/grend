@@ -17,6 +17,8 @@ class game_editor : public gameView {
 	public:
 		game_editor(gameMain *game) : gameView() {
 			initImgui(game);
+			load_map(game, "saves/save.map");
+			bind_cooked_meshes();
 		};
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
@@ -63,7 +65,7 @@ class game_editor : public gameView {
 
 		void save_map(gameMain *game, std::string name="save.map");
 		void load_map(gameMain *game, std::string name="save.map");
-		void logic(float delta);
+		void logic(gameMain *game, float delta);
 		void clear(gameMain *game);
 
 		int mode = mode::Inactive;

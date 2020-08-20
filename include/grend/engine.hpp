@@ -150,7 +150,7 @@ class renderQueue {
 			cam    = other.cam;
 		}
 
-		void add(gameObject::ptr obj, glm::mat4 trans = glm::mat4());
+		void add(gameObject::ptr obj, glm::mat4 trans = glm::mat4(1));
 		void sort(void);
 		void cull(void);
 		void flush(renderFramebuffer::ptr fb, Program::ptr program);
