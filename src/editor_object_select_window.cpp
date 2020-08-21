@@ -11,11 +11,7 @@ void game_editor::object_select_window(gameMain *game) {
 	ImGui::Begin("Loaded Objects", &show_object_select_window);
 
 	// TODO: another way to select from loaded models
-	/*
-	for (auto it = glman.cooked_models.begin();
-	     it != glman.cooked_models.end();
-	     it++)
-	{
+	for (auto it = models.begin(); it != models.end(); it++) {
 		auto& [name, obj] = *it;
 
 		if (ImGui::Selectable(name.c_str(), it == edit_model)) {
@@ -23,10 +19,9 @@ void game_editor::object_select_window(gameMain *game) {
 		}
 
 		ImGui::SameLine(300);
-		std::string mstr = "(" + std::to_string(obj.meshes.size()) + " meshes)";
+		std::string mstr = "(" + std::to_string(obj->nodes.size()) + " meshes)";
 		ImGui::Text(mstr.c_str());
 	}
-	*/
 
 	ImGui::End();
 }

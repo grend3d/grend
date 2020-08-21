@@ -83,7 +83,23 @@ void game_editor::load_map(gameMain *game, std::string name) {
 				v.transform[i/4][i%4] = matvec[i];
 			}
 
-			dynamic_models.push_back(v);
+			if (models.find(v.name) != models.end()) {
+				gameObject::ptr obj = gameObject::ptr(new gameObject());
+
+				/*
+				glm::vec4 temp = v.transform * glm::vec4(1);
+				obj->scale = glm::vec3(temp) / temp.w;
+				*/
+
+				obj->position = parse_vec<glm::vec3>(statement[3]);
+				// TODO: store scale and rotation in the entry
+				obj->rotation = glm::quat_cast(v.transform);
+
+				setNode(v.name, obj, models[v.name]);
+				setNode(v.name, selectedNode, obj);
+			}
+			
+			//dynamic_models.push_back(v);
 			std::cerr << "# loaded a " << v.name << std::endl;
 		}
 

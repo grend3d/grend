@@ -83,11 +83,15 @@ void game_editor::load_model(gameMain *game, std::string path) {
 		//model m(path);
 		gameModel::ptr m = load_object(path);
 		compile_model(path, m);
+
+		// add to editor model selection
+		models[path] = m;
 	}
 
 	else if (ext == ".gltf") {
-		model_map models = load_gltf_models(path);
-		compile_models(models);
+		model_map mods = load_gltf_models(path);
+		compile_models(mods);
+		models.insert(mods.begin(), mods.end());
 	}
 
 	// TODO: keep track of source files in model
@@ -97,12 +101,12 @@ void game_editor::load_model(gameMain *game, std::string path) {
 void game_editor::load_scene(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
 	if (ext == ".gltf") {
-		auto [scene, models] = load_gltf_scene(path);
+		auto [scene, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
 
 		/*
 		for (auto& node : scene.nodes) {
-			dynamic_models.push_back((struct editor_entry) {
+			dynamic_mods.push_back((struct editor_entry) {
 				.name = node.name,
 				.classname = "static",
 				.transform = node.transform,
@@ -127,11 +131,12 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 			obj->position = adjpos/pos.w;
 			obj->scale    = glm::vec3(1.0);
 			obj->rotation = glm::quat_cast(node.transform);
-			setNode(node.name, obj, models[node.name]);
+			setNode(node.name, obj, mods[node.name]);
 			setNode(node.name, selectedNode, obj);
 		}
 
-		compile_models(models);
+		compile_models(mods);
+		models.insert(mods.begin(), mods.end());
 	}
 
 	editor_scene_files.push_back(path);
@@ -331,6 +336,7 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 				gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
 				std::cerr << "clicked object: " << clicked << std::endl;
 				if (clicked) {
+					selectedNode = clicked;
 					clicked->onLeftClick();
 				}
 
@@ -502,10 +508,13 @@ void game_editor::render_editor(gameMain *game) {
 
 			refprobes_window(rend, ctx);
 		}
+#endif
 
 		if (show_object_select_window) {
-			object_select_window(rend, ctx);
+			object_select_window(game);
 		}
+
+#if 0
 
 		if (mode == mode::AddObject) {
 			struct draw_attributes attrs = {

@@ -38,9 +38,55 @@ static void draw_indicator(gameMain *rend, glm::mat4 trans,
 	}
 }
 
+static const ImGuiTreeNodeFlags base_flags
+	= ImGuiTreeNodeFlags_OpenOnArrow
+	| ImGuiTreeNodeFlags_OpenOnDoubleClick
+	| ImGuiTreeNodeFlags_SpanAvailWidth;
+
+void game_editor::addnodes_rec(const std::string& name,
+                                          gameObject::ptr obj,
+                                          std::set<gameObject::ptr>& selectedPath)
+{
+	if (obj) {
+		ImGuiTreeNodeFlags flags
+			= base_flags
+			| ((selectedPath.count(obj))? ImGuiTreeNodeFlags_Selected : 0)
+			| ((obj->nodes.size() == 0)?  ImGuiTreeNodeFlags_Leaf : 0);
+
+
+		std::string fullname = name + " : " + obj->typeString();
+		if (ImGui::TreeNodeEx(fullname.c_str(), flags)) {
+			// avoid setting a new selected node if it's already a parent
+			// in the selected path, which avoids overwriting the selected
+			// node when trying to traverse to some clicked mesh
+			if (ImGui::IsItemClicked() && !selectedPath.count(obj)) {
+				selectedNode = obj;
+			}
+
+			for (auto& [subname, ptr] : obj->nodes) {
+				addnodes_rec(subname, ptr, selectedPath);
+			}
+
+			ImGui::TreePop();
+		}
+	}
+}
+
+void game_editor::addnodes(std::string name, gameObject::ptr obj) {
+	std::set<gameObject::ptr> path;
+
+	for (gameObject::ptr p = selectedNode; p; p = p->parent) {
+		path.insert(p);
+	}
+
+	addnodes_rec(name, obj, path);
+}
+
 void game_editor::map_window(gameMain *game) {
 	ImGui::Begin("Objects", &show_map_window);
-	ImGui::Columns(2);
+	//ImGui::Columns(2);
+	
+	addnodes("Objects", game->state->rootnode);
 
 	/*
 	ImGui::Text("Object properties");

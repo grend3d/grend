@@ -3,6 +3,7 @@
 #include <grend/engine.hpp>
 #include <grend/sdl-context.hpp>
 #include <grend/gameMain.hpp>
+#include <grend/gameObject.hpp>
 #include <grend/gameModel.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/gl_manager.hpp>
@@ -17,8 +18,10 @@ class game_editor : public gameView {
 	public:
 		game_editor(gameMain *game) : gameView() {
 			initImgui(game);
-			load_map(game, "saves/save.map");
+			load_map(game);
 			bind_cooked_meshes();
+
+			objects = gameObject::ptr(new gameObject());
 		};
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
@@ -68,7 +71,10 @@ class game_editor : public gameView {
 		void logic(gameMain *game, float delta);
 		void clear(gameMain *game);
 
-		int mode = mode::Inactive;
+		int mode = mode::View;
+		model_map::const_iterator edit_model;
+		gameObject::ptr objects;
+		model_map models;
 
 		float edit_distance = 5;
 		editor_entry entbuf;
@@ -86,14 +92,17 @@ class game_editor : public gameView {
 		std::vector<std::string> editor_model_files;
 		std::vector<std::string> editor_scene_files;
 
-		cooked_model_map::const_iterator edit_model;
-
 	private:
 		void menubar(gameMain *game);
 		void map_window(gameMain *game);
 		void lights_window(gameMain *game);
 		void refprobes_window(gameMain *game);
 		void object_select_window(gameMain *game);
+		// populates map object tree
+		void addnodes(std::string name, gameObject::ptr obj);
+		void addnodes_rec(const std::string& name,
+		                  gameObject::ptr obj,
+		                  std::set<gameObject::ptr>& selectedPath);
 
 		bool show_map_window = false;
 		bool show_lights_window = false;

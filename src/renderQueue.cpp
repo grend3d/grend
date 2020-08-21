@@ -5,6 +5,11 @@
 using namespace grendx;
 
 void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
+	if (obj == nullptr) {
+		// shouldn't happen, but just in case
+		return;
+	}
+
 	glm::mat4 adjTrans = trans*obj->getTransform();
 	//glm::mat4 adjTrans = obj->getTransform();
 
