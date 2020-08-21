@@ -10,6 +10,55 @@
 
 using namespace grendx;
 
+game_editor::game_editor(gameMain *game) : gameView() {
+	initImgui(game);
+	load_map(game);
+	loadUIModels();
+	bind_cooked_meshes();
+
+	objects = gameObject::ptr(new gameObject());
+};
+
+void game_editor::loadUIModels(void) {
+	UI_objects = gameObject::ptr(new gameObject());
+
+	std::string dir = "assets/obj/UI/";
+	UI_models["X-Axis-Pointer"] = load_object(dir + "X-Axis-Pointer.obj");
+	UI_models["Y-Axis-Pointer"] = load_object(dir + "Y-Axis-Pointer.obj");
+	UI_models["Z-Axis-Pointer"] = load_object(dir + "Z-Axis-Pointer.obj");
+	UI_models["X-Axis-Rotation-Spinner"]
+		= load_object(dir + "X-Axis-Rotation-Spinner.obj");
+	UI_models["Y-Axis-Rotation-Spinner"]
+		= load_object(dir + "Y-Axis-Rotation-Spinner.obj");
+	UI_models["Z-Axis-Rotation-Spinner"]
+		= load_object(dir + "Z-Axis-Rotation-Spinner.obj");
+
+	UI_objects = gameObject::ptr(new gameObject());
+	gameObject::ptr xptr = gameObject::ptr(new gameObject());
+	gameObject::ptr yptr = gameObject::ptr(new gameObject());
+	gameObject::ptr zptr = gameObject::ptr(new gameObject());
+	gameObject::ptr xrot = gameObject::ptr(new gameObject());
+	gameObject::ptr yrot = gameObject::ptr(new gameObject());
+	gameObject::ptr zrot = gameObject::ptr(new gameObject());
+
+	setNode("X-Axis",     xptr, UI_models["X-Axis-Pointer"]);
+	setNode("X-Rotation", xptr, UI_models["X-Axis-Rotation-Spinner"]);
+	setNode("Y-Axis",     yptr, UI_models["Y-Axis-Pointer"]);
+	setNode("Y-Rotation", yrot, UI_models["Y-Axis-Rotation-Spinner"]);
+	setNode("Z-Axis",     zrot, UI_models["Z-Axis-Pointer"]);
+	setNode("Z-Rotation", zrot, UI_models["Z-Axis-Rotation-Spinner"]);
+
+	setNode("X-Axis", UI_objects, xptr);
+	setNode("Y-Axis", UI_objects, yptr);
+	setNode("Z-Axis", UI_objects, zptr);
+	setNode("X-Rotation", UI_objects, xrot);
+	setNode("Y-Rotation", UI_objects, yrot);
+	setNode("Z-Rotation", UI_objects, zrot);
+
+	compile_models(UI_models);
+	bind_cooked_meshes();
+}
+
 void game_editor::render(gameMain *game) {
 	// TODO: handle this in gameMain or handleInput here
 	int winsize_x, winsize_y;
@@ -18,6 +67,7 @@ void game_editor::render(gameMain *game) {
 	if (game->state->rootnode) {
 		renderQueue que(cam);
 		que.add(game->state->rootnode);
+		que.add(UI_objects);
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
 	}
 
@@ -51,6 +101,7 @@ void game_editor::render(gameMain *game) {
 	game->rend->shaders["post"]->set("screen_y", (float)winsize_y);
 	game->rend->shaders["post"]->set("rend_x", (float)game->rend->framebuffer->width);
 	game->rend->shaders["post"]->set("rend_y", (float)game->rend->framebuffer->height);
+	game->rend->shaders["post"]->set("exposure", exposure);
 	//rend.shader->set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
@@ -298,8 +349,6 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
 
 		if (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) {
-			// TODO: generic functions to do SO(3) rotation (does glm do it?
-			//       probably, also maybe should be quarternions...)
 			int win_x, win_y;
 			SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
@@ -314,9 +363,9 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 			float rel_y = ((float)y - center_y) / center_y;
 
 			cam->set_direction(glm::vec3(
-				movement_speed * sin(rel_x*2*M_PI),
-				movement_speed * sin(-rel_y*M_PI/2.f),
-				movement_speed * -cos(rel_x*2*M_PI)
+				sin(rel_x*2*M_PI),
+				sin(-rel_y*M_PI/2.f),
+				-cos(rel_x*2*M_PI)
 			));
 		}
 
@@ -432,6 +481,29 @@ void game_editor::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.z*cam->direction*delta;
 	cam->position += cam->velocity.y*cam->up*delta;
 	cam->position += cam->velocity.x*cam->right*delta;
+
+
+	gameObject::ptr target = selectedNode;
+
+	// models and meshes shouldn't be the main node info containers since they
+	// might not be unique, so traverse upwards until something that's not
+	// a model/mesh is reached
+	for (; target &&
+			(target->type == gameObject::objType::Mesh
+			 || target->type == gameObject::objType::Model);
+		 target = target->parent);
+
+	if (target) {
+		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
+		                  "X-Rotation", "Y-Rotation", "Z-Rotation"})
+		{
+			auto ptr = UI_objects->getNode(str);
+
+			ptr->position = target->position;
+			ptr->scale    = target->scale;
+			ptr->rotation = target->rotation;
+		}
+	}
 }
 
 void game_editor::clear(gameMain *game) {

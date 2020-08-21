@@ -16,13 +16,7 @@ namespace grendx {
 
 class game_editor : public gameView {
 	public:
-		game_editor(gameMain *game) : gameView() {
-			initImgui(game);
-			load_map(game);
-			bind_cooked_meshes();
-
-			objects = gameObject::ptr(new gameObject());
-		};
+		game_editor(gameMain *game);
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void render(gameMain *game);
@@ -39,6 +33,7 @@ class game_editor : public gameView {
 			Select,
 		};
 
+		// TODO: don't need this anymore
 		struct editor_entry {
 			std::string name;
 			std::string classname = "<default>";
@@ -74,7 +69,9 @@ class game_editor : public gameView {
 		int mode = mode::View;
 		model_map::const_iterator edit_model;
 		gameObject::ptr objects;
+		gameObject::ptr UI_objects;
 		model_map models;
+		model_map UI_models;
 
 		float edit_distance = 5;
 		editor_entry entbuf;
@@ -103,6 +100,8 @@ class game_editor : public gameView {
 		void addnodes_rec(const std::string& name,
 		                  gameObject::ptr obj,
 		                  std::set<gameObject::ptr>& selectedPath);
+
+		void loadUIModels(void);
 
 		bool show_map_window = false;
 		bool show_lights_window = false;

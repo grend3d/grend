@@ -67,6 +67,9 @@ class gameObject {
 			return strm.str();
 		}
 
+		// setNode isn't a member function, since it needs to be able to set
+		// the shared pointer parent
+		gameObject::ptr getNode(std::string name);
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
 
