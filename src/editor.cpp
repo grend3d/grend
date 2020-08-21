@@ -115,9 +115,11 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 		}
 		*/
 
+		/*
 		if (selectedNode == nullptr) {
 			selectedNode = game->state->rootnode;
 		}
+		*/
 
 		for (auto& node : scene.nodes) {
 			std::cerr << "load_scene(): loading node" << std::endl;
@@ -438,7 +440,7 @@ void game_editor::clear(gameMain *game) {
 	editor_model_files.clear();
 
 	// TODO: clear() for state
-	game->state->rootnode = gameObject::ptr(new gameObject());
+	selectedNode = game->state->rootnode = gameObject::ptr(new gameObject());
 	//game->rend->ref_probes.clear();
 }
 

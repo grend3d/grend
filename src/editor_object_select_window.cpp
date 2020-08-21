@@ -14,8 +14,8 @@ void game_editor::object_select_window(gameMain *game) {
 	for (auto it = models.begin(); it != models.end(); it++) {
 		auto& [name, obj] = *it;
 
-		if (ImGui::Selectable(name.c_str(), it == edit_model)) {
-			edit_model = it;
+		if (ImGui::Selectable(name.c_str(), obj == selectedNode)) {
+			selectedNode = obj;
 		}
 
 		ImGui::SameLine(300);
