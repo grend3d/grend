@@ -790,6 +790,10 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
+			glm::quat rotation(1, 0, 0, 0);
+			glm::vec3 translation = {0, 0, 0};
+			glm::vec3 scale = {1, 1, 1};
+
 			auto& node = gmod.nodes[nodeidx];
 			// no mesh, don't load this as an object
 			if (node.mesh < 0) continue;
@@ -798,33 +802,30 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 			glm::mat4 mat;
 			bool inverted = false;
 
-			if (node.matrix.size() == 16) {
-				mat = glm::make_mat4(node.matrix.data());
+			if (node.rotation.size() == 4)
+				rotation = glm::make_quat(node.rotation.data());
+			if (node.translation.size() == 3)
+				translation = glm::make_vec3(node.translation.data());
 
-			} else {
-				glm::quat rotation(1, 0, 0, 0);
-				glm::vec3 translation = {0, 0, 0};
-				glm::vec3 scale = {1, 1, 1};
-
-				if (node.rotation.size() == 4)
-					rotation = glm::make_quat(node.rotation.data());
-				if (node.translation.size() == 3)
-					translation = glm::make_vec3(node.translation.data());
-
-				if (node.scale.size() == 3) {
-					scale = glm::make_vec3(node.scale.data());
-
-					if (scale.x < 0 || scale.y < 0 || scale.z < 0) {
-						inverted = true;
-					}
-				}
-
-				mat = glm::translate(translation)
-				    * glm::mat4_cast(rotation)
-				    * glm::scale(scale);
+			if (node.scale.size() == 3) {
+				scale = glm::make_vec3(node.scale.data());
 			}
 
-			ret.nodes.push_back({mesh.name, mat, inverted});
+			/*
+			// TODO: if no T/R/S specifiers, show an error/warning,
+			//       extract info from the matrix
+			if (node.matrix.size() == 16) {
+				mat = glm::make_mat4(node.matrix.data());
+			}
+			*/
+
+			ret.nodes.push_back({
+				mesh.name,
+				translation,
+				scale,
+				rotation,
+				// TODO: does gltf specify the face order somewhere?
+			});
 		}
 	}
 

@@ -194,13 +194,11 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 			// TODO: need to be able to have the same model with different
 			//       position/rotation/scale
 			//       hmm... why not just use a wrapper gameObject?
-			glm::vec4 pos = node.transform * glm::vec4(1);
-			glm::vec3 adjpos = glm::vec3(pos);
 			gameObject::ptr obj = gameObject::ptr(new gameObject());
 
-			obj->position = adjpos/pos.w;
-			obj->scale    = glm::vec3(1.0);
-			obj->rotation = glm::quat_cast(node.transform);
+			obj->position = node.position;
+			obj->scale    = node.scale;
+			obj->rotation = node.rotation;
 			setNode(node.name, obj, mods[node.name]);
 			setNode(node.name, selectedNode, obj);
 		}

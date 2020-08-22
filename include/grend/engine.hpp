@@ -13,6 +13,7 @@
 
 #include <list>
 #include <memory>
+#include <tuple>
 
 #include <stdint.h>
 
@@ -125,7 +126,9 @@ class renderQueue {
 			cam    = other.cam;
 		}
 
-		void add(gameObject::ptr obj, glm::mat4 trans = glm::mat4(1));
+		void add(gameObject::ptr obj,
+		         glm::mat4 trans = glm::mat4(1),
+		         bool inverted = false);
 		void sort(void);
 		void cull(void);
 		void flush(renderFramebuffer::ptr fb, Program::ptr program);
@@ -135,9 +138,10 @@ class renderQueue {
 		camera::ptr cam = nullptr;
 	
 		// mat4 is calculated transform for the position of the node in the tree
-		std::vector<std::pair<glm::mat4, gameMesh::ptr>> meshes;
-		std::vector<std::pair<glm::mat4, gameLight::ptr>> lights;
-		std::vector<std::pair<glm::mat4, gameReflectionProbe::ptr>> probes;
+		// bool is inverted flag
+		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
+		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
+		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
 };
 
 class renderer {

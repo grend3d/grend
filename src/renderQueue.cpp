@@ -4,7 +4,7 @@
 
 using namespace grendx;
 
-void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
+void renderQueue::add(gameObject::ptr obj, glm::mat4 trans, bool inverted) {
 	if (obj == nullptr) {
 		// shouldn't happen, but just in case
 		return;
@@ -14,19 +14,23 @@ void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
 	//glm::mat4 adjTrans = obj->getTransform();
 
 	//std::cerr << "add(): push" << std::endl;
+	
+	if (obj->scale.x < 0 || obj->scale.y < 0 || obj->scale.z < 0) {
+		inverted = !inverted;
+	}
 
 	switch (obj->type) {
 		case gameObject::objType::Mesh:
 			{
 				gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-				meshes.push_back({adjTrans, mesh});
+				meshes.push_back({adjTrans, inverted, mesh});
 			}
 			break;
 
 		case gameObject::objType::Light:
 			{
 				gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
-				lights.push_back({adjTrans, light});
+				lights.push_back({adjTrans, inverted, light});
 			}
 			break;
 
@@ -34,7 +38,7 @@ void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
 			{
 				gameReflectionProbe::ptr probe =
 					std::dynamic_pointer_cast<gameReflectionProbe>(obj);
-				probes.push_back({adjTrans, probe});
+				probes.push_back({adjTrans, inverted, probe});
 			}
 			break;
 
@@ -44,7 +48,7 @@ void renderQueue::add(gameObject::ptr obj, glm::mat4 trans) {
 
 	for (auto& [name, ptr] : obj->nodes) {
 		//std::cerr << "add(): subnode " << name << std::endl;
-		add(ptr, adjTrans);
+		add(ptr, adjTrans, inverted);
 	}
 
 	//std::cerr << "add(): pop" << std::endl;
@@ -90,7 +94,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 
 	//std::cerr << "got here" << std::endl;
 
-	for (auto& [transform, mesh] : meshes) {
+	for (auto& [transform, inverted, mesh] : meshes) {
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);
 			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
@@ -111,7 +115,9 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 		assert(mod->compiled);
 		set_material(program, mod->comped_model, mesh->material);
 
-		// TODO: need to keep track of the face order again
+		// TODO: need to keep track of the model face order
+		set_face_order(inverted? GL_CW : GL_CCW);
+
 		auto& cmesh = mesh->comped_mesh;
 		bind_vao(cmesh->vao);
 		glDrawElements(GL_TRIANGLES, cmesh->elements_size,
@@ -127,7 +133,7 @@ void renderQueue::shaderSync(Program::ptr program) {
 	std::vector<gameLightPoint::ptr> point_lights;
 	// TODO: other lights
 
-	for (auto& [trans, light] : lights) {
+	for (auto& [trans, _, light] : lights) {
 		switch (light->lightType) {
 			case gameLight::lightTypes::Point:
 				{
