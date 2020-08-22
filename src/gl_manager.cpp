@@ -318,6 +318,12 @@ void preload_screenquad(void) {
 	bind_vao(orig_vao);
 }
 
+void draw_screenquad(void) {
+	bind_vao(get_screenquad_vao());
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	DO_ERROR_CHECK();
+}
+
 void check_errors(int line, const char *filename, const char *func) {
 	GLenum err;
 

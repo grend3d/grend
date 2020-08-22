@@ -282,6 +282,7 @@ void enable(GLenum feature);
 void disable(GLenum feature);
 
 void preload_screenquad(void);
+void draw_screenquad(void);
 
 Vao::ptr         gen_vao(void);
 Vbo::ptr         gen_vbo(void);

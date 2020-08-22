@@ -11,12 +11,20 @@
 using namespace grendx;
 
 game_editor::game_editor(gameMain *game) : gameView() {
+	objects = gameObject::ptr(new gameObject());
+	testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
+	loading_thing = makePostprocessor<rOutput>(game->rend->shaders["quadtest"],
+	                                           SCREEN_SIZE_X, SCREEN_SIZE_Y);
+
+	// TODO: maybe not this
+	loading_thing->draw();
+	SDL_GL_SwapWindow(game->ctx.window);
+
 	initImgui(game);
 	load_map(game);
 	loadUIModels();
 	bind_cooked_meshes();
-
-	objects = gameObject::ptr(new gameObject());
 };
 
 void game_editor::loadUIModels(void) {
@@ -71,6 +79,7 @@ void game_editor::render(gameMain *game) {
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
 	}
 
+	/*
 	// TODO: move to renderPostStage
 	Framebuffer().bind();
 	bind_vao(get_screenquad_vao());
@@ -105,7 +114,10 @@ void game_editor::render(gameMain *game) {
 	//rend.shader->set("exposure", editor.exposure);
 
 	DO_ERROR_CHECK();
-	game->rend->draw_screenquad();
+	draw_screenquad();
+	*/
+
+	testpost->draw(game->rend->framebuffer);
 
 	//Framebuffer().bind();
 	render_editor(game);

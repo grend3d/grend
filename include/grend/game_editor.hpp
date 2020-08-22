@@ -17,6 +17,8 @@ namespace grendx {
 class game_editor : public gameView {
 	public:
 		game_editor(gameMain *game);
+		renderPostStage<rOutput>::ptr testpost;
+		renderPostStage<rOutput>::ptr loading_thing;
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void render(gameMain *game);

@@ -567,13 +567,6 @@ void renderer::draw_model_lines(struct draw_attributes attr) {
 }
 #endif
 
-void renderer::draw_screenquad(void) {
-	// NOTE: assumes that the screenquad vbo has been linked in the
-	//       postprocessing shader, and the proper vao set
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	DO_ERROR_CHECK();
-}
-
 #if 0
 void
 renderer::dqueue_draw_mesh(std::string mesh, const struct draw_attributes *attr) {

@@ -17,10 +17,10 @@ class gameMainDevWindow : public gameMain {
 	public:
 		gameMainDevWindow() : gameMain("[grend editor]") {
 			state = game_state::ptr(new game_state());
+			rend   = renderer::ptr(new renderer(ctx));
 
 			player = gameView::ptr(new playerView());
 			editor = gameView::ptr(new game_editor(this));
-			rend  = renderer::ptr(new renderer(ctx));
 			view   = editor;
 		}
 		virtual void handleInput(void);

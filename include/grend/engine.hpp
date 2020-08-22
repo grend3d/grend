@@ -1,5 +1,7 @@
 #pragma once
 
+#include <grend/renderFramebuffer.hpp>
+#include <grend/renderPostStage.hpp>
 #include <grend/gameObject.hpp>
 #include <grend/gl_manager.hpp>
 #include <grend/sdl-context.hpp>
@@ -113,33 +115,6 @@ struct draw_attributes {
 };
 */
 
-class renderFramebuffer {
-	public:
-		typedef std::shared_ptr<renderFramebuffer> ptr;
-		typedef std::weak_ptr<renderFramebuffer> weakptr;
-
-		renderFramebuffer(int Width, int Height);
-		renderFramebuffer(Framebuffer::ptr fb, int Width, int Height);
-		void clear(void);
-		gameMesh::ptr index(float x, float y);
-		gameMesh::ptr index(unsigned idx);
-
-		Framebuffer::ptr framebuffer;
-		Texture::ptr color;
-		Texture::ptr depth;
-
-		int width = -1, height = -1;
-		struct {
-			float x, y;
-			float min_x, min_y;
-		} scale = {
-			1.0, 1.0,
-			0.5, 0.5,
-		};
-
-		std::vector<gameMesh::ptr> drawn_meshes;
-};
-
 class renderQueue {
 	public:
 		renderQueue(camera::ptr cam) { setCamera(cam); };
@@ -165,21 +140,6 @@ class renderQueue {
 		std::vector<std::pair<glm::mat4, gameReflectionProbe::ptr>> probes;
 };
 
-// this way postprocessing stages can be easily modularized and stacked
-class renderPostStage {
-	public:
-		typedef std::shared_ptr<renderPostStage> ptr;
-		typedef std::weak_ptr<renderPostStage> weakptr;
-
-		renderPostStage(unsigned fb_x, unsigned fb_y) {};
-		void draw(Texture::ptr previous);
-		void draw(renderFramebuffer::ptr previous);
-
-		Framebuffer::ptr framebuffer;
-		Texture::ptr render_tex;
-		Program::ptr shader_prog;
-};
-
 class renderer {
 	// TODO: shouldn't be needed here anymore
 	friend class text_renderer;
@@ -200,7 +160,6 @@ class renderer {
 		gameMesh::ptr index(unsigned idx);
 
 		void drawQueue(renderQueue& queue);
-		void draw_screenquad(void);
 
 		void drawSkybox(void);
 		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
@@ -208,28 +167,6 @@ class renderer {
 		void drawShadowMap(gameLightSpot::ptr light);
 		void drawShadowMap(gameLightDirectional::ptr light);
 		void drawReflectionProbe(gameReflectionProbe::ptr probe);
-
-		// init_lights() will need to be called after the shader is bound
-		// (in whatever subclasses the engine)
-		//void init_lights(void);
-		void compile_lights(void);
-		void update_lights(void);
-		void syncLights(void);
-
-		/* * TODO: touch maps when i
-		void touch_shadowmaps(void);
-		void touch_refprobes(void);
-		*/
-
-		/*
-		uint32_t add_reflection_probe(struct reflection_probe ref);
-		void free_reflection_probe(uint32_t id);
-
-		void set_shader(Program::ptr shd);
-		void set_mvp(glm::mat4 mod, glm::mat4 view, glm::mat4 projection);
-		void set_m(glm::mat4 mod);
-		void set_reflection_probe(glm::vec3 position);
-		*/
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -257,7 +194,7 @@ class renderer {
 		//       possible solution is to have a global namespace for materials,
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
-		std::vector<gameMesh::ptr> draw_queue;
+		//std::vector<gameMesh::ptr> draw_queue;
 		// sorted after dqueue_sort_draws(), and flushed along with
 		// dqueue_flush_draws(), this is sorted back-to-front rather than
 		// front-to-back
