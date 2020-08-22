@@ -14,13 +14,18 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	objects = gameObject::ptr(new gameObject());
 	testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
-	loading_thing = makePostprocessor<rOutput>(game->rend->shaders["quadtest"],
-	                                           SCREEN_SIZE_X, SCREEN_SIZE_Y);
 
-	// TODO: maybe not this
-	loading_thing->draw();
-	SDL_GL_SwapWindow(game->ctx.window);
+	loading_thing = makePostprocessor<rOutput>(
+		load_program("shaders/out/postprocess.vert",
+		             "shaders/out/texpresent.frag"),
+		SCREEN_SIZE_X,
+		SCREEN_SIZE_Y
+	);
 
+	loading_img = gen_texture();
+	loading_img->buffer(materialTexture("assets/tex/loading-splash.png"));
+
+	clear(game);
 	initImgui(game);
 	load_map(game);
 	loadUIModels();
@@ -518,14 +523,20 @@ void game_editor::logic(gameMain *game, float delta) {
 	}
 }
 
+void game_editor::showLoadingScreen(gameMain *game) {
+	// TODO: maybe not this
+	loading_thing->draw(loading_img, nullptr);
+	SDL_GL_SwapWindow(game->ctx.window);
+}
+
 void game_editor::clear(gameMain *game) {
+	showLoadingScreen(game);
+
 	cam->position = {0, 0, 0};
-	//dynamic_models.clear();
 	editor_model_files.clear();
 
 	// TODO: clear() for state
 	selectedNode = game->state->rootnode = gameObject::ptr(new gameObject());
-	//game->rend->ref_probes.clear();
 }
 
 // TODO: rename 'renderer' to 'rend' or something

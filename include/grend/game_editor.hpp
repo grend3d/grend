@@ -19,6 +19,7 @@ class game_editor : public gameView {
 		game_editor(gameMain *game);
 		renderPostStage<rOutput>::ptr testpost;
 		renderPostStage<rOutput>::ptr loading_thing;
+		Texture::ptr loading_img;
 
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void render(gameMain *game);
@@ -104,6 +105,7 @@ class game_editor : public gameView {
 		                  std::set<gameObject::ptr>& selectedPath);
 
 		void loadUIModels(void);
+		void showLoadingScreen(gameMain *game);
 
 		bool show_map_window = false;
 		bool show_lights_window = false;
