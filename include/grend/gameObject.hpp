@@ -156,6 +156,9 @@ class gameLight : public gameObject {
 		glm::vec4 diffuse = glm::vec4(1);
 		float     intensity = 50.0;
 		bool      casts_shadows = false;
+		bool changed   = true;
+		bool is_static = true;
+		bool have_map  = false;
 };
 
 class gameLightPoint : public gameLight {
@@ -176,9 +179,6 @@ class gameLightPoint : public gameLight {
 		float radius;
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap[6];
-		bool changed = true;
-		bool static_shadows = false;
-		bool shadows_rendered = false;
 };
 
 class gameLightSpot : public gameLight {
@@ -202,9 +202,6 @@ class gameLightSpot : public gameLight {
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
-		bool changed = true;
-		bool static_shadows = false;
-		bool shadows_rendered = true;
 };
 
 class gameLightDirectional : public gameLight {
@@ -226,9 +223,6 @@ class gameLightDirectional : public gameLight {
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
-		bool changed = true;
-		bool static_shadows = false;
-		bool shadows_rendered = true;
 };
 
 class gameReflectionProbe : public gameObject {

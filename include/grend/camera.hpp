@@ -18,6 +18,7 @@ class camera {
 		float field_of_view_x = 100.0;
 
 		void set_direction(glm::vec3 dir);
+		void set_direction(glm::vec3 dir, glm::vec3 up);
 		glm::mat4 projectionTransform(unsigned screenx, unsigned screeny);
 		glm::mat4 viewTransform(void);
 		glm::mat4 viewProjTransform(unsigned screenx, unsigned screeny);

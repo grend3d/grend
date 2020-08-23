@@ -4,11 +4,15 @@
 #include <grend/glm-includes.hpp>
 #include <grend/opengl-includes.hpp>
 #include <grend/gl_manager.hpp>
+#include <memory>
 
 namespace grendx {
 
 class atlas {
 	public:
+		typedef std::shared_ptr<atlas> ptr;
+		typedef std::weak_ptr<atlas> weakptr;
+
 		enum mode {
 			Color,
 			Depth,

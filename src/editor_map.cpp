@@ -109,6 +109,10 @@ void game_editor::load_map(gameMain *game, std::string name) {
 
 			auto ptr = gameReflectionProbe::ptr(new gameReflectionProbe());
 			ptr->position = pos;
+			for (unsigned i = 0; i < 6; i++) {
+				// XXX: TODO: not this, have renderer allocate this or something
+				ptr->faces[i] = game->rend->atlases.reflections->tree.alloc(128);
+			}
 
 			std::string name = "reflection probe " + std::to_string(counter++);
 			setNode(name, selectedNode, ptr);
@@ -127,11 +131,16 @@ void game_editor::load_map(gameMain *game, std::string name) {
 			ptr->radius = radius;
 			ptr->intensity = intensity;
 			ptr->casts_shadows = casts_shadows;
-			ptr->static_shadows = static_shadows;
+			ptr->is_static = static_shadows;
 			ptr->diffuse = diffuse;
 
 			std::string name = "point light " + std::to_string(counter++);
 			setNode(name, selectedNode, ptr);
+
+			for (unsigned i = 0; i < 6; i++) {
+				// XXX: TODO: not this, have renderer allocate this or something
+				ptr->shadowmap[i] = game->rend->atlases.shadows->tree.alloc(256);
+			}
 
 			/*
 			uint32_t nlit = rend->add_light((struct point_light){

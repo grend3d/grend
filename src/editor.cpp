@@ -80,8 +80,33 @@ void game_editor::render(gameMain *game) {
 	if (game->state->rootnode) {
 		renderQueue que(cam);
 		que.add(game->state->rootnode);
+		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
+		que.updateReflections(game->rend->shaders["refprobe"],
+		                      game->rend->atlases);
+		DO_ERROR_CHECK();
+
+		// add UI objects after rendering shadows/reflections
 		que.add(UI_objects);
-		que.flush(game->rend->framebuffer, game->rend->shaders["main"]);
+
+		//Framebuffer().bind();
+		game->rend->framebuffer->framebuffer->bind();
+		DO_ERROR_CHECK();
+
+		game->rend->shaders["main"]->bind();
+		glActiveTexture(GL_TEXTURE6);
+		game->rend->atlases.reflections->color_tex->bind();
+		game->rend->shaders["main"]->set("reflection_atlas", 6);
+		glActiveTexture(GL_TEXTURE7);
+		game->rend->atlases.shadows->depth_tex->bind();
+		game->rend->shaders["main"]->set("shadowmap_atlas", 7);
+		DO_ERROR_CHECK();
+
+		//game->rend->shaders["main"]->set("skytexture", 4);
+		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
+		DO_ERROR_CHECK();
+		
+		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
+		          game->rend->atlases);
 	}
 
 	/*

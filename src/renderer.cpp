@@ -63,8 +63,10 @@ renderer::renderer(context& ctx) {
 
 	loadShaders();
 
+	/*
 	reflection_atlas = std::unique_ptr<atlas>(new atlas(2048));
 	shadow_atlas = std::unique_ptr<atlas>(new atlas(2048, atlas::mode::Depth));
+	*/
 
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
@@ -243,40 +245,6 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 
 	return glm::mat4_cast(rotation);
 }
-
-/*
-// leaving refprobe code commented here so it can be move to the new
-// probe code once things are building
-void renderer::set_reflection_probe(const struct draw_attributes *attr) {
-	glm::vec4 pos = attr->transform * glm::vec4(1);
-	struct reflection_probe *probe = get_nearest_refprobe(glm::vec3(pos) / pos.w);
-
-	if (probe) {
-		for (unsigned i = 0; i < 6; i++) {
-			std::string sloc = "reflection_probe[" + std::to_string(i) + "]";
-			glm::vec3 facevec = reflection_atlas->tex_vector(probe->faces[i]); 
-			shader->set(sloc, facevec);
-			DO_ERROR_CHECK();
-		}
-	}
-}
-
-struct reflection_probe *renderer::get_nearest_refprobe(glm::vec3 pos) {
-	struct reflection_probe *ret = nullptr;
-	float mindist = 1024.0;
-
-	// TODO: optimize this, O(N) is meh
-	for (auto& [id, p] : ref_probes) {
-		float dist = glm::distance(pos, p.position);
-		if (!ret || dist < mindist) {
-			mindist = dist;
-			ret = &p;
-		}
-	}
-
-	return ret;
-}
-*/
 
 /*
 void renderer::sync_spot_lights(const std::vector<uint32_t>& lights) {

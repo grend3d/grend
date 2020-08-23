@@ -1,6 +1,7 @@
 #include <grend/engine.hpp>
 #include <grend/utility.hpp>
 #include <grend/texture-atlas.hpp>
+#include <math.h>
 
 using namespace grendx;
 
@@ -54,6 +55,24 @@ void renderQueue::add(gameObject::ptr obj, glm::mat4 trans, bool inverted) {
 	//std::cerr << "add(): pop" << std::endl;
 }
 
+void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
+	// TODO: should probably apply the transform to light position
+	for (auto& [_, __, light] : lights) {
+		if (light->lightType == gameLight::lightTypes::Point) {
+			gameLightPoint::ptr plit =
+				std::dynamic_pointer_cast<gameLightPoint>(light);
+			drawShadowCubeMap(*this, plit, program, atlases);
+		}
+	}
+}
+
+void
+renderQueue::updateReflections(Program::ptr program, renderAtlases& atlases) {
+	for (auto& [_, __, probe] : probes) {
+		drawReflectionProbe(*this, probe, program, atlases);
+	}
+}
+
 void renderQueue::sort(void) {
 
 }
@@ -62,13 +81,57 @@ void renderQueue::cull(void) {
 
 }
 
-void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
+void renderQueue::flush(unsigned width,
+                        unsigned height,
+                        Program::ptr program,
+                        renderAtlases& atlases)
+{
+	enable(GL_CULL_FACE);
+
+	glm::mat4 view = cam->viewTransform();
+	glm::mat4 projection = cam->projectionTransform(width, height);
+	glm::mat4 v_inv = glm::inverse(view);
+
+	program->set("v", view);
+	program->set("p", projection);
+	program->set("v_inv", v_inv);
+
+	//std::cerr << "got here" << std::endl;
+
+	for (auto& [transform, inverted, mesh] : meshes) {
+		glm::mat3 m_3x3_inv_transp =
+			glm::transpose(glm::inverse(model_to_world(transform)));
+
+		program->set("m", transform);
+		program->set("m_3x3_inv_transp", m_3x3_inv_transp);
+
+		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
+		assert(mod->compiled);
+		set_material(program, mod->comped_model, mesh->material);
+
+		// TODO: need to keep track of the model face order
+		set_face_order(inverted? GL_CW : GL_CCW);
+
+		auto& cmesh = mesh->comped_mesh;
+		bind_vao(cmesh->vao);
+		glDrawElements(GL_TRIANGLES, cmesh->elements_size,
+		               GL_UNSIGNED_INT, cmesh->elements_offset);
+	}
+
+	meshes.clear();
+	lights.clear();
+	probes.clear();
+}
+
+void renderQueue::flush(renderFramebuffer::ptr fb,
+                        Program::ptr program,
+                        renderAtlases& atlases)
+{
 	fb->framebuffer->bind();
 	fb->clear();
 	program->bind();
-	shaderSync(program);
+	shaderSync(program, atlases);
 
-	enable(GL_CULL_FACE);
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 	glFrontFace(GL_CCW);
@@ -111,6 +174,10 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 		program->set("m", transform);
 		program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
+		glm::vec4 apos = transform * glm::vec4(1);
+		set_reflection_probe(nearest_reflection_probe(glm::vec3(apos)/apos.w),
+		                     program, atlases);
+
 		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
 		assert(mod->compiled);
 		set_material(program, mod->comped_model, mesh->material);
@@ -129,7 +196,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb, Program::ptr program) {
 	probes.clear();
 }
 
-void renderQueue::shaderSync(Program::ptr program) {
+void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {
 	std::vector<gameLightPoint::ptr> point_lights;
 	// TODO: other lights
 
@@ -170,9 +237,41 @@ void renderQueue::shaderSync(Program::ptr program) {
 		if (light->casts_shadows) {
 			for (unsigned k = 0; k < 6; k++) {
 				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
-				// TODO:
-				//program->set(sloc, shadow_atlas->tex_vector(light->shadowmap[k]));
+				auto vec = atlases.shadows->tex_vector(light->shadowmap[k]);
+				program->set(sloc, vec);
 			}
 		}
+	}
+}
+
+gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
+	gameReflectionProbe::ptr ret = nullptr;
+	float mindist = HUGE_VALF;
+
+	// TODO: optimize this, O(N) is meh
+	for (auto& [_, __, p] : probes) {
+		float dist = glm::distance(pos, p->position);
+		if (!ret || dist < mindist) {
+			mindist = dist;
+			ret = p;
+		}
+	}
+
+	return ret;
+}
+
+void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
+                                       Program::ptr program,
+                                       renderAtlases& atlases)
+{
+	if (!probe) {
+		return;
+	}
+
+	for (unsigned i = 0; i < 6; i++) {
+		std::string sloc = "reflection_probe[" + std::to_string(i) + "]";
+		glm::vec3 facevec = atlases.reflections->tex_vector(probe->faces[i]); 
+		program->set(sloc, facevec);
+		DO_ERROR_CHECK();
 	}
 }

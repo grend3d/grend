@@ -116,6 +116,17 @@ struct draw_attributes {
 };
 */
 
+class renderAtlases {
+	public:
+		renderAtlases(unsigned ref_size = 2048, unsigned shadow_size = 2048) {
+			reflections = atlas::ptr(new atlas(ref_size));
+			shadows     = atlas::ptr(new atlas(shadow_size, atlas::mode::Depth));
+		}
+
+		atlas::ptr reflections;
+		atlas::ptr shadows;
+};
+
 class renderQueue {
 	public:
 		renderQueue(camera::ptr cam) { setCamera(cam); };
@@ -129,10 +140,15 @@ class renderQueue {
 		void add(gameObject::ptr obj,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
+		void updateLights(Program::ptr program, renderAtlases& atlases);
+		void updateReflections(Program::ptr program, renderAtlases& atlases);
 		void sort(void);
 		void cull(void);
-		void flush(renderFramebuffer::ptr fb, Program::ptr program);
-		void shaderSync(Program::ptr program);
+		void flush(renderFramebuffer::ptr fb, Program::ptr program,
+		           renderAtlases& atlases);
+		void flush(unsigned width, unsigned height,
+		           Program::ptr program, renderAtlases& atlases);
+		void shaderSync(Program::ptr program, renderAtlases& atlases);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
 
 		camera::ptr cam = nullptr;
@@ -142,7 +158,22 @@ class renderQueue {
 		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
 		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
 		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
+
+	private:
+		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
+		void set_reflection_probe(gameReflectionProbe::ptr probe,
+		                          Program::ptr program,
+		                          renderAtlases& atlases);
 };
+
+void drawShadowCubeMap(renderQueue& queue,
+                       gameLightPoint::ptr light,
+                       Program::ptr shadowShader,
+                       renderAtlases& atlases);
+void drawReflectionProbe(renderQueue& queue,
+                         gameReflectionProbe::ptr probe,
+                         Program::ptr reflectionShader,
+                         renderAtlases& atlases);
 
 class renderer {
 	// TODO: shouldn't be needed here anymore
@@ -167,10 +198,6 @@ class renderer {
 
 		void drawSkybox(void);
 		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
-		void drawShadowCubeMap(gameLightPoint::ptr light);
-		void drawShadowMap(gameLightSpot::ptr light);
-		void drawShadowMap(gameLightDirectional::ptr light);
-		void drawReflectionProbe(gameReflectionProbe::ptr probe);
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -182,8 +209,12 @@ class renderer {
 		// sky box
 		Texture::ptr skybox;
 
+		// TODO: camelCase
+		/*
 		std::unique_ptr<atlas> reflection_atlas;
 		std::unique_ptr<atlas> shadow_atlas;
+		*/
+		renderAtlases atlases;
 
 		// XXX: loaded shaders, here so they can be accessed from the editor
 		std::map<std::string, Program::ptr> shaders;

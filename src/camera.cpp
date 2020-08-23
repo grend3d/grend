@@ -9,6 +9,12 @@ void camera::set_direction(glm::vec3 dir) {
 	up    = glm::normalize(glm::cross(direction, right));
 }
 
+void camera::set_direction(glm::vec3 dir, glm::vec3 upwards) {
+	direction = glm::normalize(dir);
+	up        = upwards;
+	right     = glm::normalize(glm::cross(up, dir));
+}
+
 glm::mat4 camera::projectionTransform(unsigned screen_x, unsigned screen_y) {
 	float fov_y = (field_of_view_x * screen_y) / screen_x;
 	return glm::perspective(

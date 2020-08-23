@@ -1,6 +1,7 @@
 #include <grend/engine.hpp>
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
+#include <grend/texture-atlas.hpp>
 
 using namespace grendx;
 
@@ -29,6 +30,7 @@ static const glm::vec3 cube_up[] = {
 };
 
 
+#if 0
 void renderer::drawSkybox(void) {
 #if 0
 	rend.set_shader(rend.shaders["skybox"]);
@@ -88,7 +90,123 @@ void renderer::drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj) {
 	glDepthMask(GL_TRUE);
 #endif
 }
+#endif
 
+// TODO: minimize duplicated code with drawReflectionProbe
+void grendx::drawShadowCubeMap(renderQueue& queue,
+                               gameLightPoint::ptr light,
+                               Program::ptr shadowShader,
+                               renderAtlases& atlases)
+{
+	if (!light->casts_shadows) {
+		return;
+	}
+
+	// refresh atlas cache time to indicate it was recently used
+	for (unsigned i = 0; i < 6; i++) {
+		light->shadowmap[i] = atlases.shadows->tree.refresh(light->shadowmap[i]);
+	}
+
+	if (light->is_static && light->have_map) {
+		// static probe already rendered, nothing to do
+		return;
+	}
+
+	enable(GL_SCISSOR_TEST);
+	enable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+
+	camera::ptr cam = camera::ptr(new camera());
+
+	shadowShader->bind();
+	queue.shaderSync(shadowShader, atlases);
+	cam->position = light->position;
+	cam->field_of_view_x = 90;
+
+	for (unsigned i = 0; i < 6; i++) {
+		if (!atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
+			std::cerr
+				<< "drawShadowCubeMap(): couldn't bind shadow framebuffer"
+				<< std::endl;
+			continue;
+		}
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		renderQueue porque = queue;
+		// TODO: texture atlas should have some tree wrappers, just for
+		//       clean encapsulation...
+		quadinfo info = atlases.shadows->tree.info(light->shadowmap[i]);
+		cam->set_direction(cube_dirs[i], cube_up[i]);
+
+		porque.setCamera(cam);
+		porque.flush(info.size, info.size, shadowShader, atlases);
+	}
+
+	light->have_map = true;
+}
+
+void grendx::drawReflectionProbe(renderQueue& queue,
+                                 gameReflectionProbe::ptr probe,
+                                 Program::ptr refShader,
+                                 renderAtlases& atlases)
+{
+	for (unsigned i = 0; i < 6; i++) {
+		probe->faces[i] = atlases.reflections->tree.refresh(probe->faces[i]);
+	}
+
+	if (probe->is_static && probe->have_map) {
+		// static probe already rendered, nothing to do
+		return;
+	}
+
+	// TODO: check for updates inside some radius, return if none
+
+	enable(GL_SCISSOR_TEST);
+	enable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+	DO_ERROR_CHECK();
+
+	camera::ptr cam = camera::ptr(new camera());
+	cam->field_of_view_x = 90;
+
+	refShader->bind();
+	glActiveTexture(GL_TEXTURE7);
+	atlases.shadows->depth_tex->bind();
+	refShader->set("shadowmap_atlas", 7);
+
+	queue.shaderSync(refShader, atlases);
+	cam->position = probe->position;
+	DO_ERROR_CHECK();
+
+	for (unsigned i = 0; i < 6; i++) {
+		if (!atlases.reflections->bind_atlas_fb(probe->faces[i])) {
+			std::cerr
+				<< "drawReflectionProbe(): couldn't bind probe framebuffer"
+				<< std::endl;
+			continue;
+		}
+
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		renderQueue porque = queue;
+		quadinfo info = atlases.reflections->tree.info(probe->faces[i]);
+		cam->set_direction(cube_dirs[i], cube_up[i]);
+		DO_ERROR_CHECK();
+
+		porque.setCamera(cam);
+		// TODO:
+		porque.flush(info.size, info.size, refShader, atlases);
+		DO_ERROR_CHECK();
+	}
+
+	probe->have_map = true;
+}
+
+#if 0
 void renderer::drawShadowCubeMap(gameLightPoint::ptr light) {
 // TODO: do this, rn focusing on getting a basic scene drawn
 #if 0
@@ -128,7 +246,9 @@ void renderer::drawShadowCubeMap(gameLightPoint::ptr light) {
 	plit.shadows_rendered = true;
 #endif
 }
+#endif
 
+#if 0
 void renderer::drawShadowMap(gameLightSpot::ptr light) {
 // TODO:
 #if 0
@@ -175,7 +295,9 @@ void renderer::drawShadowMap(gameLightSpot::ptr light) {
 void renderer::drawShadowMap(gameLightDirectional::ptr light) {
 	//TODO:
 }
+#endif
 
+#if 0
 void renderer::drawReflectionProbe(gameReflectionProbe::ptr probe) {
 // TODO:
 #if 0
@@ -238,3 +360,4 @@ void renderer::drawReflectionProbe(gameReflectionProbe::ptr probe) {
 	}
 #endif
 }
+#endif

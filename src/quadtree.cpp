@@ -272,7 +272,10 @@ void quadtree::node::update_tree(void) {
 		p->max_free = p->get_max_free();
 		p->stamp = p->min_stamp();
 
+		/*
+		// leaving this here in case strange bugs pop up in the quadtree...
 		fprintf(stderr, "update at %p: max free: %u, stamp: %lu\n",
 				p, p->max_free, p->stamp);
+				*/
 	}
 }
