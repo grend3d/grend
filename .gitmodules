@@ -1,6 +1,6 @@
 [submodule "assets"]
 	path = assets
-	url = https://github.com/mushrom/grend-testscene
+	url = https://github.com/mushrom/grend-assets-light.git
 [submodule "libs/tinygltf"]
 	path = libs/tinygltf
 	url = https://github.com/syoyo/tinygltf
