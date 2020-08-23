@@ -150,7 +150,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 void grendx::drawReflectionProbe(renderQueue& queue,
                                  gameReflectionProbe::ptr probe,
                                  Program::ptr refShader,
-                                 renderAtlases& atlases)
+                                 renderAtlases& atlases,
+                                 skybox& sky)
 {
 	for (unsigned i = 0; i < 6; i++) {
 		probe->faces[i] = atlases.reflections->tree.refresh(probe->faces[i]);
@@ -182,6 +183,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	for (unsigned i = 0; i < 6; i++) {
+		refShader->bind();
 		if (!atlases.reflections->bind_atlas_fb(probe->faces[i])) {
 			std::cerr
 				<< "drawReflectionProbe(): couldn't bind probe framebuffer"
@@ -200,6 +202,9 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		porque.setCamera(cam);
 		// TODO:
 		porque.flush(info.size, info.size, refShader, atlases);
+		DO_ERROR_CHECK();
+
+		sky.draw(cam, info.size, info.size);
 		DO_ERROR_CHECK();
 	}
 

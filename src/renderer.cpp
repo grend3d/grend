@@ -47,9 +47,7 @@ renderer::renderer(context& ctx) {
 
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
-	skybox = gen_texture();
-	//skybox->cubemap("assets/tex/cubes/rocky-skyboxes/Skinnarviksberget/");
-	std::cerr << "loaded cubemap" << std::endl;
+	//std::cerr << "loaded cubemap" << std::endl;
 
 	default_diffuse         = gen_texture();
 	default_metal_roughness = gen_texture();

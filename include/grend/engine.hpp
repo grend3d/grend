@@ -11,6 +11,8 @@
 #include <grend/quadtree.hpp>
 #include <grend/camera.hpp>
 
+#include <grend/geometry-gen.hpp>
+
 #include <list>
 #include <memory>
 #include <tuple>
@@ -116,6 +118,18 @@ struct draw_attributes {
 };
 */
 
+class skybox {
+	public:
+		skybox(); 
+
+		void draw(camera::ptr cam, unsigned width, unsigned height);
+		void draw(camera::ptr cam, renderFramebuffer::ptr fb);
+
+		gameModel::ptr model;
+		Program::ptr program;
+		Texture::ptr map;
+};
+
 class renderAtlases {
 	public:
 		renderAtlases(unsigned ref_size = 2048, unsigned shadow_size = 2048) {
@@ -141,7 +155,9 @@ class renderQueue {
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
 		void updateLights(Program::ptr program, renderAtlases& atlases);
-		void updateReflections(Program::ptr program, renderAtlases& atlases);
+		void updateReflections(Program::ptr program,
+		                       renderAtlases& atlases,
+		                       skybox& sky);
 		void sort(void);
 		void cull(void);
 		void flush(renderFramebuffer::ptr fb, Program::ptr program,
@@ -173,7 +189,8 @@ void drawShadowCubeMap(renderQueue& queue,
 void drawReflectionProbe(renderQueue& queue,
                          gameReflectionProbe::ptr probe,
                          Program::ptr reflectionShader,
-                         renderAtlases& atlases);
+                         renderAtlases& atlases,
+                         skybox& sky);
 
 class renderer {
 	// TODO: shouldn't be needed here anymore
@@ -207,7 +224,7 @@ class renderer {
 		int screen_x, screen_y;
 
 		// sky box
-		Texture::ptr skybox;
+		skybox defaultSkybox;
 
 		// TODO: camelCase
 		/*

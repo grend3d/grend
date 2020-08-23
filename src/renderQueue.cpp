@@ -67,9 +67,12 @@ void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
 }
 
 void
-renderQueue::updateReflections(Program::ptr program, renderAtlases& atlases) {
+renderQueue::updateReflections(Program::ptr program,
+                              renderAtlases& atlases,
+                              skybox& sky)
+{
 	for (auto& [_, __, probe] : probes) {
-		drawReflectionProbe(*this, probe, program, atlases);
+		drawReflectionProbe(*this, probe, program, atlases, sky);
 	}
 }
 

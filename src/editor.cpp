@@ -82,7 +82,8 @@ void game_editor::render(gameMain *game) {
 		que.add(game->state->rootnode);
 		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
 		que.updateReflections(game->rend->shaders["refprobe"],
-		                      game->rend->atlases);
+		                      game->rend->atlases,
+		                      game->rend->defaultSkybox);
 		DO_ERROR_CHECK();
 
 		// add UI objects after rendering shadows/reflections
@@ -107,49 +108,12 @@ void game_editor::render(gameMain *game) {
 		
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
 		          game->rend->atlases);
+
+		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
-
-	/*
-	// TODO: move to renderPostStage
-	Framebuffer().bind();
-	bind_vao(get_screenquad_vao());
-	glViewport(0, 0, winsize_x, winsize_y);
-	game->rend->shaders["post"]->bind();
-	// TODO: should the shader_obj be automatically set the same way 'shader' is...
-
-	//disable(GL_SCISSOR_TEST);
-	glClearColor(0.0, 1.0, 0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glDepthMask(GL_FALSE);
-	disable(GL_DEPTH_TEST);
-	DO_ERROR_CHECK();
-
-	glActiveTexture(GL_TEXTURE6);
-	game->rend->framebuffer->color->bind();
-	game->rend->shaders["post"]->set("render_fb", 6);
-	glActiveTexture(GL_TEXTURE7);
-	game->rend->framebuffer->depth->bind();
-	game->rend->shaders["post"]->set("render_depth", 7);
-	//glActiveTexture(GL_TEXTURE8);
-	//last_frame_tex->bind();
-
-	//game->rend->shaders["post"]->set("last_frame_fb", 8);
-	game->rend->shaders["post"]->set("scale_x", game->rend->framebuffer->scale.x);
-	game->rend->shaders["post"]->set("scale_y", game->rend->framebuffer->scale.y);
-	game->rend->shaders["post"]->set("screen_x", (float)winsize_x);
-	game->rend->shaders["post"]->set("screen_y", (float)winsize_y);
-	game->rend->shaders["post"]->set("rend_x", (float)game->rend->framebuffer->width);
-	game->rend->shaders["post"]->set("rend_y", (float)game->rend->framebuffer->height);
-	game->rend->shaders["post"]->set("exposure", exposure);
-	//rend.shader->set("exposure", editor.exposure);
-
-	DO_ERROR_CHECK();
-	draw_screenquad();
-	*/
 
 	testpost->draw(game->rend->framebuffer);
 
-	//Framebuffer().bind();
 	render_editor(game);
 	render_imgui(game);
 
