@@ -102,7 +102,13 @@ void renderer::loadShaders(void) {
 		"shaders/out/ref_probe_debug.frag"
 	);
 
-	for (auto& name : {"main", "refprobe", "refprobe_debug"}) {
+	shaders["unshaded"] = load_program(
+		"shaders/out/pixel-shading.vert",
+		"shaders/out/unshaded.frag"
+	);
+
+
+	for (auto& name : {"main", "refprobe", "refprobe_debug", "unshaded"}) {
 		Program::ptr s = shaders[name];
 
 		glBindAttribLocation(s->obj, 0, "in_Position");

@@ -77,6 +77,8 @@ void game_editor::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 
+	game->rend->framebuffer->clear();
+
 	if (game->state->rootnode) {
 		renderQueue que(cam);
 		que.add(game->state->rootnode);
@@ -85,9 +87,6 @@ void game_editor::render(gameMain *game) {
 		                      game->rend->atlases,
 		                      game->rend->defaultSkybox);
 		DO_ERROR_CHECK();
-
-		// add UI objects after rendering shadows/reflections
-		que.add(UI_objects);
 
 		//Framebuffer().bind();
 		game->rend->framebuffer->framebuffer->bind();
@@ -107,6 +106,12 @@ void game_editor::render(gameMain *game) {
 		DO_ERROR_CHECK();
 		
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
+		          game->rend->atlases);
+
+		// add UI objects after rendering main scene, using different shader
+		// TODO: maybe attach shaders to gameObjects
+		que.add(UI_objects);
+		que.flush(game->rend->framebuffer, game->rend->shaders["unshaded"],
 		          game->rend->atlases);
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);

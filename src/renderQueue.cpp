@@ -131,20 +131,20 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
                         renderAtlases& atlases)
 {
 	fb->framebuffer->bind();
-	fb->clear();
 	program->bind();
 	shaderSync(program, atlases);
 
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 	glFrontFace(GL_CCW);
-	glClearColor(0.1, 0.1, 0.1, 1);
+	//glClearColor(0.1, 0.1, 0.1, 1);
 	//glClearColor(1.0, 0.1, 0.1, 1);
-	glClearStencil(0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	//glClearStencil(0);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	disable(GL_SCISSOR_TEST);
 	enable(GL_DEPTH_TEST);
+	enable(GL_CULL_FACE);
 	enable(GL_STENCIL_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);

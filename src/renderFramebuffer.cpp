@@ -25,6 +25,9 @@ renderFramebuffer::renderFramebuffer(Framebuffer::ptr fb, int Width, int Height)
 
 void renderFramebuffer::clear(void) {
 	drawn_meshes.clear();
+	framebuffer->bind();
+	glClearStencil(0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {
