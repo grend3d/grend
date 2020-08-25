@@ -95,8 +95,7 @@ class game_editor : public gameView {
 	private:
 		void menubar(gameMain *game);
 		void map_window(gameMain *game);
-		void lights_window(gameMain *game);
-		void refprobes_window(gameMain *game);
+		void objectEditorWindow(gameMain *game);
 		void object_select_window(gameMain *game);
 		// populates map object tree
 		void addnodes(std::string name, gameObject::ptr obj);
@@ -108,8 +107,7 @@ class game_editor : public gameView {
 		void showLoadingScreen(gameMain *game);
 
 		bool show_map_window = false;
-		bool show_lights_window = false;
-		bool show_refprobe_window = false;
+		bool show_object_editor_window = false;
 		bool show_object_select_window = false;
 };
 

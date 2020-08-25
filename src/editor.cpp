@@ -30,6 +30,9 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	load_map(game);
 	loadUIModels();
 	bind_cooked_meshes();
+
+	// XXX
+	show_object_editor_window = true;
 };
 
 void game_editor::loadUIModels(void) {
@@ -571,36 +574,12 @@ void game_editor::render_editor(gameMain *game) {
 			map_window(game);
 		}
 
-#if 0
-		if (show_lights_window) {
-			for (const auto& [id, plit] : rend->point_lights) {
-				rend->dqueue_draw_model({
-					.name = "smoothsphere",
-					.transform = glm::translate(glm::vec3(plit.position))
-						* glm::scale(glm::vec3(plit.radius)),
-					.dclass = (struct draw_class){DRAWATTR_CLASS_UI_LIGHT, id},
-				});
-			}
-
-			lights_window(rend, ctx);
-		}
-
-		if (show_refprobe_window) {
-			for (const auto& [id, probe] : rend->ref_probes) {
-				rend->dqueue_draw_model({
-					.name = "unit_cube",
-					.transform = glm::translate(glm::vec3(probe.position)),
-						//* glm::scale(glm::vec3(0.5))
-					.dclass = (struct draw_class){DRAWATTR_CLASS_UI_REFPROBE, id},
-				});
-			}
-
-			refprobes_window(rend, ctx);
-		}
-#endif
-
 		if (show_object_select_window) {
 			object_select_window(game);
+		}
+
+		if (selectedNode && show_object_editor_window) {
+			objectEditorWindow(game);
 		}
 
 #if 0

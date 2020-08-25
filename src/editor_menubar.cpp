@@ -119,10 +119,8 @@ void game_editor::menubar(gameMain *game) {
 		if (ImGui::BeginMenu("Tools")) {
 			if (ImGui::MenuItem("Map editor", "o"))
 				show_map_window = true;
-			if (ImGui::MenuItem("Lights editor", "l"))
-				show_lights_window = true;
-			if (ImGui::MenuItem("Reflection probes", "r"))
-				show_refprobe_window = true;
+			if (ImGui::MenuItem("Object editor", "r"))
+				show_object_editor_window = true;
 			if (ImGui::MenuItem("Object selection"))
 				show_object_select_window = true;
 

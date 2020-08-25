@@ -44,8 +44,8 @@ static const ImGuiTreeNodeFlags base_flags
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
 void game_editor::addnodes_rec(const std::string& name,
-                                          gameObject::ptr obj,
-                                          std::set<gameObject::ptr>& selectedPath)
+                               gameObject::ptr obj,
+                               std::set<gameObject::ptr>& selectedPath)
 {
 	if (obj) {
 		ImGuiTreeNodeFlags flags
