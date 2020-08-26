@@ -107,6 +107,7 @@ class game_editor : public gameView {
 		                  std::set<gameObject::ptr>& selectedPath);
 
 		void handleMoveRotate(gameMain *game);
+		void handleSelectObject(gameMain *game);
 		void loadUIModels(void);
 		void showLoadingScreen(gameMain *game);
 		bool isUIObject(gameObject::ptr obj);

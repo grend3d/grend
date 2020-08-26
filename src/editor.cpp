@@ -241,6 +241,42 @@ void game_editor::reload_shaders(gameMain *game) {
 	}
 }
 
+void game_editor::handleSelectObject(gameMain *game) {
+	// TODO: functions for this
+	int x, y;
+	int win_x, win_y;
+	Uint32 buttons = SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+	float fx = x/(1.f*win_x);
+	float fy = y/(1.f*win_y);
+
+	gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
+	std::cerr << "clicked object: " << clicked << std::endl;
+
+	if (clicked) {
+		clicked->onLeftClick();
+		clicked_x = (x*1.f / win_x);
+		clicked_y = ((win_y - y)*1.f / win_y);
+		click_depth = glm::distance(clicked->position, cam->position);
+
+		if (isUIObject(clicked)) {
+			entbuf.position = selectedNode->position;
+			entbuf.scale    = selectedNode->scale;
+			entbuf.rotation = selectedNode->rotation;
+			std::cerr << "It's a UI model" << std::endl;
+
+		} else {
+			selectedNode = getNonModel(clicked);
+			assert(selectedNode != nullptr);
+			std::cerr << "Not a UI model" << std::endl;
+		}
+
+	} else {
+		selectedNode = nullptr;
+	}
+}
+
 void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	static bool control = false;
@@ -266,79 +302,6 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 				case SDLK_m: mode = mode::Inactive; break;
 				case SDLK_i: load_map(game); break;
 				case SDLK_o: save_map(game); break;
-
-				case SDLK_g:
-					//edit_rotation -= M_PI/4;
-					entbuf.transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(1, 0, 0));
-					break;
-
-				case SDLK_h:
-					//edit_rotation -= M_PI/4;
-					entbuf.transform *= glm::rotate((float)M_PI/4.f, glm::vec3(1, 0, 0));
-					break;
-
-				case SDLK_z:
-					//edit_rotation -= M_PI/4;
-					entbuf.transform *= glm::rotate((float)-M_PI/4.f, glm::vec3(0, 1, 0));
-					break;
-
-				case SDLK_c:
-					//edit_rotation += M_PI/4;
-					entbuf.transform *= glm::rotate((float)M_PI/4.f, glm::vec3(0, 1, 0));
-					break;
-
-				case SDLK_x:
-					// flip horizontally (along the X axis)
-					entbuf.transform *= glm::scale(glm::vec3(-1, 1, 1));
-					entbuf.inverted = !entbuf.inverted;
-					break;
-
-				case SDLK_b:
-					// flip horizontally (along the Z axis)
-					entbuf.transform *= glm::scale(glm::vec3( 1, 1, -1));
-					entbuf.inverted = !entbuf.inverted;
-					break;
-
-				case SDLK_v:
-					// flip vertically
-					entbuf.transform *= glm::scale(glm::vec3( 1, -1, 1));
-					entbuf.inverted = !entbuf.inverted;
-					break;
-
-				case SDLK_j:
-					// scale down
-					entbuf.transform *= glm::scale(glm::vec3(0.9));
-					entbuf.scale *= 0.9f;
-					break;
-
-				case SDLK_k:
-					// scale up
-					entbuf.transform *= glm::scale(glm::vec3(1/0.9));
-					entbuf.scale *= 1/0.9f;
-					break;
-
-					/*
-				// TODO: another way to explore loaded models
-				case SDLK_r:
-					if (control) {
-						reload_shaders(game);
-
-					} else {
-						// scroll forward through models
-						if (edit_model == cooked_models.begin()) {
-							edit_model = glman.cooked_models.end();
-						}
-						edit_model--;
-					}
-					break;
-
-				case SDLK_f:
-					edit_model++;
-					if (edit_model == glman.cooked_models.end()) {
-					    edit_model = glman.cooked_models.begin();
-					}
-					break;
-					*/
 
 				case SDLK_DELETE:
 					// undo, basically
@@ -405,38 +368,12 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 
 		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
 			if (ev.button.button == SDL_BUTTON_LEFT) {
-				// TODO: functions for this
-				int x, y;
-				int win_x, win_y;
-				Uint32 buttons = SDL_GetMouseState(&x, &y);
-				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
-
-				float fx = x/(1.f*win_x);
-				float fy = y/(1.f*win_y);
-
-				gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
-				std::cerr << "clicked object: " << clicked << std::endl;
-
-				if (clicked) {
-					clicked->onLeftClick();
-					clicked_x = (x*1.f / win_x);
-					clicked_y = ((win_y - y)*1.f / win_y);
-					click_depth = glm::distance(clicked->position, cam->position);
-
-					if (isUIObject(clicked)) {
-						entbuf.position = selectedNode->position;
-						entbuf.scale    = selectedNode->scale;
-						entbuf.rotation = selectedNode->rotation;
-						std::cerr << "It's a UI model" << std::endl;
-
-					} else {
-						selectedNode = getNonModel(clicked);
-						assert(selectedNode != nullptr);
-						std::cerr << "Not a UI model" << std::endl;
-					}
+				if (control) {
+					// TODO: need like a keymapping system
+					selectedNode = game->state->rootnode;
 
 				} else {
-					selectedNode = nullptr;
+					handleSelectObject(game);
 				}
 
 				switch (mode) {
@@ -580,7 +517,6 @@ void game_editor::logic(gameMain *game, float delta) {
 			auto ptr = UI_objects->getNode(str);
 
 			ptr->position = target->position;
-			ptr->scale    = target->scale;
 			ptr->rotation = target->rotation;
 		}
 	}
