@@ -1,5 +1,6 @@
 #include <grend/physics.hpp>
-#include <bullet/btBulletDynamicsCommon.h>
+// TODO: physics abstract class with derived implementations
+//#include <bullet/btBulletDynamicsCommon.h>
 
 using namespace grendx;
 
