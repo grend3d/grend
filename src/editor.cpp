@@ -66,6 +66,8 @@ void game_editor::loadUIModels(void) {
 		= load_object(dir + "Y-Axis-Rotation-Spinner.obj");
 	UI_models["Z-Axis-Rotation-Spinner"]
 		= load_object(dir + "Z-Axis-Rotation-Spinner.obj");
+	UI_models["Cursor-Placement"]
+		= load_object(dir + "Cursor-Placement.obj");
 
 	UI_objects = gameObject::ptr(new gameObject());
 	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
@@ -74,13 +76,15 @@ void game_editor::loadUIModels(void) {
 	gameObject::ptr xrot = gameObject::ptr(new clicker(this, mode::RotateX));
 	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateZ));
 	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateY));
+	gameObject::ptr cursor = gameObject::ptr(new gameObject());
 
-	setNode("X-Axis",     xptr, UI_models["X-Axis-Pointer"]);
-	setNode("X-Rotation", xrot, UI_models["X-Axis-Rotation-Spinner"]);
-	setNode("Y-Axis",     yptr, UI_models["Y-Axis-Pointer"]);
-	setNode("Y-Rotation", yrot, UI_models["Y-Axis-Rotation-Spinner"]);
-	setNode("Z-Axis",     zptr, UI_models["Z-Axis-Pointer"]);
-	setNode("Z-Rotation", zrot, UI_models["Z-Axis-Rotation-Spinner"]);
+	setNode("X-Axis",           xptr,   UI_models["X-Axis-Pointer"]);
+	setNode("X-Rotation",       xrot,   UI_models["X-Axis-Rotation-Spinner"]);
+	setNode("Y-Axis",           yptr,   UI_models["Y-Axis-Pointer"]);
+	setNode("Y-Rotation",       yrot,   UI_models["Y-Axis-Rotation-Spinner"]);
+	setNode("Z-Axis",           zptr,   UI_models["Z-Axis-Pointer"]);
+	setNode("Z-Rotation",       zrot,   UI_models["Z-Axis-Rotation-Spinner"]);
+	setNode("Cursor-Placement", cursor, UI_models["Cursor-Placement"]);
 
 	setNode("X-Axis", UI_objects, xptr);
 	setNode("Y-Axis", UI_objects, yptr);
@@ -88,6 +92,7 @@ void game_editor::loadUIModels(void) {
 	setNode("X-Rotation", UI_objects, xrot);
 	setNode("Y-Rotation", UI_objects, yrot);
 	setNode("Z-Rotation", UI_objects, zrot);
+	setNode("Cursor-Placement", UI_objects, cursor);
 
 	compile_models(UI_models);
 	bind_cooked_meshes();
@@ -277,6 +282,15 @@ void game_editor::handleSelectObject(gameMain *game) {
 	}
 }
 
+void game_editor::handleCursorUpdate(gameMain *game) {
+	// TODO: reuse this for cursor code
+	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
+	entbuf.position = glm::vec3(
+		align(cam->direction.x*edit_distance + cam->position.x),
+		align(cam->direction.y*edit_distance + cam->position.y),
+		align(cam->direction.z*edit_distance + cam->position.z));
+}
+
 void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	static bool control = false;
@@ -394,19 +408,27 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 						dynamic_models.push_back(entbuf);
 						set_mode(mode::View);
 						break;
+#endif
 
 					case mode::AddPointLight:
-						selected_light =
-							rend->add_light((struct point_light) {
-								.position = glm::vec4(entbuf.position, 1.0),
-								// TODO: set before placing
-								.diffuse = glm::vec4(1),
-								.radius = 1.f,
-								.intensity = 50.f,
-							});
-						edit_lights.point.push_back(selected_light);
-						set_mode(mode::View);
+						{
+							assert(selectedNode != nullptr);
+
+							auto ptr = gameLightPoint::ptr(new gameLightPoint());
+							std::string name =
+								"point light E" + std::to_string(ptr->id);
+
+							ptr->position = entbuf.position;
+							ptr->rotation = entbuf.rotation;
+							// TODO: allocate shadowmaps updateShadowmaps
+							//       (in renderQueue)
+
+							setNode(name, selectedNode, ptr);
+							selectedNode = ptr;
+							set_mode(mode::View);
+						}
 						break;
+#if 0
 
 					case mode::AddSpotLight:
 						selected_light =
@@ -468,15 +490,6 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 				}
 			}
 		}
-
-		/*
-		// TODO: reuse this for cursor code
-		auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
-		entbuf.position = glm::vec3(
-			align(cam->direction.x*edit_distance + cam->position.x),
-			align(cam->direction.y*edit_distance + cam->position.y),
-			align(cam->direction.z*edit_distance + cam->position.z));
-			*/
 	}
 }
 
@@ -502,14 +515,6 @@ void game_editor::logic(gameMain *game, float delta) {
 
 	gameObject::ptr target = selectedNode;
 
-	// models and meshes shouldn't be the main node info containers since they
-	// might not be unique, so traverse upwards until something that's not
-	// a model/mesh is reached
-	for (; target &&
-			(target->type == gameObject::objType::Mesh
-			 || target->type == gameObject::objType::Model);
-		 target = target->parent);
-
 	if (target) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
 		                  "X-Rotation", "Y-Rotation", "Z-Rotation"})
@@ -522,6 +527,20 @@ void game_editor::logic(gameMain *game, float delta) {
 	}
 
 	handleMoveRotate(game);
+
+	switch (mode) {
+		case mode::AddPointLight:
+		case mode::AddSpotLight:
+		case mode::AddDirectionalLight:
+			{
+				auto ptr = UI_objects->getNode("Cursor-Placement");
+				assert(ptr != nullptr);
+				handleCursorUpdate(game);
+				ptr->position = entbuf.position;
+				break;
+			}
+		default: break;
+	}
 }
 
 void game_editor::handleMoveRotate(gameMain *game) {
@@ -637,6 +656,7 @@ void game_editor::clear(gameMain *game) {
 
 	cam->position = {0, 0, 0};
 	editor_model_files.clear();
+	models.clear();
 
 	// TODO: clear() for state
 	selectedNode = game->state->rootnode = gameObject::ptr(new gameObject());
@@ -691,7 +711,6 @@ void game_editor::render_editor(gameMain *game) {
 		}
 
 #if 0
-
 		if (mode == mode::AddObject) {
 			struct draw_attributes attrs = {
 				.name = edit_model->first,

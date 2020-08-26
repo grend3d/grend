@@ -108,6 +108,7 @@ class game_editor : public gameView {
 
 		void handleMoveRotate(gameMain *game);
 		void handleSelectObject(gameMain *game);
+		void handleCursorUpdate(gameMain *game);
 		void loadUIModels(void);
 		void showLoadingScreen(gameMain *game);
 		bool isUIObject(gameObject::ptr obj);

@@ -127,13 +127,22 @@ void game_editor::menubar(gameMain *game) {
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Add object", "r")) {}
-			if (ImGui::MenuItem("Scale object", "s")) {}
+			if (ImGui::MenuItem("Add point light", "lp")) {
+				set_mode(mode::AddPointLight);
+			}
+
+			if (ImGui::MenuItem("Add spot light", "ls")) {
+				set_mode(mode::AddSpotLight);
+			}
+
+			if (ImGui::MenuItem("Add spot light", "ld")) {
+				set_mode(mode::AddDirectionalLight);
+			}
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Bake lighting", "CTRL+B")) {}
-			if (ImGui::MenuItem("Generate environment light probes", "CTRL+L")) {}
-			if (ImGui::MenuItem("Generate IBL cubemaps", "Shift-CTRL+L")) {}
+			if (ImGui::MenuItem("Generate irradiance probes", "CTRL+L")) {}
+			if (ImGui::MenuItem("Generate reflectance cubemaps", "Shift-CTRL+L")) {}
 
 			ImGui::EndMenu();
 		}

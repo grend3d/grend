@@ -176,7 +176,7 @@ class gameLightPoint : public gameLight {
 
 		virtual float extent(float threshold=0.03);
 
-		float radius;
+		float radius = 1.0f;
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap[6];
 };
