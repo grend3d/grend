@@ -34,6 +34,12 @@ class game_editor : public gameView {
 			AddDirectionalLight,
 			AddReflectionProbe,
 			Select,
+			MoveX,
+			MoveY,
+			MoveZ,
+			RotateX,
+			RotateY,
+			RotateZ,
 		};
 
 		// TODO: don't need this anymore
@@ -76,9 +82,6 @@ class game_editor : public gameView {
 		model_map models;
 		model_map UI_models;
 
-		float edit_distance = 5;
-		editor_entry entbuf;
-
 		camera::ptr cam = camera::ptr(new camera());
 		gameObject::ptr selectedNode = nullptr;
 		float movement_speed = 10.f;
@@ -103,12 +106,26 @@ class game_editor : public gameView {
 		                  gameObject::ptr obj,
 		                  std::set<gameObject::ptr>& selectedPath);
 
+		void handleMoveRotate(gameMain *game);
 		void loadUIModels(void);
 		void showLoadingScreen(gameMain *game);
+		bool isUIObject(gameObject::ptr obj);
+		gameObject::ptr getNonModel(gameObject::ptr obj);
 
 		bool show_map_window = false;
 		bool show_object_editor_window = false;
 		bool show_object_select_window = false;
+
+		// last place the mouse was clicked, used for determining the amount of
+		// rotation, movement etc
+		// (position / width, height)
+		float clicked_x, clicked_y;
+		// distance from cursor to camera at the last click
+		float click_depth;
+
+		float edit_distance = 5;
+		editor_entry entbuf;
+
 };
 
 // namespace grendx

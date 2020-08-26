@@ -144,10 +144,20 @@ void game_editor::menubar(gameMain *game) {
 		}
 
 		ImGui::Combo("[mode]", &mode,
-			"Exit editor\0" "View\0" "Add object\0"
-			"Add point light\0" "Add spot light\0" "Add directional light\0"
+			"Exit editor\0"
+			"View\0"
+			"Add object\0"
+			"Add point light\0"
+			"Add spot light\0"
+			"Add directional light\0"
 			"Add reflection probe\0"
 			"Select\0"
+			"Move along X axis\0"
+			"Move along Y axis\0"
+			"Move along Z axis\0"
+			"Rotate along X axis\0"
+			"Rotate along Y axis\0"
+			"Rotate along Z axis\0"
 			"\0");
 
 		ImGui::EndMainMenuBar();

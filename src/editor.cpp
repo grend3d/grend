@@ -35,9 +35,27 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	show_object_editor_window = true;
 };
 
-void game_editor::loadUIModels(void) {
-	UI_objects = gameObject::ptr(new gameObject());
+class clicker : public gameObject {
+	public:
+		clicker(game_editor *ptr, enum game_editor::mode click)
+			: gameObject(), editor(ptr), clickmode(click) {}; 
 
+		virtual void onLeftClick() {
+			std::cerr << "have mode: " << clickmode << std::endl;
+			editor->set_mode(clickmode);
+
+			if (parent) {
+				parent->onLeftClick();
+			}
+		}
+
+		game_editor *editor;
+		enum game_editor::mode clickmode;
+};
+
+void game_editor::loadUIModels(void) {
+	// TODO: Need to swap Z/Y pointer and spinner models
+	//       blender coordinate system isn't the same as opengl's (duh)
 	std::string dir = "assets/obj/UI/";
 	UI_models["X-Axis-Pointer"] = load_object(dir + "X-Axis-Pointer.obj");
 	UI_models["Y-Axis-Pointer"] = load_object(dir + "Y-Axis-Pointer.obj");
@@ -50,18 +68,18 @@ void game_editor::loadUIModels(void) {
 		= load_object(dir + "Z-Axis-Rotation-Spinner.obj");
 
 	UI_objects = gameObject::ptr(new gameObject());
-	gameObject::ptr xptr = gameObject::ptr(new gameObject());
-	gameObject::ptr yptr = gameObject::ptr(new gameObject());
-	gameObject::ptr zptr = gameObject::ptr(new gameObject());
-	gameObject::ptr xrot = gameObject::ptr(new gameObject());
-	gameObject::ptr yrot = gameObject::ptr(new gameObject());
-	gameObject::ptr zrot = gameObject::ptr(new gameObject());
+	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
+	gameObject::ptr yptr = gameObject::ptr(new clicker(this, mode::MoveZ));
+	gameObject::ptr zptr = gameObject::ptr(new clicker(this, mode::MoveY));
+	gameObject::ptr xrot = gameObject::ptr(new clicker(this, mode::RotateX));
+	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateZ));
+	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateY));
 
 	setNode("X-Axis",     xptr, UI_models["X-Axis-Pointer"]);
-	setNode("X-Rotation", xptr, UI_models["X-Axis-Rotation-Spinner"]);
+	setNode("X-Rotation", xrot, UI_models["X-Axis-Rotation-Spinner"]);
 	setNode("Y-Axis",     yptr, UI_models["Y-Axis-Pointer"]);
 	setNode("Y-Rotation", yrot, UI_models["Y-Axis-Rotation-Spinner"]);
-	setNode("Z-Axis",     zrot, UI_models["Z-Axis-Pointer"]);
+	setNode("Z-Axis",     zptr, UI_models["Z-Axis-Pointer"]);
 	setNode("Z-Rotation", zrot, UI_models["Z-Axis-Rotation-Spinner"]);
 
 	setNode("X-Axis", UI_objects, xptr);
@@ -398,9 +416,27 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 
 				gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
 				std::cerr << "clicked object: " << clicked << std::endl;
+
 				if (clicked) {
-					selectedNode = clicked;
 					clicked->onLeftClick();
+					clicked_x = (x*1.f / win_x);
+					clicked_y = ((win_y - y)*1.f / win_y);
+					click_depth = glm::distance(clicked->position, cam->position);
+
+					if (isUIObject(clicked)) {
+						entbuf.position = selectedNode->position;
+						entbuf.scale    = selectedNode->scale;
+						entbuf.rotation = selectedNode->rotation;
+						std::cerr << "It's a UI model" << std::endl;
+
+					} else {
+						selectedNode = getNonModel(clicked);
+						assert(selectedNode != nullptr);
+						std::cerr << "Not a UI model" << std::endl;
+					}
+
+				} else {
+					selectedNode = nullptr;
 				}
 
 				switch (mode) {
@@ -476,14 +512,47 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 						break;
 				}
 			}
+
+		} else if (ev.type == SDL_MOUSEBUTTONUP) {
+			if (ev.button.button == SDL_BUTTON_LEFT) {
+				switch (mode) {
+					// switch back to view mode after releasing the left button
+					case mode::MoveX:
+					case mode::MoveY:
+					case mode::MoveZ:
+					case mode::RotateX:
+					case mode::RotateY:
+					case mode::RotateZ:
+						mode = mode::View;
+						break;
+
+					default:
+						break;
+				}
+			}
 		}
 
-		// TODO: snap to increments
+		/*
+		// TODO: reuse this for cursor code
 		auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
 		entbuf.position = glm::vec3(
 			align(cam->direction.x*edit_distance + cam->position.x),
 			align(cam->direction.y*edit_distance + cam->position.y),
 			align(cam->direction.z*edit_distance + cam->position.z));
+			*/
+	}
+}
+
+// TODO: move to utility
+#define TAU  (6.2831853)
+#define TAUF (6.2831853f)
+
+template <typename T>
+static T sign(T x) {
+	if (x >= 0) {
+		return 1;
+	} else {
+		return -1;
 	}
 }
 
@@ -493,7 +562,6 @@ void game_editor::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.z*cam->direction*delta;
 	cam->position += cam->velocity.y*cam->up*delta;
 	cam->position += cam->velocity.x*cam->right*delta;
-
 
 	gameObject::ptr target = selectedNode;
 
@@ -516,12 +584,116 @@ void game_editor::logic(gameMain *game, float delta) {
 			ptr->rotation = target->rotation;
 		}
 	}
+
+	handleMoveRotate(game);
+}
+
+void game_editor::handleMoveRotate(gameMain *game) {
+	int x, y;
+	int win_x, win_y;
+	Uint32 buttons = SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+	float adj_x = x / (1.f*win_x);
+	float adj_y = (win_y - y) / (1.f * win_y);
+	float amount_x = adj_x - clicked_x;
+	float amount_y = adj_y - clicked_y;
+	float amount = amount_x + amount_y;
+	float reversed_x;
+	float reversed_y;
+
+	glm::mat3 rot;
+	glm::vec3 dir;
+
+	switch (mode) {
+		case mode::MoveX:
+			rot = glm::mat3_cast(entbuf.rotation);
+			dir = rot * glm::vec3(1, 0, 0); 
+			reversed_x = sign(glm::dot(dir, -cam->right));
+			reversed_y = sign(glm::dot(dir, cam->up));
+
+			selectedNode->position =
+				entbuf.position
+				+ dir*click_depth*amount_x*reversed_x
+				+ dir*click_depth*amount_y*reversed_y
+				;
+			break;
+
+		case mode::MoveY:
+			rot = glm::mat3_cast(entbuf.rotation);
+			dir = rot * glm::vec3(0, 1, 0); 
+			reversed_x = sign(glm::dot(dir, -cam->right));
+			reversed_y = sign(glm::dot(dir, cam->up));
+
+			selectedNode->position =
+				entbuf.position
+				+ dir*click_depth*amount_x*reversed_x
+				+ dir*click_depth*amount_y*reversed_y
+				;
+			break;
+
+		case mode::MoveZ:
+			rot = glm::mat3_cast(entbuf.rotation);
+			dir = rot * glm::vec3(0, 0, 1); 
+			reversed_x = sign(glm::dot(dir, -cam->right));
+			reversed_y = sign(glm::dot(dir, cam->up));
+
+			selectedNode->position =
+				entbuf.position
+				+ dir*click_depth*amount_x*reversed_x
+				+ dir*click_depth*amount_y*reversed_y
+				;
+			break;
+
+		// TODO: need to split rotation spinner in seperate quadrant meshes
+		//       so that this can pick the right movement direction
+		//       for the spinner
+		case mode::RotateX:
+			selectedNode->rotation
+				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
+			break;
+
+		case mode::RotateY:
+			selectedNode->rotation
+				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
+			break;
+
+		case mode::RotateZ:
+			selectedNode->rotation
+				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
+			break;
+
+		default:
+			break;
+	}
 }
 
 void game_editor::showLoadingScreen(gameMain *game) {
 	// TODO: maybe not this
 	loading_thing->draw(loading_img, nullptr);
 	SDL_GL_SwapWindow(game->ctx.window);
+}
+
+bool game_editor::isUIObject(gameObject::ptr obj) {
+	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
+		if (temp == UI_objects) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+gameObject::ptr game_editor::getNonModel(gameObject::ptr obj) {
+	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
+		if (temp->type != gameObject::objType::Mesh
+		    && temp->type != gameObject::objType::Model)
+		{
+			return temp;
+		}
+	}
+
+	return nullptr;
 }
 
 void game_editor::clear(gameMain *game) {
