@@ -218,9 +218,6 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 
 		for (auto& node : scene.nodes) {
 			std::cerr << "load_scene(): loading node" << std::endl;
-			// TODO: need to be able to have the same model with different
-			//       position/rotation/scale
-			//       hmm... why not just use a wrapper gameObject?
 			gameObject::ptr obj = gameObject::ptr(new gameObject());
 
 			obj->position = node.position;
@@ -387,7 +384,6 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 			x = (x > 0)? x : win_x/2;
 			y = (x > 0)? y : win_y/2;
 
-			// TODO: get window resolution
 			float center_x = (float)win_x / 2;
 			float center_y = (float)win_y / 2;
 
@@ -445,9 +441,6 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 							std::string name =
 								"point light E" + std::to_string(ptr->id);
 							handleAddNode(name, ptr);
-
-							// TODO: allocate shadowmaps updateShadowmaps
-							//       (in renderQueue)
 						}
 						break;
 

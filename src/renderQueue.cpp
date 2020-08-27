@@ -59,8 +59,19 @@ void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
 	// TODO: should probably apply the transform to light position
 	for (auto& [_, __, light] : lights) {
 		if (light->lightType == gameLight::lightTypes::Point) {
+			// TODO: check against view frustum to see if this light is visible,
+			//       avoid rendering shadow maps if not
 			gameLightPoint::ptr plit =
 				std::dynamic_pointer_cast<gameLightPoint>(light);
+
+			auto& shatree = atlases.shadows->tree;
+			for (unsigned i = 0; i < 6; i++) {
+				if (!shatree.valid(plit->shadowmap[i])) {
+					// TODO: configurable size
+					plit->shadowmap[i] = shatree.alloc(256);
+				}
+			}
+
 			drawShadowCubeMap(*this, plit, program, atlases);
 		}
 	}
@@ -72,6 +83,14 @@ renderQueue::updateReflections(Program::ptr program,
                               skybox& sky)
 {
 	for (auto& [_, __, probe] : probes) {
+		auto& reftree = atlases.reflections->tree;
+		for (unsigned i = 0; i < 6; i++) {
+			if (!reftree.valid(probe->faces[i])) {
+				// TODO: configurable size
+				probe->faces[i] = reftree.alloc(256);
+			}
+		}
+
 		drawReflectionProbe(*this, probe, program, atlases, sky);
 	}
 }
