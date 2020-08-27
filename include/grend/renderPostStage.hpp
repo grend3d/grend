@@ -80,6 +80,7 @@ class renderPostStage : public Storage {
 		void draw(Texture::ptr previous, Texture::ptr depth) {
 			this->framebuffer->bind();
 			program->bind();
+			glViewport(0, 0, this->width, this->height);
 
 			bind_vao(get_screenquad_vao());
 
@@ -109,6 +110,7 @@ class renderPostStage : public Storage {
 		void draw(renderFramebuffer::ptr previous) {
 			this->framebuffer->bind();
 			program->bind();
+			glViewport(0, 0, this->width, this->height);
 
 			bind_vao(get_screenquad_vao());
 

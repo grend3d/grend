@@ -143,6 +143,8 @@ void game_editor::render(gameMain *game) {
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
 
+	
+	testpost->setSize(winsize_x, winsize_y);
 	testpost->draw(game->rend->framebuffer);
 
 	render_editor(game);
