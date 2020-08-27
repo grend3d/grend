@@ -296,6 +296,20 @@ void game_editor::handleCursorUpdate(gameMain *game) {
 		align(cam->direction.z*edit_distance + cam->position.z));
 }
 
+static inline bool isAddMode(int m) {
+	switch (m) {
+		case game_editor::mode::AddObject:
+		case game_editor::mode::AddPointLight:
+		case game_editor::mode::AddSpotLight:
+		case game_editor::mode::AddDirectionalLight:
+		case game_editor::mode::AddReflectionProbe:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	static bool control = false;
@@ -396,6 +410,9 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 				if (control) {
 					// TODO: need like a keymapping system
 					selectedNode = game->state->rootnode;
+
+				} else if (isAddMode(mode)) {
+					// nop
 
 				} else {
 					handleSelectObject(game);
