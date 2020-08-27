@@ -21,5 +21,15 @@ static inline std::string filename_extension(std::string fname) {
 	return (pos == std::string::npos)? "" : fname.substr(pos);
 }
 
+static inline std::string basenameStr(std::string filename) {
+	std::size_t found = filename.rfind("/");
+
+	if (found != std::string::npos) {
+		return filename.substr(found+1, std::string::npos);
+	}
+
+	return filename;
+}
+
 // namespace grendx
 }

@@ -27,8 +27,8 @@ game_editor::game_editor(gameMain *game) : gameView() {
 
 	clear(game);
 	initImgui(game);
-	load_map(game);
 	loadUIModels();
+	selectedNode = game->state->rootnode = loadMap(game);
 	bind_cooked_meshes();
 
 	// XXX
@@ -172,18 +172,25 @@ void game_editor::load_model(gameMain *game, std::string path) {
 		gameModel::ptr m = load_object(path);
 		compile_model(path, m);
 
-		// add to editor model selection
-		models[path] = m;
+		// add the model at 0,0
+		auto obj = gameObject::ptr(new gameObject());
+		// make up a name for .obj models
+		auto fname = basenameStr(path) + ":model";
+		setNode(fname, obj, m);
+		setNode(fname, selectedNode, obj);
 	}
 
 	else if (ext == ".gltf") {
 		model_map mods = load_gltf_models(path);
 		compile_models(mods);
-		models.insert(mods.begin(), mods.end());
-	}
 
-	// TODO: keep track of source files in model
-	editor_model_files.push_back(path);
+		for (auto& [name, model] : mods) {
+			// add the models at 0,0
+			auto obj = gameObject::ptr(new gameObject());
+			setNode(name, obj, model);
+			setNode(name, selectedNode, obj);
+		}
+	}
 }
 
 void game_editor::load_scene(gameMain *game, std::string path) {
@@ -226,8 +233,6 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 		compile_models(mods);
 		models.insert(mods.begin(), mods.end());
 	}
-
-	editor_scene_files.push_back(path);
 }
 
 void game_editor::update_models(gameMain *game) {
@@ -314,8 +319,14 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 
 				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
 				case SDLK_m: mode = mode::Inactive; break;
-				case SDLK_i: load_map(game); break;
-				case SDLK_o: save_map(game); break;
+				case SDLK_i:
+					// TODO: need function to set clear state + set new root
+					clear(game);
+					selectedNode = game->state->rootnode = loadMap(game);
+					break;
+				case SDLK_o:
+					saveMap(game, game->state->rootnode);
+					break;
 
 				case SDLK_DELETE:
 					// undo, basically
@@ -655,7 +666,6 @@ void game_editor::clear(gameMain *game) {
 	showLoadingScreen(game);
 
 	cam->position = {0, 0, 0};
-	editor_model_files.clear();
 	models.clear();
 
 	// TODO: clear() for state

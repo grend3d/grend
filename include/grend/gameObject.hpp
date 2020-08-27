@@ -42,28 +42,32 @@ class gameObject {
 		// handlers for basic input events
 		virtual void onLeftClick() {
 			// default handlers just call upwards
-			std::cerr << "left click " << typeString() << std::endl;
+			std::cerr << "left click " << idString() << std::endl;
 			if (parent) { parent->onLeftClick(); }
 		};
 
 		virtual void onMiddleClick() {
-			std::cerr << "middle click " << typeString() << std::endl;
+			std::cerr << "middle click " << idString() << std::endl;
 			if (parent) { parent->onMiddleClick(); }
 		};
 
 		virtual void onRightClick() {
-			std::cerr << "right click " << typeString() << std::endl;
+			std::cerr << "right click " << idString() << std::endl;
 			if (parent) { parent->onRightClick(); }
 		};
 
 		virtual void onHover() {
-			std::cerr << "hover " << typeString() << std::endl;
+			std::cerr << "hover " << idString() << std::endl;
 			if (parent) { parent->onHover(); }
 		};
 
 		virtual std::string typeString(void) {
+			return "gameObject";
+		}
+
+		virtual std::string idString(void) {
 			std::stringstream strm;
-			strm << "[gameObject 0x" << std::hex << this <<  "]";
+			strm << "[" << typeString() << " : 0x" << std::hex << this <<  "]";
 			return strm.str();
 		}
 
@@ -145,9 +149,7 @@ class gameLight : public gameObject {
 			: gameObject(objType::Light), lightType(t) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Light (abstract) 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Light (abstract)";
 		}
 
 		virtual float extent(float threshold=0.03) = 0;
@@ -169,9 +171,7 @@ class gameLightPoint : public gameLight {
 		gameLightPoint() : gameLight(lightTypes::Point) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Point light 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Point light";
 		}
 
 		virtual float extent(float threshold=0.03);
@@ -189,9 +189,7 @@ class gameLightSpot : public gameLight {
 		gameLightSpot() : gameLight(lightTypes::Spot) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Spot light 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Spot light";
 		}
 
 		virtual float extent(float threshold=0.03);
@@ -212,9 +210,7 @@ class gameLightDirectional : public gameLight {
 		gameLightDirectional() : gameLight(lightTypes::Directional) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Directional light 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Directional light";
 		}
 
 		virtual float extent(float threshold=0.03);
@@ -231,9 +227,7 @@ class gameReflectionProbe : public gameObject {
 		typedef std::weak_ptr<gameReflectionProbe> weakptr;
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Reflection probe 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Reflection probe";
 		}
 
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};

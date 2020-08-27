@@ -3,6 +3,8 @@ DIMGUI_SRC = $(wildcard libs/imgui/*.cpp) \
 			 libs/imgui/examples/imgui_impl_sdl.cpp
 DIMGUI_INCLUDES = -I./libs/imgui
 
+DJSON_INCLUDES = -I./libs/json/single_include/
+
 SRC  = $(wildcard src/*.cpp)
 OBJ  = $(DIMGUI_SRC:.cpp=.o) $(SRC:.cpp=.o)
 DEPS = $(SRC:.cpp=.d)
@@ -30,7 +32,8 @@ SHADER_FLAGS += -D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
                 -D GLES2_MAX_SPOT_LIGHTS=2 \
                 -D GLES2_MAX_DIRECTIONAL_LIGHTS=1
 
-INCLUDES = -I./include -I./libs/ $(DIMGUI_INCLUDES)
+INCLUDES = -I./include -I./libs/ \
+           $(DIMGUI_INCLUDES) $(DJSON_INCLUDES)
 
 CXXFLAGS += `sdl2-config --cflags --libs` -lSDL2_image -lSDL2_ttf -lGL -lGLEW \
             $(INCLUDES) \

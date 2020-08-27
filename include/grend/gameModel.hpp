@@ -74,9 +74,7 @@ class gameMesh : public gameObject {
 		gameMesh() : gameObject(objType::Mesh) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Mesh " << meshName << " 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Mesh";
 		}
 
 		std::shared_ptr<compiled_mesh> comped_mesh;
@@ -95,9 +93,7 @@ class gameModel : public gameObject {
 		gameModel() : gameObject(objType::Model) {};
 
 		virtual std::string typeString(void) {
-			std::stringstream strm;
-			strm << "[Model " << modelName << " 0x" << std::hex << this <<  "]";
-			return strm.str();
+			return "Model";
 		}
 
 		void genInfo(void);
@@ -106,6 +102,8 @@ class gameModel : public gameObject {
 		void genTangents(void);
 
 		std::string modelName = "unit_cube";
+		// TODO: some sort of specifier for generated meshes
+		std::string sourceFile = "";
 		bool compiled = false;
 		std::shared_ptr<compiled_model> comped_model;
 

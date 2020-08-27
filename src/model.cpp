@@ -148,6 +148,7 @@ gameModel::ptr load_object(std::string filename) {
 	}
 
 	gameModel::ptr ret = gameModel::ptr(new gameModel());
+	ret->sourceFile = filename;
 
 	// TODO: split this into a seperate parse function
 	while (std::getline(input, line)) {
@@ -833,6 +834,7 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 }
 
 static tinygltf::Model open_gltf_model(std::string filename) {
+	// TODO: parse extension, handle binary format
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model tgltf_model;
 
@@ -856,17 +858,27 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 	return tgltf_model;
 }
 
+static void updateModelSources(grendx::model_map& models, std::string filename) {
+	for (auto& [name, model] : models) {
+		model->sourceFile = filename;
+	}
+}
+
 grendx::model_map grendx::load_gltf_models(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
+	auto models = load_gltf_models(gmod);
 	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
-	return load_gltf_models(gmod);
+
+	updateModelSources(models, filename);
+	return models;
 }
 
 std::pair<grendx::scene, grendx::model_map>
 grendx::load_gltf_scene(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
-	grendx::scene scene;
-	grendx::model_map models;
+	grendx::scene scene = load_gltf_scene_nodes(gmod);
+	grendx::model_map models = load_gltf_models(gmod);
 
-	return {load_gltf_scene_nodes(gmod), load_gltf_models(gmod)};
+	updateModelSources(models, filename);
+	return {scene, models};
 }

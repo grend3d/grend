@@ -14,6 +14,11 @@
 
 namespace grendx {
 
+void saveMap(gameMain *game,
+			 gameObject::ptr root,
+			 std::string name="save.map");
+gameObject::ptr loadMap(gameMain *game, std::string name="save.map");
+
 class game_editor : public gameView {
 	public:
 		game_editor(gameMain *game);
@@ -70,8 +75,6 @@ class game_editor : public gameView {
 		void render_editor(gameMain *game);
 		void render_map_models(gameMain *game);
 
-		void save_map(gameMain *game, std::string name="save.map");
-		void load_map(gameMain *game, std::string name="save.map");
 		void logic(gameMain *game, float delta);
 		void clear(gameMain *game);
 
@@ -91,9 +94,6 @@ class game_editor : public gameView {
 
 		// Map editing things
 		std::vector<editor_entry> dynamic_models;
-		// list of imported files
-		std::vector<std::string> editor_model_files;
-		std::vector<std::string> editor_scene_files;
 
 	private:
 		void menubar(gameMain *game);

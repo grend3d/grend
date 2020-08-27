@@ -23,14 +23,18 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
+		// TODO: need function to clear state + set new root node
 		editor->clear(game);
-		editor->load_map(game, open_dialog.selection);
+		editor->selectedNode = game->state->rootnode
+			= loadMap(game, open_dialog.selection);
 	}
 
 	if (save_as_dialog.prompt_filename()) {
 		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 
-		editor->save_map(game, save_as_dialog.selection);
+		// TODO: some way to save a subnode as it's own map
+		//saveMap(game, editor->selectedNode, save_as_dialog.selection);
+		saveMap(game, game->state->rootnode, save_as_dialog.selection);
 		save_as_dialog.clear();
 	}
 
