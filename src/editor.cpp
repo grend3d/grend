@@ -401,82 +401,65 @@ void game_editor::handleInput(gameMain *game, SDL_Event& ev)
 					handleSelectObject(game);
 				}
 
-				switch (mode) {
-// TODO:
-#if 0
-					case mode::AddObject:
-						/*
-						dynamic_models.push_back({
-							edit_model->first,
-							edit_position,
-							edit_transform,
-							edit_inverted,
-						});
-						*/
+				assert(selectedNode != nullptr);
 
-						selected_object = dynamic_models.size();
-						entbuf.name = edit_model->first;
-						dynamic_models.push_back(entbuf);
-						set_mode(mode::View);
+				auto handleAddNode = [&] (std::string name, gameObject::ptr obj) {
+					assert(selectedNode != nullptr);
+					obj->position = entbuf.position;
+					obj->rotation = entbuf.rotation;
+					setNode(name, selectedNode, obj);
+					selectedNode = obj;
+					set_mode(mode::View);
+				};
+
+				switch (mode) {
+					case mode::AddObject:
+						{
+							auto ptr = std::make_shared<gameObject>();
+							std::string name =
+								"object E" + std::to_string(ptr->id);
+							handleAddNode(name, ptr);
+						}
 						break;
-#endif
 
 					case mode::AddPointLight:
 						{
-							assert(selectedNode != nullptr);
-
-							auto ptr = gameLightPoint::ptr(new gameLightPoint());
+							auto ptr = std::make_shared<gameLightPoint>();
 							std::string name =
 								"point light E" + std::to_string(ptr->id);
+							handleAddNode(name, ptr);
 
-							ptr->position = entbuf.position;
-							ptr->rotation = entbuf.rotation;
 							// TODO: allocate shadowmaps updateShadowmaps
 							//       (in renderQueue)
-
-							setNode(name, selectedNode, ptr);
-							selectedNode = ptr;
-							set_mode(mode::View);
 						}
 						break;
-#if 0
 
 					case mode::AddSpotLight:
-						selected_light =
-							rend->add_light((struct spot_light) {
-								.position = glm::vec4(entbuf.position, 1.0),
-								// TODO: set before placing
-								.diffuse = glm::vec4(1),
-								.direction = {0, 1, 0},
-								.radius = 1.f,
-								.intensity = 50.f,
-								.angle = 0.5f,
-							});
-						edit_lights.spot.push_back(selected_light);
-						set_mode(mode::View);
+						{
+							auto ptr = std::make_shared<gameLightSpot>();
+							std::string name =
+								"spot light E" + std::to_string(ptr->id);
+							handleAddNode(name, ptr);
+						}
 						break;
 
 					case mode::AddDirectionalLight:
-						selected_light =
-							rend->add_light((struct directional_light) {
-								.position = glm::vec4(entbuf.position, 1.0),
-								// TODO: set before placing
-								.diffuse = glm::vec4(1),
-								.direction = {0, 1, 0},
-								.intensity = 50.f,
-							});
-						edit_lights.directional.push_back(selected_light);
-						set_mode(mode::View);
+						{
+							auto ptr = std::make_shared<gameLightDirectional>();
+							std::string name =
+								"directional light E" + std::to_string(ptr->id);
+							handleAddNode(name, ptr);
+						}
 						break;
 
 					case mode::AddReflectionProbe:
-						rend->add_reflection_probe((struct reflection_probe) {
-							.position = entbuf.position,
-							.changed = true,
-						});
-						set_mode(mode::View);
+						{
+							auto ptr = std::make_shared<gameReflectionProbe>();
+							std::string name =
+								"Reflection probe E" + std::to_string(ptr->id);
+							handleAddNode(name, ptr);
+						}
 						break;
-#endif
 
 					default:
 						break;
@@ -540,9 +523,11 @@ void game_editor::logic(gameMain *game, float delta) {
 	handleMoveRotate(game);
 
 	switch (mode) {
+		case mode::AddObject:
 		case mode::AddPointLight:
 		case mode::AddSpotLight:
 		case mode::AddDirectionalLight:
+		case mode::AddReflectionProbe:
 			{
 				auto ptr = UI_objects->getNode("Cursor-Placement");
 				assert(ptr != nullptr);

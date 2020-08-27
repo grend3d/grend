@@ -120,7 +120,7 @@ void game_editor::menubar(gameMain *game) {
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Tools")) {
+		if (ImGui::BeginMenu("Objects")) {
 			if (ImGui::MenuItem("Map editor", "o"))
 				show_map_window = true;
 			if (ImGui::MenuItem("Object editor", "r"))
@@ -131,6 +131,10 @@ void game_editor::menubar(gameMain *game) {
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
 			ImGui::Separator();
+			if (ImGui::MenuItem("Add object", "lo")) {
+				set_mode(mode::AddObject);
+			}
+
 			if (ImGui::MenuItem("Add point light", "lp")) {
 				set_mode(mode::AddPointLight);
 			}
@@ -143,7 +147,14 @@ void game_editor::menubar(gameMain *game) {
 				set_mode(mode::AddDirectionalLight);
 			}
 
-			ImGui::Separator();
+			if (ImGui::MenuItem("Add reflection probe", "lr")) {
+				set_mode(mode::AddReflectionProbe);
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Tools")) {
 			if (ImGui::MenuItem("Bake lighting", "CTRL+B")) {}
 			if (ImGui::MenuItem("Generate irradiance probes", "CTRL+L")) {}
 			if (ImGui::MenuItem("Generate reflectance cubemaps", "Shift-CTRL+L")) {}

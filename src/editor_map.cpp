@@ -80,7 +80,7 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	bool recurse = true;
 
 	if (jay["type"] == "Model") {
-		ret = gameObject::ptr(new gameObject());
+		ret = std::make_shared<gameObject>();
 		recurse = false;
 		auto obj = cache.getModel(jay["sourceFile"], name);
 
@@ -91,7 +91,7 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		}
 
 	} else if (jay["type"] == "Point light") {
-		auto light = gameLightPoint::ptr(new gameLightPoint());
+		auto light = std::make_shared<gameLightPoint>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -102,8 +102,15 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 		ret = std::dynamic_pointer_cast<gameObject>(light);
 
+	// TODO: other light types
+
+	} else if (jay["type"] == "Reflection probe"){
+		auto probe = std::make_shared<gameReflectionProbe>();
+		probe->is_static = jay["is_static"];
+		ret = std::dynamic_pointer_cast<gameObject>(probe);
+
 	} else {
-		ret = gameObject::ptr(new gameObject());
+		ret = std::make_shared<gameObject>();
 	}
 
 	auto& pos   = jay["position"];
@@ -198,6 +205,10 @@ static json objectJson(gameObject::ptr obj) {
 	if (obj->type == gameObject::objType::Model) {
 		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
 		ret["sourceFile"] = model->sourceFile;
+
+	} else if (obj->type == gameObject::objType::ReflectionProbe) {
+		auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(obj);
+		ret["is_static"] = probe->is_static;
 
 	} else if (obj->type == gameObject::objType::Light) {
 		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
