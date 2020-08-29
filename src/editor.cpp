@@ -31,6 +31,7 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	selectedNode = game->state->rootnode = loadMap(game);
 	bind_cooked_meshes();
 	loadInputBindings(game);
+	set_mode(mode::View);
 
 	// XXX
 	show_object_editor_window = true;
