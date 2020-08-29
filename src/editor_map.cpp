@@ -80,14 +80,11 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	bool recurse = true;
 
 	if (jay["type"] == "Model") {
-		ret = std::make_shared<gameObject>();
 		recurse = false;
-		auto obj = cache.getModel(jay["sourceFile"], name);
 
-		if (obj != nullptr) {
-			setNode(name, ret, obj);
-		} else {
+		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
 			std::cerr << "loadMap(): Unknown model " << name << std::endl;
+			ret = std::make_shared<gameObject>();
 		}
 
 	} else if (jay["type"] == "Point light") {
