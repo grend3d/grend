@@ -1,24 +1,37 @@
 #include <grend/physics.hpp>
+#include <grend/imp_physics.hpp>
+
 // TODO: physics abstract class with derived implementations
 //#include <bullet/btBulletDynamicsCommon.h>
 
 using namespace grendx;
 
 // each return physics object ID
-uint64_t imp_physics::add_static_model(std::string modname,
-                                      gameModel::ptr mod,
-                                      glm::mat4 transform)
+uint64_t imp_physics::add_static_models(gameObject::ptr obj,
+                                        glm::mat4 transform)
 {
+	glm::mat4 adjTrans = transform*obj->getTransform();
+
 	// XXX: for now, don't allocate an object for static meshes,
 	//      although it may be a useful thing in the future
 	uint64_t ret = 0;
 
-	static_geom.add_model(mod, transform);
+	if (obj->type == gameObject::objType::Model) {
+		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
+		static_geom.add_model(model, adjTrans);
+	}
+
+	for (auto& [name, node] : obj->nodes) {
+		add_static_models(node, adjTrans);
+	}
 
 	return ret;
 }
 
-uint64_t imp_physics::add_sphere(gameObject::ptr obj, glm::vec3 pos, double r)
+uint64_t imp_physics::add_sphere(gameObject::ptr obj,
+                                 glm::vec3 pos,
+                                 float mass,
+                                 float r)
 {
 	uint64_t ret = alloc_id();
 
@@ -28,16 +41,17 @@ uint64_t imp_physics::add_sphere(gameObject::ptr obj, glm::vec3 pos, double r)
 	objects[ret].usphere.radius = r;
 	objects[ret].position = pos;
 	// TODO: mass parameter
-	objects[ret].inverse_mass = 1;
+	objects[ret].inverse_mass = mass;
 
 	return ret;
 }
 
 uint64_t imp_physics::add_box(gameObject::ptr obj,
                               glm::vec3 pos,
-                              double length,
-                              double width,
-                              double height)
+                              float mass,
+                              float length,
+                              float width,
+                              float height)
 {
 	uint64_t ret = alloc_id();
 	// TODO: add_box()
@@ -45,18 +59,17 @@ uint64_t imp_physics::add_box(gameObject::ptr obj,
 	return ret;
 }
 
-/*
-// map of submesh name to physics object ID
-// TODO: multimap?
-std::map<std::string, uint64_t>
-grendx::add_model_mesh_boxes(model& mod) {
-	std::map<std::string, uint64_t> ret;
-
-	return ret;
+// TODO: implement add_model_mesh_boxes()
+std::map<gameMesh::ptr, uint64_t>
+imp_physics::add_model_mesh_boxes(gameModel::ptr mod) {
+	return {};
 }
-*/
 
 void imp_physics::remove(uint64_t id) {
+
+}
+
+void imp_physics::clear(void) {
 
 }
 
@@ -68,7 +81,10 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 	std::list<imp_physics::collision> ret;
 
 	for (auto& [id, obj] : objects) {
-		glm::vec3 end = obj.position + obj.velocity*delta;
+		glm::vec3 end =
+			obj.position
+			+ obj.velocity*delta
+			+ obj.velocity*obj.usphere.radius;
 		auto [depth, normal] = static_geom.collides(obj.position, end);
 
 		if (depth > 0) {
@@ -84,14 +100,8 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 	return ret;
 }
 
-void imp_physics::solve_contraints(float delta) {
-	/*
-	for (auto& [id, obj] : objects) {
-		apply_force(id, {0, -9.81, 0});
-	}
-	*/
-
-	for (unsigned i = 0; i < 1; i++) {
+void imp_physics::step_simulation(float delta) {
+	for (unsigned i = 0; i < 2; i++) {
 		const auto& collisions = find_collisions(delta);
 
 		for (const auto& x : collisions) {
@@ -114,7 +124,10 @@ void imp_physics::solve_contraints(float delta) {
 
 		if (obj.position.y < -25) {
 			// XXX: prevent objects from disappearing into the void
-			obj.position = {0, 2, 0};
+			//obj.position = {0, 10, 0};
+			obj.position.y = 10;
 		}
+
+		obj.obj->position = obj.position;
 	}
 }

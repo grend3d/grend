@@ -21,7 +21,7 @@ class gameMain {
 		}
 		virtual int step(void);
 		virtual int run(void);
-		virtual void physics(void);
+		virtual void step_physics(void);
 		virtual void logic(void);
 		virtual void handleInput(void) = 0;
 
@@ -30,6 +30,7 @@ class gameMain {
 		std::shared_ptr<game_state> state = nullptr;
 		std::shared_ptr<gameView>   view  = nullptr;
 		std::shared_ptr<renderer>   rend  = nullptr;
+		std::shared_ptr<physics>    phys  = nullptr;
 
 		// FPS info
 		sma_counter frame_timer;

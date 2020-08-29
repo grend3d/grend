@@ -8,46 +8,14 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <list>
+#include <memory>
 
 namespace grendx {
 
-class imp_physics {
+class physics {
 	public: 
-		class object {
-			public:
-				enum type {
-					Static,
-					Sphere,
-					Box,
-				};
-
-				struct sphere {
-					double radius;
-				};
-
-				struct box {
-					double length;
-					double width;
-					double height;
-					// TODO: rotation, for boxes that closely fit the mesh
-				};
-
-				uint64_t id;
-
-				enum type type;
-				union { struct sphere usphere; struct box ubox; };
-
-				gameObject::ptr obj;
-				std::string model_name;
-				glm::vec3 position = {0, 0, 0};
-				glm::vec3 velocity = {0, 0, 0};
-				glm::vec3 acceleration = {0, 0, 0};
-				glm::vec3 angular_velocity = {0, 0, 0};
-				glm::quat rotation = {0, 0, 0, 0};
-				float inverse_mass = 0;
-				float drag_s = 0.9;
-				float gravity = -15.f;
-		};
+		typedef std::shared_ptr<physics> ptr;
+		typedef std::weak_ptr<physics>   weakptr;
 
 		struct collision {
 			uint64_t a, b;
@@ -56,31 +24,32 @@ class imp_physics {
 			float depth;
 		};
 
-		// each return physics object ID
-		// non-moveable geometry, collisions with octree
-		uint64_t add_static_model(std::string modname, gameModel::ptr mod,
-		                          glm::mat4 transform);
-
-		// dynamic geometry, collisions with AABB tree
-		uint64_t add_sphere(gameObject::ptr obj, glm::vec3 pos, double r);
-		uint64_t add_box(gameObject::ptr obj, glm::vec3 pos,
-		                 double length, double width, double height);
-		// map of submesh name to physics object ID
-		// TODO: multimap?
-		std::map<std::string, uint64_t> add_model_mesh_boxes(gameModel::ptr mod);
-		void remove(uint64_t id);
-
-		void set_acceleration(uint64_t id, glm::vec3 accel);
-
-		std::list<collision> find_collisions(float delta);
-		void solve_contraints(float delta);
 		uint64_t alloc_id(void) { return num_objects++; };
-
-		std::unordered_map<uint64_t, struct object> objects;
 		// simple counter, never reuse IDs
 		uint64_t num_objects = 0;
-		octree static_geom;
 
+		// each return physics object ID
+		// non-moveable geometry, collisions with octree
+		virtual uint64_t add_static_models(gameObject::ptr obj,
+		                                   glm::mat4 transform = glm::mat4(1)) = 0;
+
+		// dynamic geometry, collisions with AABB tree
+		virtual uint64_t add_sphere(gameObject::ptr obj, glm::vec3 pos,
+		                            float mass, float r) = 0;
+		virtual uint64_t add_box(gameObject::ptr obj, glm::vec3 pos,
+		                        float mass, float length, float width,
+		                        float height) = 0;
+
+		// map of submesh name to physics object ID
+		// TODO: multimap?
+		virtual std::map<gameMesh::ptr, uint64_t>
+			add_model_mesh_boxes(gameModel::ptr mod) = 0;
+		virtual void remove(uint64_t id) = 0;
+		virtual void clear(void) = 0;
+
+		virtual void set_acceleration(uint64_t id, glm::vec3 accel) = 0;
+		virtual std::list<collision> find_collisions(float delta) = 0;
+		virtual void step_simulation(float delta) = 0;
 };
 
 // namespace grendx

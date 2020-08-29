@@ -22,6 +22,7 @@ class octree {
 		~octree() {};
 
 
+		// TODO: clear()
 		void grow(double size);
 		void add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]);
 		void add_model(gameModel::ptr mod, glm::mat4 transform);

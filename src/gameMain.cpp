@@ -12,7 +12,7 @@ int gameMain::step(void) {
 		float fticks = ticks_delta / 1000.0f;
 		last_frame_time = cur_ticks;
 
-		physics();
+		step_physics();
 		view->logic(this, fticks);
 		view->render(this);
 
@@ -44,8 +44,14 @@ int gameMain::run(void) {
 	return false;
 }
 
-void gameMain::physics(void) {
+void gameMain::step_physics(void) {
+	if (phys) {
+		float dt = 1.0/frame_timer.average();
 
+		if (dt > 0 && !std::isnan(dt) && !std::isinf(dt)) {
+			phys->step_simulation(dt);
+		}
+	}
 }
 
 void gameMain::logic(void) {
