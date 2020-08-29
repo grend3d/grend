@@ -106,6 +106,8 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 	sub->parent = obj;
 }
 
+gameObject::ptr unlink(gameObject::ptr node);
+
 /*
 // defined in gameModel.hpp
 class gameMesh : public gameObject {

@@ -12,6 +12,21 @@ gameObject::ptr gameObject::getNode(std::string name) {
 	return hasNode(name)? nodes[name] : nullptr;
 }
 
+gameObject::ptr grendx::unlink(gameObject::ptr node) {
+	if (node != nullptr && node->parent) {
+		for (auto& [key, ptr] : node->parent->nodes) {
+			if (node == ptr) {
+				gameObject::ptr ret = node->parent;
+				node->parent->nodes.erase(key);
+				node->parent = nullptr;
+				return ret;
+			}
+		}
+	}
+
+	return node;
+}
+
 void gameObject::removeNode(std::string name) {
 	auto it = nodes.find(name);
 

@@ -71,6 +71,12 @@ void game_editor::menubar(gameMain *game) {
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("New", "CTRL+N")) {
+				// TODO: "discard without saving" confirmation
+				// TODO: need function to clear state + set new root node
+				selectedNode = game->state->rootnode
+					= std::make_shared<gameObject>();
+			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}
 			if (ImGui::MenuItem("Save As", "Shift+CTRL+S")) { save_as_dialog.show(); }
@@ -143,7 +149,7 @@ void game_editor::menubar(gameMain *game) {
 				set_mode(mode::AddSpotLight);
 			}
 
-			if (ImGui::MenuItem("Add spot light", "ld")) {
+			if (ImGui::MenuItem("Add directional light", "ld")) {
 				set_mode(mode::AddDirectionalLight);
 			}
 
@@ -170,15 +176,18 @@ void game_editor::menubar(gameMain *game) {
 		ImGui::Combo("[mode]", &mode,
 			"Exit editor\0"
 			"View\0"
+			"Add...\0"
 			"Add object\0"
 			"Add point light\0"
 			"Add spot light\0"
 			"Add directional light\0"
 			"Add reflection probe\0"
 			"Select\0"
+			"Move...\0"
 			"Move along X axis\0"
 			"Move along Y axis\0"
 			"Move along Z axis\0"
+			"Rotate...\0"
 			"Rotate along X axis\0"
 			"Rotate along Y axis\0"
 			"Rotate along Z axis\0"
