@@ -184,6 +184,7 @@ void game_editor::menubar(gameMain *game) {
 			"Rotate along Z axis\0"
 			"\0");
 
+		set_mode((enum mode)mode);
 		ImGui::EndMainMenuBar();
 	}
 

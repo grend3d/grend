@@ -30,6 +30,7 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	loadUIModels();
 	selectedNode = game->state->rootnode = loadMap(game);
 	bind_cooked_meshes();
+	loadInputBindings(game);
 
 	// XXX
 	show_object_editor_window = true;
@@ -201,23 +202,6 @@ void game_editor::load_scene(gameMain *game, std::string path) {
 		auto [scene, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
 
-		/*
-		for (auto& node : scene.nodes) {
-			dynamic_mods.push_back((struct editor_entry) {
-				.name = node.name,
-				.classname = "static",
-				.transform = node.transform,
-				.inverted = node.inverted,
-			});
-		}
-		*/
-
-		/*
-		if (selectedNode == nullptr) {
-			selectedNode = game->state->rootnode;
-		}
-		*/
-
 		for (auto& node : scene.nodes) {
 			std::cerr << "load_scene(): loading node" << std::endl;
 			gameObject::ptr obj = gameObject::ptr(new gameObject());
@@ -248,6 +232,11 @@ void game_editor::reload_shaders(gameMain *game) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
 		}
 	}
+}
+
+void game_editor::set_mode(enum mode newmode) {
+	mode = newmode;
+	inputBinds.setMode(mode);
 }
 
 void game_editor::handleSelectObject(gameMain *game) {
@@ -295,208 +284,234 @@ void game_editor::handleCursorUpdate(gameMain *game) {
 		align(cam->direction.z*edit_distance + cam->position.z));
 }
 
-static inline bool isAddMode(int m) {
-	switch (m) {
-		case game_editor::mode::AddObject:
-		case game_editor::mode::AddPointLight:
-		case game_editor::mode::AddSpotLight:
-		case game_editor::mode::AddDirectionalLight:
-		case game_editor::mode::AddReflectionProbe:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-void game_editor::handleInput(gameMain *game, SDL_Event& ev)
-{
+static bool imguiWantsKeyboard(void) {
 	static bool control = false;
 	ImGuiIO& io = ImGui::GetIO();
-	ImGui_ImplSDL2_ProcessEvent(&ev);
 
-	if (!io.WantCaptureKeyboard) {
-		if (ev.type == SDL_KEYDOWN) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_RCTRL:
-				case SDLK_LCTRL:
-					control = true;
-					break;
+	return io.WantCaptureKeyboard;
+}
 
-				case SDLK_w: cam->velocity.z =  movement_speed; break;
-				case SDLK_s: cam->velocity.z = -movement_speed; break;
-				case SDLK_a: cam->velocity.x =  movement_speed; break;
-				case SDLK_d: cam->velocity.x = -movement_speed; break;
-				case SDLK_q: cam->velocity.y =  movement_speed; break;
-				case SDLK_e: cam->velocity.y = -movement_speed; break;
+static bool imguiWantsMouse(void) {
+	static bool control = false;
+	ImGuiIO& io = ImGui::GetIO();
 
-				//case SDLK_m: in_edit_mode = !in_edit_mode; break;
-				case SDLK_m: mode = mode::Inactive; break;
-				case SDLK_i:
-					// TODO: need function to set clear state + set new root
-					clear(game);
-					selectedNode = game->state->rootnode = loadMap(game);
-					break;
-				case SDLK_o:
-					saveMap(game, game->state->rootnode);
-					break;
+	return io.WantCaptureMouse;
+}
 
-				case SDLK_DELETE:
-					// undo, basically
-					if (!dynamic_models.empty()) {
-					    dynamic_models.pop_back();
-					}
-					break;
+
+static void handleAddNode(game_editor *editor,
+                          std::string name,
+                          gameObject::ptr obj)
+{
+	assert(editor->selectedNode != nullptr);
+	obj->position = editor->entbuf.position;
+	obj->rotation = editor->entbuf.rotation;
+	setNode(name, editor->selectedNode, obj);
+	editor->selectedNode = obj;
+};
+
+template <class T>
+static bindFunc makeClicker(game_editor *editor,
+                            gameMain *game,
+                            std::string name)
+{
+	return [=] (SDL_Event& ev, unsigned flags) {
+		if (editor->selectedNode
+		    && ev.type == SDL_MOUSEBUTTONDOWN
+			&& ev.button.button == SDL_BUTTON_LEFT)
+		{
+			auto ptr = std::make_shared<T>();
+			std::string nodename = name + std::to_string(ptr->id);
+			handleAddNode(editor, nodename, ptr);
+			return (int)game_editor::mode::View;
+		}
+
+		return MODAL_NO_CHANGE;
+	};
+}
+
+void game_editor::loadInputBindings(gameMain *game) {
+	// camera movement (on key press)
+	inputBinds.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_w: cam->velocity.z =  movement_speed; break;
+					case SDLK_s: cam->velocity.z = -movement_speed; break;
+					case SDLK_a: cam->velocity.x =  movement_speed; break;
+					case SDLK_d: cam->velocity.x = -movement_speed; break;
+					case SDLK_q: cam->velocity.y =  movement_speed; break;
+					case SDLK_e: cam->velocity.y = -movement_speed; break;
+					default: break;
+				}
 			}
-		}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
 
-		else if (ev.type == SDL_KEYUP) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_RCTRL:
-				case SDLK_LCTRL:
-					control = false;
-					break;
-
-				case SDLK_w:
-				case SDLK_s:
-					cam->velocity.z = 0;
-					break;
-
-				case SDLK_a:
-				case SDLK_d:
-					cam->velocity.x = 0;
-					break;
-
-				case SDLK_q:
-				case SDLK_e:
-					cam->velocity.y = 0;
-					break;
+	// Return back to View mode from any other mode
+	inputBinds.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				if (ev.key.keysym.sym == SDLK_ESCAPE) {
+					return (int)mode::View;
+				}
 			}
-		}
-	}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
 
-	if (!io.WantCaptureMouse) {
-		int x, y;
-		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
+	// reload shaders
+	inputBinds.bind(mode::View,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN
+			    && ev.key.keysym.sym == SDLK_r
+			    && flags & bindFlags::Control)
+			{
+					reload_shaders(game);
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
 
-		if (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) {
-			int win_x, win_y;
-			SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+	// camera movement (on key up)
+	inputBinds.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYUP) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_w:
+					case SDLK_s: cam->velocity.z = 0; break;
+					case SDLK_a:
+					case SDLK_d: cam->velocity.x = 0; break;
+					case SDLK_q:
+					case SDLK_e: cam->velocity.y = 0; break;
+				}
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
 
-			x = (x > 0)? x : win_x/2;
-			y = (x > 0)? y : win_y/2;
+	// map editing
+	inputBinds.bind(mode::View,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_i:
+						// TODO: need function to set clear state + set new root
+						clear(game);
+						selectedNode = game->state->rootnode = loadMap(game);
+						break;
+					case SDLK_o: saveMap(game, game->state->rootnode); break;
+					// TODO: remove node
+					case SDLK_DELETE: break;
+				}
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
 
-			float center_x = (float)win_x / 2;
-			float center_y = (float)win_y / 2;
+	// camera movement (set direction)
+	inputBinds.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			int x, y;
+			Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
 
-			float rel_x = ((float)x - center_x) / center_x;
-			float rel_y = ((float)y - center_y) / center_y;
+			if (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) {
+				int win_x, win_y;
+				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
-			cam->set_direction(glm::vec3(
-				sin(rel_x*2*M_PI),
-				sin(-rel_y*M_PI/2.f),
-				-cos(rel_x*2*M_PI)
-			));
-		}
+				x = (x > 0)? x : win_x/2;
+				y = (x > 0)? y : win_y/2;
 
-		if (ev.type == SDL_MOUSEWHEEL) {
-			edit_distance -= ev.wheel.y/10.f /* scroll sensitivity */;
-		}
+				float center_x = (float)win_x / 2;
+				float center_y = (float)win_y / 2;
 
-		else if (ev.type == SDL_MOUSEBUTTONDOWN) {
-			if (ev.button.button == SDL_BUTTON_LEFT) {
-				if (control) {
+				float rel_x = ((float)x - center_x) / center_x;
+				float rel_y = ((float)y - center_y) / center_y;
+
+				cam->set_direction(glm::vec3(
+					sin(rel_x*2*M_PI),
+					sin(-rel_y*M_PI/2.f),
+					-cos(rel_x*2*M_PI)
+				));
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsMouse);
+
+	// scroll wheel for cursor placement
+	inputBinds.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_MOUSEWHEEL) {
+				edit_distance -= ev.wheel.y/1.f /* scroll sensitivity */;
+			}
+
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsMouse);
+
+	// camera movement (set direction)
+	inputBinds.bind(mode::View,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_MOUSEBUTTONDOWN
+			    && ev.button.button == SDL_BUTTON_LEFT)
+			{
+				if (flags & bindFlags::Control) {
 					// TODO: need like a keymapping system
 					selectedNode = game->state->rootnode;
-
-				} else if (isAddMode(mode)) {
-					// nop
 
 				} else {
 					handleSelectObject(game);
 				}
-
-				assert(selectedNode != nullptr);
-
-				auto handleAddNode = [&] (std::string name, gameObject::ptr obj) {
-					assert(selectedNode != nullptr);
-					obj->position = entbuf.position;
-					obj->rotation = entbuf.rotation;
-					setNode(name, selectedNode, obj);
-					selectedNode = obj;
-					set_mode(mode::View);
-				};
-
-				switch (mode) {
-					case mode::AddObject:
-						{
-							auto ptr = std::make_shared<gameObject>();
-							std::string name =
-								"object E" + std::to_string(ptr->id);
-							handleAddNode(name, ptr);
-						}
-						break;
-
-					case mode::AddPointLight:
-						{
-							auto ptr = std::make_shared<gameLightPoint>();
-							std::string name =
-								"point light E" + std::to_string(ptr->id);
-							handleAddNode(name, ptr);
-						}
-						break;
-
-					case mode::AddSpotLight:
-						{
-							auto ptr = std::make_shared<gameLightSpot>();
-							std::string name =
-								"spot light E" + std::to_string(ptr->id);
-							handleAddNode(name, ptr);
-						}
-						break;
-
-					case mode::AddDirectionalLight:
-						{
-							auto ptr = std::make_shared<gameLightDirectional>();
-							std::string name =
-								"directional light E" + std::to_string(ptr->id);
-							handleAddNode(name, ptr);
-						}
-						break;
-
-					case mode::AddReflectionProbe:
-						{
-							auto ptr = std::make_shared<gameReflectionProbe>();
-							std::string name =
-								"Reflection probe E" + std::to_string(ptr->id);
-							handleAddNode(name, ptr);
-						}
-						break;
-
-					default:
-						break;
-				}
 			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsMouse);
 
-		} else if (ev.type == SDL_MOUSEBUTTONUP) {
-			if (ev.button.button == SDL_BUTTON_LEFT) {
-				switch (mode) {
-					// switch back to view mode after releasing the left button
-					case mode::MoveX:
-					case mode::MoveY:
-					case mode::MoveZ:
-					case mode::RotateX:
-					case mode::RotateY:
-					case mode::RotateZ:
-						mode = mode::View;
-						break;
+	// handle add object modes
+	inputBinds.bind(mode::AddObject,
+		makeClicker<gameObject>(this, game, "object E"),
+		imguiWantsMouse);
 
-					default:
-						break;
-				}
-			}
+	inputBinds.bind(mode::AddPointLight,
+		makeClicker<gameLightPoint>(this, game, "point light E"),
+		imguiWantsMouse);
+
+	inputBinds.bind(mode::AddSpotLight,
+		makeClicker<gameLightSpot>(this, game, "spot light E"),
+		imguiWantsMouse);
+
+	inputBinds.bind(mode::AddDirectionalLight,
+		makeClicker<gameLightDirectional>(this, game, "directional light E"),
+		imguiWantsMouse);
+
+	inputBinds.bind(mode::AddReflectionProbe,
+		makeClicker<gameReflectionProbe>(this, game, "reflection probe E"),
+		imguiWantsMouse);
+
+	auto releaseMove = [&, game] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_MOUSEBUTTONUP
+		    && ev.button.button == SDL_BUTTON_LEFT)
+		{
+			return (int)mode::View;
+		} else {
+			return MODAL_NO_CHANGE;
 		}
-	}
+	};
+	
+	inputBinds.bind(mode::MoveX, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveY, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveZ, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::RotateX, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::RotateY, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::RotateZ, releaseMove, imguiWantsMouse);
+}
+
+void game_editor::handleInput(gameMain *game, SDL_Event& ev)
+{
+	ImGui_ImplSDL2_ProcessEvent(&ev);
+	// TODO: camelCase
+	set_mode((enum mode)inputBinds.dispatch(ev));
 }
 
 // TODO: move to utility
@@ -676,29 +691,6 @@ void game_editor::render_imgui(gameMain *game) {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-// don't think this is needed anymore...
-/*
-void game_editor::render_map_models(renderer *rend, context& ctx) {
-	for (unsigned i = 0; i < dynamic_models.size(); i++) {
-		auto& v = dynamic_models[i];
-		glm::mat4 trans = glm::translate(v.position)
-			* glm::mat4_cast(v.rotation)
-			* glm::scale(v.scale)
-			* v.transform;
-
-		rend->dqueue_draw_model({
-			.name = v.name,
-			.transform = trans,
-			.face_order = v.inverted? GL_CW : GL_CCW,
-			.cull_faces = true,
-			.dclass = {DRAWATTR_CLASS_MAP, i},
-		});
-
-		DO_ERROR_CHECK();
-	}
-}
-*/
-
 void game_editor::render_editor(gameMain *game) {
 	if (true /*mode != mode::Inactive*/) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -716,52 +708,5 @@ void game_editor::render_editor(gameMain *game) {
 		if (selectedNode && show_object_editor_window) {
 			objectEditorWindow(game);
 		}
-
-#if 0
-		if (mode == mode::AddObject) {
-			struct draw_attributes attrs = {
-				.name = edit_model->first,
-				.transform = glm::translate(entbuf.position) * entbuf.transform,
-			};
-
-			glFrontFace(entbuf.inverted? GL_CW : GL_CCW);
-			rend->draw_model_lines(&attrs);
-			rend->draw_model(&attrs);
-			DO_ERROR_CHECK();
-		}
-
-		if (mode == mode::AddPointLight) {
-			rend->dqueue_draw_model({
-				.name = "smoothsphere",
-				.transform = 
-					glm::translate(entbuf.position)
-					// TODO: keep scale state
-					* glm::scale(glm::vec3(1)),
-			});
-
-		// TODO: cone here
-		} else if (mode == mode::AddSpotLight) {
-			rend->dqueue_draw_model({
-				.name = "smoothsphere",
-				.transform = glm::translate(entbuf.position)
-					// TODO: keep scale state
-					* glm::scale(glm::vec3(1)),
-			});
-
-		} else if (mode == mode::AddDirectionalLight) {
-			rend->dqueue_draw_model({
-				.name = "smoothsphere",
-				.transform = glm::translate(entbuf.position)
-					// TODO: keep scale state
-					* glm::scale(glm::vec3(1)),
-			});
-
-		} else if (mode == mode::AddReflectionProbe) {
-			rend->dqueue_draw_model({
-				.name = "smoothsphere",
-				.transform = glm::translate(entbuf.position),
-			});
-		}
-#endif
 	}
 }

@@ -11,6 +11,7 @@
 #include <grend/physics.hpp>
 #include <grend/camera.hpp>
 #include <grend/gameView.hpp>
+#include <grend/modalSDLInput.hpp>
 
 namespace grendx {
 
@@ -69,7 +70,7 @@ class game_editor : public gameView {
 		void load_scene(gameMain *game, std::string path);
 		void update_models(gameMain *game);
 		void reload_shaders(gameMain *game);
-		void set_mode(enum mode newmode) { mode = newmode; };
+		void set_mode(enum mode newmode);
 		// TODO: rename 'engine' to 'renderer' or something
 		void render_imgui(gameMain *game);
 		void render_editor(gameMain *game);
@@ -91,8 +92,11 @@ class game_editor : public gameView {
 		float fidelity = 10.f;
 		float exposure = 1.f;
 		float light_threshold = 0.03;
+		float edit_distance = 5;
+		editor_entry entbuf;
 
 		// Map editing things
+		// TODO: don't need dynamic_models anymore
 		std::vector<editor_entry> dynamic_models;
 
 	private:
@@ -110,10 +114,14 @@ class game_editor : public gameView {
 		void handleSelectObject(gameMain *game);
 		void handleCursorUpdate(gameMain *game);
 		void loadUIModels(void);
+		void loadInputBindings(gameMain *game);
 		void showLoadingScreen(gameMain *game);
 		bool isUIObject(gameObject::ptr obj);
+
+		// TODO: utility function, should be move somewhere else
 		gameObject::ptr getNonModel(gameObject::ptr obj);
 
+		modalSDLInput inputBinds;
 		bool show_map_window = false;
 		bool show_object_editor_window = false;
 		bool show_object_select_window = false;
@@ -124,10 +132,6 @@ class game_editor : public gameView {
 		float clicked_x, clicked_y;
 		// distance from cursor to camera at the last click
 		float click_depth;
-
-		float edit_distance = 5;
-		editor_entry entbuf;
-
 };
 
 // namespace grendx
