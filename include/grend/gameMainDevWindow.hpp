@@ -8,6 +8,7 @@
 #include <grend/gameView.hpp>
 #include <grend/playerView.hpp>
 #include <grend/timers.hpp>
+#include <grend/modalSDLInput.hpp>
 #include <memory>
 
 namespace grendx {
@@ -16,19 +17,17 @@ namespace grendx {
 // need a player view
 class gameMainDevWindow : public gameMain {
 	public:
-		gameMainDevWindow() : gameMain("[grend editor]") {
-			phys   = physics::ptr(new imp_physics());
-			state  = game_state::ptr(new game_state());
-			rend   = renderer::ptr(new renderer(ctx));
+		enum modes {
+			Editor,
+			Player,
+		};
 
-			player = gameView::ptr(new playerView());
-			editor = gameView::ptr(new game_editor(this));
-			view   = editor;
-		}
+		gameMainDevWindow();
 		virtual void handleInput(void);
 
 		gameView::ptr player;
 		gameView::ptr editor;
+		modalSDLInput input;
 };
 
 // namespace grendx

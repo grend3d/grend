@@ -10,7 +10,6 @@
 
 using namespace grendx;
 
-static gameObject::ptr testphys;
 static gameModel::ptr  physmodel;
 
 game_editor::game_editor(gameMain *game) : gameView() {
@@ -34,7 +33,6 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	selectedNode = game->state->rootnode = loadMap(game);
 	game->phys->add_static_models(selectedNode);
 
-	testphys  = std::make_shared<gameObject>();
 	auto moda = std::make_shared<gameObject>();
 	auto modb = std::make_shared<gameObject>();
 	physmodel = load_object("assets/obj/smoothsphere.obj");
@@ -42,8 +40,8 @@ game_editor::game_editor(gameMain *game) : gameView() {
 
 	setNode("lmao", moda, physmodel);
 	setNode("lmao", modb, physmodel);
-	setNode("fooa", testphys, moda);
-	setNode("foob", testphys, modb);
+	setNode("fooa", game->state->physObjects, moda);
+	setNode("foob", game->state->physObjects, modb);
 	game->phys->add_sphere(moda, glm::vec3(0, 10, 0), 1.0, 1.0);
 	game->phys->add_sphere(modb, glm::vec3(-10, 10, 0), 1.0, 1.0);
 
@@ -132,7 +130,7 @@ void game_editor::render(gameMain *game) {
 		que.updateReflections(game->rend->shaders["refprobe"],
 		                      game->rend->atlases,
 		                      game->rend->defaultSkybox);
-		que.add(testphys);
+		que.add(game->state->physObjects);
 		DO_ERROR_CHECK();
 
 		//Framebuffer().bind();

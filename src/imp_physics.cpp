@@ -84,7 +84,9 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 		glm::vec3 end =
 			obj.position
 			+ obj.velocity*delta
-			+ obj.velocity*obj.usphere.radius;
+			// XXX: radius for sphere collisions only
+			+ glm::normalize(obj.velocity)*obj.usphere.radius*2.f;
+
 		auto [depth, normal] = static_geom.collides(obj.position, end);
 
 		if (depth > 0) {
@@ -101,7 +103,7 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 }
 
 void imp_physics::step_simulation(float delta) {
-	for (unsigned i = 0; i < 2; i++) {
+	for (unsigned i = 0; i < 1; i++) {
 		const auto& collisions = find_collisions(delta);
 
 		for (const auto& x : collisions) {

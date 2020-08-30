@@ -104,6 +104,7 @@ void game_state::load_models(void) {
 // TODO: should start thinking about splitting initialization into smaller functions
 game_state::game_state() {
 	rootnode = gameObject::ptr(new gameObject());
+	physObjects = gameObject::ptr(new gameObject());
 }
 
 game_state::~game_state() {

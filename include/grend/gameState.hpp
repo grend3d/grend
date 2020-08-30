@@ -56,19 +56,8 @@ class game_state {
 		game_state();
 		virtual ~game_state();
 
-		// TODO: move some rendering stuff into the engine code
-		/*
-		void render_light_maps(context& ctx);
-		void render_light_info(context& ctx);
-		void render_skybox(context& ctx);
-		void render_refprobe_skybox(context& ctx, glm::mat4 view, glm::mat4 proj);
-		void render_static(context& ctx);
-		void render_players(context& ctx);
-		void render_dynamic(context& ctx);
-		void render_postprocess(context& ctx);
-		*/
-
 		gameObject::ptr rootnode;
+		gameObject::ptr physObjects;
 		// XXX: 
 		model_map loadedModels;
 
