@@ -19,7 +19,7 @@ material default_material = {
 	.refract_idx = 1.5,
 
 	.diffuse_map         = materialTexture("assets/tex/white.png"),
-	.metal_roughness_map = materialTexture("assets/tex/black.png"),
+	.metal_roughness_map = materialTexture("assets/tex/green.png"),
 	.normal_map          = materialTexture("assets/tex/lightblue-normal.png"),
 	.ambient_occ_map     = materialTexture("assets/tex/white.png"),
 };

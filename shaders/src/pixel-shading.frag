@@ -14,13 +14,17 @@ precision mediump samplerCube;
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>
 #include <lib/atlas_cubemap.glsl>
+#include <lib/shadows.glsl>
 #include <lighting/blinn-phong.glsl>
 #include <lighting/fresnel-schlick.glsl>
 
 void main(void) {
 	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
-	float specidx = texture2D(specular_map, f_texcoord).r;
+	vec2 metalrough = texture2D(specular_map, f_texcoord).rg;
+	float metallic = metalrough.r;
+	float roughness = metalrough.g;
+	float specidx = (1.0 - roughness);
 
 	vec3 ambient_light = vec3(0.0);
 	//vec3 normal_dir = normalize(f_normal);
@@ -39,13 +43,38 @@ void main(void) {
 
 	for (int i = 0; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, f_position.xyz);
+		float shadow = point_shadow(i, vec3(f_position));
+
 		vec3 lum =
 			blinn_phong_lighting(point_lights[i].position,
 				point_lights[i].diffuse, f_position.xyz,
 				view_dir, albedo, normal_dir, specidx);
 
+		total_light += lum*atten*shadow;
+	}
+
+	for (int i = 0; i < ACTIVE_SPOTS; i++) {
+		float atten = spot_attenuation(i, f_position.xyz);
+		float shadow = spot_shadow(i, vec3(f_position));
+
+		vec3 lum =
+			blinn_phong_lighting(spot_lights[i].position,
+				spot_lights[i].diffuse, f_position.xyz,
+				view_dir, albedo, normal_dir, specidx);
+
+		total_light += lum*atten*shadow;
+	}
+
+	for (int i = 0; i < ACTIVE_DIRECTIONAL; i++) {
+		float atten = directional_attenuation(i, vec3(f_position));
+		vec3 lum =
+			blinn_phong_lighting(directional_lights[i].position,
+				directional_lights[i].diffuse, f_position.xyz,
+				view_dir, albedo, normal_dir, specidx);
+
 		total_light += lum*atten;
 	}
+
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);
@@ -60,7 +89,7 @@ void main(void) {
 	vec3 refdir = reflect(-view_dir, normal_dir);
 	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
 	vec3 Fb = F(albedo, view_dir, normalize(view_dir + refdir));
-	total_light += 0.25 * env * Fb;
+	total_light += 0.5 * specidx * env * Fb;
 
 	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
 	FRAG_COLOR = vec4(total_light, anmaterial.opacity);
