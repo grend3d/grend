@@ -4,8 +4,6 @@ precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-#define PI 3.1415926
-
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
@@ -14,6 +12,7 @@ precision mediump samplerCube;
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>
+#include <lib/constants.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 
 void main(void) {

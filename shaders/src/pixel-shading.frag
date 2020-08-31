@@ -7,15 +7,20 @@ precision mediump samplerCube;
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
-#define ENABLE_REFRACTION 1
+#define ENABLE_REFRACTION 0
 
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/attenuation.glsl>
+#include <lib/atlas_cubemap.glsl>
+#include <lighting/blinn-phong.glsl>
+#include <lighting/fresnel-schlick.glsl>
 
 void main(void) {
+	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
+	float specidx = texture2D(specular_map, f_texcoord).r;
 
 	vec3 ambient_light = vec3(0.0);
 	//vec3 normal_dir = normalize(f_normal);
@@ -32,79 +37,31 @@ void main(void) {
 	                        anmaterial.diffuse.y * ambient_light.y,
 	                        anmaterial.diffuse.z * ambient_light.z);
 
-	for (int i = 0; i < active_lights && i < max_lights; i++) {
-		vec3 light_dir;
-		float lum = attenuation(i, f_position);
+	for (int i = 0; i < ACTIVE_POINTS; i++) {
+		float atten = point_attenuation(i, f_position.xyz);
+		vec3 lum =
+			blinn_phong_lighting(point_lights[i].position,
+				point_lights[i].diffuse, f_position.xyz,
+				view_dir, albedo, normal_dir, specidx);
 
-		vec3 light_vertex = vec3(lights[i].position - f_position);
-		float distance = length(light_vertex);
-		light_dir = normalize(light_vertex / distance);
-
-		vec3 diffuse_reflection = vec3(0.0);
-		vec3 specular_reflection = vec3(0.0);
-		vec3 environment_reflection = vec3(0.0);
-		vec3 environment_refraction = vec3(0.0);
-
-#if ENABLE_DIFFUSION
-		float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
-		diffuse_reflection =
-			// diminish contribution from diffuse lighting for a more cartoony look
-			//0.5 *
-			aoidx * anmaterial.diffuse.w *
-			lum * vec3(lights[i].diffuse) * vec3(anmaterial.diffuse)
-			* max(0.0, dot(normal_dir, light_dir));
-#endif
-
-#if ENABLE_SPECULAR_HIGHLIGHTS
-		float specidx = texture2D(specular_map, f_texcoord).r;
-
-		if (anmaterial.metalness > 0.1 && dot(normal_dir, light_dir) >= 0.9) {
-			specular_reflection = anmaterial.specular.w * lum
-				* vec3(anmaterial.specular)
-				* pow(max(0.0, dot(reflect(-light_dir, normal_dir), view_dir)),
-				      anmaterial.metalness * (length(specidx) + 1.0));
-		}
-
-		specular_reflection *= specidx;
-		//specular_reflection *= specidx;
-#endif
-
-#if ENABLE_SKYBOX
-		vec3 env_light
-			= vec3(textureCube(skytexture, reflect(-view_dir, normal_dir)))
-			* anmaterial.metalness/1000.0 * specidx;
-			//* 0.1
-			;
-#endif
-
-#if ENABLE_REFRACTION
-		vec3 ref_light = vec3(0);
-
-		if (anmaterial.opacity < 1.0) {
-			ref_light = anmaterial.diffuse.xyz
-			* 0.5*vec3(textureCube(skytexture,
-			                       refract(-view_dir, normal_dir, 1.0/1.5)));
-		}
-#endif
-
-		//total_light += diffuse_reflection + specular_reflection + env_light;
-		total_light +=
-			mix(ref_light, diffuse_reflection, anmaterial.opacity)
-			+ mix(specular_reflection, env_light, 0.5)
-			;
+		total_light += lum*atten;
 	}
 
-	vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
+#if ENABLE_REFRACTION
+	vec3 ref_light = vec3(0);
 
-	//gl_FragColor = vec4(total_light, 1.0) * mix(texture2D(diffuse_map, f_texcoord), texture2D(normal_map, f_texcoord), 0.5) * mix(vec4(1.0), unused, 0.00001);
-	//gl_FragColor = vec4(total_light, 1.0) * texture2D(diffuse_map, f_texcoord);
-	//gl_FragColor = vec4((normal_dir+1)/2, 1) + unused;
+	if (anmaterial.opacity < 1.0) {
+		ref_light = anmaterial.diffuse.xyz
+			* 0.5*vec3(textureCube(skytexture,
+						refract(-view_dir, normal_dir, 1.0/1.5)));
+	}
+#endif
 
-	vec4 displight = vec4(total_light, 1.0) * texture2D(diffuse_map, f_texcoord);
-	//vec4 displight = vec4(total_light, 1.0);
+	vec3 refdir = reflect(-view_dir, normal_dir);
+	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
+	vec3 Fb = F(albedo, view_dir, normalize(view_dir + refdir));
+	total_light += 0.25 * env * Fb;
 
-	//gl_FragColor = mix(dispnorm, displight, 0.25);
-	//gl_FragColor = mix(dispnorm, displight, 0.5);
-	//gl_FragColor = mix(dispnorm, displight, 0.99);
-	gl_FragColor = displight;
+	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
+	FRAG_COLOR = vec4(total_light, anmaterial.opacity);
 }

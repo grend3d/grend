@@ -79,6 +79,7 @@ void renderer::loadShaders(void) {
 	glBindAttribLocation(shaders["skybox"]->obj, 0, "v_position");
 	link_program(shaders["skybox"]);
 
+	/*
 #if GLSL_VERSION < 300
 	shaders["main"] = load_program(
 		"shaders/out/vertex-shading.vert",
@@ -87,10 +88,23 @@ void renderer::loadShaders(void) {
 #else
 	shaders["main"] = load_program(
 		"shaders/out/pixel-shading.vert",
+		"shaders/out/pixel-shading.frag"
+		//"shaders/out/pixel-shading-metal-roughness-pbr.frag"
+	);
+#endif
+*/
+	/*
+	shaders["main"] = load_program(
+		"shaders/out/vertex-shading.vert",
+		"shaders/out/vertex-shading.frag"
+	);
+	*/
+
+	shaders["main"] = load_program(
+		"shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"
 		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
-#endif
 
 	shaders["refprobe"] = load_program(
 		"shaders/out/ref_probe.vert",

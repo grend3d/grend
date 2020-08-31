@@ -9,34 +9,9 @@
 #include <lib/attenuation.glsl>
 #include <lib/shading-varying.glsl>
 #include <lib/tonemapping.glsl>
+#include <lighting/blinn-phong.glsl>
 
 OUT vec3 ex_Color;
-
-vec3 gouraud_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
-                      vec3 albedo, vec3 normal)
-{
-	vec3 light_dir;
-	float dist = distance(light_pos, pos);
-	light_dir = normalize(light_pos - pos);
-
-	vec3 diffuse_reflection = vec3(0.0);
-	vec3 specular_reflection = vec3(0);
-	// TODO: once we have light probes and stuff
-	vec3 env_light = vec3(0);
-
-	diffuse_reflection =
-		vec3(light_color) * vec3(anmaterial.diffuse)
-		* max(0.0, dot(normal, light_dir));
-
-	if (anmaterial.metalness > 0.1 && dot(normal, light_dir) >= 0.0) {
-		specular_reflection = anmaterial.specular.w
-			* vec3(anmaterial.specular)
-			* pow(max(0.0, dot(reflect(-light_dir, normal), view)),
-					anmaterial.metalness);
-	}
-
-	return diffuse_reflection + specular_reflection;
-}
 
 vec3 get_position(mat4 m, vec4 coord) {
 	vec4 temp = m*coord;
@@ -57,35 +32,39 @@ void main(void) {
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
 
-	for (int i = 0; i < GLES2_MAX_POINT_LIGHTS; i++) {
+	for (int i = 0; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, position);
 
 		vec3 lum =
-			gouraud_lighting(point_lights[i].position, point_lights[i].diffuse,
-			                 position, view_dir, anmaterial.diffuse.xyz,
-			                 normal_dir);
+			blinn_phong_lighting(
+				point_lights[i].position, point_lights[i].diffuse,
+				position, view_dir, anmaterial.diffuse.xyz,
+				normal_dir, anmaterial.metalness);
 
 		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < GLES2_MAX_SPOT_LIGHTS; i++) {
+	for (int i = 0; i < ACTIVE_SPOTS; i++) {
 		float atten = spot_attenuation(i, position);
 
 		vec3 lum =
-			gouraud_lighting(spot_lights[i].position, spot_lights[i].diffuse,
-			                 position, view_dir, anmaterial.diffuse.xyz,
-			                 normal_dir);
+			blinn_phong_lighting(
+				spot_lights[i].position, spot_lights[i].diffuse,
+				position, view_dir, anmaterial.diffuse.xyz,
+				normal_dir, anmaterial.metalness);
 
 		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < GLES2_MAX_DIRECTIONAL_LIGHTS; i++) {
+	for (int i = 0; i < ACTIVE_DIRECTIONAL; i++) {
 		float atten = directional_attenuation(i, position);
 
 		vec3 lum =
-			gouraud_lighting(directional_lights[i].position,
-			                 directional_lights[i].diffuse,
-			                 position, view_dir, anmaterial.diffuse.xyz, normal_dir);
+			blinn_phong_lighting(
+				directional_lights[i].position,
+				directional_lights[i].diffuse,
+				position, view_dir, anmaterial.diffuse.xyz,
+				normal_dir, anmaterial.metalness);
 
 		total_light += lum*atten;
 	}

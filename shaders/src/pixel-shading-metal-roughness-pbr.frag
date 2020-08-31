@@ -4,8 +4,6 @@ precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-#define PI 3.1415926
-
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
@@ -13,6 +11,8 @@ precision mediump samplerCube;
 
 // TODO: maybe make this a uniform (probably not though)
 #define NORMAL_WEIGHT 0.85
+//#define MRP_USE_SCHLICK_GGX
+//#define MRP_USE_LAMBERT_DIFFUSE
 
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
@@ -21,6 +21,7 @@ precision mediump samplerCube;
 #include <lib/shadows.glsl>
 #include <lib/tonemapping.glsl>
 #include <lib/atlas_cubemap.glsl>
+#include <lib/constants.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 
 void main(void) {

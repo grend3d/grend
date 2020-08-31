@@ -4,8 +4,6 @@ precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-#define PI 3.1415926
-
 #define ENABLE_DIFFUSION 1
 #define ENABLE_SPECULAR_HIGHLIGHTS 1
 #define ENABLE_SKYBOX 1
@@ -18,6 +16,7 @@ precision mediump samplerCube;
 #include <lib/tonemapping.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 #include <lib/shadows.glsl>
+#include <lib/constants.glsl>
 
 void main(void) {
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));

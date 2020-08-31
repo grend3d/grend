@@ -71,3 +71,15 @@ uniform int active_directional_lights;
 uniform material anmaterial;
 
 uniform float time_ms;
+
+#include <lib/compat.glsl>
+// for loop iterators, can't use uniform to index lights on gles2
+#if GLSL_VERSION < 300
+#define ACTIVE_POINTS      (GLES2_MAX_POINT_LIGHTS)
+#define ACTIVE_SPOTS       (GLES2_MAX_SPOT_LIGHTS)
+#define ACTIVE_DIRECTIONAL (GLES2_MAX_DIRECTIONAL_LIGHTS)
+#else
+#define ACTIVE_POINTS      (active_point_lights)
+#define ACTIVE_SPOTS       (active_spot_lights)
+#define ACTIVE_DIRECTIONAL (active_directional_lights)
+#endif
