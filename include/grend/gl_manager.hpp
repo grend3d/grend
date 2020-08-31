@@ -155,16 +155,23 @@ class Shader : public Obj {
 };
 
 class Program : public Obj {
+	GLint linked = false;
+
 	public:
 		typedef std::shared_ptr<Program> ptr;
 		Program(GLuint o) : Obj(o, Obj::type::Program) {}
+
+		bool good(void) { return linked; };
 		bool reload(void);
+		bool link(void);
+		std::string log(void);
 
 		Shader::ptr vertex, fragment;
 		void bind(void) {
 			glUseProgram(obj);
 		}
 
+		void attribute(std::string attr, GLuint location);
 		void set(std::string uniform, GLint i);
 		void set(std::string uniform, GLfloat f);
 		void set(std::string uniform, glm::vec2 v2);
@@ -177,6 +184,8 @@ class Program : public Obj {
 		bool cached(std::string uniform);
 
 		std::map<std::string, GLint> uniforms;
+		std::map<std::string, GLuint> attributes;
+
 		// XXX: little bit redundant for caching values, but there
 		//      should only be 10s of shader programs at most, and being
 		//      strongly-typed is better than some union thing
@@ -297,7 +306,6 @@ Texture::ptr gen_texture_depth_stencil(unsigned width, unsigned height,
 									   GLenum format=GL_DEPTH24_STENCIL8);
 
 Program::ptr load_program(std::string vert, std::string frag);
-Program::ptr link_program(Program::ptr program);
 
 GLenum surface_gl_format(SDL_Surface *surf);
 GLenum surface_gl_format(int channels);

@@ -15,8 +15,16 @@ skybox::skybox() {
 		"shaders/out/skybox.frag"
 	);
 
+	program->attribute("v_position", 0);
+	if (!program->link()) {
+		// TODO: maybe don't throw exceptions
+		throw std::logic_error(program->log());
+	}
+
+	/*
 	glBindAttribLocation(program->obj, 0, "v_position");
 	link_program(program);
+	*/
 
 	map = gen_texture();
 	map->cubemap("assets/tex/cubes/default/", ".png");

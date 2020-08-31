@@ -65,12 +65,65 @@ bool Shader::reload(void) {
 	return false;
 }
 
+Program::ptr load_program(std::string vert, std::string frag) {
+	Program::ptr prog = gen_program();
+
+	prog->vertex = gen_shader(GL_VERTEX_SHADER);
+	prog->fragment = gen_shader(GL_FRAGMENT_SHADER);
+
+	prog->vertex->load(vert);
+	prog->fragment->load(frag);
+
+	glAttachShader(prog->obj, prog->vertex->obj);
+	glAttachShader(prog->obj, prog->fragment->obj);
+	DO_ERROR_CHECK();
+
+	return prog;
+}
+
+bool Program::link(void) {
+	glLinkProgram(obj);
+	glGetProgramiv(obj, GL_LINK_STATUS, &linked);
+
+	if (!linked) {
+		std::string err = (std::string)"error linking program: " + log();
+		std::cerr << err << std::endl;
+	}
+
+	return linked;
+}
+
+std::string Program::log(void) {
+	int max_length;
+	char *prog_log;
+
+	glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &max_length);
+	prog_log = new char[max_length];
+	glGetProgramInfoLog(obj, max_length, &max_length, prog_log);
+
+	std::string err = std::string(prog_log);
+	delete prog_log;
+
+	return err;
+}
+
 bool Program::reload(void) {
 	if (vertex && fragment) {
-		return vertex->reload() && fragment->reload();
+		if (vertex->reload() && fragment->reload()) {
+			for (auto& [attr, location] : attributes) {
+				glBindAttribLocation(obj, location, attr.c_str());
+			}
+
+			return link();
+		}
 	}
 
 	return false;
+}
+
+void Program::attribute(std::string attr, GLuint location) {
+	attributes[attr] = location;
+	glBindAttribLocation(obj, location, attr.c_str());
 }
 
 #define LOOKUP(U) \

@@ -34,10 +34,9 @@ text_renderer::text_renderer(renderer *eng,
 		"shaders/out/UI.frag"
 	);
 
-	glBindAttribLocation(text_shader->obj, 0, "v_position");
-	glBindAttribLocation(text_shader->obj, 1, "v_texcoord");
-	link_program(text_shader);
-	DO_ERROR_CHECK();
+	text_shader->attribute("v_position", 0);
+	text_shader->attribute("v_texcoord", 1);
+	text_shader->link();
 
 	bind_vao(orig_vao);
 	DO_ERROR_CHECK();

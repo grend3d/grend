@@ -473,45 +473,6 @@ GLenum surface_gl_format(int channels) {
 	return GL_RGBA;
 }
 
-Program::ptr load_program(std::string vert, std::string frag) {
-	Program::ptr prog = gen_program();
-
-	prog->vertex = gen_shader(GL_VERTEX_SHADER);
-	prog->fragment = gen_shader(GL_FRAGMENT_SHADER);
-
-	prog->vertex->load(vert);
-	prog->fragment->load(frag);
-
-	glAttachShader(prog->obj, prog->vertex->obj);
-	glAttachShader(prog->obj, prog->fragment->obj);
-	DO_ERROR_CHECK();
-
-	return prog;
-}
-
-Program::ptr link_program(Program::ptr program) {
-	int linked;
-
-	glLinkProgram(program->obj);
-	glGetProgramiv(program->obj, GL_LINK_STATUS, &linked);
-
-	if (!linked) {
-		int max_length;
-		char *prog_log;
-
-		glGetProgramiv(program->obj, GL_INFO_LOG_LENGTH, &max_length);
-		prog_log = new char[max_length];
-		glGetProgramInfoLog(program->obj, max_length, &max_length, prog_log);
-
-		std::string err = (std::string)"error linking program: " + prog_log;
-		delete prog_log;
-
-		std::cerr << err << std::endl;
-	}
-
-	return program;
-}
-
 void set_face_order(GLenum face_order) {
 	if (face_order != current_face_order) {
 		current_face_order = face_order;

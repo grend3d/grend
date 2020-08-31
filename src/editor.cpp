@@ -243,10 +243,7 @@ void game_editor::update_models(gameMain *game) {
 
 void game_editor::reload_shaders(gameMain *game) {
 	for (auto& [name, shader] : game->rend->shaders) {
-		if (shader->reload()) {
-			link_program(shader);
-
-		} else {
+		if (!shader->reload()) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
 		}
 	}

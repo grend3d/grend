@@ -159,12 +159,9 @@ class renderPostStage : public Storage {
 template <class Storage>
 typename renderPostStage<Storage>::ptr
 makePostprocessor(Program::ptr program, unsigned fb_x, unsigned fb_y) {
-	bind_vao(get_screenquad_vao());
-	glBindAttribLocation(program->obj, 0, "v_position");
-	glBindAttribLocation(program->obj, 1, "v_texcoord");
-	DO_ERROR_CHECK();
-
-	link_program(program);
+	program->attribute("v_position", 0);
+	program->attribute("v_texcoord", 1);
+	program->link();
 
 	return typename renderPostStage<Storage>::ptr(new renderPostStage<Storage>(program, fb_x, fb_y));
 };

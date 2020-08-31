@@ -71,14 +71,6 @@ renderer::renderer(context& ctx) {
 
 void renderer::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-	shaders["skybox"] = load_program(
-		"shaders/out/skybox.vert",
-		"shaders/out/skybox.frag"
-	);
-
-	glBindAttribLocation(shaders["skybox"]->obj, 0, "v_position");
-	link_program(shaders["skybox"]);
-
 	/*
 #if GLSL_VERSION < 300
 	shaders["main"] = load_program(
@@ -93,12 +85,6 @@ void renderer::loadShaders(void) {
 	);
 #endif
 */
-	/*
-	shaders["main"] = load_program(
-		"shaders/out/vertex-shading.vert",
-		"shaders/out/vertex-shading.frag"
-	);
-	*/
 
 	shaders["main"] = load_program(
 		"shaders/out/pixel-shading.vert",
@@ -125,45 +111,38 @@ void renderer::loadShaders(void) {
 	for (auto& name : {"main", "refprobe", "refprobe_debug", "unshaded"}) {
 		Program::ptr s = shaders[name];
 
-		glBindAttribLocation(s->obj, 0, "in_Position");
-		glBindAttribLocation(s->obj, 1, "v_normal");
-		glBindAttribLocation(s->obj, 2, "v_tangent");
-		glBindAttribLocation(s->obj, 3, "v_bitangent");
-		glBindAttribLocation(s->obj, 4, "texcoord");
-		link_program(s);
+		s->attribute("in_Position", 0);
+		s->attribute("v_normal", 1);
+		s->attribute("v_tangent", 2);
+		s->attribute("v_bitangent", 3);
+		s->attribute("texcoord", 4);
+		s->link();
 	}
 
 	shaders["shadow"] = load_program(
 		"shaders/out/depth.vert",
 		"shaders/out/depth.frag"
 	);
-	glBindAttribLocation(shaders["shadow"]->obj, 0, "v_position");
-	link_program(shaders["shadow"]);
-
-	Vao::ptr orig_vao = get_current_vao();
-	bind_vao(get_screenquad_vao());
+	shaders["shadow"]->attribute("v_position", 0);
+	shaders["shadow"]->link();
 
 	shaders["post"] = load_program(
 		"shaders/out/postprocess.vert",
 		"shaders/out/postprocess.frag"
 	);
 
-	glBindAttribLocation(shaders["post"]->obj, 0, "v_position");
-	glBindAttribLocation(shaders["post"]->obj, 1, "v_texcoord");
-	DO_ERROR_CHECK();
-	link_program(shaders["post"]);
+	shaders["post"]->attribute("v_position", 0);
+	shaders["post"]->attribute("v_texcoord", 1);
+	shaders["post"]->link();
 
 	shaders["quadtest"] = load_program(
 		"shaders/out/quadtest.vert",
 		"shaders/out/quadtest.frag"
 	);
-	glBindAttribLocation(shaders["quadtest"]->obj, 0, "v_position");
-	glBindAttribLocation(shaders["quadtest"]->obj, 1, "v_texcoord");
-	DO_ERROR_CHECK();
-	link_program(shaders["quadtest"]);
+	shaders["quadtest"]->attribute("v_position", 0);
+	shaders["quadtest"]->attribute("v_texcoord", 1);
+	shaders["quadtest"]->link();
 
-	bind_vao(orig_vao);
-	//set_shader(shaders["main"]);
 	shaders["main"]->bind();
 }
 
