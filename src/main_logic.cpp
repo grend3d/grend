@@ -10,11 +10,6 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#define IMGUI_IMPL_OPENGL_LOADER_GLEW
-#include <imgui/imgui.h>
-#include <imgui/examples/imgui_impl_sdl.h>
-#include <imgui/examples/imgui_impl_opengl3.h>
-
 using namespace grendx;
 
 // TODO: probably won't be used, convenience here is pretty minimal

@@ -3,14 +3,6 @@
 #include <grend/engine.hpp>
 #include <grend/gl_manager.hpp>
 
-#define IMGUI_IMPL_OPENGL_LOADER_GLEW
-// handle defines for GLES versions
-#if SHADER_GLSL_VERSION == 100
-#define IMGUI_IMPL_OPENGL_ES2
-#elif SHADER_GLSL_VERSION == 300
-#define IMGUI_IMPL_OPENGL_ES3
-#endif
-
 #include <imgui/imgui.h>
 #include <imgui/examples/imgui_impl_sdl.h>
 #include <imgui/examples/imgui_impl_opengl3.h>
@@ -169,12 +161,17 @@ void game_editor::render(gameMain *game) {
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
 
-	
 	testpost->setSize(winsize_x, winsize_y);
 	testpost->draw(game->rend->framebuffer);
 
+// XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
+//             the postprocessing shader doesn't see anything from the
+//             render framebuffer, although the depth/stencil buffer seems
+//             to be there...
+#if GLSL_VERSION > 100
 	render_editor(game);
 	render_imgui(game);
+#endif
 
 	glDepthMask(GL_TRUE);
 	enable(GL_DEPTH_TEST);

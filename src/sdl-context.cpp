@@ -26,12 +26,12 @@ context::context(const char *progname) {
 
 	std::cerr << "got to end of init stuff" << std::endl;
 
-#if SHADER_GLSL_VERSION == 100
+#if GLSL_VERSION == 100
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 
-#elif SHADER_GLSL_VERSION == 300
+#elif GLSL_VERSION == 300
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
@@ -78,6 +78,8 @@ context::context(const char *progname) {
 
 	if ((glew_status = glewInit()) != GLEW_OK) {
 		SDL_Die("glewInit()");
+		// TODO: check for vertex array extensions on gles2, error out
+		//       if not supported
 	}
 
 	std::cerr << "initialized glew" << std::endl;

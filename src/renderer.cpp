@@ -86,6 +86,13 @@ void renderer::loadShaders(void) {
 #endif
 */
 
+	/*
+	shaders["main"] = load_program(
+		"shaders/out/vertex-shading.vert",
+		"shaders/out/vertex-shading.frag"
+	);
+	*/
+
 	shaders["main"] = load_program(
 		"shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"

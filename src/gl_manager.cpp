@@ -33,7 +33,6 @@ std::map<uint32_t, Texture::weakptr> texture_cache;
 
 void initialize_opengl(void) {
 	std::cerr << " # Got here, " << __func__ << std::endl;
-	std::cerr << " # maximum texture units: " << GL_MAX_TEXTURE_UNITS << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
 
 	// make sure we start with a bound VAO
