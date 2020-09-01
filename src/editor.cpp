@@ -4,6 +4,13 @@
 #include <grend/gl_manager.hpp>
 
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
+// handle defines for GLES versions
+#if SHADER_GLSL_VERSION == 100
+#define IMGUI_IMPL_OPENGL_ES2
+#elif SHADER_GLSL_VERSION == 300
+#define IMGUI_IMPL_OPENGL_ES3
+#endif
+
 #include <imgui/imgui.h>
 #include <imgui/examples/imgui_impl_sdl.h>
 #include <imgui/examples/imgui_impl_opengl3.h>
@@ -181,7 +188,7 @@ void game_editor::initImgui(gameMain *game) {
 	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
 	// TODO: make the glsl version here depend on GL version/the string in
 	//       shaders/version.glsl
-	//ImGui_ImplOpenGL3_Init("#version 130");
+	//ImGui_ImplOpenGL3_Init("#version 100");
 	//ImGui_ImplOpenGL3_Init("#version 300 es");
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
@@ -343,7 +350,6 @@ void game_editor::clear(gameMain *game) {
 
 // TODO: rename 'renderer' to 'rend' or something
 void game_editor::render_imgui(gameMain *game) {
-	menubar(game);
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -353,6 +359,8 @@ void game_editor::render_editor(gameMain *game) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(game->ctx.window);
 		ImGui::NewFrame();
+
+		menubar(game);
 
 		if (show_map_window) {
 			map_window(game);

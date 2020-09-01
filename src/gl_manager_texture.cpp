@@ -14,6 +14,21 @@
 
 namespace grendx {
 
+// TODO: move
+// srgb -> linear, in place
+#include <math.h>
+static inline void srgb_to_linear(uint8_t *pixels, size_t length) {
+	for (size_t i = 0; i < length; i++) {
+		pixels[i] = 0xff * pow((pixels[i]/256.0), 2.2);
+	}
+}
+
+static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
+	for (size_t i = 0; i < pixels.size(); i++) {
+		pixels[i] = 0xff * pow((pixels[i]/256.0), 2.2);
+	}
+}
+
 void Texture::buffer(const materialTexture& tex, bool srgb) {
 	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
 	        tex.width, tex.height, tex.channels);
@@ -22,11 +37,18 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	bind();
 
 #ifdef NO_FORMAT_CONVERSION
+	// XXX: need something more efficient
+	std::vector<uint8_t> temp = tex.pixels;
+
+	if (srgb) {
+		srgb_to_linear(temp);
+	}
+
 	// TODO: fallback SRBG conversion
 	glTexImage2D(GL_TEXTURE_2D,
 	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 	             0, texformat, tex.width, tex.height,
-	             0, texformat, GL_UNSIGNED_BYTE, tex.pixels.data());
+	             0, texformat, GL_UNSIGNED_BYTE, temp.data());
 
 #else
 	glTexImage2D(GL_TEXTURE_2D,
@@ -90,7 +112,7 @@ void Texture::cubemap(std::string directory, std::string extension) {
 		GLenum texformat = surface_gl_format(channels);
 
 #ifdef NO_FORMAT_CONVERSION
-		// TODO: fallback srgb conversion
+		srgb_to_linear(surf, width*height*channels);
 		glTexImage2D(direction, 0, texformat, width, height, 0,
 			texformat, GL_UNSIGNED_BYTE, surf);
 #else
@@ -102,6 +124,7 @@ void Texture::cubemap(std::string directory, std::string extension) {
 		//SDL_FreeSurface(surf);
 		stbi_image_free(surf);
 
+#if 0
 		for (unsigned i = 1; surf; i++) {
 			std::string mipname = directory + "/mip" + std::to_string(i)
 			                      + "-" + img + extension;
@@ -138,9 +161,13 @@ void Texture::cubemap(std::string directory, std::string extension) {
 
 			stbi_image_free(surf);
 		}
+#endif
 	}
 
-	//glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+#if 1
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+#endif
+
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	DO_ERROR_CHECK();
 

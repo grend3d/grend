@@ -12,8 +12,10 @@ DEPS = $(SRC:.cpp=.d)
 # TODO: small configure script to manage configs
 #SHADER_GLSL_STRING="100"
 #SHADER_GLSL_VERSION=100
-SHADER_GLSL_STRING="300 es"
-SHADER_GLSL_VERSION=300
+#SHADER_GLSL_STRING="300 es"
+#SHADER_GLSL_VERSION=300
+SHADER_GLSL_STRING="330 core"
+SHADER_GLSL_VERSION=330
 
 SHADER_SRC = $(wildcard shaders/src/*.vert) $(wildcard shaders/src/*.frag)
 SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
@@ -26,11 +28,24 @@ SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
 
 # GLES2 options for opengl es 2.0 compatibility, since loops in glsl 1.00
 # must have a bound that can be determined at compile time
-SHADER_FLAGS += -D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
-                -D GLSL_STRING=\"$(SHADER_GLSL_STRING)\" \
-                -D GLES2_MAX_POINT_LIGHTS=4 \
-                -D GLES2_MAX_SPOT_LIGHTS=2 \
-                -D GLES2_MAX_DIRECTIONAL_LIGHTS=1
+GLES_SHADER_FLAGS += \
+	-D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
+	-D GLSL_STRING=\"$(SHADER_GLSL_STRING)\" \
+	-D GLES2_MAX_POINT_LIGHTS=4 \
+	-D GLES2_MAX_SPOT_LIGHTS=2 \
+	-D GLES2_MAX_DIRECTIONAL_LIGHTS=1 \
+	-D NO_FORMAT_CONVERSION \
+	-D NO_FLOATING_FB
+
+CORE_SHADER_FLAGS += \
+	-D GLSL_VERSION=$(SHADER_GLSL_VERSION) \
+	-D GLSL_STRING=\"$(SHADER_GLSL_STRING)\" \
+	-D GLES2_MAX_POINT_LIGHTS=4 \
+	-D GLES2_MAX_SPOT_LIGHTS=2 \
+	-D GLES2_MAX_DIRECTIONAL_LIGHTS=1
+
+#SHADER_FLAGS = $(GLES_SHADER_FLAGS)
+SHADER_FLAGS = $(CORE_SHADER_FLAGS)
 
 INCLUDES = -I./include -I./libs/ \
            $(DIMGUI_INCLUDES) $(DJSON_INCLUDES)

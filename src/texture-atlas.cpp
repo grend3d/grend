@@ -9,8 +9,9 @@ atlas::atlas(size_t dimension, enum mode m) : tree(dimension) {
 	framebuffer->bind();
 
 	if (m == mode::Color) {
-		color_tex = framebuffer->attach(GL_COLOR_ATTACHMENT0,
-		                gen_texture_color(dimension, dimension, GL_RGBA16F));
+		color_tex =
+			framebuffer->attach(GL_COLOR_ATTACHMENT0,
+				gen_texture_color(dimension, dimension, rgbaf_if_supported()));
 	}
 
 	depth_tex = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, 

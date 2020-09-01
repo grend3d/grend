@@ -438,27 +438,11 @@ Vao::ptr bind_vao(Vao::ptr v) {
 }
 
 GLenum surface_gl_format(SDL_Surface *surf) {
-	switch (surf->format->BytesPerPixel) {
-		case 1: return GL_RED;
-		case 2: return GL_RG;
-		case 3: return GL_RGB;
-		case 4: return GL_RGBA;
-		default: break;
-	}
-
-	return GL_RGBA;
+	return surface_gl_format(surf->format->BytesPerPixel);
 }
 
 GLenum surface_gl_format(const materialTexture& tex) {
-	switch (tex.channels) {
-		case 1: return GL_RED;
-		case 2: return GL_RG;
-		case 3: return GL_RGB;
-		case 4: return GL_RGBA;
-		default: break;
-	}
-
-	return GL_RGBA;
+	return surface_gl_format(tex.channels);
 }
 
 GLenum surface_gl_format(int channels) {

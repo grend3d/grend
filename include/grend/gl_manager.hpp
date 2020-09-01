@@ -300,6 +300,14 @@ Shader::ptr      gen_shader(GLuint type);
 Program::ptr     gen_program(void);
 Framebuffer::ptr gen_framebuffer(void);
 
+// TODO: defining these as functions to leave open the possibility of
+//       determining this at runtime
+#ifdef NO_FLOATING_FB
+static inline GLenum rgbaf_if_supported(void) { return GL_RGBA; }
+#else
+static inline GLenum rgbaf_if_supported(void) { return GL_RGBA16F; }
+#endif
+
 Texture::ptr gen_texture_color(unsigned width, unsigned height,
 							   GLenum format=GL_RGBA);
 Texture::ptr gen_texture_depth_stencil(unsigned width, unsigned height,

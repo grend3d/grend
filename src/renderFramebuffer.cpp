@@ -8,7 +8,7 @@ renderFramebuffer::renderFramebuffer(int Width, int Height)
 	framebuffer = gen_framebuffer();
 	framebuffer->bind();
 	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
-	            gen_texture_color(width, height, GL_RGBA16F));
+	            gen_texture_color(width, height, rgbaf_if_supported()));
 	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
 	            gen_texture_depth_stencil(width, height));
 
@@ -28,13 +28,14 @@ void renderFramebuffer::clear(void) {
 	framebuffer->bind();
 	glClearStencil(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	DO_ERROR_CHECK();
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {
 	// TODO: use these at some point
 	//GLbyte color[4];
 	//GLfloat depth;
-	GLuint idx;
+	GLubyte idx;
 
 	// adjust coordinates for resolution scaling
 	unsigned adx = width * x * scale.x;
@@ -43,7 +44,8 @@ gameMesh::ptr renderFramebuffer::index(float x, float y) {
 	framebuffer->bind();
 	//glReadPixels(adx, ady, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, color);
 	//glReadPixels(adx, ady, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-	glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &idx);
+	glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &idx);
+	DO_ERROR_CHECK();
 
 	return index(idx);
 }
