@@ -1,5 +1,11 @@
 #include <grend/gameMain.hpp>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
+
 using namespace grendx;
 
 int gameMain::step(void) {
@@ -34,12 +40,25 @@ int gameMain::step(void) {
 	return running;
 }
 
+#ifdef __EMSCRIPTEN__
+// non-member step function for emscripten
+static int render_step(double time, void *data) {
+	gameMain *game = static_cast<gameMain*>(data);
+	return game->step();
+}
+#endif
+
 int gameMain::run(void) {
+#ifdef __EMSCRIPTEN__
+	emscripten_request_animation_frame_loop(&render_step, game);
+
+#else
 	running = true;
 
 	while (running) {
 		step();
 	}
+#endif
 
 	return false;
 }
