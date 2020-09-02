@@ -1,7 +1,8 @@
 ### A lightweight OpenGL 3D game engine
 (very much a work in progress)
 
-![Demo Screenshot](http://lisp.us.to/data/post5-data/sponza-highlight2-6-11.png)
+![Demo Screenshot](http://lisp.us.to/data/editor-9-01.png)
+<small>[Scene source](https://sketchfab.com/3d-models/stylized-ce8943eeefde4524a5828839733a2776)</small>
 
 ### Features
 - Metal-roughness PBR
