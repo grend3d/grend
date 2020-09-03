@@ -18,10 +18,10 @@ material default_material = {
 	.opacity = 1,
 	.refract_idx = 1.5,
 
-	.diffuse_map         = materialTexture("assets/tex/white.png"),
-	.metal_roughness_map = materialTexture("assets/tex/green.png"),
-	.normal_map          = materialTexture("assets/tex/lightblue-normal.png"),
-	.ambient_occ_map     = materialTexture("assets/tex/white.png"),
+	.diffuse_map         = materialTexture(GR_PREFIX "assets/tex/white.png"),
+	.metal_roughness_map = materialTexture(GR_PREFIX "assets/tex/green.png"),
+	.normal_map          = materialTexture(GR_PREFIX "assets/tex/lightblue-normal.png"),
+	.ambient_occ_map     = materialTexture(GR_PREFIX "assets/tex/white.png"),
 };
 
 Texture::ptr default_diffuse, default_metal_roughness;
@@ -88,30 +88,30 @@ void renderer::loadShaders(void) {
 
 	/*
 	shaders["main"] = load_program(
-		"shaders/out/vertex-shading.vert",
-		"shaders/out/vertex-shading.frag"
+		GR_PREFIX "shaders/out/vertex-shading.vert",
+		GR_PREFIX "shaders/out/vertex-shading.frag"
 	);
 	*/
 
 	shaders["main"] = load_program(
-		"shaders/out/pixel-shading.vert",
+		GR_PREFIX "shaders/out/pixel-shading.vert",
 		//"shaders/out/pixel-shading.frag"
-		"shaders/out/pixel-shading-metal-roughness-pbr.frag"
+		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
 	shaders["refprobe"] = load_program(
-		"shaders/out/ref_probe.vert",
-		"shaders/out/ref_probe.frag"
+		GR_PREFIX "shaders/out/ref_probe.vert",
+		GR_PREFIX "shaders/out/ref_probe.frag"
 	);
 
 	shaders["refprobe_debug"] = load_program(
-		"shaders/out/ref_probe_debug.vert",
-		"shaders/out/ref_probe_debug.frag"
+		GR_PREFIX "shaders/out/ref_probe_debug.vert",
+		GR_PREFIX "shaders/out/ref_probe_debug.frag"
 	);
 
 	shaders["unshaded"] = load_program(
-		"shaders/out/pixel-shading.vert",
-		"shaders/out/unshaded.frag"
+		GR_PREFIX "shaders/out/pixel-shading.vert",
+		GR_PREFIX "shaders/out/unshaded.frag"
 	);
 
 
@@ -127,15 +127,15 @@ void renderer::loadShaders(void) {
 	}
 
 	shaders["shadow"] = load_program(
-		"shaders/out/depth.vert",
-		"shaders/out/depth.frag"
+		GR_PREFIX "shaders/out/depth.vert",
+		GR_PREFIX "shaders/out/depth.frag"
 	);
 	shaders["shadow"]->attribute("v_position", 0);
 	shaders["shadow"]->link();
 
 	shaders["post"] = load_program(
-		"shaders/out/postprocess.vert",
-		"shaders/out/postprocess.frag"
+		GR_PREFIX "shaders/out/postprocess.vert",
+		GR_PREFIX "shaders/out/postprocess.frag"
 	);
 
 	shaders["post"]->attribute("v_position", 0);
@@ -143,8 +143,8 @@ void renderer::loadShaders(void) {
 	shaders["post"]->link();
 
 	shaders["quadtest"] = load_program(
-		"shaders/out/quadtest.vert",
-		"shaders/out/quadtest.frag"
+		GR_PREFIX "shaders/out/quadtest.vert",
+		GR_PREFIX "shaders/out/quadtest.frag"
 	);
 	shaders["quadtest"]->attribute("v_position", 0);
 	shaders["quadtest"]->attribute("v_texcoord", 1);

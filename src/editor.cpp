@@ -17,14 +17,14 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 
 	loading_thing = makePostprocessor<rOutput>(
-		load_program("shaders/out/postprocess.vert",
-		             "shaders/out/texpresent.frag"),
+		load_program(GR_PREFIX "shaders/out/postprocess.vert",
+		             GR_PREFIX "shaders/out/texpresent.frag"),
 		SCREEN_SIZE_X,
 		SCREEN_SIZE_Y
 	);
 
 	loading_img = gen_texture();
-	loading_img->buffer(materialTexture("assets/tex/loading-splash.png"));
+	loading_img->buffer(materialTexture(GR_PREFIX "assets/tex/loading-splash.png"));
 
 	clear(game);
 	initImgui(game);
@@ -34,7 +34,7 @@ game_editor::game_editor(gameMain *game) : gameView() {
 
 	auto moda = std::make_shared<gameObject>();
 	auto modb = std::make_shared<gameObject>();
-	physmodel = load_object("assets/obj/smoothsphere.obj");
+	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
 	compile_model("testphys", physmodel);
 
 	setNode("lmao", moda, physmodel);
@@ -73,7 +73,7 @@ class clicker : public gameObject {
 void game_editor::loadUIModels(void) {
 	// TODO: Need to swap Z/Y pointer and spinner models
 	//       blender coordinate system isn't the same as opengl's (duh)
-	std::string dir = "assets/obj/UI/";
+	std::string dir = GR_PREFIX "assets/obj/UI/";
 	UI_models["X-Axis-Pointer"] = load_object(dir + "X-Axis-Pointer.obj");
 	UI_models["Y-Axis-Pointer"] = load_object(dir + "Y-Axis-Pointer.obj");
 	UI_models["Z-Axis-Pointer"] = load_object(dir + "Z-Axis-Pointer.obj");

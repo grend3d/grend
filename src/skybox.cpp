@@ -11,8 +11,8 @@ skybox::skybox() {
 	bind_cooked_meshes();
 
 	program = load_program(
-		"shaders/out/skybox.vert",
-		"shaders/out/skybox.frag"
+		GR_PREFIX "shaders/out/skybox.vert",
+		GR_PREFIX "shaders/out/skybox.frag"
 	);
 
 	program->attribute("v_position", 0);
@@ -27,7 +27,7 @@ skybox::skybox() {
 	*/
 
 	map = gen_texture();
-	map->cubemap("assets/tex/cubes/default/", ".png");
+	map->cubemap(GR_PREFIX "assets/tex/cubes/default/", ".png");
 }
 
 void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {

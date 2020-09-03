@@ -125,13 +125,13 @@ echo "Full install path: $CONF_SYSROOT$CONF_PREFIX"
 
 # Write the options to the makefile
 echo "Generating makefile..."
-echo "PREFIX=$CONF_PREFIX"   >  Makefile
-echo "SYSROOT=$CONF_SYSROOT" >> Makefile
-echo "CONF_TARGETS=$CONF_TARGETS" >> Makefile
-echo "CONF_CFLAGS=$CONF_CFLAGS" >> Makefile
-echo "CONF_GL_FLAGS=$CONF_GL_FLAGS" >> Makefile
-echo "CONF_GLSL_STRING=$CONF_GLSL_STRING" >> Makefile
-cat mk/base.mk >> Makefile
+echo "PREFIX=$CONF_PREFIX"   >  mk/config.mk
+echo "SYSROOT=$CONF_SYSROOT" >> mk/config.mk
+echo "CONF_TARGETS=$CONF_TARGETS" >> mk/config.mk
+echo "CONF_CFLAGS=$CONF_CFLAGS" >> mk/config.mk
+echo "CONF_GL_FLAGS=$CONF_GL_FLAGS" >> mk/config.mk
+echo "CONF_GLSL_STRING=$CONF_GLSL_STRING" >> mk/config.mk
+cp mk/base.mk Makefile
 
 ## Set flags in config.h
 ## TODO: decide how to do this
