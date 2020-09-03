@@ -9,25 +9,9 @@ static gameObject::ptr testweapon = nullptr;
 
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
-	testweapon = std::make_shared<gameObject>();
-
-	auto [scene, models] = load_gltf_scene("test-assets/Mossberg/shotgun.gltf");
-	for (auto& node : scene.nodes) {
-		std::cout << "setting " << node.name << std::endl;
-		models[node.name]->position = node.position;
-		models[node.name]->scale    = node.scale;
-		models[node.name]->rotation = node.rotation;
-		setNode(node.name, testweapon, models[node.name]);
-	}
-
-	compile_models(models);
-	testweapon->scale = glm::vec3(2.0f);
-	testweapon->position = glm::vec3(-0.3, 1.1, 1.25);
-	testweapon->rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
-	setNode("weapon", cameraObj, testweapon);
-	setNode("player camera", game->state->physObjects, cameraObj);
 
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
+	setNode("player camera", game->state->physObjects, cameraObj);
 
 	// movement controls
 	input.bind(modes::Move,

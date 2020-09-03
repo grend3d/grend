@@ -11,6 +11,8 @@ namespace grendx {
 
 class playerView : public gameView {
 	public:
+		typedef std::shared_ptr<playerView> ptr;
+		typedef std::weak_ptr<playerView>   weakptr;
 		enum modes {
 			Move,
 		};
