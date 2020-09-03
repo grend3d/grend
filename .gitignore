@@ -2,3 +2,5 @@
 *.d
 grend-test
 shaders/out/
+Makefile
+build
