@@ -606,14 +606,15 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	assert(out_model->hasNode(temp_name));
 	grendx::gameMesh::ptr mesh
 		= std::dynamic_pointer_cast<grendx::gameMesh>(out_model->nodes[temp_name]);
-	mesh->material = mat.name;
+	std::string matidxname = mat.name + ":" + std::to_string(material_idx);
+	mesh->material = matidxname;
 
 	auto& pbr = mat.pbrMetallicRoughness;
 	auto& base_color = pbr.baseColorFactor;
 	glm::vec4 mat_diffuse(base_color[0], base_color[1],
 			base_color[2], base_color[3]);
 
-	std::cerr << "        + have material " << mat.name << std::endl;
+	std::cerr << "        + have material " << matidxname << std::endl;
 	std::cerr << "        + base color: "
 		<< mat_diffuse.x << ", " << mat_diffuse.y
 		<< ", " << mat_diffuse.z << ", " << mat_diffuse.w
@@ -665,7 +666,7 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 
 	mod_mat.roughness = pbr.roughnessFactor;
 	mod_mat.diffuse = mat_diffuse;
-	out_model->materials[mat.name] = mod_mat;
+	out_model->materials[matidxname] = mod_mat;
 }
 
 grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
@@ -681,7 +682,9 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 		for (size_t i = 0; i < mesh.primitives.size(); i++) {
 			auto& prim = mesh.primitives[i];
-			std::string temp_name = mesh.name + ":" + std::to_string(prim.material);
+			std::string suffix = ":[p"+std::to_string(i)+"]";
+			std::string temp_name = mesh.name + suffix
+				+ ":" + std::to_string(prim.material);
 
 			std::cerr << "        primitive: " << temp_name << std::endl;
 			std::cerr << "        material: " << prim.material << std::endl;
@@ -693,7 +696,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 			if (prim.material >= 0) {
 				gltf_load_material(tgltf_model, curModel,
-				                   prim.material, mesh.name);
+				                   prim.material, mesh.name + suffix);
 
 			} else {
 				modmesh->material = "(null)";
