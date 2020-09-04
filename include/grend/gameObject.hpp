@@ -106,7 +106,11 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 	sub->parent = obj;
 }
 
+// TODO: just realized these overload syscalls, should that be avoided?
+//       in principle it's fine, might be confusing in code though
 gameObject::ptr unlink(gameObject::ptr node);
+gameObject::ptr clone(gameObject::ptr node);     // shallow copy
+gameObject::ptr duplicate(gameObject::ptr node); // deep copy
 
 /*
 // defined in gameModel.hpp

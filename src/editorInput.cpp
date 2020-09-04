@@ -164,6 +164,24 @@ void game_editor::loadInputBindings(gameMain *game) {
 		},
 		imguiWantsKeyboard);
 
+	// clone keybind
+	inputBinds.bind(mode::View,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN
+			    && ev.key.keysym.sym == SDLK_d
+			    && flags & bindFlags::Shift
+			    && selectedNode && selectedNode->parent)
+			{
+				gameObject::ptr temp = clone(selectedNode);
+				// TODO: name based on selectedNode
+				std::string name = "cloned " + std::to_string(temp->id);
+				setNode(name, selectedNode->parent, temp);
+				return (int)mode::MoveSomething;
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
+
 	// camera movement (set direction)
 	inputBinds.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {

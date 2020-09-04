@@ -27,6 +27,33 @@ gameObject::ptr grendx::unlink(gameObject::ptr node) {
 	return node;
 }
 
+gameObject::ptr grendx::clone(gameObject::ptr node) {
+	gameObject::ptr ret = std::make_shared<gameObject>();
+
+	ret->position = node->position;
+	ret->scale    = node->scale;
+	ret->rotation = node->rotation;
+
+	for (auto& [name, ptr] : node->nodes) {
+		setNode(name, ret, ptr);
+	}
+
+	return ret;
+}
+
+gameObject::ptr grendx::duplicate(gameObject::ptr node) {
+	// TODO: need to copy all attributes
+	/*
+	gameObject::ptr ret = std::make_shared<gameObject>();
+
+	for (auto& [name, ptr] : node->nodes) {
+		setNode(name, ret, duplicate(ptr));
+	}
+	*/
+
+	return clone(node);
+}
+
 void gameObject::removeNode(std::string name) {
 	auto it = nodes.find(name);
 
