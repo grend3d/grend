@@ -46,6 +46,8 @@ void initialize_opengl(void) {
 
 	cooked_vertprops_vbo = gen_vbo();
 	cooked_element_vbo = gen_vbo();
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void compile_meshes(std::string objname, mesh_map& meshies) {

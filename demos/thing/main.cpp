@@ -16,7 +16,7 @@ void addCameraWeapon(gameView::ptr view) {
 	playerView::ptr player = std::dynamic_pointer_cast<playerView>(view);
 	gameObject::ptr testweapon = std::make_shared<gameObject>();
 
-	auto [scene, models] = load_gltf_scene("assets/obj/Mossberg-lowres/shotgun.gltf");
+	auto [scene, models] = load_gltf_scene(GR_PREFIX "assets/obj/Mossberg-lowres/shotgun.gltf");
 	for (auto& node : scene.nodes) {
 		std::cout << "setting " << node.name << std::endl;
 		models[node.name]->position = node.position;

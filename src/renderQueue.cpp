@@ -96,7 +96,46 @@ renderQueue::updateReflections(Program::ptr program,
 }
 
 void renderQueue::sort(void) {
+	typedef std::tuple<glm::mat4, bool, gameMesh::ptr> draw_ent;
 
+	// TODO: better way to do this, in-place?
+	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> transparent;
+	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> opaque;
+
+	std::sort(meshes.begin(), meshes.end(),
+		[&] (draw_ent& a, draw_ent& b) {
+			// TODO: why not just define a struct
+			auto& [a_trans, _,  a_mesh] = a;
+			auto& [b_trans, __, b_mesh] = b;
+
+			glm::vec4 ta = a_trans*glm::vec4(1);
+			glm::vec4 tb = b_trans*glm::vec4(1);
+			glm::vec3 va = glm::vec3(ta)/ta.w;
+			glm::vec3 vb = glm::vec3(tb)/tb.w;
+
+			return glm::distance(cam->position, va)
+				< glm::distance(cam->position, vb);
+		});
+
+	for (auto& it : meshes) {
+		auto [transform, inverted, mesh] = it;
+
+		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
+		auto& mat = mod->materials[mesh->material];
+
+		if (mat.blend != material::blend_mode::Opaque) {
+			transparent.push_back(it);
+		} else {
+			opaque.push_back(it);
+		}
+	}
+
+	std::reverse(transparent.begin(), transparent.end());
+
+	// XXX: TODO: avoid clearing, do whole thing in-place
+	meshes.clear();
+	meshes.insert(meshes.end(), opaque.begin(), opaque.end());
+	meshes.insert(meshes.end(), transparent.begin(), transparent.end());
 }
 
 void renderQueue::cull(void) {
@@ -108,6 +147,7 @@ void renderQueue::flush(unsigned width,
                         Program::ptr program,
                         renderAtlases& atlases)
 {
+	sort();
 	enable(GL_CULL_FACE);
 
 	glm::mat4 view = cam->viewTransform();
@@ -130,6 +170,15 @@ void renderQueue::flush(unsigned width,
 		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
 		assert(mod->compiled);
 		set_material(program, mod->comped_model, mesh->material);
+		auto& mat = mod->materials[mesh->material];
+
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mat.blend != material::blend_mode::Opaque) {
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
 
 		// TODO: need to keep track of the model face order
 		set_face_order(inverted? GL_CW : GL_CCW);
@@ -149,6 +198,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
                         Program::ptr program,
                         renderAtlases& atlases)
 {
+	sort();
 	fb->framebuffer->bind();
 	program->bind();
 	shaderSync(program, atlases);
@@ -203,6 +253,15 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
 		assert(mod->compiled);
 		set_material(program, mod->comped_model, mesh->material);
+		auto& mat = mod->materials[mesh->material];
+
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mat.blend != material::blend_mode::Opaque) {
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
 
 		// TODO: need to keep track of the model face order
 		set_face_order(inverted? GL_CW : GL_CCW);
