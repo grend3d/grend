@@ -124,6 +124,14 @@ void game_editor::render(gameMain *game) {
 
 	if (game->state->rootnode) {
 		renderQueue que(cam);
+		// draw UI objects before others, to avoid UI objects not being in the
+		// stencil buffer if the stencil counter overflows (and so not being
+		// clickable)
+		// TODO: maybe attach shaders to gameObjects
+		que.add(UI_objects);
+		que.flush(game->rend->framebuffer, game->rend->shaders["unshaded"],
+		          game->rend->atlases);
+
 		que.add(game->state->rootnode);
 		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
 		que.updateReflections(game->rend->shaders["refprobe"],
@@ -152,11 +160,6 @@ void game_editor::render(gameMain *game) {
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
 		          game->rend->atlases);
 
-		// add UI objects after rendering main scene, using different shader
-		// TODO: maybe attach shaders to gameObjects
-		que.add(UI_objects);
-		que.flush(game->rend->framebuffer, game->rend->shaders["unshaded"],
-		          game->rend->atlases);
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}

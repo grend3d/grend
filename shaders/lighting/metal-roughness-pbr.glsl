@@ -34,11 +34,16 @@ float G(float a, vec3 N, vec3 L, vec3 V) {
 #else
 // smith joint ggx (default)
 float G(float a, vec3 N, vec3 L, vec3 V) {
-	vec3 v2 = vec3(2.0);
+	float a2 = a*a;
 
+	/*
 	float foo = 0.5
-		/ ((posdot(N, L) * sqrt(pow(dot(N, V), 2.0) * (1.0 - pow(a, 2.0)) + pow(a, 2.0)))
-		+  (posdot(N, V) * sqrt((pow(dot(N, L), 2.0)) * (1.0 - pow(a, 2.0)) + pow(a, 2.0))));
+		/ ((posdot(N, L) * sqrt(pow(dot(N, V), 2.0) * (1.0 - a2) + a2))
+		+  (posdot(N, V) * sqrt(pow(dot(N, L), 2.0) * (1.0 - a2) + a2)));
+		*/
+	float foo = 0.5
+		/ ((max(a+0.0001, dot(N, L)) * sqrt(pow(dot(N, V), 2.0) * (1.0 - a2) + a2))
+		+  (max(a+0.0001, dot(N, V)) * sqrt(pow(dot(N, L), 2.0) * (1.0 - a2) + a2)));
 
 	return foo;
 }
@@ -46,8 +51,9 @@ float G(float a, vec3 N, vec3 L, vec3 V) {
 
 // trowbridge-reitz microfacet distribution
 float D(float a, vec3 N, vec3 H) {
-	return pow(a, 2.0)
-		/ (PI * pow(pow(dot(N, H), 2.0) * (pow(a, 2.0) - 1.0) + 1.0, 2.0));
+	float a2 = a*a;
+	return a2
+		/ (PI * pow(pow(dot(N, H), 2.0) * (a2 - 1.0) + 1.0, 2.0));
 }
 
 vec3 f_specular(vec3 F, float vis, float D) {
@@ -59,7 +65,7 @@ vec3 f_thing(vec3 spec, vec3 N, vec3 L, vec3 V) {
 }
 
 vec3 f_diffuse(vec3 F, vec3 c_diff) {
-	return (1.0 - F) * (c_diff / PI);
+	return max(vec3(0), (1.0 - F) * (c_diff / PI));
 }
 
 vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
