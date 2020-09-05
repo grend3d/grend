@@ -661,6 +661,11 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		// XXX:
 		mod_mat.opacity = mat.alphaCutoff;
 		mod_mat.blend = grendx::material::blend_mode::Blend;
+
+	} else if (mat.alphaMode == "MASK") {
+		// XXX:
+		mod_mat.opacity = mat.alphaCutoff;
+		mod_mat.blend = grendx::material::blend_mode::Mask;
 	}
 
 	mod_mat.roughness = pbr.roughnessFactor;

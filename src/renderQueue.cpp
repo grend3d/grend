@@ -175,6 +175,7 @@ void renderQueue::flush(unsigned width,
 		// enable()/disable() cache state, no need to worry about toggling
 		// too much state if queue is sorted
 		if (mat.blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
 			enable(GL_BLEND);
 		} else {
 			disable(GL_BLEND);
