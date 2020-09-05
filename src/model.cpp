@@ -796,49 +796,73 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 using namespace grendx;
 
 static gameObject::ptr
+load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
+                          model_map& models,
+                          int nodeidx)
+{
+	gameObject::ptr ret = std::make_shared<gameObject>();
+
+	glm::quat rotation(1, 0, 0, 0);
+	glm::vec3 translation = {0, 0, 0};
+	glm::vec3 scale = {1, 1, 1};
+	glm::mat4 mat;
+	bool inverted = false;
+
+	// TODO: range check
+	auto& node = gmod.nodes[nodeidx];
+
+	if (node.rotation.size() == 4)
+		rotation = glm::make_quat(node.rotation.data());
+	if (node.translation.size() == 3)
+		translation = glm::make_vec3(node.translation.data());
+
+	if (node.scale.size() == 3) {
+		scale = glm::make_vec3(node.scale.data());
+	}
+
+	/*
+	// TODO: if no T/R/S specifiers, show an error/warning,
+	//       extract info from the matrix
+	if (node.matrix.size() == 16) {
+	mat = glm::make_mat4(node.matrix.data());
+	}
+	*/
+
+	ret->position = translation;
+	ret->rotation = rotation;
+	ret->scale = scale;
+
+	if (node.mesh >= 0) {
+		// TODO: range check
+		auto& mesh = gmod.meshes[node.mesh];
+		setNode(mesh.name, ret, models[mesh.name]);
+	}
+
+	std::string meh = "[";
+	for (auto& x : node.children) {
+		meh += std::to_string(x) + ", ";
+	}
+	meh += "]";
+	std::cerr << "GLTF node children: "
+		<< std::to_string(nodeidx) << " -> " << meh
+		<< std::endl;
+
+	for (auto& x : node.children) {
+		std::string id = "[I"+std::to_string(ret->id)+"]";
+		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, x));
+	}
+
+	return ret;
+}
+
+static gameObject::ptr
 load_gltf_scene_nodes(tinygltf::Model& gmod, model_map& models) {
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
-			glm::quat rotation(1, 0, 0, 0);
-			glm::vec3 translation = {0, 0, 0};
-			glm::vec3 scale = {1, 1, 1};
-
-			auto& node = gmod.nodes[nodeidx];
-			// no mesh, don't load this as an object
-			if (node.mesh < 0) continue;
-
-			auto& mesh = gmod.meshes[node.mesh];
-			glm::mat4 mat;
-			bool inverted = false;
-
-			if (node.rotation.size() == 4)
-				rotation = glm::make_quat(node.rotation.data());
-			if (node.translation.size() == 3)
-				translation = glm::make_vec3(node.translation.data());
-
-			if (node.scale.size() == 3) {
-				scale = glm::make_vec3(node.scale.data());
-			}
-
-			/*
-			// TODO: if no T/R/S specifiers, show an error/warning,
-			//       extract info from the matrix
-			if (node.matrix.size() == 16) {
-				mat = glm::make_mat4(node.matrix.data());
-			}
-			*/
-
-			gameObject::ptr obj = std::make_shared<gameObject>();
-			obj->position = translation;
-			obj->rotation = rotation;
-			obj->scale = scale;
-
-			std::string id = "[I"+std::to_string(obj->id)+"]";
-			// TODO: check that models[mesh.name] exists
-			setNode("modelNode", obj, models[mesh.name]);
-			setNode(mesh.name + id, ret, obj);
+			std::string id = "node["+std::to_string(nodeidx)+"]";
+			setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, nodeidx));
 		}
 	}
 
