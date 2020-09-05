@@ -221,25 +221,18 @@ void game_editor::load_model(gameMain *game, std::string path) {
 void game_editor::load_scene(gameMain *game, std::string path) {
 	std::string ext = filename_extension(path);
 	if (ext == ".gltf") {
-		auto [scene, mods] = load_gltf_scene(path);
+		auto [objs, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
 
-		for (auto& node : scene.nodes) {
-			std::cerr << "load_scene(): loading node" << std::endl;
-			gameObject::ptr obj = gameObject::ptr(new gameObject());
-
-			obj->position = node.position;
-			obj->scale    = node.scale;
-			obj->rotation = node.rotation;
-			setNode(node.name, obj, mods[node.name]);
-			setNode(node.name, selectedNode, obj);
-		}
+		std::string import_name = "import["+std::to_string(objs->id)+"]";
+		setNode(import_name, selectedNode, objs);
 
 		compile_models(mods);
 		models.insert(mods.begin(), mods.end());
 	}
 }
 
+// TODO: remove
 void game_editor::update_models(gameMain *game) {
 	//const gl_manager& glman = game->rend->get_glman();
 	//edit_model = glman.cooked_models.begin();

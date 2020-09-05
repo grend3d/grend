@@ -1,6 +1,5 @@
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
-#include <grend/scene.hpp>
 
 #include <tinygltf/stb_image.h>
 #include <tinygltf/stb_image_write.h>
@@ -789,8 +788,11 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 	return ret;
 }
 
-static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
-	grendx::scene ret;
+using namespace grendx;
+
+static gameObject::ptr
+load_gltf_scene_nodes(tinygltf::Model& gmod, model_map& models) {
+	gameObject::ptr ret = std::make_shared<gameObject>();
 
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
@@ -823,13 +825,15 @@ static grendx::scene load_gltf_scene_nodes(tinygltf::Model& gmod) {
 			}
 			*/
 
-			ret.nodes.push_back({
-				mesh.name,
-				translation,
-				scale,
-				rotation,
-				// TODO: does gltf specify the face order somewhere?
-			});
+			gameObject::ptr obj = std::make_shared<gameObject>();
+			obj->position = translation;
+			obj->rotation = rotation;
+			obj->scale = scale;
+
+			std::string id = "[I"+std::to_string(obj->id)+"]";
+			// TODO: check that models[mesh.name] exists
+			setNode("modelNode", obj, models[mesh.name]);
+			setNode(mesh.name + id, ret, obj);
 		}
 	}
 
@@ -876,12 +880,12 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 	return models;
 }
 
-std::pair<grendx::scene, grendx::model_map>
+std::pair<grendx::gameObject::ptr, grendx::model_map>
 grendx::load_gltf_scene(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
-	grendx::scene scene = load_gltf_scene_nodes(gmod);
 	grendx::model_map models = load_gltf_models(gmod);
+	gameObject::ptr ret = load_gltf_scene_nodes(gmod, models);
 
 	updateModelSources(models, filename);
-	return {scene, models};
+	return {ret, models};
 }

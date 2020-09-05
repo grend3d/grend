@@ -3,7 +3,6 @@
 #include <grend/gameObject.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/opengl-includes.hpp>
-#include <grend/scene.hpp>
 #include <string>
 #include <vector>
 #include <map>
@@ -135,7 +134,7 @@ gameModel::ptr load_object(std::string filename);
 void           load_materials(gameModel::ptr model, std::string filename);
 model_map load_gltf_models(std::string filename);
 model_map load_gltf_models(tinygltf::Model& tgltf_model);
-std::pair<scene, model_map> load_gltf_scene(std::string filename);
+std::pair<gameObject::ptr, model_map> load_gltf_scene(std::string filename);
 // TODO: load scene
 
 // namespace grendx
