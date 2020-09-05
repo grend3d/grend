@@ -16,21 +16,15 @@ void addCameraWeapon(gameView::ptr view) {
 	playerView::ptr player = std::dynamic_pointer_cast<playerView>(view);
 	gameObject::ptr testweapon = std::make_shared<gameObject>();
 
-	auto [scene, models] = load_gltf_scene(GR_PREFIX "assets/obj/Mossberg-lowres/shotgun.gltf");
-	for (auto& node : scene.nodes) {
-		std::cout << "setting " << node.name << std::endl;
-		models[node.name]->position = node.position;
-		models[node.name]->scale    = node.scale;
-		models[node.name]->rotation = node.rotation;
-		setNode(node.name, testweapon, models[node.name]);
-	}
+	auto [objs, models] =
+		load_gltf_scene(GR_PREFIX "assets/obj/Mossberg-lowres/shotgun.gltf");
 
 	compile_models(models);
 	bind_cooked_meshes();
-	testweapon->scale = glm::vec3(2.0f);
-	testweapon->position = glm::vec3(-0.3, 1.1, 1.25);
-	testweapon->rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
-	setNode("weapon", player->cameraObj, testweapon);
+	objs->scale = glm::vec3(2.0f);
+	objs->position = glm::vec3(-0.3, 1.1, 1.25);
+	objs->rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
+	setNode("weapon", player->cameraObj, objs);
 }
 
 int main(int argc, char *argv[]) {
