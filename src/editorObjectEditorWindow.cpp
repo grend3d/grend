@@ -56,9 +56,12 @@ void game_editor::objectEditorWindow(gameMain *game) {
 	ImGui::Text(selectedNode->typeString().c_str());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
-	ImGui::InputFloat3("position", glm::value_ptr(selectedNode->position));
-	ImGui::InputFloat3("scale",    glm::value_ptr(selectedNode->scale));
-	ImGui::InputFloat4("rotation", glm::value_ptr(selectedNode->rotation));
+	ImGui::InputFloat3("position",
+		glm::value_ptr(selectedNode->transform.position));
+	ImGui::InputFloat3("scale",
+		glm::value_ptr(selectedNode->transform.scale));
+	ImGui::InputFloat4("rotation",
+		glm::value_ptr(selectedNode->transform.rotation));
 	ImGui::Unindent(16.f);
 
 	if (selectedNode->type == gameObject::objType::Light) {

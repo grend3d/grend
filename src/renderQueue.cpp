@@ -5,18 +5,27 @@
 
 using namespace grendx;
 
-void renderQueue::add(gameObject::ptr obj, glm::mat4 trans, bool inverted) {
+void renderQueue::add(gameObject::ptr obj,
+                      glm::mat4 trans,
+                      float animTime,
+                      bool inverted)
+{
 	if (obj == nullptr) {
 		// shouldn't happen, but just in case
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransform();
+	glm::mat4 adjTrans = trans*obj->getTransform(animTime);
 	//glm::mat4 adjTrans = obj->getTransform();
 
 	//std::cerr << "add(): push" << std::endl;
 	
-	if (obj->scale.x < 0 || obj->scale.y < 0 || obj->scale.z < 0) {
+	unsigned invcount = 0;
+	for (unsigned i = 0; i < 3; i++)
+		invcount += obj->transform.scale[i] < 0;
+
+	// only want to invert face order if flipped an odd number of times
+	if (invcount&1) {
 		inverted = !inverted;
 	}
 
@@ -310,7 +319,7 @@ void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {
 		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "point_lights[" + std::to_string(i) + "]";
 
-		program->set(locstr + ".position",      light->position);
+		program->set(locstr + ".position",      light->transform.position);
 		program->set(locstr + ".diffuse",       light->diffuse);
 		program->set(locstr + ".radius",        light->radius);
 		program->set(locstr + ".intensity",     light->intensity);
@@ -332,7 +341,7 @@ gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 
 	// TODO: optimize this, O(N) is meh
 	for (auto& [_, __, p] : probes) {
-		float dist = glm::distance(pos, p->position);
+		float dist = glm::distance(pos, p->transform.position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
 			ret = p;

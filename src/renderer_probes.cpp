@@ -121,7 +121,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 	shadowShader->bind();
 	queue.shaderSync(shadowShader, atlases);
-	cam->position = light->position;
+	cam->position = light->transform.position;
 	cam->field_of_view_x = 90;
 
 	for (unsigned i = 0; i < 6; i++) {
@@ -179,7 +179,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	refShader->set("shadowmap_atlas", 7);
 
 	queue.shaderSync(refShader, atlases);
-	cam->position = probe->position;
+	cam->position = probe->transform.position;
 	DO_ERROR_CHECK();
 
 	for (unsigned i = 0; i < 6; i++) {

@@ -8,6 +8,16 @@ size_t grendx::allocateObjID(void) {
 	return ++counter;
 }
 
+glm::mat4 gameObject::getTransform(float delta) {
+	struct TRS temp = transform;
+
+	for (auto& ptr : animations) {
+		ptr->applyTransform(temp, delta);
+	}
+
+	return temp.getTransform();
+}
+
 gameObject::ptr gameObject::getNode(std::string name) {
 	return hasNode(name)? nodes[name] : nullptr;
 }
@@ -30,9 +40,7 @@ gameObject::ptr grendx::unlink(gameObject::ptr node) {
 gameObject::ptr grendx::clone(gameObject::ptr node) {
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
-	ret->position = node->position;
-	ret->scale    = node->scale;
-	ret->rotation = node->rotation;
+	ret->transform = node->transform;
 
 	for (auto& [name, ptr] : node->nodes) {
 		setNode(name, ret, ptr);

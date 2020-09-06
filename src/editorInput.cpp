@@ -22,12 +22,10 @@ void game_editor::handleSelectObject(gameMain *game) {
 		clicked->onLeftClick();
 		clicked_x = (x*1.f / win_x);
 		clicked_y = ((win_y - y)*1.f / win_y);
-		click_depth = glm::distance(clicked->position, cam->position);
+		click_depth = glm::distance(clicked->transform.position, cam->position);
 
 		if (isUIObject(clicked)) {
-			entbuf.position = selectedNode->position;
-			entbuf.scale    = selectedNode->scale;
-			entbuf.rotation = selectedNode->rotation;
+			entbuf = selectedNode->transform;
 			std::cerr << "It's a UI model" << std::endl;
 
 		} else {
@@ -59,8 +57,8 @@ static void handleAddNode(game_editor *editor,
                           gameObject::ptr obj)
 {
 	assert(editor->selectedNode != nullptr);
-	obj->position = editor->entbuf.position;
-	obj->rotation = editor->entbuf.rotation;
+
+	obj->transform = editor->entbuf;
 	setNode(name, editor->selectedNode, obj);
 	editor->selectedNode = obj;
 };
@@ -275,9 +273,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::MoveSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				entbuf.position = selectedNode->position;
-				entbuf.scale    = selectedNode->scale;
-				entbuf.rotation = selectedNode->rotation;
+				entbuf = selectedNode->transform;
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::MoveX;
@@ -294,9 +290,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::RotateSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				entbuf.position = selectedNode->position;
-				entbuf.scale    = selectedNode->scale;
-				entbuf.rotation = selectedNode->rotation;
+				entbuf = selectedNode->transform;
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::RotateX;
@@ -392,7 +386,7 @@ void game_editor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right));
 			reversed_y = sign(glm::dot(dir, cam->up));
 
-			selectedNode->position =
+			selectedNode->transform.position =
 				entbuf.position
 				+ dir*click_depth*amount_x*reversed_x
 				+ dir*click_depth*amount_y*reversed_y
@@ -405,7 +399,7 @@ void game_editor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right));
 			reversed_y = sign(glm::dot(dir, cam->up));
 
-			selectedNode->position =
+			selectedNode->transform.position =
 				entbuf.position
 				+ dir*click_depth*amount_x*reversed_x
 				+ dir*click_depth*amount_y*reversed_y
@@ -418,7 +412,7 @@ void game_editor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right));
 			reversed_y = sign(glm::dot(dir, cam->up));
 
-			selectedNode->position =
+			selectedNode->transform.position =
 				entbuf.position
 				+ dir*click_depth*amount_x*reversed_x
 				+ dir*click_depth*amount_y*reversed_y
@@ -429,17 +423,17 @@ void game_editor::handleMoveRotate(gameMain *game) {
 		//       so that this can pick the right movement direction
 		//       for the spinner
 		case mode::RotateX:
-			selectedNode->rotation
+			selectedNode->transform.rotation
 				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
 			break;
 
 		case mode::RotateY:
-			selectedNode->rotation
+			selectedNode->transform.rotation
 				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
 			break;
 
 		case mode::RotateZ:
-			selectedNode->rotation
+			selectedNode->transform.rotation
 				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
 			break;
 

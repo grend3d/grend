@@ -4,6 +4,7 @@
 #include <grend/sdl-context.hpp>
 // TODO: move, for lights
 #include <grend/quadtree.hpp>
+#include <grend/animation.hpp>
 
 #include <memory>
 #include <map>
@@ -71,30 +72,25 @@ class gameObject {
 			return strm.str();
 		}
 
+		virtual glm::mat4 getTransform(float delta);
+
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
 		gameObject::ptr getNode(std::string name);
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
 
-		virtual glm::mat4 getTransform(void) {
-			return glm::translate(position)
-				* glm::mat4_cast(rotation)
-				* glm::scale(scale);
-		}
-
 		// used for routing click events
 		size_t id = allocateObjID();
 		// TODO: bounding box/radius
 
+		// transform relative to parent
+		TRS transform;
+		std::vector<animation::ptr> animations;
+
 		gameObject::ptr parent = nullptr;
 		std::map<std::string, gameObject::ptr> nodes;
 		uint64_t physics_id = 0; // for unlinking when the object is removed
-
-		// relative to parent
-		glm::vec3 position = glm::vec3(0, 0, 0);
-		glm::quat rotation = glm::quat(1, 0, 0, 0);
-		glm::vec3 scale    = glm::vec3(1, 1, 1);
 		GLenum face_order  = GL_CCW;
 };
 
@@ -111,30 +107,6 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 gameObject::ptr unlink(gameObject::ptr node);
 gameObject::ptr clone(gameObject::ptr node);     // shallow copy
 gameObject::ptr duplicate(gameObject::ptr node); // deep copy
-
-/*
-// defined in gameModel.hpp
-class gameMesh : public gameObject {
-	public:
-		typedef std::shared_ptr<gameModel> ptr;
-		typedef std::weak_ptr<gameModel> weakptr;
-
-		gameModel() : gameObject(objType::Model) {};
-		std::string meshName = "unit_cube:default";
-};
-
-class gameModel : public gameObject {
-	public:
-		typedef std::shared_ptr<gameModel> ptr;
-		typedef std::weak_ptr<gameModel> weakptr;
-
-		gameModel() : gameObject(objType::Model) {};
-		std::string modelName = "unit_cube";
-		std::string sourceFile = "";
-		Program::ptr shader = nullptr;
-};
-*/
-
 
 class gameLight : public gameObject {
 	public:

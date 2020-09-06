@@ -828,9 +828,9 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 	}
 	*/
 
-	ret->position = translation;
-	ret->rotation = rotation;
-	ret->scale = scale;
+	ret->transform.position = translation;
+	ret->transform.rotation = rotation;
+	ret->transform.scale = scale;
 
 	if (node.mesh >= 0) {
 		// TODO: range check

@@ -270,16 +270,14 @@ void game_editor::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.y*cam->up*delta;
 	cam->position += cam->velocity.x*cam->right*delta;
 
-	gameObject::ptr target = selectedNode;
-
-	if (target) {
+	if (selectedNode) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
 		                  "X-Rotation", "Y-Rotation", "Z-Rotation"})
 		{
 			auto ptr = UI_objects->getNode(str);
 
-			ptr->position = target->position;
-			ptr->rotation = target->rotation;
+			ptr->transform = selectedNode->transform;
+			ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
 		}
 	}
 
@@ -295,7 +293,7 @@ void game_editor::logic(gameMain *game, float delta) {
 				auto ptr = UI_objects->getNode("Cursor-Placement");
 				assert(ptr != nullptr);
 				handleCursorUpdate(game);
-				ptr->position = entbuf.position;
+				ptr->transform.position = entbuf.position;
 				break;
 			}
 		default: break;

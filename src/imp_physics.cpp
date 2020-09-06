@@ -10,7 +10,7 @@ using namespace grendx;
 uint64_t imp_physics::add_static_models(gameObject::ptr obj,
                                         glm::mat4 transform)
 {
-	glm::mat4 adjTrans = transform*obj->getTransform();
+	glm::mat4 adjTrans = transform*obj->getTransform(0);
 
 	// XXX: for now, don't allocate an object for static meshes,
 	//      although it may be a useful thing in the future
@@ -130,6 +130,6 @@ void imp_physics::step_simulation(float delta) {
 			obj.position.y = 10;
 		}
 
-		obj.obj->position = obj.position;
+		obj.obj->transform.position = obj.position;
 	}
 }

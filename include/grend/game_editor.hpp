@@ -12,6 +12,7 @@
 #include <grend/camera.hpp>
 #include <grend/gameView.hpp>
 #include <grend/modalSDLInput.hpp>
+#include <grend/TRS.hpp>
 
 namespace grendx {
 
@@ -96,7 +97,7 @@ class game_editor : public gameView {
 		float exposure = 1.f;
 		float light_threshold = 0.03;
 		float edit_distance = 5;
-		editor_entry entbuf;
+		TRS entbuf;
 
 		// Map editing things
 		// TODO: don't need dynamic_models anymore
