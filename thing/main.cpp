@@ -21,9 +21,9 @@ void addCameraWeapon(gameView::ptr view) {
 
 	compile_models(models);
 	bind_cooked_meshes();
-	objs->scale = glm::vec3(2.0f);
-	objs->position = glm::vec3(-0.3, 1.1, 1.25);
-	objs->rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
+	objs->transform.scale = glm::vec3(2.0f);
+	objs->transform.position = glm::vec3(-0.3, 1.1, 1.25);
+	objs->transform.rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
 	setNode("weapon", player->cameraObj, objs);
 }
 
