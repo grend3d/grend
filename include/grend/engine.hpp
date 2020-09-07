@@ -152,8 +152,8 @@ class renderQueue {
 		}
 
 		void add(gameObject::ptr obj,
-		         glm::mat4 trans = glm::mat4(1),
 		         float animTime = 0.0,
+		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
 		void updateLights(Program::ptr program, renderAtlases& atlases);
 		void updateReflections(Program::ptr program,

@@ -712,11 +712,15 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			int normals = -1;
 			int position = -1;
 			int texcoord = -1;
+			int joints = -1;
+			int weights = -1;
 
 			for (auto& attr : prim.attributes) {
-				if (attr.first == "NORMAL") normals = attr.second;
-				if (attr.first == "POSITION") position = attr.second;
+				if (attr.first == "NORMAL")     normals = attr.second;
+				if (attr.first == "POSITION")   position = attr.second;
 				if (attr.first == "TEXCOORD_0") texcoord = attr.second;
+				if (attr.first == "JOINTS_0")   joints = attr.second; 
+				if (attr.first == "WEIGHTS_0")  weights = attr.second; 
 			}
 
 			if (elements >= 0) {
@@ -770,11 +774,28 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 				auto& acc = tgltf_model.accessors[texcoord];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
-				assert_type(acc.componentType, 
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				gltf_unpack_buffer(tgltf_model, texcoord, curModel->texcoords);
 				curModel->haveTexcoords = true;
+			}
+
+			if (joints >= 0 && weights >= 0) {
+				check_index(tgltf_model.accessors, joints);
+				check_index(tgltf_model.accessors, weights);
+				auto& jac = tgltf_model.accessors[joints];
+				auto& wac = tgltf_model.accessors[weights];
+
+				assert_type(jac.type, TINYGLTF_TYPE_VEC4);
+				assert_type(wac.type, TINYGLTF_TYPE_VEC4);
+				assert_type(jac.componentType,
+					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+				assert_type(wac.componentType,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				gltf_unpack_buffer(tgltf_model, joints, curModel->joints);
+				gltf_unpack_buffer(tgltf_model, weights, curModel->weights);
+				curModel->haveJoints = true;
+				std::cerr << "        have joints: " << joints << std::endl;
 			}
 		}
 
@@ -795,21 +816,65 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 using namespace grendx;
 
-static gameObject::ptr
-load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
-                          model_map& models,
-                          int nodeidx)
+static gameObject::ptr 
+load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
+                         std::map<int, tinygltf::Animation>& anims,
+                         int nodeidx)
 {
+	if (nodeidx < 0) {
+		return nullptr;
+	}
+
+	// TODO: range checko
+	auto& node = gmod.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
+	for (auto& idx : node.children) {
+		auto& cnode = gmod.nodes[idx];
+		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
+		setNode(name, ret, load_gltf_skin_nodes_rec(gmod, anims, idx));
+	}
+
+	return ret;
+}
+
+static gameObject::ptr 
+load_gltf_skin_nodes(tinygltf::Model& gmod,
+                     std::map<int, tinygltf::Animation>& anims,
+                     int nodeidx)
+{
+	if (nodeidx < 0) {
+		return nullptr;
+	}
+
+	// TODO: range checko
+	auto& skin = gmod.skins[nodeidx];
+	gameObject::ptr obj    = std::make_shared<gameObject>();
+	gameObject::ptr sub    = std::make_shared<gameObject>();
+	gameObject::ptr joints = std::make_shared<gameObject>();
+	std::string sname = "skin["+skin.name+"]";
+	setNode(sname, obj, sub);
+	setNode("joints", sub, joints);
+
+	for (auto& idx : skin.joints) {
+		auto& cnode = gmod.nodes[idx];
+		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
+		setNode(name, joints, load_gltf_skin_nodes_rec(gmod, anims, idx));
+	}
+
+	if (skin.skeleton >= 0) {
+		setNode("skeleton", sub,
+			load_gltf_skin_nodes_rec(gmod, anims, skin.skeleton));
+	}
+
+	return obj;
+}
+
+static void
+set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	glm::quat rotation(1, 0, 0, 0);
 	glm::vec3 translation = {0, 0, 0};
 	glm::vec3 scale = {1, 1, 1};
-	glm::mat4 mat;
-	bool inverted = false;
-
-	// TODO: range check
-	auto& node = gmod.nodes[nodeidx];
 
 	if (node.rotation.size() == 4)
 		rotation = glm::make_quat(node.rotation.data());
@@ -824,18 +889,127 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 	// TODO: if no T/R/S specifiers, show an error/warning,
 	//       extract info from the matrix
 	if (node.matrix.size() == 16) {
+	glm::mat4 mat;
 	mat = glm::make_mat4(node.matrix.data());
 	}
 	*/
 
-	ret->transform.position = translation;
-	ret->transform.rotation = rotation;
-	ret->transform.scale = scale;
+	ptr->transform.position = translation;
+	ptr->transform.rotation = rotation;
+	ptr->transform.scale = scale;
+}
+
+static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
+{
+	check_index(mod.accessors, accidx);
+	auto& acc = mod.accessors[accidx];
+	assert_type(acc.type, expected);
+}
+
+static void assert_component_type(tinygltf::Model& mod, int accidx, int expected)
+{
+	check_index(mod.accessors, accidx);
+	auto& acc = mod.accessors[accidx];
+	assert_type(acc.componentType, expected);
+}
+
+static void
+load_gltf_animation_channels(gameObject::ptr obj,
+                             int nodeidx,
+                             tinygltf::Model& gmod,
+                             tinygltf::Animation& anim)
+{
+	for (auto& chan : anim.channels) {
+		if (nodeidx == chan.target_node) {
+			if (chan.target_path == "translation") {
+				std::cerr << "GLTF: loading translation animation" << std::endl;
+				animationTranslation::ptr objanim =
+					std::make_shared<animationTranslation>();
+				
+				// TODO: range check
+				auto& sampler = anim.samplers[chan.sampler];
+				// TODO: type checks
+				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
+				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
+				assert_component_type(gmod, sampler.input,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				assert_component_type(gmod, sampler.output,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+				gltf_unpack_buffer(gmod, sampler.output, objanim->translations);
+				//objanim->frametimes[0] = 0.f;
+				obj->animations.push_back(objanim);
+
+			} else if (chan.target_path == "rotation") {
+				std::cerr << "GLTF: loading rotation animation" << std::endl;
+				animationRotation::ptr objanim =
+					std::make_shared<animationRotation>();
+
+				// TODO: range check
+				auto& sampler = anim.samplers[chan.sampler];
+				// TODO: type checks
+				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
+				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC4);
+				assert_component_type(gmod, sampler.input,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				assert_component_type(gmod, sampler.output,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+				gltf_unpack_buffer(gmod, sampler.output, objanim->rotations);
+				//objanim->frametimes[0] = 0.f;
+				obj->animations.push_back(objanim);
+
+			} else if (chan.target_path == "scale") {
+				std::cerr << "GLTF: loading scale animation" << std::endl;
+				animationScale::ptr objanim =
+					std::make_shared<animationScale>();
+
+				// TODO: range check
+				auto& sampler = anim.samplers[chan.sampler];
+				// TODO: type checks
+				
+				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
+				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
+				assert_component_type(gmod, sampler.input,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				assert_component_type(gmod, sampler.output,
+					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+				gltf_unpack_buffer(gmod, sampler.output, objanim->scales);
+				//objanim->frametimes[0] = 0.f;
+				obj->animations.push_back(objanim);
+			}
+
+			// ignore weight animations (at least for now)
+		}
+	}
+}
+
+static gameObject::ptr
+load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
+                          model_map& models,
+                          std::map<int, tinygltf::Animation>& anims,
+                          int nodeidx)
+{
+	// TODO: range check
+	auto& node = gmod.nodes[nodeidx];
+	gameObject::ptr ret = std::make_shared<gameObject>();
+	set_object_gltf_transform(ret, node);
+
+	auto it = anims.find(nodeidx); if (it != anims.end()) {
+		load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+	}
 
 	if (node.mesh >= 0) {
 		// TODO: range check
 		auto& mesh = gmod.meshes[node.mesh];
 		setNode(mesh.name, ret, models[mesh.name]);
+	}
+
+	if (node.skin >= 0) {
+		// TODO: range check
+		auto  obj = load_gltf_skin_nodes(gmod, anims, node.skin);
+		setNode("skin", ret, obj);
 	}
 
 	std::string meh = "[";
@@ -849,20 +1023,38 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 
 	for (auto& x : node.children) {
 		std::string id = "[I"+std::to_string(ret->id)+"]";
-		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, x));
+		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, anims, x));
 	}
 
 	return ret;
 }
 
-static gameObject::ptr
-load_gltf_scene_nodes(tinygltf::Model& gmod, model_map& models) {
-	gameObject::ptr ret = std::make_shared<gameObject>();
+static std::map<int, tinygltf::Animation>
+collectAnimations(tinygltf::Model& gmod) {
+	std::map<int, tinygltf::Animation> ret;
+
+	for (auto& anim : gmod.animations) {
+		for (auto& chan : anim.channels) {
+			ret.insert({chan.target_node, anim});
+		}
+	}
+
+	return ret;
+}
+
+static gameImport::ptr
+load_gltf_scene_nodes(std::string filename,
+                      tinygltf::Model& gmod,
+                      model_map& models)
+{
+	gameImport::ptr ret = std::make_shared<gameImport>(filename);
+	auto anims = collectAnimations(gmod);
 
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "node["+std::to_string(nodeidx)+"]";
-			setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, nodeidx));
+			setNode(id, ret,
+				load_gltf_scene_nodes_rec(gmod, models, anims, nodeidx));
 		}
 	}
 
@@ -909,11 +1101,11 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 	return models;
 }
 
-std::pair<grendx::gameObject::ptr, grendx::model_map>
+std::pair<grendx::gameImport::ptr, grendx::model_map>
 grendx::load_gltf_scene(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
 	grendx::model_map models = load_gltf_models(gmod);
-	gameObject::ptr ret = load_gltf_scene_nodes(gmod, models);
+	gameImport::ptr ret = load_gltf_scene_nodes(filename, gmod, models);
 
 	updateModelSources(models, filename);
 	return {ret, models};

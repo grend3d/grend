@@ -43,9 +43,10 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		import_model_dialog.clear();
 
 		// TODO: XXX: no need for const if it's just being casted away anyway...
-		editor->load_model(game, import_model_dialog.selection);
+		auto obj = loadModel(import_model_dialog.selection);
+		std::string name = "model["+std::to_string(obj->id)+"]";
+		setNode(name, editor->selectedNode, obj);
 		bind_cooked_meshes();
-		editor->update_models(game);
 	}
 
 	if (import_scene_dialog.prompt_filename()) {
@@ -53,9 +54,10 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 
-		editor->load_scene(game, import_scene_dialog.selection);
+		auto obj = loadScene(import_scene_dialog.selection);
+		std::string name = "import["+std::to_string(obj->id)+"]";
+		setNode(name, editor->selectedNode, obj);
 		bind_cooked_meshes();
-		editor->update_models(game);
 	}
 
 	if (import_map_dialog.prompt_filename()) {

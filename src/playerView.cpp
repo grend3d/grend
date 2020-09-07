@@ -117,7 +117,9 @@ void playerView::render(gameMain *game) {
 
 	if (game->state->rootnode) {
 		renderQueue que(cam);
-		que.add(game->state->rootnode);
+		float fticks = SDL_GetTicks() / 1000.0f;
+
+		que.add(game->state->rootnode, fticks);
 		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
 		que.updateReflections(game->rend->shaders["refprobe"],
 		                      game->rend->atlases,

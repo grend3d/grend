@@ -84,6 +84,9 @@ class gameMesh : public gameObject {
 		std::vector<GLuint> faces;
 };
 
+// used for joint indices
+typedef glm::vec<4, uint16_t, glm::defaultp> usvec4;
+
 class gameModel : public gameObject {
 	public:
 		typedef std::shared_ptr<gameModel> ptr;
@@ -117,6 +120,8 @@ class gameModel : public gameObject {
 		std::vector<glm::vec3> tangents;
 		std::vector<glm::vec3> bitangents;
 		std::vector<glm::vec2> texcoords;
+		std::vector<usvec4>    joints;
+		std::vector<glm::vec4> weights;
 
 		// TODO: maybe materials can be subnodes...
 		std::map<std::string, material> materials;
@@ -125,6 +130,7 @@ class gameModel : public gameObject {
 		bool haveNormals = false;
 		bool haveTexcoords = false;
 		bool haveTangents = false;
+		bool haveJoints = false;
 };
 
 typedef std::map<std::string, gameMesh::ptr> mesh_map;
@@ -134,7 +140,7 @@ gameModel::ptr load_object(std::string filename);
 void           load_materials(gameModel::ptr model, std::string filename);
 model_map load_gltf_models(std::string filename);
 model_map load_gltf_models(tinygltf::Model& tgltf_model);
-std::pair<gameObject::ptr, model_map> load_gltf_scene(std::string filename);
+std::pair<gameImport::ptr, model_map> load_gltf_scene(std::string filename);
 // TODO: load scene
 
 // namespace grendx

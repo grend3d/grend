@@ -26,6 +26,8 @@ class gameObject {
 		// used for type checking, dynamically-typed tree here
 		enum objType {
 			None,
+			Import,          // Imported model, indicates where to stop saving
+			                 // + where to load from
 			Model,           // generic model, static/dynamic/etc subclasses
 			Mesh,            // meshes that make up a model
 			Particles,       // particle system
@@ -107,6 +109,27 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 gameObject::ptr unlink(gameObject::ptr node);
 gameObject::ptr clone(gameObject::ptr node);     // shallow copy
 gameObject::ptr duplicate(gameObject::ptr node); // deep copy
+
+class gameImport : public gameObject {
+	public:
+		typedef std::shared_ptr<gameImport> ptr;
+		typedef std::weak_ptr<gameImport>   weakptr;
+
+		gameImport(std::string path)
+			: gameObject(objType::Import), sourceFile(path) {}
+
+		virtual std::string typeString(void) {
+			return "Imported file";
+		}
+
+		virtual std::string idString(void) {
+			std::stringstream strm;
+			strm << "[" << typeString() << " : " << sourceFile <<  "]";
+			return strm.str();
+		}
+
+		std::string sourceFile;
+};
 
 class gameLight : public gameObject {
 	public:

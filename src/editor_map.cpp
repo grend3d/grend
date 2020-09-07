@@ -65,12 +65,22 @@ class modelCache {
 
 			model_map& models = sources[source];
 
+			// hmm... just added it to the map no?
 			return (models.find(name) != models.end())
 				? models[name]
 				: nullptr;
 		}
 
+		gameImport::ptr getScene(std::string source) {
+			if (scenes.find(source) == scenes.end()) {
+				scenes[source] = loadScene(source);
+			}
+
+			return scenes[source];
+		}
+
 		std::map<std::string, model_map> sources;
+		std::map<std::string, gameImport::ptr> scenes;
 };
 
 gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
@@ -78,7 +88,17 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	std::vector<std::string> modelFiles;
 	bool recurse = true;
 
-	if (jay["type"] == "Model") {
+	if (jay["type"] == "Imported file") {
+		// TODO: scene cache
+		recurse = false;
+
+		if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
+			std::cerr << "loadMap(): Unknown model "
+				<< jay["sourceFile"] << std::endl;
+			ret = std::make_shared<gameObject>();
+		}
+
+	} else if (jay["type"] == "Model") {
 		recurse = false;
 
 		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
@@ -188,6 +208,7 @@ static inline std::string format_mat(T& mtx) {
 }
 
 static json objectJson(gameObject::ptr obj) {
+	bool recurse = true;
 	json ret = {
 		{"type",     obj->typeString()},
 		{"position", {obj->transform.position.x,
@@ -204,9 +225,15 @@ static json objectJson(gameObject::ptr obj) {
 
 	// TODO: would make sense to avoid dynamic_pointer_cast here,
 	//       not storing pointers anywhere
-	if (obj->type == gameObject::objType::Model) {
+	if (obj->type == gameObject::objType::Import) {
+		gameImport::ptr imported = std::dynamic_pointer_cast<gameImport>(obj);
+		ret["sourceFile"] = imported->sourceFile;
+		recurse = false;
+
+	} else if (obj->type == gameObject::objType::Model) {
 		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
 		ret["sourceFile"] = model->sourceFile;
+		recurse = false;
 
 	} else if (obj->type == gameObject::objType::ReflectionProbe) {
 		auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(obj);
@@ -229,12 +256,15 @@ static json objectJson(gameObject::ptr obj) {
 		// TODO: other lights
 	}
 
-	json nodes = {};
-	for (auto& [name, ptr] : obj->nodes) {
-		nodes[name] = objectJson(ptr);
+	if (recurse) {
+		json nodes = {};
+		for (auto& [name, ptr] : obj->nodes) {
+			nodes[name] = objectJson(ptr);
+		}
+
+		ret["nodes"] = nodes;
 	}
 
-	ret["nodes"] = nodes;
 	return ret;
 }
 

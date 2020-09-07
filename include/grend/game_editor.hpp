@@ -16,6 +16,8 @@
 
 namespace grendx {
 
+gameObject::ptr loadModel(std::string path);
+gameImport::ptr loadScene(std::string path);
 void saveMap(gameMain *game,
 			 gameObject::ptr root,
 			 std::string name="save.map");
@@ -70,8 +72,6 @@ class game_editor : public gameView {
 			//       this model, although that might be better off in the model class itself...
 		};
 
-		void load_model(gameMain *game, std::string path);
-		void load_scene(gameMain *game, std::string path);
 		void update_models(gameMain *game);
 		void reload_shaders(gameMain *game);
 		void set_mode(enum mode newmode);

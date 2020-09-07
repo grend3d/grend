@@ -132,7 +132,8 @@ void game_editor::render(gameMain *game) {
 		que.flush(game->rend->framebuffer, game->rend->shaders["unshaded"],
 		          game->rend->atlases);
 
-		que.add(game->state->rootnode);
+		float fticks = SDL_GetTicks() / 1000.0f;
+		que.add(game->state->rootnode, fticks);
 		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
 		que.updateReflections(game->rend->shaders["refprobe"],
 		                      game->rend->atlases,
@@ -193,7 +194,7 @@ void game_editor::initImgui(gameMain *game) {
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
-void game_editor::load_model(gameMain *game, std::string path) {
+gameObject::ptr grendx::loadModel(std::string path) {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
 		//model m(path);
@@ -205,7 +206,7 @@ void game_editor::load_model(gameMain *game, std::string path) {
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 		setNode(fname, obj, m);
-		setNode(fname, selectedNode, obj);
+		return obj;
 	}
 
 	else if (ext == ".gltf") {
@@ -216,29 +217,26 @@ void game_editor::load_model(gameMain *game, std::string path) {
 			// add the models at 0,0
 			auto obj = gameObject::ptr(new gameObject());
 			setNode(name, obj, model);
-			setNode(name, selectedNode, obj);
+			return obj;
 		}
 	}
+
+	return nullptr;
 }
 
-void game_editor::load_scene(gameMain *game, std::string path) {
+gameImport::ptr grendx::loadScene(std::string path) {
 	std::string ext = filename_extension(path);
+
 	if (ext == ".gltf") {
 		auto [objs, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
 
 		std::string import_name = "import["+std::to_string(objs->id)+"]";
-		setNode(import_name, selectedNode, objs);
-
 		compile_models(mods);
-		models.insert(mods.begin(), mods.end());
+		return objs;
 	}
-}
 
-// TODO: remove
-void game_editor::update_models(gameMain *game) {
-	//const gl_manager& glman = game->rend->get_glman();
-	//edit_model = glman.cooked_models.begin();
+	return nullptr;
 }
 
 void game_editor::reload_shaders(gameMain *game) {

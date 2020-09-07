@@ -6,8 +6,8 @@
 using namespace grendx;
 
 void renderQueue::add(gameObject::ptr obj,
-                      glm::mat4 trans,
                       float animTime,
+                      glm::mat4 trans,
                       bool inverted)
 {
 	if (obj == nullptr) {
@@ -58,7 +58,7 @@ void renderQueue::add(gameObject::ptr obj,
 
 	for (auto& [name, ptr] : obj->nodes) {
 		//std::cerr << "add(): subnode " << name << std::endl;
-		add(ptr, adjTrans, inverted);
+		add(ptr, animTime, adjTrans, inverted);
 	}
 
 	//std::cerr << "add(): pop" << std::endl;
