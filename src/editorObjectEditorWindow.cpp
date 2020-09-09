@@ -72,5 +72,18 @@ void game_editor::objectEditorWindow(gameMain *game) {
 			std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode));
 	}
 
+	{
+		ImGui::Text("Animations");
+		ImGui::Separator();
+		ImGui::Indent(16.f);
+
+		for (auto& chan : selectedNode->animations) {
+			ImGui::SliderFloat(chan->group->name.c_str(),
+			                   &chan->group->weight, 0.f, 1.f);
+			ImGui::Separator();
+		}
+		ImGui::Unindent(16.f);
+	}
+
 	ImGui::End();
 }

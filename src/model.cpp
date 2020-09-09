@@ -723,19 +723,21 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				if (attr.first == "WEIGHTS_0")  weights = attr.second; 
 			}
 
+			if (position < 0) {
+				throw std::logic_error(
+					"load_gltf_models(): can't load a mesh primitive "
+					"without position information");
+			}
+
 			if (elements >= 0) {
 				check_index(tgltf_model.accessors, elements);
 
 				auto& acc = tgltf_model.accessors[elements];
 				assert_type(acc.type, TINYGLTF_TYPE_SCALAR);
-				/*
-				assert_type(acc.componentType, 
-					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
-					*/
 
 				size_t vsize = curModel->vertices.size();
 				auto& submesh = modmesh->faces;
-				//gltf_unpack_buffer(tgltf_model, elements, submesh);
+
 				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
 					gltf_unpack_ushort_to_uint(tgltf_model, elements, submesh);
 				} else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
@@ -748,6 +750,17 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				// (model element indices are per-model, seems gltf is per-primitive)
 				for (auto& face : submesh) {
 					face += vsize;
+				}
+
+			} else {
+				// identity-mapped indices
+				std::cerr << "        generating indices..." << std::endl;
+				auto& acc = tgltf_model.accessors[position];
+				auto& submesh = modmesh->faces;
+				size_t vsize = curModel->vertices.size();
+
+				for (size_t i = 0; i < acc.count; i++) {
+					submesh.push_back(i + vsize);
 				}
 			}
 
@@ -814,11 +827,20 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 	return ret;
 }
 
+// TODO: move gltf stuff to it's own file
 using namespace grendx;
+
+struct mapent {
+	animationChannel::ptr channel;
+	tinygltf::Animation anim;
+};
+
+typedef
+std::map<int, std::vector<animationChannel::ptr>> animation_map;
 
 static gameObject::ptr 
 load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
-                         std::map<int, tinygltf::Animation>& anims,
+                         animation_map& animations,
                          int nodeidx)
 {
 	if (nodeidx < 0) {
@@ -832,7 +854,7 @@ load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
 	for (auto& idx : node.children) {
 		auto& cnode = gmod.nodes[idx];
 		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
-		setNode(name, ret, load_gltf_skin_nodes_rec(gmod, anims, idx));
+		setNode(name, ret, load_gltf_skin_nodes_rec(gmod, animations, idx));
 	}
 
 	return ret;
@@ -840,7 +862,7 @@ load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
 
 static gameObject::ptr 
 load_gltf_skin_nodes(tinygltf::Model& gmod,
-                     std::map<int, tinygltf::Animation>& anims,
+                     animation_map& animations,
                      int nodeidx)
 {
 	if (nodeidx < 0) {
@@ -859,12 +881,12 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 	for (auto& idx : skin.joints) {
 		auto& cnode = gmod.nodes[idx];
 		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
-		setNode(name, joints, load_gltf_skin_nodes_rec(gmod, anims, idx));
+		setNode(name, joints, load_gltf_skin_nodes_rec(gmod, animations, idx));
 	}
 
 	if (skin.skeleton >= 0) {
 		setNode("skeleton", sub,
-			load_gltf_skin_nodes_rec(gmod, anims, skin.skeleton));
+			load_gltf_skin_nodes_rec(gmod, animations, skin.skeleton));
 	}
 
 	return obj;
@@ -913,82 +935,10 @@ static void assert_component_type(tinygltf::Model& mod, int accidx, int expected
 	assert_type(acc.componentType, expected);
 }
 
-static void
-load_gltf_animation_channels(gameObject::ptr obj,
-                             int nodeidx,
-                             tinygltf::Model& gmod,
-                             tinygltf::Animation& anim)
-{
-	for (auto& chan : anim.channels) {
-		if (nodeidx == chan.target_node) {
-			if (chan.target_path == "translation") {
-				std::cerr << "GLTF: loading translation animation" << std::endl;
-				animationTranslation::ptr objanim =
-					std::make_shared<animationTranslation>();
-				
-				// TODO: range check
-				auto& sampler = anim.samplers[chan.sampler];
-				// TODO: type checks
-				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
-				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-				assert_component_type(gmod, sampler.input,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				assert_component_type(gmod, sampler.output,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
-				gltf_unpack_buffer(gmod, sampler.output, objanim->translations);
-				//objanim->frametimes[0] = 0.f;
-				obj->animations.push_back(objanim);
-
-			} else if (chan.target_path == "rotation") {
-				std::cerr << "GLTF: loading rotation animation" << std::endl;
-				animationRotation::ptr objanim =
-					std::make_shared<animationRotation>();
-
-				// TODO: range check
-				auto& sampler = anim.samplers[chan.sampler];
-				// TODO: type checks
-				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
-				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC4);
-				assert_component_type(gmod, sampler.input,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				assert_component_type(gmod, sampler.output,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
-				gltf_unpack_buffer(gmod, sampler.output, objanim->rotations);
-				//objanim->frametimes[0] = 0.f;
-				obj->animations.push_back(objanim);
-
-			} else if (chan.target_path == "scale") {
-				std::cerr << "GLTF: loading scale animation" << std::endl;
-				animationScale::ptr objanim =
-					std::make_shared<animationScale>();
-
-				// TODO: range check
-				auto& sampler = anim.samplers[chan.sampler];
-				// TODO: type checks
-				
-				assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
-				assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-				assert_component_type(gmod, sampler.input,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				assert_component_type(gmod, sampler.output,
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
-				gltf_unpack_buffer(gmod, sampler.output, objanim->scales);
-				//objanim->frametimes[0] = 0.f;
-				obj->animations.push_back(objanim);
-			}
-
-			// ignore weight animations (at least for now)
-		}
-	}
-}
-
 static gameObject::ptr
 load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
                           model_map& models,
-                          std::map<int, tinygltf::Animation>& anims,
+                          animation_map& anims,
                           int nodeidx)
 {
 	// TODO: range check
@@ -997,13 +947,18 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 	set_object_gltf_transform(ret, node);
 
 	auto it = anims.find(nodeidx); if (it != anims.end()) {
-		load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		ret->animations = it->second;
 	}
 
 	if (node.mesh >= 0) {
 		// TODO: range check
 		auto& mesh = gmod.meshes[node.mesh];
-		setNode(mesh.name, ret, models[mesh.name]);
+		setNode("mesh", ret, models[mesh.name]);
+		std::cerr << "GLTF node mesh: "
+			<< node.mesh << " (" << mesh.name << ")"
+			<< " @ " << models[mesh.name]
+			<< std::endl;
 	}
 
 	if (node.skin >= 0) {
@@ -1022,20 +977,109 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 		<< std::endl;
 
 	for (auto& x : node.children) {
-		std::string id = "[I"+std::to_string(ret->id)+"]";
+		std::string id = "node["+std::to_string(x)+"]";
 		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, anims, x));
 	}
 
 	return ret;
 }
 
-static std::map<int, tinygltf::Animation>
-collectAnimations(tinygltf::Model& gmod) {
-	std::map<int, tinygltf::Animation> ret;
+static void
+load_gltf_animation_channels(animationChannel::ptr cookedchan,
+                             tinygltf::Model& gmod,
+                             tinygltf::Animation& anim,
+                             tinygltf::AnimationChannel& chan)
+{
+	if (chan.target_path != "translation"
+		&& chan.target_path != "rotation"
+		&& chan.target_path != "scale")
+	{
+		// ignore weight targets
+		return;
+	}
 
-	for (auto& anim : gmod.animations) {
+	// TODO: range check
+	auto& sampler = anim.samplers[chan.sampler];
+	assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
+	assert_component_type(gmod, sampler.input,
+		TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+	animation::ptr chananim;
+
+	if (chan.target_path == "translation") {
+		std::cerr << "GLTF: loading translation animation" << std::endl;
+		animationTranslation::ptr objanim =
+			std::make_shared<animationTranslation>();
+		chananim = objanim;
+
+		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
+		assert_component_type(gmod, sampler.output,
+			TINYGLTF_COMPONENT_TYPE_FLOAT);
+		gltf_unpack_buffer(gmod, sampler.output, objanim->translations);
+		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+
+	} else if (chan.target_path == "rotation") {
+		std::cerr << "GLTF: loading rotation animation" << std::endl;
+		animationRotation::ptr objanim =
+			std::make_shared<animationRotation>();
+		chananim = objanim;
+
+		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC4);
+		assert_component_type(gmod, sampler.output,
+			TINYGLTF_COMPONENT_TYPE_FLOAT);
+		gltf_unpack_buffer(gmod, sampler.output, objanim->rotations);
+		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+
+	} else if (chan.target_path == "scale") {
+		std::cerr << "GLTF: loading scale animation" << std::endl;
+		animationScale::ptr objanim =
+			std::make_shared<animationScale>();
+		chananim = objanim;
+		
+		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
+		assert_component_type(gmod, sampler.output,
+			TINYGLTF_COMPONENT_TYPE_FLOAT);
+		gltf_unpack_buffer(gmod, sampler.output, objanim->scales);
+		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+	}
+
+	cookedchan->animations.push_back(chananim);
+	cookedchan->group->endtime
+		= max(cookedchan->group->endtime,
+			  chananim->frametimes.back());
+}
+
+static animation_map collectAnimations(tinygltf::Model& gmod) {
+	animation_map ret;
+	auto collection = std::make_shared<animationCollection>();
+
+	for (unsigned i = 0; i < gmod.animations.size(); i++) {
+		auto& anim = gmod.animations[i];
+		auto group = std::make_shared<animationGroup>();
+		// TODO: put this in constructor
+		group->name = anim.name.empty()
+			? "(default "+std::to_string(i) + ")"
+			: anim.name;
+		group->collection = collection;
+		collection->groups[group->name] = group;
+
+		// avoid adding the same animation multiple times
+		// when the animation has multiple channels 
+		std::set<int> chanset;
+
+		std::cerr << "GLTF: collectAnimations(): have animation '"
+			<< anim.name
+			<< "'" << std::endl;
+
 		for (auto& chan : anim.channels) {
-			ret.insert({chan.target_node, anim});
+			auto chanptr = std::make_shared<animationChannel>();
+			chanptr->group = group;
+
+			//if (!chanset.count(chan.target_node)) {
+				load_gltf_animation_channels(chanptr, gmod, anim, chan);
+				ret[chan.target_node].push_back(chanptr);
+				chanset.insert(chan.target_node);
+			//}
 		}
 	}
 
@@ -1052,7 +1096,7 @@ load_gltf_scene_nodes(std::string filename,
 
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
-			std::string id = "node["+std::to_string(nodeidx)+"]";
+			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
 			setNode(id, ret,
 				load_gltf_scene_nodes_rec(gmod, models, anims, nodeidx));
 		}

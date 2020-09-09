@@ -88,7 +88,7 @@ class gameObject {
 
 		// transform relative to parent
 		TRS transform;
-		std::vector<animation::ptr> animations;
+		std::vector<animationChannel::ptr> animations;
 
 		gameObject::ptr parent = nullptr;
 		std::map<std::string, gameObject::ptr> nodes;

@@ -10,11 +10,8 @@ size_t grendx::allocateObjID(void) {
 
 glm::mat4 gameObject::getTransform(float delta) {
 	struct TRS temp = transform;
-
-	for (auto& ptr : animations) {
-		ptr->applyTransform(temp, delta);
-	}
-
+	//animations.applyTransform(temp, delta);
+	applyChannelVecTransforms(animations, temp, delta);
 	return temp.getTransform();
 }
 
