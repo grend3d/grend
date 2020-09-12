@@ -5,7 +5,6 @@ struct point_light {
 	vec4 diffuse;
 	float intensity;
 	float radius;
-	//samplerCube shadowmap;
 	bool casts_shadows;
 	vec3 shadowmap[6];
 };
@@ -17,7 +16,6 @@ struct spot_light {
 	float intensity;
 	float radius; // bulb radius
 	float angle;
-	//sampler2D shadowmap;
 	bool casts_shadows;
 	vec3 shadowmap;
 };
@@ -27,7 +25,6 @@ struct directional_light {
 	vec4 diffuse;
 	vec3 direction;
 	float intensity;
-	//sampler2D shadowmap;
 	bool casts_shadows;
 	vec3 shadowmap;
 };

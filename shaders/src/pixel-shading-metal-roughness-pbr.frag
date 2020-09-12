@@ -78,7 +78,7 @@ void main(void) {
 
 	for (int i = 0; i < active_directional_lights; i++) {
 		float atten = directional_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(directional_lights[i].position,
+		vec3 lum = mrp_lighting(vec3(f_position)-directional_lights[i].direction,
 		                        directional_lights[i].diffuse,
 		                        vec3(f_position), view_dir,
 		                        albedo, normal_dir, metallic, roughness);

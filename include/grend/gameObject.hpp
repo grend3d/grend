@@ -195,9 +195,8 @@ class gameLightSpot : public gameLight {
 
 		virtual float extent(float threshold=0.03);
 
-		glm::vec3 direction;
-		float radius;
-		float angle;
+		float radius = 1.0;
+		float angle = 3.1415/4.0;
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
@@ -215,8 +214,6 @@ class gameLightDirectional : public gameLight {
 		}
 
 		virtual float extent(float threshold=0.03);
-
-		glm::vec3 direction;
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;

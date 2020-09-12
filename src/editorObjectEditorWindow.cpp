@@ -14,6 +14,23 @@ static void editPointLight(gameMain *game, gameLightPoint::ptr light) {
 	ImGui::Unindent(16.f);
 }
 
+static void editSpotLight(gameMain *game, gameLightSpot::ptr light) {
+	ImGui::Text("Spot light properties");
+	ImGui::Separator();
+	ImGui::Indent(16.f);
+	ImGui::SliderFloat("radius", &light->radius, 0.01f, 3.f);
+	ImGui::SliderFloat("angle", &light->angle, 0.f, 1.f);
+	ImGui::Unindent(16.f);
+}
+
+static void editDirectionalLight(gameMain *game, gameLightDirectional::ptr light) {
+	ImGui::Text("Directional light properties");
+	ImGui::Separator();
+	ImGui::Indent(16.f);
+	//ImGui::Text("(This space intentionally left blank)");
+	ImGui::Unindent(16.f);
+}
+
 static void editLight(gameMain *game, gameLight::ptr light) {
 	ImGui::Text("Light properties");
 	ImGui::Indent(16.f);
@@ -28,6 +45,14 @@ static void editLight(gameMain *game, gameLight::ptr light) {
 	switch (light->lightType) {
 		case gameLight::lightTypes::Point:
 			editPointLight(game, std::dynamic_pointer_cast<gameLightPoint>(light));
+			break;
+
+		case gameLight::lightTypes::Spot:
+			editSpotLight(game, std::dynamic_pointer_cast<gameLightSpot>(light));
+			break;
+
+		case gameLight::lightTypes::Directional:
+			editDirectionalLight(game, std::dynamic_pointer_cast<gameLightDirectional>(light));
 			break;
 
 		default:
