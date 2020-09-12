@@ -118,7 +118,29 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 		ret = std::dynamic_pointer_cast<gameObject>(light);
 
-	// TODO: other light types
+	} else if (jay["type"] == "Spot light") {
+		auto light = std::make_shared<gameLightSpot>();
+		auto& diff = jay["diffuse"];
+
+		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
+		light->intensity = jay["intensity"];
+		light->casts_shadows = jay["casts_shadows"];
+		light->is_static = jay["is_static"];
+		light->radius = jay["radius"];
+		light->angle  = jay["angle"];
+
+		ret = std::dynamic_pointer_cast<gameObject>(light);
+
+	} else if (jay["type"] == "Directional light") {
+		auto light = std::make_shared<gameLightDirectional>();
+		auto& diff = jay["diffuse"];
+
+		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
+		light->intensity = jay["intensity"];
+		light->casts_shadows = jay["casts_shadows"];
+		light->is_static = jay["is_static"];
+
+		ret = std::dynamic_pointer_cast<gameObject>(light);
 
 	} else if (jay["type"] == "Reflection probe"){
 		auto probe = std::make_shared<gameReflectionProbe>();
@@ -251,6 +273,16 @@ static json objectJson(gameObject::ptr obj) {
 		if (light->lightType == gameLight::lightTypes::Point) {
 			gameLightPoint::ptr p = std::dynamic_pointer_cast<gameLightPoint>(obj);
 			ret["radius"] = p->radius;
+		}
+
+		else if (light->lightType == gameLight::lightTypes::Spot) {
+			gameLightSpot::ptr p = std::dynamic_pointer_cast<gameLightSpot>(obj);
+			ret["radius"] = p->radius;
+			ret["angle"]  = p->angle;
+		}
+
+		else if (light->lightType == gameLight::lightTypes::Directional) {
+			// only base light members
 		}
 
 		// TODO: other lights
