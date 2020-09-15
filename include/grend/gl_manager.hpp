@@ -31,6 +31,23 @@ void check_errors(int line, const char *filename, const char *func);
 	{ check_errors(__LINE__, __FILE__, __func__); }
 #endif
 
+enum {
+	// VAO locations, used to link shaders to proper vao entries
+	VAO_ELEMENTS      = 0,
+	VAO_VERTICES      = 1,
+	VAO_NORMALS       = 2,
+	VAO_TANGENTS      = 3,
+	VAO_BITANGENTS    = 4,
+	VAO_TEXCOORDS     = 5,
+	VAO_JOINTS        = 6,
+	VAO_JOINT_WEIGHTS = 7,
+};
+
+enum {
+	VAO_QUAD_VERTICES  = 0,
+	VAO_QUAD_TEXCOORDS = 1,
+};
+
 class Obj {
 	public:
 		enum type {
@@ -265,6 +282,10 @@ class compiled_model {
 		void *texcoords_offset;
 		void *tangents_offset;
 		void *bitangents_offset;
+
+		bool haveJoints = false;
+		void *joints_offset;
+		void *weights_offset;
 };
 
 // TODO: weakptr, once model loading stuff is straightened out

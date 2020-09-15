@@ -15,7 +15,7 @@ skybox::skybox() {
 		GR_PREFIX "shaders/out/skybox.frag"
 	);
 
-	program->attribute("v_position", 0);
+	program->attribute("v_position", VAO_VERTICES);
 	if (!program->link()) {
 		// TODO: maybe don't throw exceptions
 		throw std::logic_error(program->log());

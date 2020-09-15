@@ -72,21 +72,6 @@ renderer::renderer(context& ctx) {
 void renderer::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
 	/*
-#if GLSL_VERSION < 300
-	shaders["main"] = load_program(
-		"shaders/out/vertex-shading.vert",
-		"shaders/out/vertex-shading.frag"
-	);
-#else
-	shaders["main"] = load_program(
-		"shaders/out/pixel-shading.vert",
-		"shaders/out/pixel-shading.frag"
-		//"shaders/out/pixel-shading-metal-roughness-pbr.frag"
-	);
-#endif
-*/
-
-	/*
 	shaders["main"] = load_program(
 		GR_PREFIX "shaders/out/vertex-shading.vert",
 		GR_PREFIX "shaders/out/vertex-shading.frag"
@@ -95,6 +80,12 @@ void renderer::loadShaders(void) {
 
 	shaders["main"] = load_program(
 		GR_PREFIX "shaders/out/pixel-shading.vert",
+		//"shaders/out/pixel-shading.frag"
+		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
+	);
+
+	shaders["main-skinned"] = load_program(
+		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
 		//"shaders/out/pixel-shading.frag"
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
@@ -118,19 +109,28 @@ void renderer::loadShaders(void) {
 	for (auto& name : {"main", "refprobe", "refprobe_debug", "unshaded"}) {
 		Program::ptr s = shaders[name];
 
-		s->attribute("in_Position", 0);
-		s->attribute("v_normal", 1);
-		s->attribute("v_tangent", 2);
-		s->attribute("v_bitangent", 3);
-		s->attribute("texcoord", 4);
+		s->attribute("in_Position", VAO_VERTICES);
+		s->attribute("v_normal",    VAO_NORMALS);
+		s->attribute("v_tangent",   VAO_TANGENTS);
+		s->attribute("v_bitangent", VAO_BITANGENTS);
+		s->attribute("texcoord",    VAO_TEXCOORDS);
 		s->link();
 	}
+
+	shaders["main-skinned"]->attribute("in_Position", VAO_VERTICES);
+	shaders["main-skinned"]->attribute("v_normal",    VAO_NORMALS);
+	shaders["main-skinned"]->attribute("v_tangent",   VAO_TANGENTS);
+	shaders["main-skinned"]->attribute("v_bitangent", VAO_BITANGENTS);
+	shaders["main-skinned"]->attribute("texcoord",    VAO_TEXCOORDS);
+	shaders["main-skinned"]->attribute("a_joints",    VAO_JOINTS);
+	shaders["main-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
+	shaders["main-skinned"]->link();
 
 	shaders["shadow"] = load_program(
 		GR_PREFIX "shaders/out/depth.vert",
 		GR_PREFIX "shaders/out/depth.frag"
 	);
-	shaders["shadow"]->attribute("v_position", 0);
+	shaders["shadow"]->attribute("v_position", VAO_VERTICES);
 	shaders["shadow"]->link();
 
 	shaders["post"] = load_program(
@@ -138,16 +138,17 @@ void renderer::loadShaders(void) {
 		GR_PREFIX "shaders/out/postprocess.frag"
 	);
 
-	shaders["post"]->attribute("v_position", 0);
-	shaders["post"]->attribute("v_texcoord", 1);
+	// NOTE: post
+	shaders["post"]->attribute("v_position", VAO_QUAD_VERTICES);
+	shaders["post"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["post"]->link();
 
 	shaders["quadtest"] = load_program(
 		GR_PREFIX "shaders/out/quadtest.vert",
 		GR_PREFIX "shaders/out/quadtest.frag"
 	);
-	shaders["quadtest"]->attribute("v_position", 0);
-	shaders["quadtest"]->attribute("v_texcoord", 1);
+	shaders["quadtest"]->attribute("v_position", VAO_QUAD_VERTICES);
+	shaders["quadtest"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["quadtest"]->link();
 
 	shaders["main"]->bind();

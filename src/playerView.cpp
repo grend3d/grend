@@ -143,7 +143,7 @@ void playerView::render(gameMain *game) {
 		DO_ERROR_CHECK();
 		
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
-		          game->rend->atlases);
+		          game->rend->shaders["main-skinned"], game->rend->atlases);
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}

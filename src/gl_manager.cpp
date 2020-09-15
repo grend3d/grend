@@ -14,11 +14,13 @@ namespace grendx {
 static cooked_mesh_map  cooked_meshes;
 static cooked_model_map cooked_models;
 
+static std::vector<GLfloat> cooked_joints;
 static std::vector<GLfloat> cooked_vertprops;
 static std::vector<GLuint> cooked_elements;
 
 static Vbo::ptr cooked_vertprops_vbo;
 static Vbo::ptr cooked_element_vbo;
+static Vbo::ptr cooked_joints_vbo;
 static Vbo::ptr screenquad_vbo;
 static Vao::ptr screenquad_vao;
 
@@ -46,6 +48,7 @@ void initialize_opengl(void) {
 
 	cooked_vertprops_vbo = gen_vbo();
 	cooked_element_vbo = gen_vbo();
+	cooked_joints_vbo = gen_vbo();
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -73,6 +76,7 @@ void compile_meshes(std::string objname, mesh_map& meshies) {
 
 // TODO: move
 static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[4]) + sizeof(glm::vec2));
+static const size_t JOINTPROP_SIZE = (sizeof(glm::vec4[2]));
 
 static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	uint32_t ret = 1543;
@@ -159,19 +163,34 @@ void compile_model(std::string name, gameModel::ptr model) {
 	obj->bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
 	obj->texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
 
-	for (unsigned i = 0; i < model->vertices.size(); i++) {
-		// XXX: glm vectors don't have an iterator
-		auto push_vec = [&] (const auto& vec) {
-			for (int k = 0; k < vec.length(); k++) {
-				cooked_vertprops.push_back(vec[k]);
-			}
-		};
+	// XXX: glm vectors don't have an iterator
+	auto push_vec = [&] (auto& props, const auto& vec) {
+		for (int k = 0; k < vec.length(); k++) {
+			props.push_back(vec[k]);
+		}
+	};
 
-		push_vec(model->vertices[i]);
-		push_vec(model->normals[i]);
-		push_vec(model->tangents[i]);
-		push_vec(model->bitangents[i]);
-		push_vec(model->texcoords[i]);
+	for (unsigned i = 0; i < model->vertices.size(); i++) {
+		push_vec(cooked_vertprops, model->vertices[i]);
+		push_vec(cooked_vertprops, model->normals[i]);
+		push_vec(cooked_vertprops, model->tangents[i]);
+		push_vec(cooked_vertprops, model->bitangents[i]);
+		push_vec(cooked_vertprops, model->texcoords[i]);
+	}
+
+	if (model->haveJoints) {
+		std::cerr << " > have joints, " << model->joints.size()
+			<< " of em" << std::endl;
+		size_t jointoff = cooked_joints.size() * sizeof(GLfloat);
+
+		obj->haveJoints = true;
+		obj->joints_offset  = offset_ptr(jointoff);
+		obj->weights_offset = offset_ptr(jointoff + sizeof(glm::vec4[1]));
+
+		for (unsigned i = 0; i < model->joints.size(); i++) {
+			push_vec(cooked_joints, model->joints[i]);
+			push_vec(cooked_joints, model->weights[i]);
+		}
 	}
 
 	// collect mesh subnodes from the model
@@ -239,34 +258,44 @@ Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
 	Vao::ptr orig_vao = current_vao;
 	Vao::ptr ret = bind_vao(gen_vao());
 
-	cooked_vertprops_vbo->bind(GL_ARRAY_BUFFER);
-
-	//bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->vertices_offset);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->normals_offset);
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->tangents_offset);
-
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->bitangents_offset);
-
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->texcoords_offset);
-
 	//bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
 	cooked_element_vbo->bind(GL_ELEMENT_ARRAY_BUFFER);
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
+	glEnableVertexAttribArray(VAO_ELEMENTS);
+	glVertexAttribPointer(VAO_ELEMENTS, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
 	                      mesh->elements_offset);
+
+	cooked_vertprops_vbo->bind(GL_ARRAY_BUFFER);
+	//bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
+	glEnableVertexAttribArray(VAO_VERTICES);
+	glVertexAttribPointer(VAO_VERTICES, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj->vertices_offset);
+
+	glEnableVertexAttribArray(VAO_NORMALS);
+	glVertexAttribPointer(VAO_NORMALS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj->normals_offset);
+
+	glEnableVertexAttribArray(VAO_TANGENTS);
+	glVertexAttribPointer(VAO_TANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj->tangents_offset);
+
+	glEnableVertexAttribArray(VAO_BITANGENTS);
+	glVertexAttribPointer(VAO_BITANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj->bitangents_offset);
+
+	glEnableVertexAttribArray(VAO_TEXCOORDS);
+	glVertexAttribPointer(VAO_TEXCOORDS, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
+	                      obj->texcoords_offset);
+
+	if (obj->haveJoints) {
+		cooked_joints_vbo->bind(GL_ARRAY_BUFFER);
+		glEnableVertexAttribArray(VAO_JOINTS);
+		glVertexAttribPointer(VAO_JOINTS, 4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
+							  obj->joints_offset);
+		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
+		glVertexAttribPointer(VAO_JOINT_WEIGHTS,
+		                      4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
+							  obj->weights_offset);
+	}
 
 	bind_vao(orig_vao);
 	return ret;
@@ -285,6 +314,7 @@ Vao::ptr preload_model_vao(compiled_model::ptr obj) {
 }
 
 void bind_cooked_meshes(void) {
+	cooked_joints_vbo->buffer(GL_ARRAY_BUFFER, cooked_joints);
 	cooked_vertprops_vbo->buffer(GL_ARRAY_BUFFER, cooked_vertprops);
 	cooked_element_vbo->buffer(GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
 
@@ -310,10 +340,12 @@ void preload_screenquad(void) {
 	screenquad_vao = bind_vao(gen_vao());
 
 	screenquad_vbo->buffer(GL_ARRAY_BUFFER, screenquad_data);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
+	glEnableVertexAttribArray(VAO_QUAD_VERTICES);
+	glVertexAttribPointer(VAO_QUAD_VERTICES,
+	                      3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
+	glEnableVertexAttribArray(VAO_QUAD_TEXCOORDS);
+	glVertexAttribPointer(VAO_QUAD_TEXCOORDS,
+	                      2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
 	bind_vao(orig_vao);

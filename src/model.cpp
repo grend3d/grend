@@ -838,6 +838,42 @@ struct mapent {
 typedef
 std::map<int, std::vector<animationChannel::ptr>> animation_map;
 
+static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
+{
+	check_index(mod.accessors, accidx);
+	auto& acc = mod.accessors[accidx];
+	assert_type(acc.type, expected);
+}
+
+static void assert_component_type(tinygltf::Model& mod, int accidx, int expected)
+{
+	check_index(mod.accessors, accidx);
+	auto& acc = mod.accessors[accidx];
+	assert_type(acc.componentType, expected);
+}
+
+static gameObject::ptr 
+load_gltf_skin_node_top(tinygltf::Model& gmod,
+                        animation_map& animations,
+                        int nodeidx)
+{
+	if (nodeidx < 0) {
+		return nullptr;
+	}
+
+	// TODO: range checko
+	auto& node = gmod.nodes[nodeidx];
+	gameObject::ptr ret = std::make_shared<gameObject>();
+
+	auto it = animations.find(nodeidx); if (it != animations.end()) {
+		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		ret->animations = it->second;
+	}
+
+	return ret;
+}
+
+
 static gameObject::ptr 
 load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
                          animation_map& animations,
@@ -851,6 +887,11 @@ load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
 	auto& node = gmod.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
+	auto it = animations.find(nodeidx); if (it != animations.end()) {
+		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		ret->animations = it->second;
+	}
+
 	for (auto& idx : node.children) {
 		auto& cnode = gmod.nodes[idx];
 		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
@@ -860,7 +901,7 @@ load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
 	return ret;
 }
 
-static gameObject::ptr 
+static gameSkin::ptr
 load_gltf_skin_nodes(tinygltf::Model& gmod,
                      animation_map& animations,
                      int nodeidx)
@@ -871,23 +912,57 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 
 	// TODO: range checko
 	auto& skin = gmod.skins[nodeidx];
-	gameObject::ptr obj    = std::make_shared<gameObject>();
+	gameSkin::ptr   obj    = std::make_shared<gameSkin>();
 	gameObject::ptr sub    = std::make_shared<gameObject>();
 	gameObject::ptr joints = std::make_shared<gameObject>();
 	std::string sname = "skin["+skin.name+"]";
 	setNode(sname, obj, sub);
 	setNode("joints", sub, joints);
 
+	/*
 	for (auto& idx : skin.joints) {
 		auto& cnode = gmod.nodes[idx];
-		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
-		setNode(name, joints, load_gltf_skin_nodes_rec(gmod, animations, idx));
+		gameObject::ptr jnt = load_gltf_skin_nodes_rec(gmod, animations, idx);
+		obj->joints.push_back(jnt);
+	}
+	*/
+
+	std::map<int, gameObject::ptr> jointidxs;
+
+	for (auto& idx : skin.joints) {
+		gameObject::ptr jnt = load_gltf_skin_node_top(gmod, animations, idx);
+		obj->joints.push_back(jnt);
+		jointidxs[idx] = jnt;
 	}
 
+	for (auto& [idx, ptr] : jointidxs) {
+		auto& node = gmod.nodes[idx];
+		for (auto& i : node.children) {
+			assert(jointidxs.find(i) != jointidxs.end());
+			std::string name = "joint["+std::to_string(i)+"]:" + node.name;
+			setNode(name, ptr, jointidxs[i]);
+		}
+	}
+
+	for (unsigned i = 0; i < obj->joints.size(); i++) {
+		auto& ptr = obj->joints[i];
+		if (ptr->parent == nullptr) {
+			std::string name = "rootjoint["+std::to_string(i)+"]";
+			setNode(name, joints, ptr);
+		}
+	}
+
+	/*
 	if (skin.skeleton >= 0) {
 		setNode("skeleton", sub,
 			load_gltf_skin_nodes_rec(gmod, animations, skin.skeleton));
 	}
+	*/
+
+	assert_accessor_type(gmod, skin.inverseBindMatrices, TINYGLTF_TYPE_MAT4);
+	assert_component_type(gmod, skin.inverseBindMatrices,
+	                      TINYGLTF_COMPONENT_TYPE_FLOAT);
+	gltf_unpack_buffer(gmod, skin.inverseBindMatrices, obj->inverseBind);
 
 	return obj;
 }
@@ -919,20 +994,6 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	ptr->transform.position = translation;
 	ptr->transform.rotation = rotation;
 	ptr->transform.scale = scale;
-}
-
-static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
-{
-	check_index(mod.accessors, accidx);
-	auto& acc = mod.accessors[accidx];
-	assert_type(acc.type, expected);
-}
-
-static void assert_component_type(tinygltf::Model& mod, int accidx, int expected)
-{
-	check_index(mod.accessors, accidx);
-	auto& acc = mod.accessors[accidx];
-	assert_type(acc.componentType, expected);
 }
 
 static gameObject::ptr

@@ -141,7 +141,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		cam->set_direction(cube_dirs[i], cube_up[i]);
 
 		porque.setCamera(cam);
-		porque.flush(info.size, info.size, shadowShader, atlases);
+		// TODO: skinned shadow shader
+		porque.flush(info.size, info.size, shadowShader, shadowShader, atlases);
 	}
 
 	light->have_map = true;
@@ -200,8 +201,8 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		DO_ERROR_CHECK();
 
 		porque.setCamera(cam);
-		// TODO:
-		porque.flush(info.size, info.size, refShader, atlases);
+		// TODO: skinned reflection shader
+		porque.flush(info.size, info.size, refShader, refShader, atlases);
 		DO_ERROR_CHECK();
 
 		sky.draw(cam, info.size, info.size);

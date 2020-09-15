@@ -30,6 +30,7 @@ class gameObject {
 			                 // + where to load from
 			Model,           // generic model, static/dynamic/etc subclasses
 			Mesh,            // meshes that make up a model
+			Skin,            // Skinning info
 			Particles,       // particle system
 			Light,           // Light object, has Point/Spot/etc subclasses
 			ReflectionProbe, // Full reflection probe
@@ -129,6 +130,22 @@ class gameImport : public gameObject {
 		}
 
 		std::string sourceFile;
+};
+
+class gameSkin : public gameObject {
+	public:
+		typedef std::shared_ptr<gameSkin> ptr;
+		typedef std::weak_ptr<gameSkin>   weakptr;
+
+		gameSkin() : gameObject(objType::Skin) {}
+
+		virtual std::string typeString(void) {
+			return "Skin";
+		}
+
+		std::vector<glm::mat4> inverseBind;
+		// keep internal pointers to joints, same nodes as in the tree
+		std::vector<gameObject::ptr> joints;
 };
 
 class gameLight : public gameObject {

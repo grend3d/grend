@@ -130,7 +130,7 @@ void game_editor::render(gameMain *game) {
 		// TODO: maybe attach shaders to gameObjects
 		que.add(UI_objects);
 		que.flush(game->rend->framebuffer, game->rend->shaders["unshaded"],
-		          game->rend->atlases);
+		          game->rend->shaders["unshaded"], game->rend->atlases);
 
 		float fticks = SDL_GetTicks() / 1000.0f;
 		que.add(game->state->rootnode, fticks);
@@ -160,7 +160,7 @@ void game_editor::render(gameMain *game) {
 		DO_ERROR_CHECK();
 		
 		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
-		          game->rend->atlases);
+		          game->rend->shaders["main-skinned"], game->rend->atlases);
 
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);

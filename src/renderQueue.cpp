@@ -29,39 +29,51 @@ void renderQueue::add(gameObject::ptr obj,
 		inverted = !inverted;
 	}
 
-	switch (obj->type) {
-		case gameObject::objType::Mesh:
-			{
-				gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-				meshes.push_back({adjTrans, inverted, mesh});
-			}
-			break;
+	if (obj->type == gameObject::objType::Mesh) {
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
+		meshes.push_back({adjTrans, inverted, mesh});
 
-		case gameObject::objType::Light:
-			{
-				gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
-				lights.push_back({adjTrans, inverted, light});
-			}
-			break;
+	} else if (obj->type == gameObject::objType::Light) {
+		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
+		lights.push_back({adjTrans, inverted, light});
 
-		case gameObject::objType::ReflectionProbe:
-			{
-				gameReflectionProbe::ptr probe =
-					std::dynamic_pointer_cast<gameReflectionProbe>(obj);
-				probes.push_back({adjTrans, inverted, probe});
-			}
-			break;
-
-		default:
-			break;
+	} else if (obj->type == gameObject::objType::ReflectionProbe) {
+		gameReflectionProbe::ptr probe =
+			std::dynamic_pointer_cast<gameReflectionProbe>(obj);
+		probes.push_back({adjTrans, inverted, probe});
 	}
 
-	for (auto& [name, ptr] : obj->nodes) {
-		//std::cerr << "add(): subnode " << name << std::endl;
-		add(ptr, animTime, adjTrans, inverted);
+	if (obj->type == gameObject::objType::None
+	    && obj->hasNode("skin")
+	    && obj->hasNode("mesh"))
+	{
+		auto s = std::dynamic_pointer_cast<gameSkin>(obj->getNode("skin"));
+		addSkinned(obj->getNode("mesh"), s, animTime, adjTrans, inverted);
+
+	} else {
+		for (auto& [name, ptr] : obj->nodes) {
+			//std::cerr << "add(): subnode " << name << std::endl;
+			add(ptr, animTime, adjTrans, inverted);
+		}
 	}
 
 	//std::cerr << "add(): pop" << std::endl;
+}
+
+void renderQueue::addSkinned(gameObject::ptr obj,
+                             gameSkin::ptr skin,
+                             float animTime,
+                             glm::mat4 trans,
+                             bool inverted)
+{
+	if (obj->type == gameObject::objType::Mesh) {
+		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		skinnedMeshes.push_back({trans, inverted, m, skin});
+	}
+
+	for (auto& [name, ptr] : obj->nodes) {
+		addSkinned(ptr, skin, animTime, trans, inverted);
+	}
 }
 
 void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
@@ -160,6 +172,7 @@ void renderQueue::cull(void) {
 void renderQueue::flush(unsigned width,
                         unsigned height,
                         Program::ptr program,
+                        Program::ptr skinnedprog,
                         renderAtlases& atlases)
 {
 	sort();
@@ -172,8 +185,6 @@ void renderQueue::flush(unsigned width,
 	program->set("v", view);
 	program->set("p", projection);
 	program->set("v_inv", v_inv);
-
-	//std::cerr << "got here" << std::endl;
 
 	for (auto& [transform, inverted, mesh] : meshes) {
 		glm::mat3 m_3x3_inv_transp =
@@ -205,13 +216,58 @@ void renderQueue::flush(unsigned width,
 		               GL_UNSIGNED_INT, cmesh->elements_offset);
 	}
 
+	/*
+	skinnedprog->bind();
+	skinnedprog->set("v", view);
+	skinnedprog->set("p", projection);
+	skinnedprog->set("v_inv", v_inv);
+
+	for (auto& [transform, inverted, mesh, skin] : skinnedMeshes) {
+		for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
+			std::string sloc = "joints["+std::to_string(i)+"]";
+			auto& mat = skin->inverseBind[i];
+			skinnedprog->set(sloc, mat);
+		}
+
+		glm::mat3 m_3x3_inv_transp =
+			glm::transpose(glm::inverse(model_to_world(transform)));
+
+		skinnedprog->set("m", transform);
+		skinnedprog->set("m_3x3_inv_transp", m_3x3_inv_transp);
+
+		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
+		assert(mod->compiled);
+		set_material(program, mod->comped_model, mesh->material);
+		auto& mat = mod->materials[mesh->material];
+
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mat.blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
+
+		// TODO: need to keep track of the model face order
+		set_face_order(inverted? GL_CW : GL_CCW);
+
+		auto& cmesh = mesh->comped_mesh;
+		bind_vao(cmesh->vao);
+		glDrawElements(GL_TRIANGLES, cmesh->elements_size,
+		               GL_UNSIGNED_INT, cmesh->elements_offset);
+	}
+	*/
+
 	meshes.clear();
 	lights.clear();
 	probes.clear();
+	skinnedMeshes.clear();
 }
 
 void renderQueue::flush(renderFramebuffer::ptr fb,
                         Program::ptr program,
+                        Program::ptr skinnedprog,
                         renderAtlases& atlases)
 {
 	sort();
@@ -222,10 +278,6 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 	glFrontFace(GL_CCW);
-	//glClearColor(0.1, 0.1, 0.1, 1);
-	//glClearColor(1.0, 0.1, 0.1, 1);
-	//glClearStencil(0);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	disable(GL_SCISSOR_TEST);
 	enable(GL_DEPTH_TEST);
@@ -288,9 +340,76 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 		               GL_UNSIGNED_INT, cmesh->elements_offset);
 	}
 
+	skinnedprog->bind();
+	skinnedprog->set("v", view);
+	skinnedprog->set("p", projection);
+	skinnedprog->set("v_inv", v_inv);
+	shaderSync(skinnedprog, atlases);
+	gameSkin::ptr lastskin = nullptr;
+
+	for (auto& [transform, inverted, mesh, skin] : skinnedMeshes) {
+		// TODO: check whether this skin is already synced
+		if (skin != lastskin) {
+			for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
+				float tim = SDL_GetTicks()/1000.f;
+				gameObject::ptr temp = skin->joints[i];
+				glm::mat4 accum = glm::mat4(1);
+
+				for (; temp != skin && temp; temp = temp->parent) {
+					accum = temp->getTransform(tim)*accum;
+				}
+
+				std::string sloc = "joints["+std::to_string(i)+"]";
+				auto mat = accum*skin->inverseBind[i];
+				skinnedprog->set(sloc, mat);
+			}
+
+			lastskin = skin;
+		}
+		DO_ERROR_CHECK();
+
+		if (fb->drawn_meshes.size() < 0xff) {
+			fb->drawn_meshes.push_back(mesh);
+			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
+
+		} else {
+			glStencilFunc(GL_ALWAYS, 0, ~0);
+		}
+
+		glm::mat3 m_3x3_inv_transp =
+			glm::transpose(glm::inverse(model_to_world(transform)));
+
+		skinnedprog->set("m", transform);
+		skinnedprog->set("m_3x3_inv_transp", m_3x3_inv_transp);
+
+		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
+		assert(mod->compiled);
+		set_material(skinnedprog, mod->comped_model, mesh->material);
+		auto& mat = mod->materials[mesh->material];
+
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mat.blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
+
+		// TODO: need to keep track of the model face order
+		set_face_order(inverted? GL_CW : GL_CCW);
+
+		auto& cmesh = mesh->comped_mesh;
+		bind_vao(cmesh->vao);
+		glDrawElements(GL_TRIANGLES, cmesh->elements_size,
+		               GL_UNSIGNED_INT, cmesh->elements_offset);
+	}
+
+	// TODO: clear()
 	meshes.clear();
 	lights.clear();
 	probes.clear();
+	skinnedMeshes.clear();
 }
 
 void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {

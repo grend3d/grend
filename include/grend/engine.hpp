@@ -145,26 +145,35 @@ class renderQueue {
 	public:
 		renderQueue(camera::ptr cam) { setCamera(cam); };
 		renderQueue(renderQueue& other) {
-			meshes = other.meshes;
-			lights = other.lights;
-			probes = other.probes;
-			cam    = other.cam;
+			meshes        = other.meshes;
+			skinnedMeshes = other.skinnedMeshes;
+			lights        = other.lights;
+			probes        = other.probes;
+			cam           = other.cam;
 		}
 
 		void add(gameObject::ptr obj,
 		         float animTime = 0.0,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
+		void addSkinned(gameObject::ptr obj,
+		                gameSkin::ptr skin,
+		                float animTime = 0.0,
+		                glm::mat4 trans = glm::mat4(1),
+		                bool inverted = false);
 		void updateLights(Program::ptr program, renderAtlases& atlases);
 		void updateReflections(Program::ptr program,
 		                       renderAtlases& atlases,
 		                       skybox& sky);
 		void sort(void);
 		void cull(void);
-		void flush(renderFramebuffer::ptr fb, Program::ptr program,
+		void flush(renderFramebuffer::ptr fb,
+		           // XXX: need some sort of context setup/buffer/etc
+		           Program::ptr program, Program::ptr skinnedprog,
 		           renderAtlases& atlases);
 		void flush(unsigned width, unsigned height,
-		           Program::ptr program, renderAtlases& atlases);
+		           Program::ptr program, Program::ptr skinnedprog,
+		           renderAtlases& atlases);
 		void shaderSync(Program::ptr program, renderAtlases& atlases);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
 
@@ -173,6 +182,8 @@ class renderQueue {
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
 		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
+		std::vector<std::tuple<glm::mat4, bool,
+		                       gameMesh::ptr, gameSkin::ptr>> skinnedMeshes;
 		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
 		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
 
