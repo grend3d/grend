@@ -105,7 +105,6 @@ void renderer::loadShaders(void) {
 		GR_PREFIX "shaders/out/unshaded.frag"
 	);
 
-
 	for (auto& name : {"main", "refprobe", "refprobe_debug", "unshaded"}) {
 		Program::ptr s = shaders[name];
 
@@ -152,6 +151,17 @@ void renderer::loadShaders(void) {
 	shaders["quadtest"]->link();
 
 	shaders["main"]->bind();
+}
+
+struct renderFlags renderer::getFlags(std::string name) {
+	return (struct renderFlags) {
+		// TODO: some sort of shader class/interface/whatever system
+		//       so that fragment shaders can be automatically paired with
+		//       compatible vertex shaders
+		//       maybe just do a (c++) class-based thing?
+		.mainShader    = shaders[name],
+		.skinnedShader = shaders[name+"-skinned"],
+	};
 }
 
 void grendx::set_material(Program::ptr program,

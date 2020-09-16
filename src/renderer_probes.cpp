@@ -124,6 +124,10 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	cam->position = light->transform.position;
 	cam->field_of_view_x = 90;
 
+	// TODO: skinned shadow shader
+	renderFlags flags;
+	flags.mainShader = flags.skinnedShader = shadowShader;
+
 	for (unsigned i = 0; i < 6; i++) {
 		if (!atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
 			std::cerr
@@ -142,7 +146,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 		porque.setCamera(cam);
 		// TODO: skinned shadow shader
-		porque.flush(info.size, info.size, shadowShader, shadowShader, atlases);
+		porque.flush(info.size, info.size, flags, atlases);
 	}
 
 	light->have_map = true;
@@ -183,6 +187,10 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	cam->position = probe->transform.position;
 	DO_ERROR_CHECK();
 
+	// TODO: skinned reflection shader
+	renderFlags flags;
+	flags.mainShader = flags.skinnedShader = refShader;
+
 	for (unsigned i = 0; i < 6; i++) {
 		refShader->bind();
 		if (!atlases.reflections->bind_atlas_fb(probe->faces[i])) {
@@ -202,7 +210,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 
 		porque.setCamera(cam);
 		// TODO: skinned reflection shader
-		porque.flush(info.size, info.size, refShader, refShader, atlases);
+		porque.flush(info.size, info.size, flags, atlases);
 		DO_ERROR_CHECK();
 
 		sky.draw(cam, info.size, info.size);

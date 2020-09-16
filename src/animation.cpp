@@ -87,12 +87,17 @@ animation::interpFrames(float delta, float end) {
 
 void animationChannel::applyTransform(struct TRS& thing, float delta) {
 	assert(group != nullptr);
+	struct TRS asdf = thing;
 
 	for (auto& ptr : animations) {
+		struct TRS foo = asdf;
 		FERR("group %s with endtime %f\n",
 		     group->name.c_str(), group->endtime);
-		ptr->applyTransform(thing, delta, group->endtime);
+		ptr->applyTransform(foo, delta, group->endtime);
+		asdf = mixtrs(asdf, foo, group->weight);
 	}
+
+	thing = asdf;
 }
 
 void grendx::applyChannelVecTransforms(

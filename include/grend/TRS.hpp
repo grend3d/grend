@@ -15,5 +15,15 @@ struct TRS {
 	}
 };
 
+static inline struct TRS mixtrs(struct TRS& a, struct TRS& b, float amount) {
+	struct TRS ret;
+
+	ret.position = glm::mix(a.position, b.position, amount);
+	ret.rotation = glm::mix(a.rotation, b.rotation, amount);
+	ret.scale    = glm::mix(a.scale, b.scale, amount);
+
+	return ret;
+}
+
 // namespace grendx
 }

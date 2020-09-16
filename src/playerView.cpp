@@ -142,8 +142,8 @@ void playerView::render(gameMain *game) {
 		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 		
-		que.flush(game->rend->framebuffer, game->rend->shaders["main"],
-		          game->rend->shaders["main-skinned"], game->rend->atlases);
+		auto flags = game->rend->getFlags();
+		que.flush(game->rend->framebuffer, flags, game->rend->atlases);
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}

@@ -141,6 +141,17 @@ class renderAtlases {
 		atlas::ptr shadows;
 };
 
+struct renderFlags {
+	Program::ptr mainShader;
+	Program::ptr skinnedShader;
+
+	bool cull_faces = true;
+	bool sort       = true;
+	bool stencil    = true;
+	bool depth      = true;
+	bool syncshader = true;
+};
+
 class renderQueue {
 	public:
 		renderQueue(camera::ptr cam) { setCamera(cam); };
@@ -168,11 +179,10 @@ class renderQueue {
 		void sort(void);
 		void cull(void);
 		void flush(renderFramebuffer::ptr fb,
-		           // XXX: need some sort of context setup/buffer/etc
-		           Program::ptr program, Program::ptr skinnedprog,
+		           renderFlags& flags,
 		           renderAtlases& atlases);
 		void flush(unsigned width, unsigned height,
-		           Program::ptr program, Program::ptr skinnedprog,
+		           renderFlags& flags,
 		           renderAtlases& atlases);
 		void shaderSync(Program::ptr program, renderAtlases& atlases);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
@@ -182,8 +192,7 @@ class renderQueue {
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
 		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
-		std::vector<std::tuple<glm::mat4, bool,
-		                       gameMesh::ptr, gameSkin::ptr>> skinnedMeshes;
+		std::map<gameSkin::ptr, std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>>> skinnedMeshes;
 		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
 		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
 
@@ -227,6 +236,9 @@ class renderer {
 
 		void drawSkybox(void);
 		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
+
+		// XXX
+		struct renderFlags getFlags(std::string name="main");
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
