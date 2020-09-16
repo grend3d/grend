@@ -60,12 +60,6 @@ renderer::renderer(context& ctx) {
 	default_aomap->buffer(default_material.ambient_occ_map);
 
 	loadShaders();
-
-	/*
-	reflection_atlas = std::unique_ptr<atlas>(new atlas(2048));
-	shadow_atlas = std::unique_ptr<atlas>(new atlas(2048, atlas::mode::Depth));
-	*/
-
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
@@ -260,93 +254,3 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 
 	return glm::mat4_cast(rotation);
 }
-
-/*
-void renderer::sync_spot_lights(const std::vector<uint32_t>& lights) {
-	size_t active = min(MAX_LIGHTS, lights.size());
-
-	shader->set("active_spot_lights", (GLint)active);
-
-	for (size_t i = 0; i < active; i++) {
-		// TODO: check light index
-		const auto& light = spot_lights[lights[i]];
-		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
-
-		shader->set(locstr + ".position",      light.position);
-		shader->set(locstr + ".diffuse",       light.diffuse);
-		shader->set(locstr + ".direction",     light.direction);
-		shader->set(locstr + ".radius",        light.radius);
-		shader->set(locstr + ".intensity",     light.intensity);
-		shader->set(locstr + ".angle",         light.angle);
-		shader->set(locstr + ".casts_shadows", light.casts_shadows);
-
-		if (light.casts_shadows) {
-			shader->set(locstr + ".shadowmap",
-			            shadow_atlas->tex_vector(light.shadowmap));
-		}
-	}
-}
-
-void renderer::sync_directional_lights(const std::vector<uint32_t>& lights) {
-	size_t active = min(MAX_LIGHTS, lights.size());
-
-	shader->set("active_directional_lights", (GLint)active);
-
-	for (size_t i = 0; i < active; i++) {
-		// TODO: check light index
-		const auto& light = directional_lights[lights[i]];
-		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
-
-		shader->set(locstr + ".position",      light.position);
-		shader->set(locstr + ".diffuse",       light.diffuse);
-		shader->set(locstr + ".direction",     light.direction);
-		shader->set(locstr + ".intensity",     light.intensity);
-		shader->set(locstr + ".casts_shadows", light.casts_shadows);
-	}
-}
-*/
-
-#if 0
-void renderer::touch_light_refprobes(void) {
-	for (auto& [id, probe] : ref_probes) {
-		for (unsigned i = 0; i < 6; i++) {
-			if (reflection_atlas->tree.valid(probe.faces[i])) {
-				probe.faces[i] = reflection_atlas->tree.refresh(probe.faces[i]);
-			}
-		}
-	}
-}
-
-// TODO: touch lights that are visible
-void renderer::touch_light_shadowmaps(void) {
-	for (auto& [id, plit] : point_lights) {
-		if (!plit.casts_shadows)
-			continue;
-
-		for (unsigned i = 0; i < 6; i++) {
-			if (reflection_atlas->tree.valid(plit.shadowmap[i])) {
-				plit.shadowmap[i] =
-					reflection_atlas->tree.refresh(plit.shadowmap[i]);
-			}
-		}
-	}
-
-	for (auto& [id, slit] : spot_lights) {
-		if (!slit.casts_shadows)
-			continue;
-
-		if (reflection_atlas->tree.valid(slit.shadowmap)) {
-			slit.shadowmap = reflection_atlas->tree.refresh(slit.shadowmap);
-		}
-	}
-}
-
-float grendx::light_extent(struct point_light *p, float threshold) {
-	if (p) {
-		//auto& lit = lights[id];
-		return p->radius * (sqrt((p->intensity * p->diffuse.w)/threshold) - 1);
-	}
-
-	return 0.0;
-}
-#endif
