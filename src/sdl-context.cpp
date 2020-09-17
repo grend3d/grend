@@ -16,10 +16,6 @@ context::context(const char *progname) {
 		SDL_Die("Couldn't initialize video.");
 	}
 
-	if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG) != (IMG_INIT_JPG | IMG_INIT_PNG)) {
-		//SDL_Die("Couldn't initialize sdl2_image");
-	}
-
 	if (TTF_Init() < 0) {
 		//SDL_Die("Couldn't initialize sdl2_ttf");
 	}
@@ -88,7 +84,6 @@ context::context(const char *progname) {
 context::~context() {
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
-	IMG_Quit();
 	SDL_Quit();
 }
 

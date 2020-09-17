@@ -24,7 +24,7 @@ INCLUDES = -I./include -I./libs/ \
            $(DIMGUI_INCLUDES) $(DJSON_INCLUDES)
 
 CXXFLAGS += `sdl2-config --cflags --libs`
-CXXFLAGS += -lSDL2_image -lSDL2_ttf -lGL -lGLEW
+CXXFLAGS += -lSDL2_ttf -lGL -lGLEW
 CXXFLAGS += --std=c++17
 CXXFLAGS += $(CONF_C_FLAGS) $(CONF_GL_FLAGS)
 CXXFLAGS += $(INCLUDES) -MD -Wall -MD -O2 -fPIC

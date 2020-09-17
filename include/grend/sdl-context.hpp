@@ -10,7 +10,6 @@
 #define SCREEN_SIZE_Y 720
 
 #include <SDL.h>
-#include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <grend/opengl-includes.hpp>
 
