@@ -19,9 +19,16 @@ class context {
 	public:
 		context(const char *progname);
 		~context();
+		void setAudioCallback(void *data, SDL_AudioCallback callback);
 
 		SDL_Window *window;
 		SDL_GLContext glcontext;
+
+		SDL_AudioDeviceID audioOut;
+		SDL_AudioSpec     audioHave;
+		SDL_AudioCallback audioCallback = nullptr;
+		void *callbackData = nullptr;
+
 		GLenum glew_status;
 };
 

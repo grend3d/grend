@@ -90,7 +90,6 @@ class game_editor : public gameView {
 		model_map models;
 		model_map UI_models;
 
-		camera::ptr cam = camera::ptr(new camera());
 		gameObject::ptr selectedNode = nullptr;
 		float movement_speed = 10.f;
 		float fidelity = 10.f;

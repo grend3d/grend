@@ -5,6 +5,7 @@
 #include <grend/gl_manager.hpp> // TODO: rename
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
+#include <grend/audioMixer.hpp>
 #include <memory>
 #include <stdint.h>
 
@@ -31,6 +32,7 @@ class gameMain {
 		std::shared_ptr<gameView>   view  = nullptr;
 		std::shared_ptr<renderer>   rend  = nullptr;
 		std::shared_ptr<physics>    phys  = nullptr;
+		std::shared_ptr<audioMixer> audio = nullptr;
 
 		// FPS info
 		sma_counter frame_timer;

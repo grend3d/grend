@@ -10,10 +10,24 @@ void SDL_Die(const char *message) {
 	throw std::logic_error(message);
 }
 
+// XXX: need to have a callback while initializing SDL, before any of the
+//      engine audio stuff has been initialized, so this will fill the buffer
+//      with zeros until another callback is set up
+static void callbackStub(void *userdata, uint8_t *stream, int len) {
+	context *ctx = reinterpret_cast<context*>(userdata);
+
+	if (ctx && ctx->audioCallback) {
+		ctx->audioCallback(ctx->callbackData, stream, len);
+
+	} else {
+		memset(stream, 0, len);
+	}
+}
+
 context::context(const char *progname) {
 	std::cerr << "got to context::context()" << std::endl;
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		SDL_Die("Couldn't initialize video.");
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+		SDL_Die(SDL_GetError());
 	}
 
 	if (TTF_Init() < 0) {
@@ -40,23 +54,10 @@ context::context(const char *progname) {
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	/*
-	// TODO: do I need this for render FB multisampling?
-	//       disabling for now
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	*/
-
-	/*
-	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-	                          SCREEN_SIZE_X, SCREEN_SIZE_Y,
-	                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-							  */
-
 	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, 
 	                         SDL_WINDOWPOS_CENTERED,
 	                          SCREEN_SIZE_X, SCREEN_SIZE_Y,
-	                          SDL_WINDOW_OPENGL);
+	                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
 
 	/*
@@ -79,12 +80,37 @@ context::context(const char *progname) {
 	}
 
 	std::cerr << "initialized glew" << std::endl;
+
+	SDL_AudioSpec want;
+	SDL_memset(&want, 0, sizeof(want));
+	want.freq = 44100;
+	want.format = AUDIO_S16;
+	want.channels = 2;
+	want.samples = 2048;
+	want.callback = callbackStub;
+	want.userdata = this;
+
+	audioOut = SDL_OpenAudioDevice(NULL, 0, &want, &audioHave, 0);
+
+	if (audioOut == 0) {
+		SDL_Die(SDL_GetError());
+
+	} else {
+		SDL_PauseAudioDevice(audioOut, 0);
+	}
 }
 
 context::~context() {
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
+	SDL_CloseAudioDevice(audioOut);
 	SDL_Quit();
+}
+
+void context::setAudioCallback(void *data, SDL_AudioCallback callback) {
+	// Hmm, is locking needed here?
+	callbackData = data;
+	audioCallback = callback;
 }
 
 // namespace grendx

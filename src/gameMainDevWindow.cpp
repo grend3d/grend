@@ -6,10 +6,12 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
 	phys   = physics::ptr(new imp_physics());
 	state  = game_state::ptr(new game_state());
 	rend   = renderer::ptr(new renderer(ctx));
+	audio  = audioMixer::ptr(new audioMixer(ctx));
 
 	player = gameView::ptr(new playerView(this));
 	editor = gameView::ptr(new game_editor(this));
 	view   = editor;
+	audio->setCamera(view->cam);
 
 	input.bind(modes::Editor,
 		[&] (SDL_Event& ev, unsigned flags) {
@@ -18,6 +20,11 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
 			    && (flags & bindFlags::Control))
 			{
 				view = player;
+				audio->setCamera(view->cam);
+
+				if (audio->currentCam == nullptr) {
+					puts("huh?");
+				}
 				return (int)modes::Player;
 			}
 			return MODAL_NO_CHANGE;
@@ -30,6 +37,7 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
 			    && (flags & bindFlags::Control))
 			{
 				view = editor;
+				audio->setCamera(view->cam);
 				return (int)modes::Editor;
 			}
 			return MODAL_NO_CHANGE;

@@ -16,7 +16,7 @@ class gameView {
 		virtual void logic(gameMain *game, float delta) {};
 		virtual void render(gameMain *game) = 0;
 		// TODO: game object
-		camera cam;
+		camera::ptr cam = std::make_shared<camera>();
 };
 
 // namespace grendx

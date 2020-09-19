@@ -2,8 +2,9 @@ include mk/config.mk
 
 BUILD = ./build
 SHADER_PATH = shaders/out/
-SRC  = $(wildcard src/*.cpp)
-OBJ  = $(DIMGUI_SRC:.cpp=.o) $(SRC:.cpp=.o)
+CPPSRC = $(wildcard src/*.cpp)
+CSRC   = $(wildcard src/*.c)
+OBJ   = $(DIMGUI_SRC:.cpp=.o) $(CPPSRC:.cpp=.o) $(CSRC:.c=.o)
 LIBSO = libgrend.so.0
 LIBA  = libgrend.a
 DEPS  = $(SRC:.cpp=.d)
@@ -23,12 +24,13 @@ SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
 INCLUDES = -I./include -I./libs/ \
            $(DIMGUI_INCLUDES) $(DJSON_INCLUDES)
 
-CXXFLAGS += `sdl2-config --cflags --libs`
-CXXFLAGS += -lSDL2_ttf -lGL -lGLEW
-CXXFLAGS += --std=c++17
-CXXFLAGS += $(CONF_C_FLAGS) $(CONF_GL_FLAGS)
-CXXFLAGS += $(INCLUDES) -MD -Wall -MD -O2 -fPIC
-CXXFLAGS += -D GR_PREFIX='"$(PREFIX)/share/grend/"'
+BASEFLAGS += `sdl2-config --cflags --libs`
+BASEFLAGS += -lSDL2_ttf -lGL -lGLEW
+BASEFLAGS += $(CONF_C_FLAGS) $(CONF_GL_FLAGS)
+BASEFLAGS += $(INCLUDES) -MD -Wall -MD -O2 -fPIC
+BASEFLAGS += -D GR_PREFIX='"$(PREFIX)/share/grend/"'
+CXXFLAGS += -std=c++17 $(BASEFLAGS)
+CFLAGS   += -std=c11 $(BASEFLAGS)
 
 DEMO_CXXFLAGS := $(CXXFLAGS) $(BUILD)/$(LIBA)
 
