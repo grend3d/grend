@@ -1,14 +1,54 @@
 #include <grend/playerView.hpp>
 #include <grend/gameView.hpp>
+#include <grend/audioMixer.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+
+#if GLSL_VERSION < 300
+// GLES2
+#define NANOVG_GLES2
+#define NANOVG_GLES2_IMPLEMENTATION
+#elif GLSL_VERSION == 300
+// GLES3
+#define NANOVG_GLES3
+#define NANOVG_GLES3_IMPLEMENTATION
+#else
+// GL3+ core
+#define NANOVG_GL3
+#define NANOVG_GL3_IMPLEMENTATION
+#endif
+
+#include <nanovg/src/nanovg.h>
+#include <nanovg/src/nanovg_gl.h>
+#include <nanovg/src/nanovg_gl_utils.h>
 
 using namespace grendx;
 
 static renderPostStage<rOutput>::ptr testpost = nullptr;
 static gameObject::ptr testweapon = nullptr;
 
+static channelBuffers_ptr weaponSound =
+	openAudio("test-assets/obj/sounds/Audio/footstep_snow_003.ogg");
+
+
+struct nvg_data {
+	int fontNormal, fontBold, fontIcons, fontEmoji;
+};
+
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
+#if GLSL_VERSION < 300
+	//vg = nvgCreateGLES2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+#else
+	//vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL3(NVG_ANTIALIAS);
+#endif
+	assert(vg != nullptr);
+	struct nvg_data temp;
+	temp.fontNormal = nvgCreateFont(vg, "sans", "libs/nanovg/example/Roboto-Regular.ttf");
+	temp.fontBold = nvgCreateFont(vg, "sans-bold", "libs/nanovg/example/Roboto-Bold.ttf");
+	temp.fontEmoji = nvgCreateFont(vg, "emoji", "libs/nanovg/example/NotoEmoji-Regular.ttf");
+	nvgAddFallbackFontId(vg, temp.fontNormal, temp.fontEmoji);
+	nvgAddFallbackFontId(vg, temp.fontBold, temp.fontEmoji);
 
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
@@ -72,6 +112,21 @@ playerView::playerView(gameMain *game) : gameView() {
 				sin(-rel_y*M_PI/2.f),
 				-cos(rel_x*2*M_PI)
 			));
+
+			return MODAL_NO_CHANGE;
+		});
+
+	// set camera orientation
+	// TODO: this could be a function generator
+	input.bind(modes::Move,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_MOUSEBUTTONDOWN
+			    && ev.button.button == SDL_BUTTON_LEFT)
+			{
+				auto sound = openAudio("test-assets/obj/sounds/Audio/footstep_snow_003.ogg");
+				auto ptr = std::make_shared<stereoAudioChannel>(sound);
+				game->audio->add(ptr);
+			}
 
 			return MODAL_NO_CHANGE;
 		});
@@ -147,9 +202,73 @@ void playerView::render(gameMain *game) {
 
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
-	
+
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glEnable(GL_CULL_FACE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
 	testpost->setSize(winsize_x, winsize_y);
 	testpost->draw(game->rend->framebuffer);
+	
+	Framebuffer().bind();
+	nvgBeginFrame(vg, winsize_x, winsize_y, 1.0);
+	nvgSave(vg);
+
+	float ticks = SDL_GetTicks() / 1000.f;
+
+	NVGpaint shadow = nvgBoxGradient(vg, 25, 38, 62, 36, 6, 10, nvgRGBA(0,0,0,128), nvgRGBA(0,0,0,0));
+	nvgBeginPath(vg);
+	nvgRect(vg, 25, 38, 62, 36);
+	nvgRoundedRect(vg, 35, 48, 42, 16, 3);
+	//nvgFillColor(vg, nvgRGBA(172, 16, 16, 192));
+	nvgPathWinding(vg, NVG_HOLE);
+	nvgFillPaint(vg, shadow);
+	nvgFill(vg);
+
+	shadow = nvgBoxGradient(vg, 38, 25, 36, 62, 6, 10, nvgRGBA(0,0,0,128), nvgRGBA(0,0,0,0));
+	nvgBeginPath(vg);
+	nvgRect(vg, 38, 25, 36, 62);
+	nvgRoundedRect(vg, 48, 35, 16, 42, 3);
+	//nvgFillColor(vg, nvgRGBA(172, 16, 16, 192));
+	nvgPathWinding(vg, NVG_HOLE);
+	nvgFillPaint(vg, shadow);
+	nvgFill(vg);
+
+	nvgBeginPath(vg);
+	nvgRoundedRect(vg, 48, 35, 16, 42, 3);
+	nvgRoundedRect(vg, 35, 48, 42, 16, 3);
+	nvgFillColor(vg, nvgRGBA(172, 16, 16, 192));
+	nvgFill(vg);
+
+	nvgRotate(vg, 0.1*cos(ticks));
+	nvgBeginPath(vg);
+	nvgRect(vg, 90, 44, 256, 24);
+	nvgFillColor(vg, nvgRGBA(30, 30, 30, 127));
+	nvgFill(vg);
+
+	nvgBeginPath(vg);
+	nvgRect(vg, 93, 47, 128 + 120*sin(ticks), 20);
+	nvgFillColor(vg, nvgRGBA(192, 32, 32, 127));
+	nvgFill(vg);
+
+	nvgRotate(vg, -0.1*cos(ticks));
+	nvgBeginPath(vg);
+	nvgRoundedRect(vg, winsize_x - 250, 50, 200, 100, 10);
+	nvgFillColor(vg, nvgRGBA(28, 30, 34, 192));
+	nvgFill(vg);
+
+	nvgFontSize(vg, 16.f);
+	nvgFontFace(vg, "sans-bold");
+	nvgFontBlur(vg, 0);
+	nvgFillColor(vg, nvgRGBA(220, 220, 220, 160));
+	nvgTextAlign(vg, NVG_ALIGN_LEFT);
+	nvgText(vg, winsize_x - 235, 80, "💚 Testing this", NULL);
+
+	nvgRestore(vg);
+	nvgEndFrame(vg);
 
 	glDepthMask(GL_TRUE);
 	enable(GL_DEPTH_TEST);

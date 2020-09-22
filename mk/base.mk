@@ -17,12 +17,21 @@ DIMGUI_SRC = $(wildcard libs/imgui/*.cpp) \
 			 libs/imgui/examples/imgui_impl_sdl.cpp
 DIMGUI_INCLUDES = -I./libs/imgui
 DJSON_INCLUDES = -I./libs/json/single_include/
+# XXX: need to have an include path that has nanovg includes at the base level
+DNANOVG_INCLUDES = -I./libs/nanovg/src
+DNANOVG_LIB = libs/nanovg/build/libnanovg.a
+
+DSTB_INCLUDES = -I./libs/stb
+DSTB_CSRC     = $(wildcard ./libs/stb/*.c)
+DSTB_CPPSRC   = $(wildcard ./libs/stb/*.cpp)
+DSTB_OBJ      = $(DSTB_CSRC:.c=.o) $(DSTB_CPPSRC:.cpp=.o)
 
 SHADER_SRC = $(wildcard shaders/src/*.vert) $(wildcard shaders/src/*.frag)
 SHADER_OUT = $(subst /src/,/out/,$(SHADER_SRC))
 
 INCLUDES = -I./include -I./libs/ \
-           $(DIMGUI_INCLUDES) $(DJSON_INCLUDES)
+           $(DIMGUI_INCLUDES) $(DJSON_INCLUDES) $(DNANOVG_INCLUDES) \
+		   $(DSTB_INCLUDES)
 
 BASEFLAGS += `sdl2-config --cflags --libs`
 BASEFLAGS += -lSDL2_ttf -lGL -lGLEW
@@ -32,7 +41,7 @@ BASEFLAGS += -D GR_PREFIX='"$(PREFIX)/share/grend/"'
 CXXFLAGS += -std=c++17 $(BASEFLAGS)
 CFLAGS   += -std=c11 $(BASEFLAGS)
 
-DEMO_CXXFLAGS := $(CXXFLAGS) $(BUILD)/$(LIBA)
+DEMO_CXXFLAGS := $(CXXFLAGS) $(BUILD)/$(LIBA) $(DNANOVG_LIB)
 
 most: directories shaders grend-lib config-script
 all: most demos
@@ -80,12 +89,17 @@ $(BUILD):
 $(SHADER_PATH):
 	mkdir -p $(SHADER_PATH)
 
-$(BUILD)/$(LIBSO): $(OBJ)
-	$(CXX) $(OBJ) $(CXXFLAGS) -shared -o $@
+$(BUILD)/$(LIBSO): $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ)
+	$(CXX) $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ) $(CXXFLAGS) -shared -o $@
 	-ln -s $(LIBSO) $(BUILD)/libgrend.so
 
-$(BUILD)/$(LIBA): $(OBJ)
+$(BUILD)/$(LIBA): $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ)
 	ar rvs $@ $^
+
+$(DNANOVG_LIB):
+	cd libs/nanovg; \
+		premake5 gmake; \
+		cd build; make nanovg DEFINES=-DNVG_NO_STB
 
 # whole build depends on configuration set in Makefile
 # should it? maybe not
@@ -112,7 +126,7 @@ $(BUILD)/grend-config: Makefile
 	@echo '        ;;' >> $@
 	@echo '      --libs)' >> $@
 	@echo '        echo "-L$(PREFIX)/lib"' >> $@
-	@echo '        echo "-lgrend -lSDL2_ttf -LGL -lGLEW"' >> $@
+	@echo '        echo "-lgrend -lSDL2_ttf -lGL -lGLEW"' >> $@
 	@echo '        echo "`sdl2-config --libs`"' >> $@
 	@echo '        ;;' >> $@
 	@echo '      --help)' >> $@
@@ -129,11 +143,16 @@ clean-demos: $(DEMO_CLEAN)
 clean-shaders:
 	-rm -f $(SHADER_OUT)
 
+.PHONY: clean-libs
+clean-libs:
+	-cd libs/nanovg/build; make clean
+	-rm -f $(DSTB_OBJ)
+
 .PHONY: test
 test: $(DEMO_TARGETS)
 	for thing in $(DEMO_TARGETS); do $$thing; done;
 
 .PHONY: clean
-clean: clean-shaders clean-demos
+clean: clean-shaders clean-demos clean-libs
 	-rm -rf $(BUILD)
 	-rm -f $(OBJ) $(DEPS)

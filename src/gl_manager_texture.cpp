@@ -1,8 +1,8 @@
 #include <grend/gl_manager.hpp>
 #include <grend/glm-includes.hpp>
 
-#include <tinygltf/stb_image.h>
-#include <tinygltf/stb_image_write.h>
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 #include <string>
 #include <vector>

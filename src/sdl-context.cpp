@@ -53,6 +53,8 @@ context::context(const char *progname) {
 #endif
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	// stencil buffer for nanovg
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, 
 	                         SDL_WINDOWPOS_CENTERED,

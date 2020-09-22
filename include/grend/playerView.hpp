@@ -5,6 +5,7 @@
 #include <grend/gameMain.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/physics.hpp>
+#include <nanovg/src/nanovg.h>
 #include <memory>
 
 namespace grendx {
@@ -25,6 +26,7 @@ class playerView : public gameView {
 		gameObject::ptr cameraObj = std::make_shared<gameObject>();
 		uint64_t cameraPhysID;
 		modalSDLInput input;
+		NVGcontext *vg = nullptr;
 };
 
 // namespace grendx

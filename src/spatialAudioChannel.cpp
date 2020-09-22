@@ -109,7 +109,7 @@ static const double echo_int_param = 340.27/1482.0 * ((M_SQRT2/2)/(M_PI/4));
 //static const double echo_int_param = 340.27/1482.0;
 static const double echo_strength = 0.15;
 static const double phase_cof = 8;
-static const double distance_falloff_factor = 32.0;
+static const double distance_falloff_factor = 8.0;
 
 static inline double sound_dist(double cm) {
 	return cm / sound_speed;
@@ -157,7 +157,7 @@ sample_c2 sample_audio_stream(audioBuffer& buf, size_t pos, glm::vec2 rot) {
 	double rad = distance_falloff_factor/(4*M_PI*distance*distance);
 	//double sqrad = sqrt(rad);
 	double sqrad = rad;
-	double vol = (0.85 + sqrad);
+	double vol = (0.90 + sqrad);
 
 	//double dir = (it > 0.0)? 1.0 : -1.0;
 	double dir = it;

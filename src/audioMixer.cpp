@@ -108,7 +108,7 @@ void audioMixer::remove(size_t id) {
 	}
 }
 
-#include <grend/stb_vorbis.h>
+#include <stb/stb_vorbis.h>
 static std::map<std::string, channelBuffers_weakptr> filecache;
 
 channelBuffers_ptr grendx::openAudio(std::string filename) {

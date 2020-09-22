@@ -36,7 +36,21 @@ int main(int argc, char *argv[]) {
 	// TODO: shouldn't need access to gameMain subclass to add objects relative
 	//       to the camera, need a current camera object or something
 	addCameraWeapon(game->player);
-	game->run();
 
+	//std::string song = "/tmp/android52 - FIVE EP - 05 Bleed (Baq5 Remix).ogg";
+	std::string song = "/tmp/9 - goretrance x - serbian fuckboy edition.ogg";
+	//std::string song = "/tmp/04 - Red.ogg";
+	//std::string song = "/tmp/baq5-short.ogg";
+	//std::string song = "/tmp/sketch039.ogg";
+	auto ptr = openAudio(song); 
+	auto foo = std::make_shared<spatialAudioChannel>(ptr, audioChannel::mode::Loop);
+	foo->worldPosition = glm::vec3(-10, 0, -5);
+	game->audio->add(foo);
+
+	auto sud = std::make_shared<spatialAudioChannel>(openAudio("/tmp/06 - Spaghetti Forever.ogg"), audioChannel::mode::Loop);
+	sud->worldPosition = glm::vec3(0, 0, -5);
+	game->audio->add(sud);
+
+	game->run();
 	return 0;
 }
