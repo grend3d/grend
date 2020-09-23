@@ -497,6 +497,12 @@ void set_face_order(GLenum face_order) {
 	}
 }
 
+void set_default_gl_flags(void) {
+	glDepthMask(GL_TRUE);
+	enable(GL_DEPTH_TEST);
+	// TODO: other flags
+}
+
 void enable(GLenum feature) {
 	if (feature_cache.find(feature) == feature_cache.end()) {
 		glEnable(feature);

@@ -307,6 +307,7 @@ Vao::ptr get_current_vao(void);
 Vao::ptr get_screenquad_vao(void);
 Vao::ptr bind_vao(Vao::ptr vao);
 void set_face_order(GLenum face_order);
+void set_default_gl_flags(void);
 
 void enable(GLenum feature);
 void disable(GLenum feature);

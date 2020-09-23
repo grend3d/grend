@@ -6,6 +6,7 @@
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
 #include <grend/audioMixer.hpp>
+#include <grend/camera.hpp>
 #include <memory>
 #include <stdint.h>
 
@@ -38,6 +39,9 @@ class gameMain {
 		sma_counter frame_timer;
 		uint32_t last_frame_time = 0;
 };
+
+// common world-drawing function
+void renderWorld(gameMain *game, camera::ptr cam);
 
 // namespace grendx
 }

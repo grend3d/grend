@@ -5,7 +5,6 @@
 #include <emscripten/html5.h>
 #endif
 
-
 using namespace grendx;
 
 int gameMain::step(void) {
@@ -20,6 +19,9 @@ int gameMain::step(void) {
 
 		step_physics();
 		view->logic(this, fticks);
+
+		set_default_gl_flags();
+		rend->framebuffer->clear();
 		view->render(this);
 
 		//auto minmax = framems_minmax();
@@ -75,4 +77,44 @@ void gameMain::step_physics(void) {
 
 void gameMain::logic(void) {
 
+}
+
+void grendx::renderWorld(gameMain *game, camera::ptr cam) {
+	assert(game->rend && game->rend->framebuffer);
+
+	int winsize_x, winsize_y;
+	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+
+	if (game->state->rootnode) {
+		renderQueue que(cam);
+		float fticks = SDL_GetTicks() / 1000.0f;
+
+		que.add(game->state->rootnode, fticks);
+		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
+		que.updateReflections(game->rend->shaders["refprobe"],
+		                      game->rend->atlases,
+		                      game->rend->defaultSkybox);
+		que.add(game->state->physObjects);
+		DO_ERROR_CHECK();
+
+		game->rend->framebuffer->framebuffer->bind();
+		DO_ERROR_CHECK();
+
+		// TODO: constants for texture bindings, no magic numbers floating around
+		game->rend->shaders["main"]->bind();
+		glActiveTexture(GL_TEXTURE6);
+		game->rend->atlases.reflections->color_tex->bind();
+		game->rend->shaders["main"]->set("reflection_atlas", 6);
+		glActiveTexture(GL_TEXTURE7);
+		game->rend->atlases.shadows->depth_tex->bind();
+		game->rend->shaders["main"]->set("shadowmap_atlas", 7);
+		DO_ERROR_CHECK();
+
+		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
+		DO_ERROR_CHECK();
+
+		auto flags = game->rend->getFlags();
+		que.flush(game->rend->framebuffer, flags, game->rend->atlases);
+		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
+	}
 }

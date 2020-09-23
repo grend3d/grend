@@ -29,7 +29,6 @@ static gameObject::ptr testweapon = nullptr;
 static channelBuffers_ptr weaponSound =
 	openAudio("test-assets/obj/sounds/Audio/footstep_snow_003.ogg");
 
-
 struct nvg_data {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
 };
@@ -161,55 +160,11 @@ void playerView::render(gameMain *game) {
 		                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 	}
 
-	// TODO: draw player UI stuff (text, etc)
-	// TODO: handle this in gameMain or handleInput here
-	// TODO: this is mostly shared with game_editor::render(), how
-	//       to best abstract this...
+	renderWorld(game, cam);
+
+	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
-
-	game->rend->framebuffer->clear();
-
-	if (game->state->rootnode) {
-		renderQueue que(cam);
-		float fticks = SDL_GetTicks() / 1000.0f;
-
-		que.add(game->state->rootnode, fticks);
-		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
-		que.updateReflections(game->rend->shaders["refprobe"],
-		                      game->rend->atlases,
-		                      game->rend->defaultSkybox);
-		que.add(game->state->physObjects);
-		DO_ERROR_CHECK();
-
-		game->rend->framebuffer->framebuffer->bind();
-		DO_ERROR_CHECK();
-
-		game->rend->shaders["main"]->bind();
-		glActiveTexture(GL_TEXTURE6);
-		game->rend->atlases.reflections->color_tex->bind();
-		game->rend->shaders["main"]->set("reflection_atlas", 6);
-		glActiveTexture(GL_TEXTURE7);
-		game->rend->atlases.shadows->depth_tex->bind();
-		game->rend->shaders["main"]->set("shadowmap_atlas", 7);
-		DO_ERROR_CHECK();
-
-		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
-		DO_ERROR_CHECK();
-		
-		auto flags = game->rend->getFlags();
-		que.flush(game->rend->framebuffer, flags, game->rend->atlases);
-
-		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
-	}
-
-	glEnable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_SCISSOR_TEST);
-	glEnable(GL_CULL_FACE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
 	testpost->setSize(winsize_x, winsize_y);
 	testpost->draw(game->rend->framebuffer);
 	
@@ -218,24 +173,12 @@ void playerView::render(gameMain *game) {
 	nvgSave(vg);
 
 	float ticks = SDL_GetTicks() / 1000.f;
-
-	NVGpaint shadow = nvgBoxGradient(vg, 25, 38, 62, 36, 6, 10, nvgRGBA(0,0,0,128), nvgRGBA(0,0,0,0));
-	nvgBeginPath(vg);
-	nvgRect(vg, 25, 38, 62, 36);
-	nvgRoundedRect(vg, 35, 48, 42, 16, 3);
-	//nvgFillColor(vg, nvgRGBA(172, 16, 16, 192));
-	nvgPathWinding(vg, NVG_HOLE);
-	nvgFillPaint(vg, shadow);
-	nvgFill(vg);
-
-	shadow = nvgBoxGradient(vg, 38, 25, 36, 62, 6, 10, nvgRGBA(0,0,0,128), nvgRGBA(0,0,0,0));
-	nvgBeginPath(vg);
-	nvgRect(vg, 38, 25, 36, 62);
-	nvgRoundedRect(vg, 48, 35, 16, 42, 3);
-	//nvgFillColor(vg, nvgRGBA(172, 16, 16, 192));
-	nvgPathWinding(vg, NVG_HOLE);
-	nvgFillPaint(vg, shadow);
-	nvgFill(vg);
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glEnable(GL_CULL_FACE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, 48, 35, 16, 42, 3);
@@ -266,10 +209,9 @@ void playerView::render(gameMain *game) {
 	nvgFillColor(vg, nvgRGBA(220, 220, 220, 160));
 	nvgTextAlign(vg, NVG_ALIGN_LEFT);
 	nvgText(vg, winsize_x - 235, 80, "💚 Testing this", NULL);
+	nvgText(vg, winsize_x - 235, 80 + 16, "Go forward ➡", NULL);
+	nvgText(vg, winsize_x - 235, 80 + 32, "⬅ Go back", NULL);
 
 	nvgRestore(vg);
 	nvgEndFrame(vg);
-
-	glDepthMask(GL_TRUE);
-	enable(GL_DEPTH_TEST);
 }

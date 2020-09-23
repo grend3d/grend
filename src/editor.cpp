@@ -116,58 +116,24 @@ void game_editor::loadUIModels(void) {
 }
 
 void game_editor::render(gameMain *game) {
-	// TODO: handle this in gameMain or handleInput here
+	renderQueue que(cam);
+	auto flags = game->rend->getFlags();
+
+	// draw UI objects before others, to avoid UI objects not being in the
+	// stencil buffer if the stencil counter overflows (and so not being
+	// clickable)
+	// TODO: maybe attach shaders to gameObjects
+	// TODO: skinned unshaded shader
+	auto unshadedFlags = flags;
+	unshadedFlags.mainShader = unshadedFlags.skinnedShader
+		= game->rend->shaders["unshaded"];
+	que.add(UI_objects);
+	que.flush(game->rend->framebuffer, unshadedFlags, game->rend->atlases);
+	renderWorld(game, cam);
+
+	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
-
-	game->rend->framebuffer->clear();
-
-	if (game->state->rootnode) {
-		renderQueue que(cam);
-		auto flags = game->rend->getFlags();
-		// draw UI objects before others, to avoid UI objects not being in the
-		// stencil buffer if the stencil counter overflows (and so not being
-		// clickable)
-		// TODO: maybe attach shaders to gameObjects
-		// TODO: skinned unshaded shader
-		auto unshadedFlags = flags;
-		unshadedFlags.mainShader = unshadedFlags.skinnedShader
-			= game->rend->shaders["unshaded"];
-
-		que.add(UI_objects);
-		que.flush(game->rend->framebuffer, unshadedFlags, game->rend->atlases);
-
-		float fticks = SDL_GetTicks() / 1000.0f;
-		que.add(game->state->rootnode, fticks);
-
-		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
-		que.updateReflections(game->rend->shaders["refprobe"],
-		                      game->rend->atlases,
-		                      game->rend->defaultSkybox);
-		que.add(game->state->physObjects);
-		DO_ERROR_CHECK();
-
-		//Framebuffer().bind();
-		game->rend->framebuffer->framebuffer->bind();
-		DO_ERROR_CHECK();
-
-		game->rend->shaders["main"]->bind();
-		glActiveTexture(GL_TEXTURE6);
-		game->rend->atlases.reflections->color_tex->bind();
-		game->rend->shaders["main"]->set("reflection_atlas", 6);
-		glActiveTexture(GL_TEXTURE7);
-		game->rend->atlases.shadows->depth_tex->bind();
-		game->rend->shaders["main"]->set("shadowmap_atlas", 7);
-		DO_ERROR_CHECK();
-
-		//game->rend->shaders["main"]->set("skytexture", 4);
-		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
-		DO_ERROR_CHECK();
-		
-		que.flush(game->rend->framebuffer, flags, game->rend->atlases);
-		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
-	}
-
 	testpost->setSize(winsize_x, winsize_y);
 	testpost->draw(game->rend->framebuffer);
 
@@ -179,9 +145,6 @@ void game_editor::render(gameMain *game) {
 	render_editor(game);
 	render_imgui(game);
 #endif
-
-	glDepthMask(GL_TRUE);
-	enable(GL_DEPTH_TEST);
 }
 
 void game_editor::initImgui(gameMain *game) {

@@ -23,101 +23,6 @@ static const size_t MAX_LIGHTS = 16;
 
 namespace grendx {
 
-	/*
-struct point_light {
-	glm::vec3 position;
-	glm::vec4 diffuse;
-	float radius;
-	float intensity;
-	bool casts_shadows = false;
-	quadtree::node_id shadowmap[6];
-
-	// meta info not passed to the shader
-	bool changed = true;
-	bool static_shadows = false;
-	bool shadows_rendered = false;
-};
-
-struct spot_light {
-	glm::vec3 position;
-	glm::vec4 diffuse;
-	glm::vec3 direction;
-	float radius; // bulb radius
-	float intensity;
-	float angle;
-	bool casts_shadows = false;
-	quadtree::node_id shadowmap;
-
-	// meta
-	bool changed = true;
-	bool static_shadows = false;
-	bool shadows_rendered = false;
-};
-
-struct directional_light {
-	glm::vec3 position;
-	glm::vec4 diffuse;
-	glm::vec3 direction;
-	float intensity;
-	bool casts_shadows = false;
-	quadtree::node_id shadowmap;
-
-	// meta
-	bool changed = true;
-	bool static_shadows = false;
-	bool shadows_rendered = false;
-};
-*/
-
-// TODO: revisit parabolic maps at some point, but for now they're
-//       not ideal:
-//       - transformation of vertices means that depth information is lost,
-//         so rendering is less efficient and depth maps can't be generated
-//         the simple way
-//       - storage is not actually much lower, similar quality parabolic
-//         maps are the same or larger than cubemaps, lots of wasted space
-//         in the rendered images (roughly a circle of usable data per side,
-//         which means a ratio of around PI/4 of the space is actually used)
-//       - with MRTs rendering the faces is a non-issue, the thing can be
-//         rendered in one shot, real-time reflections can just be disabled
-//         on gles2 (and the platforms that gles2 would be used for probably
-//         can't handle rendering real-time reflections to begin with anyway)
-/*
-struct reflection_probe {
-	glm::vec3 position;
-	quadtree::node_id faces[6];
-	bool changed = true;
-	bool is_static = true;
-	bool have_map = false;
-	// TODO: maybe non-static with update frequency
-};
-
-// indicators for objects (to help identify objects from the stencil index
-// after drawing all the meshes)
-enum drawattr_class {
-	DRAWATTR_CLASS_NONE,
-	DRAWATTR_CLASS_MAP,
-	DRAWATTR_CLASS_PHYSICS,
-	DRAWATTR_CLASS_UI,
-	DRAWATTR_CLASS_UI_LIGHT,
-	DRAWATTR_CLASS_UI_REFPROBE,
-};
-
-struct draw_class {
-	unsigned class_id = 0;
-	unsigned obj_id = 0;
-};
-*/
-
-/*
-struct draw_attributes {
-	std::string name;
-	glm::mat4 transform;
-	GLenum face_order = GL_CCW;
-	bool cull_faces = true;
-};
-*/
-
 class skybox {
 	public:
 		skybox(); 
@@ -232,10 +137,11 @@ class renderer {
 		// look up stencil buffer index in drawn objects
 		gameMesh::ptr index(unsigned idx);
 
+		/*
 		void drawQueue(renderQueue& queue);
-
 		void drawSkybox(void);
 		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
+		*/
 
 		// XXX
 		struct renderFlags getFlags(std::string name="main");
@@ -261,9 +167,10 @@ class renderer {
 		std::map<std::string, Program::ptr> shaders;
 
 	protected:
-		gameReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
 		Program::ptr shader;
 
+		/*
+		gameReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
 		// list of models to draw
 		// TODO: meshes, need to pair materials with meshes though, which
 		//       currently is part of the model classes
@@ -277,6 +184,7 @@ class renderer {
 		std::vector<gameMesh::ptr> transparent_draws;
 		std::vector<gameLight::ptr> active_lights;
 		std::vector<gameReflectionProbe::ptr> active_refprobes;
+		*/
 };
 
 float light_extent(struct point_light *p, float threshold=0.03);
