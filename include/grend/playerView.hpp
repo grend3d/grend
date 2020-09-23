@@ -15,7 +15,9 @@ class playerView : public gameView {
 		typedef std::shared_ptr<playerView> ptr;
 		typedef std::weak_ptr<playerView>   weakptr;
 		enum modes {
+			MainMenu,
 			Move,
+			Pause,
 		};
 
 		playerView(gameMain *game);
@@ -27,6 +29,10 @@ class playerView : public gameView {
 		uint64_t cameraPhysID;
 		modalSDLInput input;
 		NVGcontext *vg = nullptr;
+		int menuSelect = 0;
+
+	private:
+		void drawMainMenu(int wx, int wy);
 };
 
 // namespace grendx

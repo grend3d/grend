@@ -5,15 +5,12 @@
 
 #if GLSL_VERSION < 300
 // GLES2
-#define NANOVG_GLES2
 #define NANOVG_GLES2_IMPLEMENTATION
 #elif GLSL_VERSION == 300
 // GLES3
-#define NANOVG_GLES3
 #define NANOVG_GLES3_IMPLEMENTATION
 #else
 // GL3+ core
-#define NANOVG_GL3
 #define NANOVG_GL3_IMPLEMENTATION
 #endif
 
@@ -52,6 +49,35 @@ playerView::playerView(gameMain *game) : gameView() {
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
 
+	input.bind(modes::MainMenu,
+		[&] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					case SDLK_DOWN:
+					case SDLK_j:
+						menuSelect++;
+						break;
+
+					case SDLK_UP:
+					case SDLK_k:
+						menuSelect = max(0, menuSelect - 1);
+						break;
+
+					case SDLK_RETURN:
+					case SDLK_SPACE:
+						if (menuSelect == 0) {
+							return (int)modes::Move;
+						}
+						break;
+
+					default:
+						break;
+				}
+			}
+
+			return MODAL_NO_CHANGE;
+		});
+
 	// movement controls
 	input.bind(modes::Move,
 		[&] (SDL_Event& ev, unsigned flags) {
@@ -63,7 +89,8 @@ playerView::playerView(gameMain *game) : gameView() {
 					case SDLK_d: cam->velocity = -cam->right*speed; break;
 					case SDLK_q: cam->velocity =  cam->up*speed; break;
 					case SDLK_e: cam->velocity = -cam->up*speed; break;
-					case SDLK_SPACE: cam->velocity = cam->up*50.f; break; default: break;
+					case SDLK_SPACE: cam->velocity = cam->up*50.f; break;
+					default: break;
 				};
 			}
 			return MODAL_NO_CHANGE;
@@ -82,6 +109,19 @@ playerView::playerView(gameMain *game) : gameView() {
 					case SDLK_SPACE:
 						cam->velocity = glm::vec3(0);
 						break;
+					default: break;
+				};
+			}
+			return MODAL_NO_CHANGE;
+		});
+
+	// switch modes (TODO: add pause)
+	input.bind(modes::Move,
+		[&] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				switch (ev.key.keysym.sym) {
+					// TODO: should pause
+					case SDLK_ESCAPE: return (int)modes::MainMenu;
 					default: break;
 				};
 			}
@@ -130,7 +170,7 @@ playerView::playerView(gameMain *game) : gameView() {
 			return MODAL_NO_CHANGE;
 		});
 
-	input.setMode(modes::Move);
+	input.setMode(modes::MainMenu);
 }
 
 void playerView::handleInput(gameMain *game, SDL_Event& ev) {
@@ -153,32 +193,19 @@ void playerView::logic(gameMain *game, float delta) {
 		0));
 }
 
-void playerView::render(gameMain *game) {
-	if (!testpost) {
-		// XXX: keep postprocessing chain in renderer class
-		testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
-		                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
-	}
-
-	renderWorld(game, cam);
-
-	// TODO: function to do this
-	int winsize_x, winsize_y;
-	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
-	testpost->setSize(winsize_x, winsize_y);
-	testpost->draw(game->rend->framebuffer);
-	
+static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	Framebuffer().bind();
-	nvgBeginFrame(vg, winsize_x, winsize_y, 1.0);
-	nvgSave(vg);
-
-	float ticks = SDL_GetTicks() / 1000.f;
 	glEnable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_SCISSOR_TEST);
 	glEnable(GL_CULL_FACE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	nvgBeginFrame(vg, wx, wy, 1.0);
+	nvgSave(vg);
+
+	float ticks = SDL_GetTicks() / 1000.f;
 
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, 48, 35, 16, 42, 3);
@@ -199,7 +226,7 @@ void playerView::render(gameMain *game) {
 
 	nvgRotate(vg, -0.1*cos(ticks));
 	nvgBeginPath(vg);
-	nvgRoundedRect(vg, winsize_x - 250, 50, 200, 100, 10);
+	nvgRoundedRect(vg, wx - 250, 50, 200, 100, 10);
 	nvgFillColor(vg, nvgRGBA(28, 30, 34, 192));
 	nvgFill(vg);
 
@@ -208,10 +235,119 @@ void playerView::render(gameMain *game) {
 	nvgFontBlur(vg, 0);
 	nvgFillColor(vg, nvgRGBA(220, 220, 220, 160));
 	nvgTextAlign(vg, NVG_ALIGN_LEFT);
-	nvgText(vg, winsize_x - 235, 80, "💚 Testing this", NULL);
-	nvgText(vg, winsize_x - 235, 80 + 16, "Go forward ➡", NULL);
-	nvgText(vg, winsize_x - 235, 80 + 32, "⬅ Go back", NULL);
+	nvgText(vg, wx - 235, 80, "💚 Testing this", NULL);
+	nvgText(vg, wx - 235, 80 + 16, "Go forward ➡", NULL);
+	nvgText(vg, wx - 235, 80 + 32, "⬅ Go back", NULL);
 
 	nvgRestore(vg);
 	nvgEndFrame(vg);
+}
+
+void playerView::drawMainMenu(int wx, int wy) {
+	static int lastx, lasty;
+	static int mx = -1, my = -1;
+	static Uint32 lastbuttons, buttons;
+
+	lastx = mx;
+	lasty = my;
+	lastbuttons = buttons;
+	buttons = SDL_GetMouseState(&mx, &my);
+
+	Framebuffer().bind();
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glEnable(GL_CULL_FACE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	nvgBeginFrame(vg, wx, wy, 1.0);
+	nvgSave(vg);
+	int center = wx/2;
+
+	nvgBeginPath(vg);
+	nvgRoundedRect(vg, center - 160, 64, 320, 192 + 32, 10);
+	nvgFillColor(vg, nvgRGBA(20, 20, 20, 192));
+	nvgFill(vg);
+
+	nvgTextAlign(vg, NVG_ALIGN_CENTER);
+	nvgFontSize(vg, 32.f);
+	nvgFontFace(vg, "sans-bold");
+	nvgFontBlur(vg, 0);
+	nvgFillColor(vg, nvgRGBA(0xf0, 0xf0, 0xf0, 192));
+	nvgText(vg, center, 100, "💚 Main Menu lmao", NULL);
+
+	int count = 0;
+	auto drawEnt = [&](const char *msg) {
+		bool clicked = false;
+		int lowx = center - 150;
+		int hix  = center + 150;
+		int lowy = 100 + count*32 + 2;
+		int hiy  = lowy + 36;
+
+		if (menuSelect == count) {
+			nvgBeginPath(vg);
+			nvgRoundedRect(vg, lowx, lowy, 300, 36, 10);
+			nvgFillColor(vg, nvgRGBA(28, 30, 34, 192));
+			nvgFill(vg);
+
+			nvgFillColor(vg, nvgRGBA(0xf0, 0xf0, 0xf0, 192));
+
+		} else {
+			nvgFillColor(vg, nvgRGBA(0xd0, 0xd0, 0xd0, 192));
+		}
+
+		bool updated = mx != lastx || my != lasty || buttons != lastbuttons;
+		if (updated && mx >= lowx && mx < hix && my >= lowy && my < hiy) {
+			menuSelect = count;
+			clicked = !!(buttons & SDL_BUTTON(SDL_BUTTON_LEFT));
+		}
+
+		nvgText(vg, center, 100 + (count+1)*32, msg, NULL);
+		count++;
+
+		return clicked;
+	};
+
+	if (drawEnt("New game")) {
+		input.mode = modes::Move;
+	}
+
+	if (drawEnt("Continue")) {
+		// TODO:
+	}
+
+	if (drawEnt("Settings")) {
+		// TODO:
+	}
+
+	if (drawEnt("Quit")) {
+		// TODO:
+	}
+
+	nvgRestore(vg);
+	nvgEndFrame(vg);
+}
+
+void playerView::render(gameMain *game) {
+	int winsize_x, winsize_y;
+	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+
+	if (input.mode == modes::MainMenu) {
+		drawMainMenu(winsize_x, winsize_y);
+
+	} else {
+		if (!testpost) {
+			// XXX: keep postprocessing chain in renderer class
+			testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+					SCREEN_SIZE_X, SCREEN_SIZE_Y);
+		}
+
+		renderWorld(game, cam);
+
+		// TODO: function to do this
+		testpost->setSize(winsize_x, winsize_y);
+		testpost->draw(game->rend->framebuffer);
+		drawUIStuff(vg, winsize_x, winsize_y);
+	}
 }
