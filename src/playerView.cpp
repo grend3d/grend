@@ -41,9 +41,12 @@ playerView::playerView(gameMain *game) : gameView() {
 #endif
 	assert(vg != nullptr);
 	struct nvg_data temp;
-	temp.fontNormal = nvgCreateFont(vg, "sans", "libs/nanovg/example/Roboto-Regular.ttf");
-	temp.fontBold = nvgCreateFont(vg, "sans-bold", "libs/nanovg/example/Roboto-Bold.ttf");
-	temp.fontEmoji = nvgCreateFont(vg, "emoji", "libs/nanovg/example/NotoEmoji-Regular.ttf");
+	temp.fontNormal = nvgCreateFont(vg, "sans",
+		GR_PREFIX "assets/fonts/Roboto-Regular.ttf");
+	temp.fontBold = nvgCreateFont(vg, "sans-bold",
+		GR_PREFIX "assets/fonts/Roboto-Bold.ttf");
+	temp.fontEmoji = nvgCreateFont(vg, "emoji",
+		GR_PREFIX "assets/fonts/NotoEmoji-Regular.ttf");
 	nvgAddFallbackFontId(vg, temp.fontNormal, temp.fontEmoji);
 	nvgAddFallbackFontId(vg, temp.fontBold, temp.fontEmoji);
 
