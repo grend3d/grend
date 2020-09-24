@@ -146,3 +146,26 @@ channelBuffers_ptr grendx::openAudio(std::string filename) {
 
 	return nullptr;
 }
+
+// convenience functions, wrap some of the verbose make_shared...()
+spatialAudioChannel::ptr grendx::openSpatialLoop(std::string filename) {
+	auto ptr = openAudio(filename);
+	return std::make_shared<spatialAudioChannel>(ptr, audioChannel::mode::Loop);
+}
+
+spatialAudioChannel::ptr grendx::openSpatialChannel(std::string filename) {
+	auto ptr = openAudio(filename);
+	return std::make_shared<spatialAudioChannel>
+		(ptr, audioChannel::mode::OneShot);
+}
+
+stereoAudioChannel::ptr grendx::openStereoLoop(std::string filename) {
+	auto ptr = openAudio(filename);
+	return std::make_shared<stereoAudioChannel>(ptr, audioChannel::mode::Loop);
+}
+
+stereoAudioChannel::ptr grendx::openStereoChannel(std::string filename) {
+	auto ptr = openAudio(filename);
+	return std::make_shared<stereoAudioChannel>
+		(ptr, audioChannel::mode::OneShot);
+}

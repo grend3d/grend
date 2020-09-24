@@ -97,5 +97,11 @@ class audioMixer {
 
 channelBuffers_ptr openAudio(std::string filename);
 
+// convenience functions, wrap some of the verbose make_shared...()
+spatialAudioChannel::ptr openSpatialLoop(std::string filename);
+spatialAudioChannel::ptr openSpatialChannel(std::string filename);
+stereoAudioChannel::ptr  openStereoLoop(std::string filename);
+stereoAudioChannel::ptr  openStereoChannel(std::string filename);
+
 // namespace grendx
 }

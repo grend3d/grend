@@ -25,7 +25,7 @@ static renderPostStage<rOutput>::ptr testpost = nullptr;
 static gameObject::ptr testweapon = nullptr;
 
 static channelBuffers_ptr weaponSound =
-	openAudio("test-assets/obj/sounds/Audio/footstep_snow_003.ogg");
+	openAudio(GR_PREFIX "assets/sfx/impact.ogg");
 
 struct nvg_data {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
@@ -101,7 +101,7 @@ playerView::playerView(gameMain *game) : gameView() {
 			if (ev.type == SDL_MOUSEBUTTONDOWN
 			    && ev.button.button == SDL_BUTTON_LEFT)
 			{
-				auto sound = openAudio("test-assets/obj/sounds/Audio/footstep_snow_003.ogg");
+				auto sound = openAudio(GR_PREFIX "assets/sfx/impact.ogg");
 				auto ptr = std::make_shared<stereoAudioChannel>(sound);
 				game->audio->add(ptr);
 			}
@@ -193,6 +193,7 @@ void playerView::drawMainMenu(int wx, int wy) {
 	buttons = SDL_GetMouseState(&mx, &my);
 
 	Framebuffer().bind();
+
 	glEnable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_SCISSOR_TEST);
@@ -272,16 +273,21 @@ void playerView::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 
+	if (!testpost) {
+		// XXX: keep postprocessing chain in renderer class
+		testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+				SCREEN_SIZE_X, SCREEN_SIZE_Y);
+	}
+
 	if (input.mode == modes::MainMenu) {
+		renderWorld(game, cam);
+
+		// TODO: function to do this
+		testpost->setSize(winsize_x, winsize_y);
+		testpost->draw(game->rend->framebuffer);
 		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
-		if (!testpost) {
-			// XXX: keep postprocessing chain in renderer class
-			testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
-					SCREEN_SIZE_X, SCREEN_SIZE_Y);
-		}
-
 		renderWorld(game, cam);
 
 		// TODO: function to do this

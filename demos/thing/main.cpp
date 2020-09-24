@@ -37,19 +37,13 @@ int main(int argc, char *argv[]) {
 	//       to the camera, need a current camera object or something
 	addCameraWeapon(game->player);
 
-	//std::string song = "/tmp/android52 - FIVE EP - 05 Bleed (Baq5 Remix).ogg";
-	std::string song = "/tmp/9 - goretrance x - serbian fuckboy edition.ogg";
-	//std::string song = "/tmp/04 - Red.ogg";
-	//std::string song = "/tmp/baq5-short.ogg";
-	//std::string song = "/tmp/sketch039.ogg";
-	auto ptr = openAudio(song); 
-	auto foo = std::make_shared<spatialAudioChannel>(ptr, audioChannel::mode::Loop);
+	auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
 	foo->worldPosition = glm::vec3(-10, 0, -5);
 	game->audio->add(foo);
 
-	auto sud = std::make_shared<spatialAudioChannel>(openAudio("/tmp/06 - Spaghetti Forever.ogg"), audioChannel::mode::Loop);
-	sud->worldPosition = glm::vec3(0, 0, -5);
-	game->audio->add(sud);
+	auto bar = openSpatialLoop(GR_PREFIX "assets/sfx/Meditating Beat.ogg");
+	bar->worldPosition = glm::vec3(0, 0, -5);
+	game->audio->add(bar);
 
 	game->run();
 	return 0;
