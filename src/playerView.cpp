@@ -4,21 +4,6 @@
 #include <grend/controllers.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
-#if GLSL_VERSION < 300
-// GLES2
-#define NANOVG_GLES2_IMPLEMENTATION
-#elif GLSL_VERSION == 300
-// GLES3
-#define NANOVG_GLES3_IMPLEMENTATION
-#else
-// GL3+ core
-#define NANOVG_GL3_IMPLEMENTATION
-#endif
-
-#include <nanovg/src/nanovg.h>
-#include <nanovg/src/nanovg_gl.h>
-#include <nanovg/src/nanovg_gl_utils.h>
-
 using namespace grendx;
 
 static renderPostStage<rOutput>::ptr testpost = nullptr;
@@ -33,22 +18,6 @@ struct nvg_data {
 
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
-#if GLSL_VERSION < 300
-	//vg = nvgCreateGLES2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
-#else
-	//vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
-	vg = nvgCreateGL3(NVG_ANTIALIAS);
-#endif
-	assert(vg != nullptr);
-	struct nvg_data temp;
-	temp.fontNormal = nvgCreateFont(vg, "sans",
-		GR_PREFIX "assets/fonts/Roboto-Regular.ttf");
-	temp.fontBold = nvgCreateFont(vg, "sans-bold",
-		GR_PREFIX "assets/fonts/Roboto-Bold.ttf");
-	temp.fontEmoji = nvgCreateFont(vg, "emoji",
-		GR_PREFIX "assets/fonts/NotoEmoji-Regular.ttf");
-	nvgAddFallbackFontId(vg, temp.fontNormal, temp.fontEmoji);
-	nvgAddFallbackFontId(vg, temp.fontBold, temp.fontEmoji);
 
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
@@ -175,8 +144,10 @@ static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	nvgFontSize(vg, 16.f);
 	nvgFontFace(vg, "sans-bold");
 	nvgFontBlur(vg, 0);
-	nvgFillColor(vg, nvgRGBA(220, 220, 220, 160));
 	nvgTextAlign(vg, NVG_ALIGN_LEFT);
+	nvgFillColor(vg, nvgRGBA(0xf0, 0x60, 0x60, 160));
+	nvgText(vg, wx - 82, 80, "❎", NULL);
+	nvgFillColor(vg, nvgRGBA(220, 220, 220, 160));
 	nvgText(vg, wx - 235, 80, "💚 Testing this", NULL);
 	nvgText(vg, wx - 235, 80 + 16, "Go forward ➡", NULL);
 	nvgText(vg, wx - 235, 80 + 32, "⬅ Go back", NULL);
@@ -186,90 +157,47 @@ static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 }
 
 void playerView::drawMainMenu(int wx, int wy) {
-	static int lastx, lasty;
-	static int mx = -1, my = -1;
-	static Uint32 lastbuttons, buttons;
-
-	lastx = mx;
-	lasty = my;
-	lastbuttons = buttons;
-	buttons = SDL_GetMouseState(&mx, &my);
-
-	Framebuffer().bind();
-
-	glEnable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_SCISSOR_TEST);
-	glEnable(GL_CULL_FACE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	nvgBeginFrame(vg, wx, wy, 1.0);
-	nvgSave(vg);
 	int center = wx/2;
+	vgui.newFrame(wx, wy);
+	vgui.menuBegin(center - 150, 100, 300, "💚 Main Menu lmao");
+	if (vgui.menuEntry("New game", &menuSelect)) {
+		if (vgui.clicked()) {
+			input.mode = modes::Move;
 
-	nvgBeginPath(vg);
-	nvgRoundedRect(vg, center - 160, 64, 320, 192 + 32, 10);
-	nvgFillColor(vg, nvgRGBA(20, 20, 20, 192));
-	nvgFill(vg);
-
-	nvgTextAlign(vg, NVG_ALIGN_CENTER);
-	nvgFontSize(vg, 32.f);
-	nvgFontFace(vg, "sans-bold");
-	nvgFontBlur(vg, 0);
-	nvgFillColor(vg, nvgRGBA(0xf0, 0xf0, 0xf0, 192));
-	nvgText(vg, center, 100, "💚 Main Menu lmao", NULL);
-
-	int count = 0;
-	auto drawEnt = [&](const char *msg) {
-		bool clicked = false;
-		int lowx = center - 150;
-		int hix  = center + 150;
-		int lowy = 100 + count*32 + 2;
-		int hiy  = lowy + 36;
-
-		if (menuSelect == count) {
-			nvgBeginPath(vg);
-			nvgRoundedRect(vg, lowx, lowy, 300, 36, 10);
-			nvgFillColor(vg, nvgRGBA(28, 30, 34, 192));
-			nvgFill(vg);
-
-			nvgFillColor(vg, nvgRGBA(0xf0, 0xf0, 0xf0, 192));
-
-		} else {
-			nvgFillColor(vg, nvgRGBA(0xd0, 0xd0, 0xd0, 192));
+		} else if (vgui.hovered()) {
+			menuSelect = vgui.menuCount();
 		}
+	}
 
-		bool updated = mx != lastx || my != lasty || buttons != lastbuttons;
-		if (updated && mx >= lowx && mx < hix && my >= lowy && my < hiy) {
-			menuSelect = count;
-			clicked = !!(buttons & SDL_BUTTON(SDL_BUTTON_LEFT));
+	if (vgui.menuEntry("Continue", &menuSelect)) {
+		if (vgui.clicked()) {
+			// TODO:
+
+		} else if (vgui.hovered()) {
+			menuSelect = vgui.menuCount();
 		}
-
-		nvgText(vg, center, 100 + (count+1)*32, msg, NULL);
-		count++;
-
-		return clicked;
-	};
-
-	if (drawEnt("New game")) {
-		input.mode = modes::Move;
 	}
 
-	if (drawEnt("Continue")) {
-		// TODO:
+	if (vgui.menuEntry("Settings", &menuSelect)) {
+		if (vgui.clicked()) {
+			// TODO:
+
+		} else if (vgui.hovered()) {
+			menuSelect = vgui.menuCount();
+		}
 	}
 
-	if (drawEnt("Settings")) {
-		// TODO:
+	if (vgui.menuEntry("Quit", &menuSelect)) {
+		if (vgui.clicked()) {
+			// TODO:
+
+		} else if (vgui.hovered()) {
+			menuSelect = vgui.menuCount();
+		}
 	}
 
-	if (drawEnt("Quit")) {
-		// TODO:
-	}
-
-	nvgRestore(vg);
-	nvgEndFrame(vg);
+	vgui.menuEnd();
+	vgui.endFrame();
 }
 
 void playerView::render(gameMain *game) {
@@ -296,6 +224,6 @@ void playerView::render(gameMain *game) {
 		// TODO: function to do this
 		testpost->setSize(winsize_x, winsize_y);
 		testpost->draw(game->rend->framebuffer);
-		drawUIStuff(vg, winsize_x, winsize_y);
+		drawUIStuff(vgui.nvg, winsize_x, winsize_y);
 	}
 }
