@@ -69,7 +69,7 @@ float shadow_sample_linear(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
 		return ret/(4.0*RANGE*RANGE + 4.0*RANGE + 1.0); \
 	}
 
-PCF_FILTER(shadow_pcf, SHADOW_PCF_RANGE, SHADOW_PCF_STEP, SHADOW_PCF_SAMPLER);
+PCF_FILTER(shadow_pcf, SHADOW_PCF_RANGE, SHADOW_PCF_STEP, SHADOW_PCF_SAMPLER)
 
 // // 4 sample, interpolated (16 total samples)
 // PCF_FILTER(shadow_pcf4_interp, 0.5,  1.0, shadow_sample_linear);

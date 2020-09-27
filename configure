@@ -2,7 +2,7 @@
 
 CONF_VERSION="`git describe`"
 CONF_BUILD_NAME="grend $CONF_VERSION"
-CONF_TARGETS="shaders grend-test"
+CONF_DEMO_TARGETS=
 CONF_PREFIX=/usr/local
 CONF_SYSROOT=
 CONF_DEBUG=0
@@ -10,8 +10,22 @@ CONF_CFLAGS=""
 CONF_PUBLIC_MODE=0
 CONF_DEV_BUILD=0
 
+CONF_CC=cc
+CONF_CXX="c++"
+CONF_AR=ar
+CONF_STRIP=strip
+CONF_IS_EMSCRIPTEN=0
+CONF_HOST_CC=cc
+CONF_HOST_CXX=c++
+
+if [ ! -z "$CC" ];  then CONF_CC="$CC"; fi
+if [ ! -z "$CXX" ]; then CONF_CXX="$CXX"; fi
+if [ ! -z "$AR" ];  then CONF_AR="$AR"; fi
+if [ ! -z "$EMSCRIPTEN" ]; then CONF_IS_EMSCRIPTEN=1; fi
+
 CONF_GL_TARGET=core330
 CONF_GL_FLAGS=
+CONF_EM_FLAGS=
 CONF_GLSL_STRING=
 
 # Parse the given options
@@ -116,22 +130,49 @@ case "$CONF_GL_TARGET" in
 		;;
 esac
 
-echo "BUILD_NAME = $CONF_BUILD_NAME"
-echo "TARGETS    = $CONF_TARGETS"
-echo "PREFIX     = $CONF_PREFIX"
-echo "SYSROOT    = $CONF_SYSROOT"
-echo "DEV_BUILD  = $CONF_DEV_BUILD"
+if [ "$CONF_IS_EMSCRIPTEN" = 1 ]; then
+	# XXX: should be configurable (this is the configure script after all)
+	TOTAL_MEMORY=1048576000
+	read -r CONF_EM_FLAGS <<- ENDFLAGS
+		 -s USE_SDL=2 \
+		 -s USE_WEBGL2=1 \
+		 -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+		 -s TOTAL_MEMORY=$TOTAL_MEMORY \
+		 -s OFFSCREEN_FRAMEBUFFER=1 \
+		 -g4
+	ENDFLAGS
+fi
+
+echo "BUILD_NAME    = $CONF_BUILD_NAME"
+echo "TARGETS       = $CONF_TARGETS"
+echo "PREFIX        = $CONF_PREFIX"
+echo "SYSROOT       = $CONF_SYSROOT"
+echo "DEV_BUILD     = $CONF_DEV_BUILD"
+echo "CC            = $CONF_CC"
+echo "CXX           = $CONF_CXX"
+echo "AR            = $CONF_AR"
+echo "IS_EMSCRIPTEN = $CONF_IS_EMSCRIPTEN"
 echo "Full install path: $CONF_SYSROOT$CONF_PREFIX"
 
 # Write the options to the makefile
 echo "Generating makefile..."
 echo "PREFIX=$CONF_PREFIX"   >  mk/config.mk
 echo "SYSROOT=$CONF_SYSROOT" >> mk/config.mk
+echo "CC=$CONF_CC" >> mk/config.mk
+echo "CXX=$CONF_CXX" >> mk/config.mk
+echo "AR=$CONF_AR" >> mk/config.mk
+echo "IS_EMSCRIPTEN=$CONF_IS_EMSCRIPTEN" >> mk/config.mk
 echo "CONF_TARGETS=$CONF_TARGETS" >> mk/config.mk
 echo "CONF_CFLAGS=$CONF_CFLAGS" >> mk/config.mk
 echo "CONF_GL_FLAGS=$CONF_GL_FLAGS" >> mk/config.mk
+echo "CONF_EM_FLAGS=$CONF_EM_FLAGS" >> mk/config.mk
 echo "CONF_GLSL_STRING=$CONF_GLSL_STRING" >> mk/config.mk
-cp mk/base.mk Makefile
+
+if [ "$CONF_IS_EMSCRIPTEN" = 1 ]; then
+	cat mk/base.mk mk/webgl.mk > Makefile
+else
+	cp mk/base.mk Makefile
+fi
 
 ## Set flags in config.h
 ## TODO: decide how to do this

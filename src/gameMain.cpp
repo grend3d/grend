@@ -51,12 +51,12 @@ static int render_step(double time, void *data) {
 #endif
 
 int gameMain::run(void) {
-#ifdef __EMSCRIPTEN__
-	emscripten_request_animation_frame_loop(&render_step, game);
-
-#else
 	running = true;
 
+#ifdef __EMSCRIPTEN__
+	emscripten_request_animation_frame_loop(&render_step, this);
+
+#else
 	while (running) {
 		step();
 	}

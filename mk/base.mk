@@ -33,9 +33,15 @@ INCLUDES = -I./include -I./libs/ \
            $(DIMGUI_INCLUDES) $(DJSON_INCLUDES) $(DNANOVG_INCLUDES) \
 		   $(DSTB_INCLUDES)
 
+# only use C flags for emscripten builds
+ifeq ($(IS_EMSCRIPTEN),1)
+BASEFLAGS += `sdl2-config --cflags`
+else
 BASEFLAGS += `sdl2-config --cflags --libs`
 BASEFLAGS += -lSDL2_ttf -lGL -lGLEW
-BASEFLAGS += $(CONF_C_FLAGS) $(CONF_GL_FLAGS)
+endif
+
+BASEFLAGS += $(CONF_C_FLAGS) $(CONF_GL_FLAGS) $(CONF_EM_FLAGS) $(DEFINES)
 BASEFLAGS += $(INCLUDES) -MD -Wall -MD -O2 -fPIC
 BASEFLAGS += -D GR_PREFIX='"$(PREFIX)/share/grend/"'
 CXXFLAGS += -std=c++17 $(BASEFLAGS)
@@ -75,7 +81,7 @@ grend-lib: $(BUILD)/$(LIBSO) $(BUILD)/$(LIBA)
 shaders: $(SHADER_OUT)
 
 .PHONY: demos
-demos: $(DEMO_TARGETS)
+demos: install $(DEMO_TARGETS)
 
 .PHONY: directories
 directories: $(BUILD) $(SHADER_PATH)
@@ -84,22 +90,22 @@ directories: $(BUILD) $(SHADER_PATH)
 config-script: $(BUILD)/grend-config
 
 $(BUILD):
-	mkdir -p $(BUILD)
+	mkdir -p $@
 
 $(SHADER_PATH):
-	mkdir -p $(SHADER_PATH)
+	mkdir -p $@
 
 $(BUILD)/$(LIBSO): $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ)
 	$(CXX) $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ) $(CXXFLAGS) -shared -o $@
 	-ln -s $(LIBSO) $(BUILD)/libgrend.so
 
 $(BUILD)/$(LIBA): $(OBJ) $(DNANOVG_LIB) $(DSTB_OBJ)
-	ar rvs $@ $^
+	$(AR) rvs $@ $^
 
 $(DNANOVG_LIB):
 	cd libs/nanovg; \
-		premake5 gmake; \
-		cd build; make nanovg DEFINES=-DNVG_NO_STB
+		CC="$(CC)" CXX="$(CXX)" AR="$(AR)" LD="$(CC)" premake5 gmake; \
+		cd build; CC="$(CC)" CXX="$(CXX)" AR="$(AR)" LD="$(CC)" make nanovg DEFINES=-DNVG_NO_STB
 
 # whole build depends on configuration set in Makefile
 # should it? maybe not

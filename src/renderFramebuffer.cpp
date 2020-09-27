@@ -33,6 +33,13 @@ void renderFramebuffer::clear(void) {
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {
+#ifdef __EMSCRIPTEN__
+	// seems reading from the stencil buffer isn't supported in webgl...
+	// no way to get pixel-perfect object picking in the current setup,
+	// could have a fallback picking pass (which could be higher resolution anyway)
+	return nullptr;
+#endif
+
 	// TODO: use these at some point
 	//GLbyte color[4];
 	//GLfloat depth;
