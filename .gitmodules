@@ -3,7 +3,7 @@
 	url = https://github.com/mushrom/grend-assets-light.git
 [submodule "libs/tinygltf"]
 	path = libs/tinygltf
-	url = https://github.com/syoyo/tinygltf
+	url = https://github.com/mushrom/tinygltf
 [submodule "libs/imgui"]
 	path = libs/imgui
 	url = https://github.com/ocornut/imgui
