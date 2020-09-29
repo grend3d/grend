@@ -52,12 +52,10 @@ void vecGUI::newFrame(int wx, int wy) {
 	// XXX: should this be a seperate function? Or should the caller
 	//      be responsible for setting this up
 	Framebuffer().bind();
+	set_default_gl_flags();
 
-	enable(GL_BLEND);
-	enable(GL_CULL_FACE);
 	disable(GL_DEPTH_TEST);
 	disable(GL_SCISSOR_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// update mouse state

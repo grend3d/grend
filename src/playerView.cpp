@@ -19,6 +19,9 @@ struct nvg_data {
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
 
+	testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+		SCREEN_SIZE_X, SCREEN_SIZE_Y);
+
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
 
@@ -106,11 +109,10 @@ void playerView::logic(gameMain *game, float delta) {
 
 static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	Framebuffer().bind();
-	glEnable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_SCISSOR_TEST);
-	glEnable(GL_CULL_FACE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	set_default_gl_flags();
+
+	disable(GL_DEPTH_TEST);
+	disable(GL_SCISSOR_TEST);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	nvgBeginFrame(vg, wx, wy, 1.0);
@@ -204,26 +206,22 @@ void playerView::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 
-	if (!testpost) {
-		// XXX: keep postprocessing chain in renderer class
-		testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
-				SCREEN_SIZE_X, SCREEN_SIZE_Y);
-	}
-
 	if (input.mode == modes::MainMenu) {
 		renderWorld(game, cam);
 
-		// TODO: function to do this
 		testpost->setSize(winsize_x, winsize_y);
 		testpost->draw(game->rend->framebuffer);
+
+		// TODO: function to do this
 		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam);
 
-		// TODO: function to do this
 		testpost->setSize(winsize_x, winsize_y);
 		testpost->draw(game->rend->framebuffer);
+
+		// TODO: function to do this
 		drawUIStuff(vgui.nvg, winsize_x, winsize_y);
 	}
 }

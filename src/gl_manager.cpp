@@ -499,8 +499,24 @@ void set_face_order(GLenum face_order) {
 
 void set_default_gl_flags(void) {
 	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+	disable(GL_CULL_FACE);
+	glStencilMask(~0);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glStencilFunc(GL_ALWAYS, 0, ~0);
+
+	disable(GL_SCISSOR_TEST);
+	enable(GL_BLEND);
 	enable(GL_DEPTH_TEST);
+	enable(GL_CULL_FACE);;
 	// TODO: other flags
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindVertexArray(0);
 }
 
 void enable(GLenum feature) {
