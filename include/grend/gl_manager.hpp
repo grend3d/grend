@@ -23,7 +23,7 @@ namespace grendx {
 
 void check_errors(int line, const char *filename, const char *func);
 
-#ifdef NO_ERROR_CHECK
+#if GREND_ERROR_CHECK
 #define DO_ERROR_CHECK() /* asdf */
 
 #else

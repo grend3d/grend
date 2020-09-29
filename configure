@@ -151,6 +151,7 @@ echo "CC            = $CONF_CC"
 echo "CXX           = $CONF_CXX"
 echo "AR            = $CONF_AR"
 echo "IS_EMSCRIPTEN = $CONF_IS_EMSCRIPTEN"
+echo "IS_DEBUG      = $CONF_DEBUG"
 echo "Full install path: $CONF_SYSROOT$CONF_PREFIX"
 
 # Write the options to the makefile
@@ -166,6 +167,7 @@ echo "CONF_CFLAGS=$CONF_CFLAGS" >> mk/config.mk
 echo "CONF_GL_FLAGS=$CONF_GL_FLAGS" >> mk/config.mk
 echo "CONF_EM_FLAGS=$CONF_EM_FLAGS" >> mk/config.mk
 echo "CONF_GLSL_STRING=$CONF_GLSL_STRING" >> mk/config.mk
+echo "CONF_DEBUG=$CONF_DEBUG" >> mk/config.mk
 
 if [ "$CONF_IS_EMSCRIPTEN" = 1 ]; then
 	cat mk/base.mk mk/webgl.mk > Makefile
