@@ -56,12 +56,15 @@ all: most demos
 install: most
 	@# TODO: set proper permissions
 	mkdir -p "$(SYSROOT)/$(PREFIX)/include/mk"
+	mkdir -p "$(SYSROOT)/$(PREFIX)/include/tinygltf"
+	mkdir -p "$(SYSROOT)/$(PREFIX)/include/nanovg/src"
 	mkdir -p "$(SYSROOT)/$(PREFIX)/share/grend/assets"
 	mkdir -p "$(SYSROOT)/$(PREFIX)/share/grend/shaders"
 	mkdir -p "$(SYSROOT)/$(PREFIX)/lib"
 	mkdir -p "$(SYSROOT)/$(PREFIX)/bin"
 	cp -r include/grend "$(SYSROOT)/$(PREFIX)/include"
-	cp -r libs/tinygltf "$(SYSROOT)/$(PREFIX)/include/grend"
+	cp -r libs/tinygltf/*.h "$(SYSROOT)/$(PREFIX)/include/tinygltf"
+	cp -r libs/nanovg/src/*.h "$(SYSROOT)/$(PREFIX)/include/nanovg/src"
 	cp -r libs/imgui "$(SYSROOT)/$(PREFIX)/include/grend"
 	cp -r libs/json/single_include/nlohmann "$(SYSROOT)/$(PREFIX)/include/grend"
 	cp -r assets/* "$(SYSROOT)/$(PREFIX)/share/grend/assets"
@@ -121,26 +124,9 @@ shaders/out/%: shaders/src/%
 	@#cpp -I./shaders -P $< | tr -d '\n' | sed -e 's/  //g' -e 's/ \([+=*\/{}<>:-]*\) /\1/g' -e 's/\([,;]\) /\1/g' >> $@
 	@cpp -I./shaders -P $(CONF_GL_FLAGS) $< >> $@
 
-$(BUILD)/grend-config: Makefile
-	@echo '#!/bin/sh' > $@
-	@echo 'for thing in $$@; do' >> $@
-	@echo '   case $$thing in' >> $@
-	@echo '      --cflags)' >> $@
-	@echo '        echo "-I$(PREFIX)/include"' >> $@
-	@echo '        echo "-I$(PREFIX)/include/grend"' >> $@
-	@echo "        echo \"$(CONF_GL_FLAGS)\"" >> $@
-	@echo '        echo "`sdl2-config --cflags`"' >> $@
-	@echo '        ;;' >> $@
-	@echo '      --libs)' >> $@
-	@echo '        echo "-L$(PREFIX)/lib"' >> $@
-	@echo '        echo "-lgrend -lSDL2_ttf -lGL -lGLEW"' >> $@
-	@echo '        echo "`sdl2-config --libs`"' >> $@
-	@echo '        ;;' >> $@
-	@echo '      --help)' >> $@
-	@echo '        echo "TODO: implement --help"' >> $@
-	@echo '        exit' >> $@
-	@echo '   esac' >> $@
-	@echo 'done' >> $@
+$(BUILD)/grend-config: tools/config-template.sh Makefile
+	sed -e 's|{{PREFIX}}|$(PREFIX)|g' -e 's|{{CFLAGS}}|$(CONF_GL_FLAGS)|g' \
+		< tools/config-template.sh > $@
 	@chmod +x $@
 
 .PHONY: clean-demos

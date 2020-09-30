@@ -4,3 +4,4 @@ grend-test
 shaders/out/
 Makefile
 build
+mk/config.mk

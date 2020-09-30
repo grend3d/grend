@@ -19,6 +19,14 @@
 #define ENABLE_MIPMAPS 1
 #define ENABLE_FACE_CULLING 1
 
+#if GLSL_VERSION == 100
+#define GLSL_STRING "100"
+#elif GLSL_VERSION == 300
+#define GLSL_STRING "300 es"
+#else
+#define GLSL_STRING "330 core"
+#endif
+
 namespace grendx {
 
 void check_errors(int line, const char *filename, const char *func);
