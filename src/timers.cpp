@@ -1,16 +1,17 @@
 #include <grend/timers.hpp>
+#include <grend/sdl-context.hpp>
 #include <chrono>
 
 using namespace grendx;
 
 void sma_counter::start(void) {
 	begin = std::chrono::high_resolution_clock::now();
+	//begin = SDL_GetTicks();
 }
 
 void sma_counter::stop(void) {
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> secs = end - begin;
-
 	add_sample(1.0 / secs.count());
 }
 
@@ -22,6 +23,10 @@ double sma_counter::average(void) {
 	}
 
 	return sum / samples.size();
+}
+
+double sma_counter::last(void) {
+	return get_sample(0);
 }
 
 void sma_counter::add_sample(double sample) {

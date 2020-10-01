@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <chrono>
+#include <stdint.h>
 
 namespace grendx {
 
@@ -13,6 +14,7 @@ class sma_counter {
 		void start(void);
 		void stop(void);
 		double average(void);
+		double last(void);
 
 	private:
 		void add_sample(double sample);
@@ -22,6 +24,7 @@ class sma_counter {
 		size_t frameptr = 0;
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> begin;
+		//uint32_t begin = 0;
 };
 
 // namespace grendx

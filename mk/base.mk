@@ -113,7 +113,7 @@ $(DNANOVG_LIB):
 
 # whole build depends on configuration set in Makefile
 # should it? maybe not
-$(SHADER_OUT) $(OBJ): Makefile
+#$(SHADER_OUT) $(OBJ): Makefile
 $(DEMO_TARGETS): $(BUILD)/$(LIBA)
 
 shaders/out/%: shaders/src/%
@@ -125,7 +125,7 @@ shaders/out/%: shaders/src/%
 	@cpp -I./shaders -P $(CONF_GL_FLAGS) $< >> $@
 
 $(BUILD)/grend-config: tools/config-template.sh Makefile
-	sed -e 's|{{PREFIX}}|$(PREFIX)|g' -e 's|{{CFLAGS}}|$(CONF_GL_FLAGS)|g' \
+	sed -e 's|{{PREFIX}}|$(PREFIX)|g' -e 's|{{CFLAGS}}|$(CONF_GL_FLAGS) $(CONF_EM_FLAGS)|g' \
 		< tools/config-template.sh > $@
 	@chmod +x $@
 
