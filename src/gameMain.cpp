@@ -19,6 +19,14 @@ int gameMain::step(void) {
 		float fticks = ticks_delta / 1000.0f;
 		last_frame_time = cur_ticks;
 
+		if (view == nullptr) {
+			std::cerr <<
+				"ERROR: no view defined, you must set a view controller "
+				"with gameMain::setView()"
+				<< std::endl;
+			running = false;
+		}
+
 		step_physics();
 		view->logic(this, fticks);
 
@@ -81,6 +89,10 @@ void gameMain::step_physics(void) {
 
 void gameMain::logic(void) {
 
+}
+
+void gameMain::setView(std::shared_ptr<gameView> nview) {
+	view = nview;
 }
 
 void grendx::renderWorld(gameMain *game, camera::ptr cam) {

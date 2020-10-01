@@ -2,13 +2,12 @@
 
 using namespace grendx;
 
-gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
+gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
 	phys   = physics::ptr(new imp_physics());
 	state  = game_state::ptr(new game_state());
 	rend   = renderer::ptr(new renderer(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));
 
-	player = gameView::ptr(new playerView(this));
 	editor = gameView::ptr(new game_editor(this));
 	view   = editor;
 	audio->setCamera(view->cam);
@@ -23,7 +22,9 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
 				audio->setCamera(view->cam);
 
 				if (audio->currentCam == nullptr) {
-					puts("huh?");
+					std::cerr
+						<< "no camera is defined in the audio mixer...?"
+						<< std::endl;
 				}
 				return (int)modes::Player;
 			}
@@ -44,6 +45,10 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("[grend editor]") {
 		});
 
 	input.setMode(modes::Editor);
+}
+
+void gameMainDevWindow::setView(std::shared_ptr<gameView> nview) {
+	player = nview;
 }
 
 void gameMainDevWindow::handleInput(void) {

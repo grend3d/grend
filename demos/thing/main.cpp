@@ -1,5 +1,6 @@
 #include <grend/gameMainDevWindow.hpp>
 #include <grend/gameObject.hpp>
+#include <grend/playerView.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,10 +33,10 @@ int main(int argc, char *argv[]) {
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
 
-	gameMainDevWindow *game = new gameMainDevWindow();
-	// TODO: shouldn't need access to gameMain subclass to add objects relative
-	//       to the camera, need a current camera object or something
-	addCameraWeapon(game->player);
+	gameMain *game = new gameMainDevWindow();
+	gameView::ptr player = std::make_shared<playerView>(game);
+	game->setView(player);
+	addCameraWeapon(player);
 
 	auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
 	foo->worldPosition = glm::vec3(-10, 0, -5);

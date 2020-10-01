@@ -6,7 +6,6 @@
 #include <grend/imp_physics.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/gameView.hpp>
-#include <grend/playerView.hpp>
 #include <grend/timers.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <memory>
@@ -23,10 +22,13 @@ class gameMainDevWindow : public gameMain {
 		};
 
 		gameMainDevWindow();
+
+		// setView here sets the player view
+		virtual void setView(std::shared_ptr<gameView> nview);
 		virtual void handleInput(void);
 
-		gameView::ptr player;
-		gameView::ptr editor;
+		gameView::ptr player = nullptr;
+		gameView::ptr editor = nullptr;
 		modalSDLInput input;
 };
 
