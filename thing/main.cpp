@@ -1,4 +1,5 @@
 #include <grend/gameMainDevWindow.hpp>
+#include <grend/gameMainWindow.hpp>
 #include <grend/gameObject.hpp>
 #include <grend/playerView.hpp>
 
@@ -34,6 +35,8 @@ int main(int argc, char *argv[]) {
 	std::cerr << "have game state" << std::endl;
 
 	gameMain *game = new gameMainDevWindow();
+	game->state->rootnode = loadMap(game);
+	game->phys->add_static_models(game->state->rootnode);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);
 	addCameraWeapon(player);
