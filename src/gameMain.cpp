@@ -93,6 +93,10 @@ void gameMain::logic(void) {
 
 void gameMain::setView(std::shared_ptr<gameView> nview) {
 	view = nview;
+
+	if (audio != nullptr && view != nullptr && view->cam != nullptr) {
+		audio->setCamera(view->cam);
+	}
 }
 
 void grendx::renderWorld(gameMain *game, camera::ptr cam) {

@@ -29,8 +29,6 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	clear(game);
 	initImgui(game);
 	loadUIModels();
-	selectedNode = game->state->rootnode = loadMap(game);
-	game->phys->add_static_models(selectedNode);
 
 	auto moda = std::make_shared<gameObject>();
 	auto modb = std::make_shared<gameObject>();
