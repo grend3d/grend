@@ -62,20 +62,21 @@ animation::interpFrames(float delta, float end) {
 	assert(delta >= 0);
 
 	float adj = fmod(delta, end);
-	size_t idx = findKeyframe(adj);
-	size_t kdx = (idx + 1) % frametimes.size();
+	size_t frame = findKeyframe(adj);
+	size_t idx = (frame - 1) % frametimes.size();
+	size_t kdx = frame;
 
 	assert(idx < frametimes.size());
 	float interp = 0.0;
 
 	if (kdx) {
 		float range = frametimes[kdx] - frametimes[idx];
-		interp = (1.f - (frametimes[idx] - adj)/range);
+		interp = (frametimes[kdx] - adj)/range;
 	}
 
 	else if (frametimes[0] == 0 && idx > 0) {
 		float range = frametimes[idx] - frametimes[idx-1];
-		interp = (1.f - (end - adj)/range);
+		interp = (end - adj)/range;
 	}
 
 	FERR("d: %f, end time: %f, interp: %f, idx: %lu, kdx: %lu, "
@@ -124,15 +125,15 @@ void animationCollection::applyTransform(struct TRS& thing, float delta) {
 
 void animationTranslation::applyTransform(struct TRS& thing, float delta, float end) {
 	auto [idx, kdx, interp] = interpFrames(delta, end);
-	thing.position += glm::mix(translations[idx], translations[kdx], interp);
+	thing.position += glm::mix(translations[kdx], translations[idx], interp);
 }
 
 void animationRotation::applyTransform(struct TRS& thing, float delta, float end) {
 	auto [idx, kdx, interp] = interpFrames(delta, end);
-	thing.rotation = glm::mix(rotations[idx], rotations[kdx], interp);
+	thing.rotation = glm::mix(rotations[kdx], rotations[idx], interp);
 }
 
 void animationScale::applyTransform(struct TRS& thing, float delta, float end) {
 	auto [idx, kdx, interp] = interpFrames(delta, end);
-	thing.scale = glm::mix(scales[idx], scales[kdx], interp);
+	thing.scale = glm::mix(scales[kdx], scales[idx], interp);
 }
