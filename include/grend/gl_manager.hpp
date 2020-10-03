@@ -32,11 +32,11 @@ namespace grendx {
 void check_errors(int line, const char *filename, const char *func);
 
 #if GREND_ERROR_CHECK
-#define DO_ERROR_CHECK() /* asdf */
-
-#else
 #define DO_ERROR_CHECK() \
 	{ check_errors(__LINE__, __FILE__, __func__); }
+
+#else
+#define DO_ERROR_CHECK() /* asdf */
 #endif
 
 enum {

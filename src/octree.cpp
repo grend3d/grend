@@ -14,7 +14,6 @@ void octree::grow(double size) {
 	if (root == nullptr) {
 		// special case, if there currently aren't any nodes,
 		// the level can be bumped up enough to fit the requested size
-		puts("asdf");
 		levels = log2(size/leaf_size);
 		return;
 	}

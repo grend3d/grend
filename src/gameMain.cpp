@@ -27,7 +27,7 @@ int gameMain::step(void) {
 			running = false;
 		}
 
-		step_physics();
+		//step_physics();
 		view->logic(this, fticks);
 
 		set_default_gl_flags();
@@ -78,13 +78,8 @@ int gameMain::run(void) {
 }
 
 void gameMain::step_physics(void) {
-	if (phys) {
-		float dt = 1.0/frame_timer.last();
-
-		if (dt > 0 && !std::isnan(dt) && !std::isinf(dt)) {
-			phys->step_simulation(dt);
-		}
-	}
+	float dt = 1.0/frame_timer.last();
+	phys->step_simulation(dt);
 }
 
 void gameMain::logic(void) {

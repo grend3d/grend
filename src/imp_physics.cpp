@@ -103,6 +103,11 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 }
 
 void imp_physics::step_simulation(float delta) {
+	if (delta < 0 || std::isnan(delta) || std::isinf(delta)) {
+		// invalid delta, just return
+		return;
+	}
+
 	for (unsigned i = 0; i < 1; i++) {
 		const auto& collisions = find_collisions(delta);
 
@@ -110,9 +115,7 @@ void imp_physics::step_simulation(float delta) {
 			auto& obj = objects[x.a];
 
 			obj.velocity = glm::reflect(obj.velocity, x.normal);
-			//obj.position += x.normal*(float)static_geom.leaf_size*0.01f;
 			obj.position += x.normal*x.depth;
-			//obj.position += x.normal*x.depth*static_geom.leaf_size;
 		}
 	}
 
