@@ -73,6 +73,9 @@ class imp_physics : public physics {
 		virtual void remove(uint64_t id);
 		virtual void clear(void);
 
+		virtual void set_position(uint64_t id, glm::vec3 pos);
+		virtual void set_velocity(uint64_t id, glm::vec3 vel);
+		virtual glm::vec3 get_velocity(uint64_t id);
 		virtual void set_acceleration(uint64_t id, glm::vec3 accel);
 		virtual std::list<collision> find_collisions(float delta);
 		virtual void step_simulation(float delta);

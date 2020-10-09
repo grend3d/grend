@@ -47,6 +47,9 @@ class physics {
 		virtual void remove(uint64_t id) = 0;
 		virtual void clear(void) = 0;
 
+		virtual void set_position(uint64_t id, glm::vec3 pos) = 0;
+		virtual void set_velocity(uint64_t id, glm::vec3 vel) = 0;
+		virtual glm::vec3 get_velocity(uint64_t id) = 0;
 		virtual void set_acceleration(uint64_t id, glm::vec3 accel) = 0;
 		virtual std::list<collision> find_collisions(float delta) = 0;
 		virtual void step_simulation(float delta) = 0;

@@ -2,11 +2,13 @@
 #include <grend/sdl-context.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/camera.hpp>
+
 #include <memory>
 #include <utility>
 #include <map>
 #include <vector>
 #include <string>
+#include <mutex>
 
 namespace grendx {
 
@@ -93,6 +95,7 @@ class audioMixer {
 		size_t chanids = 0;
 		camera::ptr currentCam;
 		glm::vec3 currentPos;
+		std::mutex mtx;
 };
 
 channelBuffers_ptr openAudio(std::string filename);

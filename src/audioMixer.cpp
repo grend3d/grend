@@ -41,7 +41,7 @@ stereoAudioChannel::getSample(camera::ptr cam) {
 	}
 
 	size_t p = audioPosition++;
-	return {(*bufs.first)[p], (*bufs.second)[p]};
+	return {0.8*(*bufs.first)[p], 0.8*(*bufs.second)[p]};
 }
 
 static void mixCallback(void *userdata, uint8_t *stream, int len) {
@@ -76,6 +76,7 @@ void audioMixer::setCamera(camera::ptr cam) {
 std::pair<int16_t, int16_t>
 audioMixer::getSample(camera::ptr cam) {
 	std::pair<int32_t, int32_t> accum;
+	std::lock_guard<std::mutex> lock(mtx);
 
 	for (auto it = channels.begin(); it != channels.end();) {
 		auto& [id, chan] = *it;
@@ -97,6 +98,8 @@ audioMixer::getSample(camera::ptr cam) {
 }
 
 size_t audioMixer::add(audioChannel::ptr channel) {
+	std::lock_guard<std::mutex> lock(mtx);
+
 	size_t ret = chanids++;
 	channels[ret] = channel;
 	return ret;

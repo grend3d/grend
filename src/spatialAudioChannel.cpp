@@ -217,7 +217,8 @@ spatialAudioChannel::getSample(camera::ptr cam) {
 	float r = glm::distance(cam->position, worldPosition);
 
 	// TODO: fine-tuned attenuation (can just do constant/linear/quad), volume
-	float atten = min(1.0, (100.0 / (4*3.1415926*r*r)));
+	//float atten = min(1.0, (100.0 / (4*3.1415926*r*r)));
+	float atten = min(0.8f, 2.f / (r));
 	glm::vec3 diff = worldPosition - cam->position;
 	glm::vec2 dir = {glm::dot(cam->direction, diff), glm::dot(cam->right, diff)};
 

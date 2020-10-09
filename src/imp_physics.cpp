@@ -73,6 +73,18 @@ void imp_physics::clear(void) {
 
 }
 
+void imp_physics::set_position(uint64_t id, glm::vec3 pos) {
+	objects[id].position = pos;
+}
+
+void imp_physics::set_velocity(uint64_t id, glm::vec3 vel) {
+	objects[id].velocity = vel;
+}
+
+glm::vec3 imp_physics::get_velocity(uint64_t id) {
+	return objects[id].velocity;
+}
+
 void imp_physics::set_acceleration(uint64_t id, glm::vec3 accel) {
 	objects[id].acceleration = accel;
 }
