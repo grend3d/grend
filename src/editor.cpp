@@ -308,23 +308,26 @@ void game_editor::render_imgui(gameMain *game) {
 }
 
 void game_editor::render_editor(gameMain *game) {
-	if (true /*mode != mode::Inactive*/) {
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(game->ctx.window);
-		ImGui::NewFrame();
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL2_NewFrame(game->ctx.window);
+	ImGui::NewFrame();
 
-		menubar(game);
+	menubar(game);
 
-		if (show_map_window) {
-			map_window(game);
-		}
+	if (show_metrics_window) {
+		//ImGui::ShowMetricsWindow();
+		metricsWindow(game);
+	}
 
-		if (show_object_select_window) {
-			object_select_window(game);
-		}
+	if (show_map_window) {
+		map_window(game);
+	}
 
-		if (selectedNode && show_object_editor_window) {
-			objectEditorWindow(game);
-		}
+	if (show_object_select_window) {
+		object_select_window(game);
+	}
+
+	if (selectedNode && show_object_editor_window) {
+		objectEditorWindow(game);
 	}
 }

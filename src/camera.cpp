@@ -31,3 +31,16 @@ glm::mat4 camera::viewTransform(void) {
 glm::mat4 camera::viewProjTransform(unsigned screen_x, unsigned screen_y) {
 	return projectionTransform(screen_x, screen_y) * viewTransform();
 }
+
+bool camera::sphereInFrustum(glm::vec3 pos, float r,
+                             unsigned screenx, unsigned screeny)
+{
+	// TODO: implement
+	return true;
+}
+
+bool camera::aabbInFrustum(struct AABB& box, unsigned screenx, unsigned screeny)
+{
+	// TODO: implement
+	return true;
+}

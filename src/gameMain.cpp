@@ -1,4 +1,5 @@
 #include <grend/gameMain.hpp>
+#include <string.h> // memset
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -7,9 +8,14 @@
 
 using namespace grendx;
 
+void gameMain::clearMetrics(void) {
+	metrics.drawnMeshes = 0;
+}
+
 int gameMain::step(void) {
 	frame_timer.stop();
 	frame_timer.start();
+	clearMetrics();
 	handleInput();
 
 	if (running) {
@@ -33,20 +39,6 @@ int gameMain::step(void) {
 		set_default_gl_flags();
 		rend->framebuffer->clear();
 		view->render(this);
-
-		//auto minmax = framems_minmax();
-		std::pair<float, float> minmax = {0, 0}; // TODO: implementation
-		float fps = frame_timer.average();
-
-		/*
-		std::string foo =
-			std::to_string(fps) + " FPS "
-			+ "(" + std::to_string(1.f/fps * 1000) + "ms/frame) "
-			+ "(min: " + std::to_string(minmax.first) + ", "
-			+ "max: " + std::to_string(minmax.second) + ")"
-			;
-		std::cout << foo << std::endl;
-		*/
 
 		SDL_GL_SwapWindow(ctx.window);
 	}
@@ -128,8 +120,10 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 
+		que.cull(game->rend->framebuffer->width, game->rend->framebuffer->height);
 		auto flags = game->rend->getFlags();
-		que.flush(game->rend->framebuffer, flags, game->rend->atlases);
+		game->metrics.drawnMeshes += que.flush(game->rend->framebuffer, flags,
+		                                       game->rend->atlases);
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
 }

@@ -22,6 +22,9 @@ class camera {
 		glm::mat4 projectionTransform(unsigned screenx, unsigned screeny);
 		glm::mat4 viewTransform(void);
 		glm::mat4 viewProjTransform(unsigned screenx, unsigned screeny);
+		bool sphereInFrustum(glm::vec3 pos, float r,
+		                     unsigned screenx, unsigned screeny);
+		bool aabbInFrustum(struct AABB& box, unsigned screenx, unsigned screeny);
 };
 
 // namespace grendx

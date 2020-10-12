@@ -82,13 +82,13 @@ class renderQueue {
 		                       renderAtlases& atlases,
 		                       skybox& sky);
 		void sort(void);
-		void cull(void);
-		void flush(renderFramebuffer::ptr fb,
-		           renderFlags& flags,
-		           renderAtlases& atlases);
-		void flush(unsigned width, unsigned height,
-		           renderFlags& flags,
-		           renderAtlases& atlases);
+		void cull(unsigned width, unsigned height);
+		unsigned flush(renderFramebuffer::ptr fb,
+		               renderFlags& flags,
+		               renderAtlases& atlases);
+		unsigned flush(unsigned width, unsigned height,
+		               renderFlags& flags,
+		               renderAtlases& atlases);
 		void shaderSync(Program::ptr program, renderAtlases& atlases);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
 

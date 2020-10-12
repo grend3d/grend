@@ -3,6 +3,7 @@
 #include <grend/gameObject.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/opengl-includes.hpp>
+#include <grend/AABB.hpp>
 #include <string>
 #include <vector>
 #include <map>
@@ -82,6 +83,7 @@ class gameMesh : public gameObject {
 		std::string meshName = "unit_cube:default";
 		std::string material = "(null)";
 		std::vector<GLuint> faces;
+		struct AABB boundingBox;
 };
 
 // used for joint indices
@@ -102,6 +104,7 @@ class gameModel : public gameObject {
 		void genNormals(void);
 		void genTexcoords(void);
 		void genTangents(void);
+		void genAABBs(void);
 
 		std::string modelName = "unit_cube";
 		// TODO: some sort of specifier for generated meshes

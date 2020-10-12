@@ -106,7 +106,9 @@ class game_editor : public gameView {
 		void menubar(gameMain *game);
 		void map_window(gameMain *game);
 		void objectEditorWindow(gameMain *game);
+		void metricsWindow(gameMain *game);
 		void object_select_window(gameMain *game);
+
 		// populates map object tree
 		void addnodes(std::string name, gameObject::ptr obj);
 		void addnodes_rec(const std::string& name,
@@ -128,6 +130,7 @@ class game_editor : public gameView {
 		bool show_map_window = false;
 		bool show_object_editor_window = false;
 		bool show_object_select_window = false;
+		bool show_metrics_window = true;
 
 		// last place the mouse was clicked, used for determining the amount of
 		// rotation, movement etc

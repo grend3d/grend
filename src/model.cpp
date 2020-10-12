@@ -64,6 +64,37 @@ void gameModel::genTexcoords(void) {
 	}
 }
 
+void gameModel::genAABBs(void) {
+	std::cerr << " > generating axis-aligned bounding boxes..." << std::endl;
+
+	for (auto& [name, ptr] : nodes) {
+		if (ptr->type != gameObject::objType::Mesh) {
+			continue;
+		}
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+
+		if (mesh->faces.size() == 0) {
+			std::cerr << " > have face with no vertices...?" << std::endl;
+			continue;
+		}
+
+		// set base value for min/max, needs to be something in the mesh
+		// so first element will do
+		mesh->boundingBox.min = mesh->boundingBox.max
+			= vertices[mesh->faces[0]];
+
+		for (unsigned i = 0; i < mesh->faces.size(); i++) {
+			// TODO: bounds check
+			GLuint elm = mesh->faces[i];
+			glm::vec3& foo = vertices[elm];
+
+			// TODO: check, think this is right
+			mesh->boundingBox.min = min(mesh->boundingBox.min, foo);
+			mesh->boundingBox.max = max(mesh->boundingBox.max, foo);
+		}
+	}
+}
+
 void gameModel::genTangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
 	// allocate a little bit extra to make sure we don't overrun the buffer...
@@ -248,6 +279,7 @@ gameModel::ptr load_object(std::string filename) {
 	}
 
 	ret->genTangents();
+	ret->genAABBs();
 
 	if (ret->normals.size() != ret->vertices.size()) {
 		std::cerr << " ? mismatched normals and vertices: "
@@ -822,6 +854,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 		// TODO: parse tangents from gltf, if available
 		curModel->genTangents();
+		curModel->genAABBs();
 	}
 
 	return ret;

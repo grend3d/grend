@@ -29,6 +29,7 @@ class gameMain {
 
 		virtual void setView(std::shared_ptr<gameView> nview);
 		virtual void handleInput(void) = 0;
+		virtual void clearMetrics(void);
 
 		bool running = false;
 		context ctx;
@@ -41,6 +42,10 @@ class gameMain {
 		// FPS info
 		sma_counter frame_timer;
 		uint32_t last_frame_time = 0;
+
+		struct {
+			unsigned drawnMeshes = 0;
+		} metrics;
 };
 
 // common world-drawing function

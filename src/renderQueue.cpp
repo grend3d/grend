@@ -165,8 +165,43 @@ void renderQueue::sort(void) {
 	meshes.insert(meshes.end(), transparent.begin(), transparent.end());
 }
 
-void renderQueue::cull(void) {
+void renderQueue::cull(unsigned width, unsigned height) {
+	// XXX: need vector for sorting, deleting elements from vector for culling
+	//      would make this quadratic in the worst case... copying isn't
+	//      ideal, but should be fast enough, still linear time complexity
+	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempMeshes;
 
+	for (auto it = meshes.begin(); it != meshes.end(); it++) {
+		auto& [trans, _, mesh] = *it;
+
+		glm::vec4 ta = trans*glm::vec4(1);
+		glm::vec3 va = glm::vec3(ta)/ta.w;
+		float dir = glm::dot(cam->direction, va - cam->position);
+
+		if (dir > 0) {
+			tempMeshes.push_back(*it);
+		}
+	}
+
+	meshes = tempMeshes;
+
+	for (auto& [skin, skmeshes] : skinnedMeshes) {
+		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempSkinned;
+
+		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
+			auto& [trans, _, mesh] = *it;
+
+			glm::vec4 ta = trans*glm::vec4(1);
+			glm::vec3 va = glm::vec3(ta)/ta.w;
+			float dir = glm::dot(cam->direction, va - cam->position);
+
+			if (dir > 0) {
+				tempSkinned.push_back(*it);
+			}
+		}
+
+		skmeshes = tempSkinned;
+	}
 }
 
 static void drawMesh(renderFlags& flags,
@@ -217,11 +252,13 @@ static void drawMesh(renderFlags& flags,
 				   GL_UNSIGNED_INT, cmesh->elements_offset);
 }
 
-void renderQueue::flush(unsigned width,
-                        unsigned height,
-                        renderFlags& flags,
-                        renderAtlases& atlases)
+unsigned renderQueue::flush(unsigned width,
+                            unsigned height,
+                            renderFlags& flags,
+                            renderAtlases& atlases)
 {
+	unsigned drawnMeshes = 0;
+
 	if (flags.sort)       { sort(); }
 	if (flags.cull_faces) { enable(GL_CULL_FACE); }
 
@@ -276,19 +313,25 @@ void renderQueue::flush(unsigned width,
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, atlases);
+
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
+		drawnMeshes++;
 	}
 
 	meshes.clear();
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
+
+	return drawnMeshes;
 }
 
-void renderQueue::flush(renderFramebuffer::ptr fb,
-                        renderFlags& flags,
-                        renderAtlases& atlases)
+unsigned renderQueue::flush(renderFramebuffer::ptr fb,
+                            renderFlags& flags,
+                            renderAtlases& atlases)
 {
+	unsigned drawnMeshes = 0;
+
 	if (flags.sort) { sort(); }
 
 	if (flags.cull_faces) {
@@ -355,6 +398,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 				flags.skinnedShader,
 				atlases);
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
+			drawnMeshes++;
 		}
 
 		// TODO: check whether this skin is already synced
@@ -373,6 +417,7 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, atlases);
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
+		drawnMeshes++;
 	}
 
 	// TODO: clear()
@@ -380,6 +425,8 @@ void renderQueue::flush(renderFramebuffer::ptr fb,
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
+
+	return drawnMeshes;
 }
 
 void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {
