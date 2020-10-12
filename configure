@@ -52,7 +52,7 @@ for arg in $@; do
 				       --sysroot=[path]   Set the path for the system root. This is prepended
 				                          to the PREFIX variable when copying files, and is
 				                          useful for cross-compiling, chroot installs, etc.
-				  -t,  --target=[api]     OpenGL api target (gles2, gles3, webgl, webgl2, core330)
+				  -t,  --target=[api]     OpenGL api target (gles2, gles3, core330, core 430)
 				  -d,  --debug            Specify that this is a debug build. This option
 				                          toggles some debugging messages.
 				  -s,  --static           Output a static executable.
@@ -118,6 +118,14 @@ case "$CONF_GL_TARGET" in
 		read -r CONF_GL_FLAGS <<- ENDFLAGS
 			-D IMGUI_IMPL_OPENGL_LOADER_GLEW \
 			-D GLSL_VERSION=330
+		ENDFLAGS
+		;;
+
+	core430)
+		CONF_GLSL_STRING='"430 core"'
+		read -r CONF_GL_FLAGS <<- ENDFLAGS
+			-D IMGUI_IMPL_OPENGL_LOADER_GLEW \
+			-D GLSL_VERSION=430
 		ENDFLAGS
 		;;
 

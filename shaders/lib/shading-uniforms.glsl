@@ -1,4 +1,5 @@
 #pragma once
+#include <lib/compat.glsl>
 
 struct point_light {
 	vec3 position;
@@ -55,21 +56,49 @@ uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;
 uniform mat4 v_inv;
 
-// TODO: "active lights" count, pack lights[] tightly
-const int max_lights = 16;
-uniform point_light point_lights[max_lights];
-uniform spot_light spot_lights[max_lights];
-uniform directional_light directional_lights[max_lights];
+// per cluster, tile, whatever, maximum lights that will be evaluated per fragment
+#ifndef MAX_LIGHTS
+#define MAX_LIGHTS 8
+#endif
+
+#ifndef MAX_LIGHT_OBJECTS
+// for clustered, tiled, number of possible light objects available
+#define MAX_LIGHT_OBJECTS 1024
+#endif
+
+// gles3, core430+ use SSBOs, clustered lights
+#if GLSL_VERSION == 300 || GLSL_VERSION >= 430
+layout(std430, binding = 1) buffer plights {
+	uint point_lights;
+	uint spot_lights;
+	uint directional_lights;
+
+	point_light point[1024];
+	uint point_clusters[16*16*16 * MAX_LIGHTS];
+
+	spot_light spot[1024];
+	uint spot_clusters[16*16*16 * MAX_LIGHTS];
+
+	directional_lights directional[1024];
+	uint spot_clusters[16*16*16 * MAX_LIGHTS];
+};
+
+// otherwise fallback to regular old uniforms (TODO: something fancier, tiling?)
+#else
+
+uniform point_light point_lights[MAX_LIGHTS];
+uniform spot_light spot_lights[MAX_LIGHTS];
+uniform directional_light directional_lights[MAX_LIGHTS];
 
 uniform int active_point_lights;
 uniform int active_spot_lights;
 uniform int active_directional_lights;
+#endif
 
+// TODO: UBO for material (except on gles2...)
 uniform material anmaterial;
-
 uniform float time_ms;
 
-#include <lib/compat.glsl>
 // for loop iterators, can't use uniform to index lights on gles2
 #if GLSL_VERSION < 300
 #define ACTIVE_POINTS      (GLES2_MAX_POINT_LIGHTS)

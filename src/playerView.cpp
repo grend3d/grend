@@ -99,12 +99,15 @@ void playerView::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.x*cam->right*delta;
 	*/
 	game->phys->set_acceleration(cameraPhysID, cam->velocity);
+	game->phys->step_simulation(1.f/game->frame_timer.last());
+
 	cam->position = cameraObj->transform.position + glm::vec3(0, 1.5, 0);
 	cameraObj->transform.rotation = glm::quat(glm::vec3(
 		// pitch, yaw, roll
 		cam->direction.y*-0.5f,
 		atan2(cam->direction.x, cam->direction.z),
 		0));
+
 }
 
 static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
