@@ -38,7 +38,7 @@ void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {
 	program->bind();
 	program->set("m", glm::mat4(0));
 	program->set("v", glm::mat4(glm::mat3(cam->viewTransform())));
-	program->set("p", cam->projectionTransform(width, height));
+	program->set("p", cam->projectionTransform());
 
 	glActiveTexture(GL_TEXTURE9);
 	map->bind(GL_TEXTURE_CUBE_MAP);

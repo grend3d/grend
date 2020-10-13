@@ -140,8 +140,8 @@ void renderQueue::sort(void) {
 			glm::vec3 va = glm::vec3(ta)/ta.w;
 			glm::vec3 vb = glm::vec3(tb)/tb.w;
 
-			return glm::distance(cam->position, va)
-				< glm::distance(cam->position, vb);
+			return glm::distance(cam->position(), va)
+				< glm::distance(cam->position(), vb);
 		});
 
 	for (auto& it : meshes) {
@@ -176,7 +176,7 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 		glm::vec4 ta = trans*glm::vec4(1);
 		glm::vec3 va = glm::vec3(ta)/ta.w;
-		float dir = glm::dot(cam->direction, va - cam->position);
+		float dir = glm::dot(cam->direction(), va - cam->position());
 
 		if (dir > 0) {
 			tempMeshes.push_back(*it);
@@ -193,7 +193,7 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 			glm::vec4 ta = trans*glm::vec4(1);
 			glm::vec3 va = glm::vec3(ta)/ta.w;
-			float dir = glm::dot(cam->direction, va - cam->position);
+			float dir = glm::dot(cam->direction(), va - cam->position());
 
 			if (dir > 0) {
 				tempSkinned.push_back(*it);
@@ -262,8 +262,9 @@ unsigned renderQueue::flush(unsigned width,
 	if (flags.sort)       { sort(); }
 	if (flags.cull_faces) { enable(GL_CULL_FACE); }
 
+	cam->setViewport(width, height);
 	glm::mat4 view = cam->viewTransform();
-	glm::mat4 projection = cam->projectionTransform(width, height);
+	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv = glm::inverse(view);
 
 	flags.mainShader->bind();
@@ -357,8 +358,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 
+	cam->setViewport(fb->width, fb->height);
 	glm::mat4 view = cam->viewTransform();
-	glm::mat4 projection = cam->projectionTransform(fb->width, fb->height);
+	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv = glm::inverse(view);
 
 	flags.skinnedShader->bind();

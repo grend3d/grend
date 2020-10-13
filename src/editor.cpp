@@ -220,17 +220,13 @@ void game_editor::handleCursorUpdate(gameMain *game) {
 	// TODO: reuse this for cursor code
 	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
 	entbuf.position = glm::vec3(
-		align(cam->direction.x*edit_distance + cam->position.x),
-		align(cam->direction.y*edit_distance + cam->position.y),
-		align(cam->direction.z*edit_distance + cam->position.z));
+		align(cam->direction().x*edit_distance + cam->position().x),
+		align(cam->direction().y*edit_distance + cam->position().y),
+		align(cam->direction().z*edit_distance + cam->position().z));
 }
 
 void game_editor::logic(gameMain *game, float delta) {
-	// TODO: should time-dependent position updates be part of the camera
-	//       class? (probably)
-	cam->position += cam->velocity.z*cam->direction*delta;
-	cam->position += cam->velocity.y*cam->up*delta;
-	cam->position += cam->velocity.x*cam->right*delta;
+	cam->updatePosition(delta);
 
 	if (selectedNode) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
@@ -294,7 +290,7 @@ gameObject::ptr game_editor::getNonModel(gameObject::ptr obj) {
 void game_editor::clear(gameMain *game) {
 	showLoadingScreen(game);
 
-	cam->position = {0, 0, 0};
+	cam->setPosition({0, 0, 0});
 	models.clear();
 
 	// TODO: clear() for state

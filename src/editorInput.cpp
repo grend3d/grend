@@ -22,7 +22,7 @@ void game_editor::handleSelectObject(gameMain *game) {
 		clicked->onLeftClick();
 		clicked_x = (x*1.f / win_x);
 		clicked_y = ((win_y - y)*1.f / win_y);
-		click_depth = glm::distance(clicked->transform.position, cam->position);
+		click_depth = glm::distance(clicked->transform.position, cam->position());
 
 		if (isUIObject(clicked)) {
 			entbuf = selectedNode->transform;
@@ -88,15 +88,19 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
+				auto v = cam->velocity();
+
 				switch (ev.key.keysym.sym) {
-					case SDLK_w: cam->velocity.z =  movement_speed; break;
-					case SDLK_s: cam->velocity.z = -movement_speed; break;
-					case SDLK_a: cam->velocity.x =  movement_speed; break;
-					case SDLK_d: cam->velocity.x = -movement_speed; break;
-					case SDLK_q: cam->velocity.y =  movement_speed; break;
-					case SDLK_e: cam->velocity.y = -movement_speed; break;
+					case SDLK_w: v.z =  movement_speed; break;
+					case SDLK_s: v.z = -movement_speed; break;
+					case SDLK_a: v.x =  movement_speed; break;
+					case SDLK_d: v.x = -movement_speed; break;
+					case SDLK_q: v.y =  movement_speed; break;
+					case SDLK_e: v.y = -movement_speed; break;
 					default: break;
 				}
+
+				cam->setVelocity(v);
 			}
 			return MODAL_NO_CHANGE;
 		},
@@ -131,15 +135,20 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYUP) {
+				auto v = cam->velocity();
+
 				switch (ev.key.keysym.sym) {
 					case SDLK_w:
-					case SDLK_s: cam->velocity.z = 0; break;
+					case SDLK_s: v.z = 0; break;
 					case SDLK_a:
-					case SDLK_d: cam->velocity.x = 0; break;
+					case SDLK_d: v.x = 0; break;
 					case SDLK_q:
-					case SDLK_e: cam->velocity.y = 0; break;
+					case SDLK_e: v.y = 0; break;
 				}
+
+				cam->setVelocity(v);
 			}
+
 			return MODAL_NO_CHANGE;
 		},
 		imguiWantsKeyboard);
@@ -199,7 +208,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 				float rel_x = ((float)x - center_x) / center_x;
 				float rel_y = ((float)y - center_y) / center_y;
 
-				cam->set_direction(glm::vec3(
+				cam->setDirection(glm::vec3(
 					sin(rel_x*2*M_PI),
 					sin(-rel_y*M_PI/2.f),
 					-cos(rel_x*2*M_PI)
@@ -383,8 +392,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 		case mode::MoveX:
 			rot = glm::mat3_cast(entbuf.rotation);
 			dir = rot * glm::vec3(1, 0, 0); 
-			reversed_x = sign(glm::dot(dir, -cam->right));
-			reversed_y = sign(glm::dot(dir, cam->up));
+			reversed_x = sign(glm::dot(dir, -cam->right()));
+			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
 				entbuf.position
@@ -396,8 +405,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 		case mode::MoveY:
 			rot = glm::mat3_cast(entbuf.rotation);
 			dir = rot * glm::vec3(0, 1, 0); 
-			reversed_x = sign(glm::dot(dir, -cam->right));
-			reversed_y = sign(glm::dot(dir, cam->up));
+			reversed_x = sign(glm::dot(dir, -cam->right()));
+			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
 				entbuf.position
@@ -409,8 +418,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 		case mode::MoveZ:
 			rot = glm::mat3_cast(entbuf.rotation);
 			dir = rot * glm::vec3(0, 0, 1); 
-			reversed_x = sign(glm::dot(dir, -cam->right));
-			reversed_y = sign(glm::dot(dir, cam->up));
+			reversed_x = sign(glm::dot(dir, -cam->right()));
+			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
 				entbuf.position

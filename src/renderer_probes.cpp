@@ -58,8 +58,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 	shadowShader->bind();
 	queue.shaderSync(shadowShader, atlases);
-	cam->position = light->transform.position;
-	cam->field_of_view_x = 90;
+	cam->setPosition(light->transform.position);
+	cam->setFovx(90);
 
 	// TODO: skinned shadow shader
 	renderFlags flags;
@@ -79,7 +79,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		// TODO: texture atlas should have some tree wrappers, just for
 		//       clean encapsulation...
 		quadinfo info = atlases.shadows->tree.info(light->shadowmap[i]);
-		cam->set_direction(cube_dirs[i], cube_up[i]);
+		cam->setDirection(cube_dirs[i], cube_up[i]);
+		cam->setViewport(info.size, info.size);
 
 		porque.setCamera(cam);
 		// TODO: skinned shadow shader
@@ -113,7 +114,8 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	camera::ptr cam = camera::ptr(new camera());
-	cam->field_of_view_x = 90;
+	cam->setPosition(probe->transform.position);
+	cam->setFovx(90);
 
 	refShader->bind();
 	glActiveTexture(GL_TEXTURE7);
@@ -121,7 +123,6 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	refShader->set("shadowmap_atlas", 7);
 
 	queue.shaderSync(refShader, atlases);
-	cam->position = probe->transform.position;
 	DO_ERROR_CHECK();
 
 	// TODO: skinned reflection shader
@@ -142,7 +143,8 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 
 		renderQueue porque = queue;
 		quadinfo info = atlases.reflections->tree.info(probe->faces[i]);
-		cam->set_direction(cube_dirs[i], cube_up[i]);
+		cam->setDirection(cube_dirs[i], cube_up[i]);
+		cam->setViewport(info.size, info.size);
 		DO_ERROR_CHECK();
 
 		porque.setCamera(cam);

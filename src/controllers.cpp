@@ -6,13 +6,13 @@ bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_KEYDOWN) {
 			switch (ev.key.keysym.sym) {
-				case SDLK_w: cam->velocity =  cam->direction*accel; break;
-				case SDLK_s: cam->velocity = -cam->direction*accel; break;
-				case SDLK_a: cam->velocity =  cam->right*accel; break;
-				case SDLK_d: cam->velocity = -cam->right*accel; break;
-				case SDLK_q: cam->velocity =  cam->up*accel; break;
-				case SDLK_e: cam->velocity = -cam->up*accel; break;
-				case SDLK_SPACE: cam->velocity = cam->up*50.f; break;
+				case SDLK_w:     cam->setVelocity( cam->direction()*accel); break;
+				case SDLK_s:     cam->setVelocity(-cam->direction()*accel); break;
+				case SDLK_a:     cam->setVelocity( cam->right()*accel); break;
+				case SDLK_d:     cam->setVelocity(-cam->right()*accel); break;
+				case SDLK_q:     cam->setVelocity( cam->up()*accel); break;
+				case SDLK_e:     cam->setVelocity(-cam->up()*accel); break;
+				case SDLK_SPACE: cam->setVelocity( cam->up()*50.f); break;
 				default: break;
 			};
 
@@ -25,7 +25,7 @@ bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 				case SDLK_q:
 				case SDLK_e:
 				case SDLK_SPACE:
-					cam->velocity = glm::vec3(0);
+					cam->setVelocity(glm::vec3(0));
 					break;
 
 				default: break;
@@ -52,7 +52,7 @@ bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 		float rel_x = ((float)x - center_x) / center_x;
 		float rel_y = ((float)y - center_y) / center_y;
 
-		cam->set_direction(glm::vec3(
+		cam->setDirection(glm::vec3(
 			sin(rel_x*2*M_PI),
 			sin(-rel_y*M_PI/2.f),
 			-cos(rel_x*2*M_PI)
