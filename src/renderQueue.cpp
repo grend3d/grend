@@ -220,6 +220,22 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 		skmeshes = tempSkinned;
 	}
+
+	std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> tempLights;
+	for (auto it = lights.begin(); it != lights.end(); it++) {
+		auto& [trans, _, lit] = *it;
+
+		glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
+		glm::vec3 pos = glm::vec3(temp) / temp.w;
+
+		// conservative culling, keeps any lights that may possibly affect
+		// what's in view, without considering direction of spotlights, shadows
+		if (cam->sphereInFrustum(pos, lit->extent())) {
+			tempLights.push_back(*it);
+		}
+	}
+
+	lights = tempLights;
 }
 
 static void drawMesh(renderFlags& flags,
