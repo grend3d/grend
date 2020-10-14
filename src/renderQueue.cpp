@@ -166,6 +166,8 @@ void renderQueue::sort(void) {
 }
 
 void renderQueue::cull(unsigned width, unsigned height) {
+	glm::mat4 view = cam->viewTransform();
+
 	// XXX: need vector for sorting, deleting elements from vector for culling
 	//      would make this quadratic in the worst case... copying isn't
 	//      ideal, but should be fast enough, still linear time complexity
@@ -173,14 +175,21 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 	for (auto it = meshes.begin(); it != meshes.end(); it++) {
 		auto& [trans, _, mesh] = *it;
+		auto obb = trans * mesh->boundingBox;
 
-		glm::vec4 ta = trans*glm::vec4(1);
-		glm::vec3 va = glm::vec3(ta)/ta.w;
-		float dir = glm::dot(cam->direction(), va - cam->position());
-
-		if (dir > 0) {
+		if (cam->aabbInFrustum(obb)) {
 			tempMeshes.push_back(*it);
 		}
+
+		/*
+		glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
+		glm::vec3 pos = glm::vec3(temp) / temp.w;
+		float r = max(glm::length(mesh->boundingBox.min), glm::length(mesh->boundingBox.max));
+
+		if (cam->sphereInFrustum(pos, r)) {
+			tempMeshes.push_back(*it);
+		}
+		*/
 	}
 
 	meshes = tempMeshes;
@@ -190,14 +199,23 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
 			auto& [trans, _, mesh] = *it;
+			auto obb = (trans) * mesh->boundingBox;
 
-			glm::vec4 ta = trans*glm::vec4(1);
-			glm::vec3 va = glm::vec3(ta)/ta.w;
-			float dir = glm::dot(cam->direction(), va - cam->position());
-
-			if (dir > 0) {
+			if (cam->aabbInFrustum(obb)) {
 				tempSkinned.push_back(*it);
 			}
+
+			/*
+			glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
+			//glm::vec4 temp = (view*trans)*glm::vec4(1);
+			glm::vec3 pos = glm::vec3(temp) / temp.w;
+			float r = max(glm::length(mesh->boundingBox.min), glm::length(mesh->boundingBox.max));
+
+			if (cam->sphereInFrustum(pos, r)) {
+				tempSkinned.push_back(*it);
+			}
+			*/
+
 		}
 
 		skmeshes = tempSkinned;

@@ -22,9 +22,20 @@ class camera {
 	// whether to generate some fresh planes
 	bool updated = true;
 
-	struct {
-		float a, b, c, d;
+	// TODO: maybe have plane class?
+	struct plane {
+		glm::vec3 n;
+		float d;
 	} planes[6];
+
+	enum {
+		pLeft,
+		pRight,
+		pBottom,
+		pTop,
+		pNear,
+		pFar,
+	};
 
 	public:
 		typedef std::shared_ptr<camera> ptr;
