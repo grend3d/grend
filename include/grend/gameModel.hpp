@@ -3,7 +3,7 @@
 #include <grend/gameObject.hpp>
 #include <grend/glm-includes.hpp>
 #include <grend/opengl-includes.hpp>
-#include <grend/AABB.hpp>
+#include <grend/boundingBox.hpp>
 #include <string>
 #include <vector>
 #include <map>

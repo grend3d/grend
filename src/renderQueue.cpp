@@ -177,19 +177,9 @@ void renderQueue::cull(unsigned width, unsigned height) {
 		auto& [trans, _, mesh] = *it;
 		auto obb = trans * mesh->boundingBox;
 
-		if (cam->aabbInFrustum(obb)) {
+		if (cam->boxInFrustum(obb)) {
 			tempMeshes.push_back(*it);
 		}
-
-		/*
-		glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
-		glm::vec3 pos = glm::vec3(temp) / temp.w;
-		float r = max(glm::length(mesh->boundingBox.min), glm::length(mesh->boundingBox.max));
-
-		if (cam->sphereInFrustum(pos, r)) {
-			tempMeshes.push_back(*it);
-		}
-		*/
 	}
 
 	meshes = tempMeshes;
@@ -201,21 +191,9 @@ void renderQueue::cull(unsigned width, unsigned height) {
 			auto& [trans, _, mesh] = *it;
 			auto obb = (trans) * mesh->boundingBox;
 
-			if (cam->aabbInFrustum(obb)) {
+			if (cam->boxInFrustum(obb)) {
 				tempSkinned.push_back(*it);
 			}
-
-			/*
-			glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
-			//glm::vec4 temp = (view*trans)*glm::vec4(1);
-			glm::vec3 pos = glm::vec3(temp) / temp.w;
-			float r = max(glm::length(mesh->boundingBox.min), glm::length(mesh->boundingBox.max));
-
-			if (cam->sphereInFrustum(pos, r)) {
-				tempSkinned.push_back(*it);
-			}
-			*/
-
 		}
 
 		skmeshes = tempSkinned;

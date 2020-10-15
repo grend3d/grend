@@ -67,7 +67,8 @@ class camera {
 		glm::mat4 viewTransform(void);
 		glm::mat4 viewProjTransform(void);
 		bool sphereInFrustum(const glm::vec3& pos, float r);
-		bool aabbInFrustum(const struct AABB& box);
+		bool boxInFrustum(const struct AABB& box);
+		bool boxInFrustum(const struct OBB& box);
 };
 
 // namespace grendx

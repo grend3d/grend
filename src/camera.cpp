@@ -1,6 +1,6 @@
 #include <grend/camera.hpp>
 #include <grend/glm-includes.hpp>
-#include <grend/AABB.hpp>
+#include <grend/boundingBox.hpp>
 
 using namespace grendx;
 
@@ -140,7 +140,7 @@ bool camera::sphereInFrustum(const glm::vec3& v, float r) {
 	return true;
 }
 
-bool camera::aabbInFrustum(const struct AABB& box) {
+bool camera::boxInFrustum(const struct AABB& box) {
 	recalculatePlanes();
 
 	for (unsigned i = 0; i < 6; i++) {
@@ -156,4 +156,27 @@ bool camera::aabbInFrustum(const struct AABB& box) {
 	}
 
 	return true;
+}
+
+bool camera::boxInFrustum(const struct OBB& box) {
+	recalculatePlanes();
+	bool anyIn = false;
+
+	for (unsigned i = 0; i < 8 && !anyIn; i++) {
+		bool pointInPlanes = true;
+
+		for (unsigned k = 0; k < 6; k++) {
+			auto& p = planes[k];
+			float dist = glm::dot(p.n, box.points[i]) + p.d;
+
+			if (dist < 0) {
+				pointInPlanes = false;
+				break;
+			}
+		}
+
+		anyIn = anyIn || pointInPlanes;
+	}
+
+	return anyIn;
 }
