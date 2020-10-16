@@ -10,6 +10,7 @@ struct AABB {
 
 struct OBB {
 	glm::vec3 points[8];
+	glm::vec3 center;
 };
 
 // return OBB from AABB translation, m*a can rotate, skew, etc, the box,
@@ -34,6 +35,15 @@ static inline struct OBB operator*(glm::mat4 m, struct AABB& a) {
 		glm::vec4 adj = m*glm::vec4(ret.points[i], 1);
 		ret.points[i] = glm::vec3(adj) / adj.w;
 	}
+
+	glm::vec3 vmin = ret.points[0];
+	glm::vec3 vmax = ret.points[0];
+
+	for (unsigned i = 0; i < 8; i++) {
+		vmin = min(vmin, ret.points[i]);
+		vmax = max(vmax, ret.points[i]);
+	}
+	ret.center = 0.5f*(vmin + vmax);
 
 	return ret;
 }

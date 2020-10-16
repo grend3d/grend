@@ -162,6 +162,24 @@ bool camera::boxInFrustum(const struct OBB& box) {
 	recalculatePlanes();
 	bool anyIn = false;
 
+	// XXX: if the center is in the frustum, it's in the frustum.
+	//      hack to get around things popping out of existence when
+	//      the object is in frustum but the vertices are outside
+	// TODO: proper test for this, can't quite figure out a quick way
+	//       and don't want to spend too much time on it...
+	bool centerInPlanes = true;
+	for (unsigned k = 0; k < 6; k++) {
+		auto& p = planes[k];
+		float dist = glm::dot(p.n, box.center) + p.d;
+
+		if (dist < 0) {
+			centerInPlanes = false;
+			break;
+		}
+	}
+
+	anyIn = centerInPlanes;
+
 	for (unsigned i = 0; i < 8 && !anyIn; i++) {
 		bool pointInPlanes = true;
 
