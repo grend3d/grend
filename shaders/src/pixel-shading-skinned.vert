@@ -28,7 +28,7 @@ void main(void) {
 	TBN = mat3(T, B, N);
 
 	f_texcoord = texcoord;
-	f_position = m * vec4(in_Position, 1);
+	f_position = m*skinMatrix*vec4(in_Position, 1);
 
 	gl_Position = p*v*m * skinMatrix * vec4(in_Position, 1);
 }
