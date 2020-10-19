@@ -4,7 +4,7 @@
 
 using namespace grendx;
 
-text_renderer::text_renderer(renderer *eng,
+text_renderer::text_renderer(renderContext::ptr eng,
                              const char *font, int size)
 	: rend(eng)
 {
@@ -16,13 +16,13 @@ text_renderer::text_renderer(renderer *eng,
 		throw std::logic_error(std::string(__func__) + ": " + TTF_GetError());
 	}
 
-	text_vbo = gen_vbo();
+	text_vbo = gen_buffer(GL_ARRAY_BUFFER);
 	text_texture = gen_texture();
 
 	Vao::ptr orig_vao = get_current_vao();
 	text_vao = bind_vao(gen_vao());
 
-	text_vbo->bind(GL_ARRAY_BUFFER);
+	text_vbo->bind();
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
 	glEnableVertexAttribArray(1);
@@ -97,8 +97,8 @@ void text_renderer::render(glm::vec3 pos,
 	        rgba_surf->w, rgba_surf->h, rgba_surf->pitch, rgba_surf->format->BytesPerPixel);
 			*/
 
-	rend->shader->set("UItex", 0);
-	text_vbo->buffer(GL_ARRAY_BUFFER, quad, GL_DYNAMIC_DRAW);
+	text_shader->set("UItex", 0);
+	text_vbo->buffer(quad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	SDL_FreeSurface(rgba_surf);

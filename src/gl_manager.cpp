@@ -18,10 +18,10 @@ static std::vector<GLfloat> cooked_joints;
 static std::vector<GLfloat> cooked_vertprops;
 static std::vector<GLuint> cooked_elements;
 
-static Vbo::ptr cooked_vertprops_vbo;
-static Vbo::ptr cooked_element_vbo;
-static Vbo::ptr cooked_joints_vbo;
-static Vbo::ptr screenquad_vbo;
+static Buffer::ptr cooked_vertprops_vbo;
+static Buffer::ptr cooked_element_vbo;
+static Buffer::ptr cooked_joints_vbo;
+static Buffer::ptr screenquad_vbo;
 static Vao::ptr screenquad_vao;
 
 // cache of features currently enabled
@@ -46,9 +46,9 @@ void initialize_opengl(void) {
 	cooked_vertprops.clear();
 	cooked_elements.clear();
 
-	cooked_vertprops_vbo = gen_vbo();
-	cooked_element_vbo = gen_vbo();
-	cooked_joints_vbo = gen_vbo();
+	cooked_vertprops_vbo = gen_buffer(GL_ARRAY_BUFFER);
+	cooked_element_vbo = gen_buffer(GL_ELEMENT_ARRAY_BUFFER);
+	cooked_joints_vbo = gen_buffer(GL_ARRAY_BUFFER);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -259,12 +259,12 @@ Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
 	Vao::ptr ret = bind_vao(gen_vao());
 
 	//bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
-	cooked_element_vbo->bind(GL_ELEMENT_ARRAY_BUFFER);
+	cooked_element_vbo->bind();
 	glEnableVertexAttribArray(VAO_ELEMENTS);
 	glVertexAttribPointer(VAO_ELEMENTS, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
 	                      mesh->elements_offset);
 
-	cooked_vertprops_vbo->bind(GL_ARRAY_BUFFER);
+	cooked_vertprops_vbo->bind();
 	//bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(VAO_VERTICES);
 	glVertexAttribPointer(VAO_VERTICES, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
@@ -287,7 +287,7 @@ Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
 	                      obj->texcoords_offset);
 
 	if (obj->haveJoints) {
-		cooked_joints_vbo->bind(GL_ARRAY_BUFFER);
+		cooked_joints_vbo->bind();
 		glEnableVertexAttribArray(VAO_JOINTS);
 		glVertexAttribPointer(VAO_JOINTS, 4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
 							  obj->joints_offset);
@@ -314,9 +314,9 @@ Vao::ptr preload_model_vao(compiled_model::ptr obj) {
 }
 
 void bind_cooked_meshes(void) {
-	cooked_joints_vbo->buffer(GL_ARRAY_BUFFER, cooked_joints);
-	cooked_vertprops_vbo->buffer(GL_ARRAY_BUFFER, cooked_vertprops);
-	cooked_element_vbo->buffer(GL_ELEMENT_ARRAY_BUFFER, cooked_elements);
+	cooked_joints_vbo->buffer(cooked_joints);
+	cooked_vertprops_vbo->buffer(cooked_vertprops);
+	cooked_element_vbo->buffer(cooked_elements);
 
 	for (auto& [name, ptr] : cooked_models) {
 		std::cerr << " # binding " << name << std::endl;
@@ -335,11 +335,11 @@ static std::vector<GLfloat> screenquad_data = {
 };
 
 void preload_screenquad(void) {
-	screenquad_vbo = gen_vbo();
+	screenquad_vbo = gen_buffer(GL_ARRAY_BUFFER);
 	Vao::ptr orig_vao = current_vao;
 	screenquad_vao = bind_vao(gen_vao());
 
-	screenquad_vbo->buffer(GL_ARRAY_BUFFER, screenquad_data);
+	screenquad_vbo->buffer(screenquad_data);
 	glEnableVertexAttribArray(VAO_QUAD_VERTICES);
 	glVertexAttribPointer(VAO_QUAD_VERTICES,
 	                      3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
@@ -387,9 +387,9 @@ void check_errors(int line, const char *filename, const char *func) {
 		std::cerr << std::endl;
 		*(int*)NULL = 1234;
 	}
-
 }
 
+// TODO: camelCase
 Vao::ptr gen_vao(void) {
 	GLuint temp;
 	glGenVertexArrays(1, &temp);
@@ -397,10 +397,10 @@ Vao::ptr gen_vao(void) {
 	return Vao::ptr(new Vao(temp));
 }
 
-Vbo::ptr gen_vbo(void) {
+Buffer::ptr gen_buffer(GLuint type, GLenum use) {
 	GLuint temp;
 	glGenBuffers(1, &temp);
-	return Vbo::ptr(new Vbo(temp));
+	return std::make_shared<Buffer>(temp, type, use);
 }
 
 Texture::ptr gen_texture(void) {

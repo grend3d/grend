@@ -76,7 +76,7 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 	}
 }
 
-void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
+void renderQueue::updateLights(Program::ptr program, renderContext::ptr rctx) {
 	// TODO: should probably apply the transform to light position
 	for (auto& [_, __, light] : lights) {
 		if (light->lightType == gameLight::lightTypes::Point) {
@@ -85,7 +85,7 @@ void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
 			gameLightPoint::ptr plit =
 				std::dynamic_pointer_cast<gameLightPoint>(light);
 
-			auto& shatree = atlases.shadows->tree;
+			auto& shatree = rctx->atlases.shadows->tree;
 			for (unsigned i = 0; i < 6; i++) {
 				if (!shatree.valid(plit->shadowmap[i])) {
 					// TODO: configurable size
@@ -93,7 +93,7 @@ void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
 				}
 			}
 
-			drawShadowCubeMap(*this, plit, program, atlases);
+			drawShadowCubeMap(*this, plit, rctx);
 
 		} else if (light->lightType == gameLight::lightTypes::Spot) {
 			// TODO: shadow map
@@ -105,12 +105,9 @@ void renderQueue::updateLights(Program::ptr program, renderAtlases& atlases) {
 }
 
 void
-renderQueue::updateReflections(Program::ptr program,
-                              renderAtlases& atlases,
-                              skybox& sky)
-{
+renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
 	for (auto& [_, __, probe] : probes) {
-		auto& reftree = atlases.reflections->tree;
+		auto& reftree = rctx->atlases.reflections->tree;
 		for (unsigned i = 0; i < 6; i++) {
 			if (!reftree.valid(probe->faces[i])) {
 				// TODO: configurable size
@@ -118,7 +115,7 @@ renderQueue::updateReflections(Program::ptr program,
 			}
 		}
 
-		drawReflectionProbe(*this, probe, program, atlases, sky);
+		drawReflectionProbe(*this, probe, rctx);
 	}
 }
 
@@ -266,9 +263,9 @@ static void drawMesh(renderFlags& flags,
 
 unsigned renderQueue::flush(unsigned width,
                             unsigned height,
-                            renderFlags& flags,
-                            renderAtlases& atlases)
+                            renderContext::ptr rctx)
 {
+	renderFlags flags = rctx->getFlags();
 	unsigned drawnMeshes = 0;
 
 	if (flags.sort)       { sort(); }
@@ -312,7 +309,7 @@ unsigned renderQueue::flush(unsigned width,
 			set_reflection_probe(
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
-				atlases);
+				rctx->atlases);
 			drawMesh(flags, nullptr, flags.skinnedShader,
 			         transform, inverted, mesh);
 		}
@@ -325,7 +322,7 @@ unsigned renderQueue::flush(unsigned width,
 		glm::vec4 apos = transform * glm::vec4(1);
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
-			flags.mainShader, atlases);
+			flags.mainShader, rctx->atlases);
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -339,11 +336,9 @@ unsigned renderQueue::flush(unsigned width,
 	return drawnMeshes;
 }
 
-unsigned renderQueue::flush(renderFramebuffer::ptr fb,
-                            renderFlags& flags,
-                            renderAtlases& atlases)
-{
+unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) {
 	unsigned drawnMeshes = 0;
+	renderFlags flags = rctx->getFlags();
 
 	if (flags.sort) { sort(); }
 
@@ -379,7 +374,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.skinnedShader->set("v", view);
 	flags.skinnedShader->set("p", projection);
 	flags.skinnedShader->set("v_inv", v_inv);
-	shaderSync(flags.skinnedShader, atlases);
+	shaderSync(flags.skinnedShader, rctx);
 	gameSkin::ptr lastskin = nullptr;
 
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
@@ -410,7 +405,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 			set_reflection_probe(
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
-				atlases);
+				rctx->atlases);
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
 			drawnMeshes++;
 		}
@@ -423,13 +418,13 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.mainShader->set("v", view);
 	flags.mainShader->set("p", projection);
 	flags.mainShader->set("v_inv", v_inv);
-	shaderSync(flags.mainShader, atlases);
+	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
 		glm::vec4 apos = transform * glm::vec4(1);
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
-			flags.mainShader, atlases);
+			flags.mainShader, rctx->atlases);
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
 	}
@@ -443,7 +438,134 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	return drawnMeshes;
 }
 
-void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {
+static void syncPlainUniforms(Program::ptr program,
+	                          renderContext::ptr rctx,
+	                          std::vector<gameLightPoint::ptr>& points,
+	                          std::vector<gameLightSpot::ptr>& spots,
+	                          std::vector<gameLightDirectional::ptr>& directionals)
+{
+	size_t pactive = min(MAX_LIGHTS, points.size());
+	size_t sactive = min(MAX_LIGHTS, spots.size());
+	size_t dactive = min(MAX_LIGHTS, directionals.size());
+
+	program->set("active_points",       (GLint)pactive);
+	program->set("active_spots",        (GLint)sactive);
+	program->set("active_directionals", (GLint)dactive);
+
+	for (size_t i = 0; i < pactive; i++) {
+		gameLightPoint::ptr light = points[i];
+
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "points[" + std::to_string(i) + "]";
+
+		program->set(locstr + ".position",      light->transform.position);
+		program->set(locstr + ".diffuse",       light->diffuse);
+		program->set(locstr + ".intensity",     light->intensity);
+		program->set(locstr + ".radius",        light->radius);
+		program->set(locstr + ".casts_shadows", light->casts_shadows);
+
+		if (light->casts_shadows) {
+			for (unsigned k = 0; k < 6; k++) {
+				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
+				auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap[k]);
+				program->set(sloc, vec);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < sactive; i++) {
+		gameLightSpot::ptr light = spots[i];
+
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "spots[" + std::to_string(i) + "]";
+		// light points toward +X by default
+		glm::vec3 rotvec =
+			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+
+		program->set(locstr + ".position",      light->transform.position);
+		program->set(locstr + ".diffuse",       light->diffuse);
+		program->set(locstr + ".direction",     rotvec);
+		program->set(locstr + ".intensity",     light->intensity);
+		program->set(locstr + ".radius",        light->radius);
+		program->set(locstr + ".angle",         light->angle);
+		program->set(locstr + ".casts_shadows", light->casts_shadows);
+
+		if (light->casts_shadows) {
+			std::string sloc = locstr + ".shadowmap";
+			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
+			program->set(sloc, vec);
+		}
+	}
+
+	for (size_t i = 0; i < dactive; i++) {
+		gameLightDirectional::ptr light = directionals[i];
+
+		// TODO: also updating all these uniforms can't be very efficient for a lot of
+		//       moving point lights... maybe look into how uniform buffer objects work
+		std::string locstr = "directionals[" + std::to_string(i) + "]";
+		// light points toward +X by default
+		glm::vec3 rotvec =
+			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+
+		// position is ignored in the shader, but might as well set it anyway
+		// TODO: probably remove position member from directional lights
+		program->set(locstr + ".position",      light->transform.position);
+		program->set(locstr + ".diffuse",       light->diffuse);
+		program->set(locstr + ".direction",     rotvec);
+		program->set(locstr + ".intensity",     light->intensity);
+		program->set(locstr + ".casts_shadows", light->casts_shadows);
+
+		if (light->casts_shadows) {
+			std::string sloc = locstr + ".shadowmap";
+			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
+			program->set(sloc, vec);
+		}
+	}
+}
+
+
+static void syncUniformBuffer(Program::ptr program,
+	                          renderContext::ptr rctx,
+	                          std::vector<gameLightPoint::ptr>& points,
+	                          std::vector<gameLightSpot::ptr>& spots,
+	                          std::vector<gameLightDirectional::ptr>& directionals)
+{
+	size_t pactive = min(MAX_LIGHTS, points.size());
+	size_t sactive = min(MAX_LIGHTS, spots.size());
+	size_t dactive = min(MAX_LIGHTS, directionals.size());
+
+	// TODO: keep copy of lightbuf around...
+	lights_std140 lightbuf;
+
+	lightbuf.uactive_point_lights       = pactive;
+	lightbuf.uactive_spot_lights        = sactive;
+	lightbuf.uactive_directional_lights = dactive;
+
+	// so much nicer
+	for (size_t i = 0; i < pactive; i++) {
+		gameLightPoint::ptr light = points[i];
+		packLight(light, lightbuf.upoint_lights + i, rctx);
+	}
+
+	for (size_t i = 0; i < sactive; i++) {
+		gameLightSpot::ptr light = spots[i];
+		packLight(light, lightbuf.uspot_lights + i, rctx);
+	}
+
+	for (size_t i = 0; i < dactive; i++) {
+		gameLightDirectional::ptr light = directionals[i];
+		packLight(light, lightbuf.udirectional_lights + i, rctx);
+	}
+
+
+	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
+	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights_std140), &lightbuf);
+	//rctx->lightBuffer->unmap();
+}
+
+void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	std::vector<gameLightPoint::ptr>       point_lights;
 	std::vector<gameLightSpot::ptr>        spot_lights;
 	std::vector<gameLightDirectional::ptr> directional_lights;
@@ -479,85 +601,17 @@ void renderQueue::shaderSync(Program::ptr program, renderAtlases& atlases) {
 		}
 	}
 
-	size_t pactive = min(MAX_LIGHTS, point_lights.size());
-	size_t sactive = min(MAX_LIGHTS, spot_lights.size());
-	size_t dactive = min(MAX_LIGHTS, directional_lights.size());
+#if GLSL_VERSION >= 140
+	program->setUniformBlock("lights", rctx->lightBuffer);
+	syncUniformBuffer(program, rctx, point_lights,
+	                  spot_lights, directional_lights);
+	DO_ERROR_CHECK();
 
-	program->set("active_point_lights",       (GLint)pactive);
-	program->set("active_spot_lights",        (GLint)sactive);
-	program->set("active_directional_lights", (GLint)dactive);
-
-	for (size_t i = 0; i < pactive; i++) {
-		gameLightPoint::ptr light = point_lights[i];
-
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "point_lights[" + std::to_string(i) + "]";
-
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
-		program->set(locstr + ".intensity",     light->intensity);
-		program->set(locstr + ".radius",        light->radius);
-		program->set(locstr + ".casts_shadows", light->casts_shadows);
-
-		if (light->casts_shadows) {
-			for (unsigned k = 0; k < 6; k++) {
-				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
-				auto vec = atlases.shadows->tex_vector(light->shadowmap[k]);
-				program->set(sloc, vec);
-			}
-		}
-	}
-
-	for (size_t i = 0; i < sactive; i++) {
-		gameLightSpot::ptr light = spot_lights[i];
-
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
-		// light points toward +X by default
-		glm::vec3 rotvec =
-			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
-
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
-		program->set(locstr + ".direction",     rotvec);
-		program->set(locstr + ".intensity",     light->intensity);
-		program->set(locstr + ".radius",        light->radius);
-		program->set(locstr + ".angle",         light->angle);
-		program->set(locstr + ".casts_shadows", light->casts_shadows);
-
-		if (light->casts_shadows) {
-			std::string sloc = locstr + ".shadowmap";
-			auto vec = atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, vec);
-		}
-	}
-
-	for (size_t i = 0; i < dactive; i++) {
-		gameLightDirectional::ptr light = directional_lights[i];
-
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
-		// light points toward +X by default
-		glm::vec3 rotvec =
-			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
-
-		// position is ignored in the shader, but might as well set it anyway
-		// TODO: probably remove position member from directional lights
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
-		program->set(locstr + ".direction",     rotvec);
-		program->set(locstr + ".intensity",     light->intensity);
-		program->set(locstr + ".casts_shadows", light->casts_shadows);
-
-		if (light->casts_shadows) {
-			std::string sloc = locstr + ".shadowmap";
-			auto vec = atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, vec);
-		}
-	}
+#else
+	syncPlainUniforms(program, rctx, point_lights,
+	                  spot_lights, directional_lights);
+	DO_ERROR_CHECK();
+#endif
 }
 
 gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {

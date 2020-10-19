@@ -69,9 +69,9 @@ uniform mat4 v_inv;
 // gles3, core430+ use SSBOs, clustered lights
 #if GLSL_VERSION == 300 || GLSL_VERSION >= 430
 layout(std430, binding = 1) buffer plights {
-	uint point_lights;
-	uint spot_lights;
-	uint directional_lights;
+	uint active_point_lights;
+	uint active_spot_lights;
+	uint active_directional_lights;
 
 	point_light point[1024];
 	uint point_clusters[16*16*16 * MAX_LIGHTS];
@@ -80,27 +80,56 @@ layout(std430, binding = 1) buffer plights {
 	uint spot_clusters[16*16*16 * MAX_LIGHTS];
 
 	directional_lights directional[1024];
-	uint spot_clusters[16*16*16 * MAX_LIGHTS];
+	uint directional_clusters[16*16*16 * MAX_LIGHTS];
 };
 
-// otherwise fallback to regular old uniforms (TODO: something fancier, tiling?)
+#define CURRENT_CLUSTER()  (0u)
+
+#define ACTIVE_POINTS      (active_point_lights)
+#define ACTIVE_SPOTS       (active_spot_lights)
+#define ACTIVE_DIRECTIONAL (active_directional_lights)
+
+#define POINT_LIGHT(P, CLUSTER)       point[point_clusters[CLUSTER+P] & 0x3ff]
+#define SPOT_LIGHT(P, CLUSTER)        spot[spot_clusters[CLUSTER+P] & 0x3ff]
+#define DIRECTIONAL_LIGHT(P, CLUSTER) \
+	directional[directional_clusters[CLUSTER+P] & 0x3ff]
+
+#elif GLSL_VERSION >= 140 /* opengl 3.1+, use uniform buffers */
+layout (std140) uniform lights {
+	uint uactive_point_lights;
+	uint uactive_spot_lights;
+	uint uactive_directional_lights;
+
+	point_light       upoint_lights[MAX_LIGHTS];
+	spot_light        uspot_lights[MAX_LIGHTS];
+	directional_light udirectional_lights[MAX_LIGHTS];
+};
+
+#define CURRENT_CLUSTER()  (0u) 
+
+#define ACTIVE_POINTS      (uactive_point_lights)
+#define ACTIVE_SPOTS       (uactive_spot_lights)
+#define ACTIVE_DIRECTIONAL (uactive_directional_lights)
+
+#define POINT_LIGHT(P, CLUSTER)       upoint_lights[P]
+#define SPOT_LIGHT(P, CLUSTER)        uspot_lights[P]
+#define DIRECTIONAL_LIGHT(P, CLUSTER) udirectional_lights[P]
+
+// otherwise fallback to regular old uniforms
 #else
 
 uniform point_light point_lights[MAX_LIGHTS];
 uniform spot_light spot_lights[MAX_LIGHTS];
 uniform directional_light directional_lights[MAX_LIGHTS];
 
-uniform int active_point_lights;
-uniform int active_spot_lights;
-uniform int active_directional_lights;
-#endif
+uniform uint active_point_lights;
+uniform uint active_spot_lights;
+uniform uint active_directional_lights;
 
-// TODO: UBO for material (except on gles2...)
-uniform material anmaterial;
-uniform float time_ms;
+#define CURRENT_CLUSTER()  (0u) 
 
 // for loop iterators, can't use uniform to index lights on gles2
-#if GLSL_VERSION < 300
+#if GLSL_VERSION < 140
 #define ACTIVE_POINTS      (GLES2_MAX_POINT_LIGHTS)
 #define ACTIVE_SPOTS       (GLES2_MAX_SPOT_LIGHTS)
 #define ACTIVE_DIRECTIONAL (GLES2_MAX_DIRECTIONAL_LIGHTS)
@@ -109,3 +138,13 @@ uniform float time_ms;
 #define ACTIVE_SPOTS       (active_spot_lights)
 #define ACTIVE_DIRECTIONAL (active_directional_lights)
 #endif
+
+#define POINT_LIGHT(P, CLUSTER)       point_lights[P]
+#define SPOT_LIGHT(P, CLUSTER)        spot_lights[P]
+#define DIRECTIONAL_LIGHT(P, CLUSTER) directional_lights[P]
+
+#endif
+
+// TODO: UBO for material (except on gles2...)
+uniform material anmaterial;
+uniform float time_ms;

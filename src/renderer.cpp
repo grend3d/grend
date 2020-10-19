@@ -27,12 +27,18 @@ material default_material = {
 Texture::ptr default_diffuse, default_metal_roughness;
 Texture::ptr default_normmap, default_aomap;
 
-renderer::renderer(context& ctx) {
+renderContext::renderContext(context& ctx) {
 	enable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	Framebuffer().bind();
 	DO_ERROR_CHECK();
+
+#if GLSL_VERSION >= 140
+	lightBuffer = gen_buffer(GL_UNIFORM_BUFFER);
+	lightBuffer->bind();
+	lightBuffer->allocate(sizeof(lights_std140));
+#endif
 
 #ifdef __EMSCRIPTEN__
 	screen_x = SCREEN_SIZE_X;
@@ -63,7 +69,7 @@ renderer::renderer(context& ctx) {
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
-void renderer::loadShaders(void) {
+void renderContext::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
 	/*
 	shaders["main"] = load_program(
@@ -85,6 +91,12 @@ void renderer::loadShaders(void) {
 	);
 
 	shaders["refprobe"] = load_program(
+		GR_PREFIX "shaders/out/ref_probe.vert",
+		GR_PREFIX "shaders/out/ref_probe.frag"
+	);
+
+	// TODO: skinned vertex shader
+	shaders["refprobe-skinned"] = load_program(
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe.frag"
 	);
@@ -119,12 +131,29 @@ void renderer::loadShaders(void) {
 	shaders["main-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
 	shaders["main-skinned"]->link();
 
+	shaders["refprobe-skinned"]->attribute("in_Position", VAO_VERTICES);
+	shaders["refprobe-skinned"]->attribute("v_normal",    VAO_NORMALS);
+	shaders["refprobe-skinned"]->attribute("v_tangent",   VAO_TANGENTS);
+	shaders["refprobe-skinned"]->attribute("v_bitangent", VAO_BITANGENTS);
+	shaders["refprobe-skinned"]->attribute("texcoord",    VAO_TEXCOORDS);
+	shaders["refprobe-skinned"]->attribute("a_joints",    VAO_JOINTS);
+	shaders["refprobe-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
+	shaders["refprobe-skinned"]->link();
+
 	shaders["shadow"] = load_program(
 		GR_PREFIX "shaders/out/depth.vert",
 		GR_PREFIX "shaders/out/depth.frag"
 	);
 	shaders["shadow"]->attribute("v_position", VAO_VERTICES);
 	shaders["shadow"]->link();
+
+	// TODO: skinned vertex shader
+	shaders["shadow-skinned"] = load_program(
+		GR_PREFIX "shaders/out/depth.vert",
+		GR_PREFIX "shaders/out/depth.frag"
+	);
+	shaders["shadow-skinned"]->attribute("v_position", VAO_VERTICES);
+	shaders["shadow-skinned"]->link();
 
 	shaders["post"] = load_program(
 		GR_PREFIX "shaders/out/postprocess.vert",
@@ -147,7 +176,11 @@ void renderer::loadShaders(void) {
 	shaders["main"]->bind();
 }
 
-struct renderFlags renderer::getFlags(std::string name) {
+void renderContext::setFlags(const renderFlags& newflags) {
+	flags = newflags;
+}
+
+struct renderFlags renderContext::getDefaultFlags(std::string name) {
 	return (struct renderFlags) {
 		// TODO: some sort of shader class/interface/whatever system
 		//       so that fragment shaders can be automatically paired with
@@ -156,6 +189,10 @@ struct renderFlags renderer::getFlags(std::string name) {
 		.mainShader    = shaders[name],
 		.skinnedShader = shaders[name+"-skinned"],
 	};
+}
+
+const renderFlags& renderContext::getFlags(void) {
+	return flags;
 }
 
 void grendx::set_material(Program::ptr program,
@@ -253,4 +290,64 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 	glm::quat rotation = glm::quat_cast(model);
 
 	return glm::mat4_cast(rotation);
+}
+
+void grendx::packLight(gameLightPoint::ptr light,
+                       point_std140 *p,
+                       renderContext::ptr rctx)
+{
+	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
+	p->intensity = light->intensity;
+	p->radius    = light->radius;
+	p->casts_shadows = light->casts_shadows;
+
+	if (light->casts_shadows) {
+		for (unsigned i = 0; i < 6; i++) {
+			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap[i]);
+			memcpy(p->shadowmap + 4*i, glm::value_ptr(vec), sizeof(float[3]));
+		}
+	}
+}
+
+void grendx::packLight(gameLightSpot::ptr light,
+                       spot_std140 *p,
+                       renderContext::ptr rctx)
+{
+	glm::vec3 rotvec =
+		glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+
+	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
+	memcpy(p->direction, glm::value_ptr(rotvec), sizeof(float[3]));
+
+	p->intensity     = light->intensity;
+	p->radius        = light->radius;
+	p->angle         = light->angle;
+	p->casts_shadows = light->casts_shadows;
+
+	if (light->casts_shadows) {
+		auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
+		memcpy(p->shadowmap, glm::value_ptr(vec), sizeof(float[3]));
+	}
+}
+
+void grendx::packLight(gameLightDirectional::ptr light,
+                       directional_std140 *p,
+                       renderContext::ptr rctx)
+{
+	glm::vec3 rotvec =
+		glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+
+	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
+	memcpy(p->direction, glm::value_ptr(rotvec), sizeof(float[3]));
+
+	p->intensity     = light->intensity;
+	p->casts_shadows = light->casts_shadows;
+
+	if (light->casts_shadows) {
+		auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
+		memcpy(p->shadowmap, glm::value_ptr(vec), sizeof(float[3]));
+	}
 }

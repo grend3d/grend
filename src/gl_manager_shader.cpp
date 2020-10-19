@@ -165,6 +165,26 @@ void Program::set(std::string uniform, glm::mat4 m4) {
 	glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(m4));
 }
 
+void Program::setUniformBlock(std::string name, Buffer::ptr buf) {
+	GLuint loc = lookupUniformBlock(name);
+	if (loc != GL_INVALID_INDEX) {
+		DO_ERROR_CHECK();
+		buf->unbind();
+		DO_ERROR_CHECK();
+		glUniformBlockBinding(obj, loc, 2);
+		DO_ERROR_CHECK();
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, buf->obj);
+		DO_ERROR_CHECK();
+	}
+}
+
+void Program::setStorageBlock(std::string name, Buffer::ptr buf) {
+	GLuint loc = lookupStorageBlock(name);
+	DO_ERROR_CHECK();
+	// TODO:
+	//glUniformBlockBinding(obj, loc, buf->obj);
+}
+
 GLint Program::lookup(std::string uniform) {
 	auto it = uniforms.find(uniform);
 
@@ -173,6 +193,38 @@ GLint Program::lookup(std::string uniform) {
 	}
 
 	return uniforms[uniform] = glGetUniformLocation(obj, uniform.c_str());
+}
+
+GLuint Program::lookupUniformBlock(std::string name) {
+	auto it = uniformBlocks.find(name);
+
+	if (it != uniformBlocks.end()) {
+		return it->second;
+
+	} else {
+		GLuint temp = glGetUniformBlockIndex(obj, name.c_str());
+		uniformBlocks[name] = temp;
+		DO_ERROR_CHECK();
+		return temp;
+	}
+}
+
+GLuint Program::lookupStorageBlock(std::string name) {
+	auto it = storageBlocks.find(name);
+
+	if (it != storageBlocks.end()) {
+		return it->second;
+
+	} else {
+		/*
+		GLuint temp = glGetUniformBlockIndex(obj, name.c_str());
+		uniformBlocks[name] = temp;
+		DO_ERROR_CHECK();
+		return temp;
+		*/
+		// TODO:
+		return 0;
+	}
 }
 
 bool Program::cached(std::string uniform) {

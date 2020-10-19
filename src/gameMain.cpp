@@ -97,10 +97,8 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		float fticks = SDL_GetTicks() / 1000.0f;
 
 		que.add(game->state->rootnode, fticks);
-		que.updateLights(game->rend->shaders["shadow"], game->rend->atlases);
-		que.updateReflections(game->rend->shaders["refprobe"],
-		                      game->rend->atlases,
-		                      game->rend->defaultSkybox);
+		que.updateLights(game->rend->shaders["shadow"], game->rend);
+		que.updateReflections(game->rend->shaders["refprobe"], game->rend);
 		que.add(game->state->physObjects);
 		DO_ERROR_CHECK();
 
@@ -121,9 +119,8 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		DO_ERROR_CHECK();
 
 		que.cull(game->rend->framebuffer->width, game->rend->framebuffer->height);
-		auto flags = game->rend->getFlags();
-		game->metrics.drawnMeshes += que.flush(game->rend->framebuffer, flags,
-		                                       game->rend->atlases);
+		game->rend->setFlags(game->rend->getDefaultFlags());
+		game->metrics.drawnMeshes += que.flush(game->rend->framebuffer, game->rend);
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
 }

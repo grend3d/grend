@@ -32,8 +32,7 @@ static const glm::vec3 cube_up[] = {
 // TODO: minimize duplicated code with drawReflectionProbe
 void grendx::drawShadowCubeMap(renderQueue& queue,
                                gameLightPoint::ptr light,
-                               Program::ptr shadowShader,
-                               renderAtlases& atlases)
+                               renderContext::ptr rctx)
 {
 	if (!light->casts_shadows) {
 		return;
@@ -41,7 +40,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 	// refresh atlas cache time to indicate it was recently used
 	for (unsigned i = 0; i < 6; i++) {
-		light->shadowmap[i] = atlases.shadows->tree.refresh(light->shadowmap[i]);
+		light->shadowmap[i] =
+			rctx->atlases.shadows->tree.refresh(light->shadowmap[i]);
 	}
 
 	if (light->is_static && light->have_map) {
@@ -55,18 +55,19 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	glDepthFunc(GL_LESS);
 
 	camera::ptr cam = camera::ptr(new camera());
+	Program::ptr shadowShader = rctx->shaders["shadow"];
 
 	shadowShader->bind();
-	queue.shaderSync(shadowShader, atlases);
+	queue.shaderSync(shadowShader, rctx);
 	cam->setPosition(light->transform.position);
 	cam->setFovx(90);
 
 	// TODO: skinned shadow shader
-	renderFlags flags;
-	flags.mainShader = flags.skinnedShader = shadowShader;
+	renderFlags flags = rctx->getDefaultFlags("shadow");
+	rctx->setFlags(flags);
 
 	for (unsigned i = 0; i < 6; i++) {
-		if (!atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
+		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
 			std::cerr
 				<< "drawShadowCubeMap(): couldn't bind shadow framebuffer"
 				<< std::endl;
@@ -78,13 +79,13 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		renderQueue porque = queue;
 		// TODO: texture atlas should have some tree wrappers, just for
 		//       clean encapsulation...
-		quadinfo info = atlases.shadows->tree.info(light->shadowmap[i]);
+		quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap[i]);
 		cam->setDirection(cube_dirs[i], cube_up[i]);
 		cam->setViewport(info.size, info.size);
 
 		porque.setCamera(cam);
 		// TODO: skinned shadow shader
-		porque.flush(info.size, info.size, flags, atlases);
+		porque.flush(info.size, info.size, rctx);
 	}
 
 	light->have_map = true;
@@ -92,12 +93,11 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 void grendx::drawReflectionProbe(renderQueue& queue,
                                  gameReflectionProbe::ptr probe,
-                                 Program::ptr refShader,
-                                 renderAtlases& atlases,
-                                 skybox& sky)
+                                 renderContext::ptr rctx)
 {
 	for (unsigned i = 0; i < 6; i++) {
-		probe->faces[i] = atlases.reflections->tree.refresh(probe->faces[i]);
+		probe->faces[i] =
+			rctx->atlases.reflections->tree.refresh(probe->faces[i]);
 	}
 
 	if (probe->is_static && probe->have_map) {
@@ -114,24 +114,26 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	camera::ptr cam = camera::ptr(new camera());
+	Program::ptr refShader = rctx->shaders["refprobe"];
 	cam->setPosition(probe->transform.position);
 	cam->setFovx(90);
 
 	refShader->bind();
 	glActiveTexture(GL_TEXTURE7);
-	atlases.shadows->depth_tex->bind();
+	rctx->atlases.shadows->depth_tex->bind();
 	refShader->set("shadowmap_atlas", 7);
 
-	queue.shaderSync(refShader, atlases);
+	queue.shaderSync(refShader, rctx);
 	DO_ERROR_CHECK();
 
 	// TODO: skinned reflection shader
-	renderFlags flags;
-	flags.mainShader = flags.skinnedShader = refShader;
+	//flags.mainShader = flags.skinnedShader = refShader;
+	renderFlags flags = rctx->getDefaultFlags("refprobe");
+	rctx->setFlags(flags);
 
 	for (unsigned i = 0; i < 6; i++) {
 		refShader->bind();
-		if (!atlases.reflections->bind_atlas_fb(probe->faces[i])) {
+		if (!rctx->atlases.reflections->bind_atlas_fb(probe->faces[i])) {
 			std::cerr
 				<< "drawReflectionProbe(): couldn't bind probe framebuffer"
 				<< std::endl;
@@ -142,17 +144,17 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		renderQueue porque = queue;
-		quadinfo info = atlases.reflections->tree.info(probe->faces[i]);
+		quadinfo info = rctx->atlases.reflections->tree.info(probe->faces[i]);
 		cam->setDirection(cube_dirs[i], cube_up[i]);
 		cam->setViewport(info.size, info.size);
 		DO_ERROR_CHECK();
 
 		porque.setCamera(cam);
 		// TODO: skinned reflection shader
-		porque.flush(info.size, info.size, flags, atlases);
+		porque.flush(info.size, info.size, rctx);
 		DO_ERROR_CHECK();
 
-		sky.draw(cam, info.size, info.size);
+		rctx->defaultSkybox.draw(cam, info.size, info.size);
 		DO_ERROR_CHECK();
 	}
 

@@ -63,7 +63,7 @@ class Obj {
 		enum type {
 			None,
 			Vao,
-			Vbo,
+			Buffer,
 			Texture,
 			Shader,
 			Program,
@@ -98,8 +98,8 @@ class Obj {
 					glDeleteVertexArrays(1, &obj);
 					break;
 
-				case type::Vbo:
-					std::cerr << "Obj: freeing Vbo " << obj << std::endl;
+				case type::Buffer:
+					std::cerr << "Obj: freeing Buffer " << obj << std::endl;
 					glDeleteBuffers(1, &obj);
 					break;
 
@@ -139,24 +139,28 @@ class Vao : public Obj {
 		}
 };
 
-class Vbo : public Obj {
+class Buffer : public Obj {
 	public:
-		typedef std::shared_ptr<Vbo> ptr;
-		Vbo(GLuint o) : Obj(o, Obj::type::Vbo) {};
+		GLuint type;
+		GLuint use = GL_STATIC_DRAW;
 
-		void bind(GLuint place) {
-			glBindBuffer(place, obj);
-			DO_ERROR_CHECK();
-		}
+		typedef std::shared_ptr<Buffer> ptr;
+		Buffer(GLuint o, GLuint t, GLenum u = GL_STATIC_DRAW)
+			: Obj(o, Obj::type::Buffer), type(t), use(u) {};
 
-		void buffer(GLuint type, const std::vector<GLfloat>& vec,
-		            GLenum use=GL_STATIC_DRAW);
-		void buffer(GLuint type, const std::vector<GLushort>& vec,
-		            GLenum use=GL_STATIC_DRAW);
-		void buffer(GLuint type, const std::vector<GLuint>& vec,
-		            GLenum use=GL_STATIC_DRAW);
-		void buffer(GLuint type, const std::vector<glm::vec3>& vec,
-		            GLenum use=GL_STATIC_DRAW);
+		void bind(void);
+		void unbind(void);
+
+		void *map(GLenum access = GL_WRITE_ONLY);
+		GLenum unmap(void);
+
+		void allocate(size_t n);
+		void update(const void *ptr, size_t offset, size_t n);
+		void buffer(const void *ptr, size_t n);
+		void buffer(const std::vector<GLfloat>& vec);
+		void buffer(const std::vector<GLushort>& vec);
+		void buffer(const std::vector<GLuint>& vec);
+		void buffer(const std::vector<glm::vec3>& vec);
 };
 
 class Texture : public Obj {
@@ -206,12 +210,18 @@ class Program : public Obj {
 		void set(std::string uniform, glm::vec4 v4);
 		void set(std::string uniform, glm::mat3 m3);
 		void set(std::string uniform, glm::mat4 m4);
+		void setUniformBlock(std::string name, Buffer::ptr buf);
+		void setStorageBlock(std::string name, Buffer::ptr buf);
 
-		GLint lookup(std::string uniform);
+		GLint  lookup(std::string uniform);
+		GLuint lookupUniformBlock(std::string name);
+		GLuint lookupStorageBlock(std::string name);
 		bool cached(std::string uniform);
 
 		std::map<std::string, GLint> uniforms;
 		std::map<std::string, GLuint> attributes;
+		std::map<std::string, GLuint> uniformBlocks;
+		std::map<std::string, GLuint> storageBlocks;
 
 		// XXX: little bit redundant for caching values, but there
 		//      should only be 10s of shader programs at most, and being
@@ -326,7 +336,7 @@ void preload_screenquad(void);
 void draw_screenquad(void);
 
 Vao::ptr         gen_vao(void);
-Vbo::ptr         gen_vbo(void);
+Buffer::ptr      gen_buffer(GLuint type, GLenum use = GL_STATIC_DRAW);
 Texture::ptr     gen_texture(void);
 Shader::ptr      gen_shader(GLuint type);
 Program::ptr     gen_program(void);

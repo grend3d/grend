@@ -25,6 +25,8 @@ precision mediump samplerCube;
 #include <lighting/metal-roughness-pbr.glsl>
 
 void main(void) {
+	uint cluster = CURRENT_CLUSTER();
+
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 	vec3 ambient_light = vec3(0.1);
 	// TODO: normal mapping still borked
@@ -48,13 +50,14 @@ void main(void) {
 
 	vec3 total_light = vec3(0);
 
-	for (int i = 0; i < active_point_lights; i++) {
-		float atten = point_attenuation(i, vec3(f_position));
-		float shadow = point_shadow(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+		float atten = point_attenuation(i, cluster, vec3(f_position));
+		float shadow = point_shadow(i, cluster, vec3(f_position));
 
 		vec3 lum =
 			mix(vec3(0.0),
-			    mrp_lighting(point_lights[i].position, point_lights[i].diffuse, 
+			    mrp_lighting(POINT_LIGHT(i, cluster).position,
+				             POINT_LIGHT(i, cluster).diffuse, 
 		                     vec3(f_position), view_dir,
 		                     albedo, normal_dir, metallic, roughness),
 				shadow);
@@ -62,12 +65,13 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	for (int i = 0; i < active_spot_lights; i++) {
-		float atten = spot_attenuation(i, vec3(f_position));
-		float shadow = spot_shadow(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+		float atten = spot_attenuation(i, cluster, vec3(f_position));
+		float shadow = spot_shadow(i, cluster, vec3(f_position));
 		vec3 lum =
 			mix(vec3(0.0),
-			    mrp_lighting(spot_lights[i].position, spot_lights[i].diffuse,
+			    mrp_lighting(SPOT_LIGHT(i, cluster).position,
+				             SPOT_LIGHT(i, cluster).diffuse,
 			                 vec3(f_position), view_dir,
 			                 albedo, normal_dir, metallic, roughness),
 			shadow
@@ -76,12 +80,13 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	for (int i = 0; i < active_directional_lights; i++) {
-		float atten = directional_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(vec3(f_position)-directional_lights[i].direction,
-		                        directional_lights[i].diffuse,
-		                        vec3(f_position), view_dir,
-		                        albedo, normal_dir, metallic, roughness);
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+		float atten = directional_attenuation(i, cluster, vec3(f_position));
+		vec3 lum = mrp_lighting(
+			vec3(f_position) - DIRECTIONAL_LIGHT(i, cluster).direction,
+			DIRECTIONAL_LIGHT(i, cluster).diffuse,
+			vec3(f_position), view_dir,
+			albedo, normal_dir, metallic, roughness);
 
 		total_light += lum*atten*aoidx;
 	}

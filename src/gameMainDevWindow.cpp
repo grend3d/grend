@@ -5,7 +5,7 @@ using namespace grendx;
 gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
 	phys   = physics::ptr(new imp_physics());
 	state  = game_state::ptr(new game_state());
-	rend   = renderer::ptr(new renderer(ctx));
+	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));
 
 	editor = gameView::ptr(new game_editor(this));

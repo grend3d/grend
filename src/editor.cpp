@@ -125,8 +125,10 @@ void game_editor::render(gameMain *game) {
 	auto unshadedFlags = flags;
 	unshadedFlags.mainShader = unshadedFlags.skinnedShader
 		= game->rend->shaders["unshaded"];
+	game->rend->setFlags(unshadedFlags);
 	que.add(UI_objects);
-	que.flush(game->rend->framebuffer, unshadedFlags, game->rend->atlases);
+	que.flush(game->rend->framebuffer, game->rend);
+	game->rend->setFlags(game->rend->getDefaultFlags());
 	renderWorld(game, cam);
 
 	// TODO: function to do this

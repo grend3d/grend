@@ -19,6 +19,7 @@ precision mediump samplerCube;
 #include <lib/constants.glsl>
 
 void main(void) {
+	uint cluster = CURRENT_CLUSTER();
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
 	mat4 mvp = p*v*m;
 
@@ -27,13 +28,14 @@ void main(void) {
 	float roughness = anmaterial.roughness;
 	vec3 total_light = vec3(0);
 
-	for (int i = 0; i < active_point_lights; i++) {
-		float atten = point_attenuation(i, vec3(f_position));
-		float shadow = point_shadow(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+		float atten = point_attenuation(i, cluster, vec3(f_position));
+		float shadow = point_shadow(i, cluster, vec3(f_position));
 
 		vec3 lum =
 			mix(vec3(0.0),
-				mrp_lighting(point_lights[i].position, point_lights[i].diffuse,
+				mrp_lighting(POINT_LIGHT(i, cluster).position,
+				             POINT_LIGHT(i, cluster).diffuse,
 				             vec3(f_position), view_dir,
 				             albedo, f_normal, metallic, roughness),
 				shadow*atten);
@@ -41,19 +43,20 @@ void main(void) {
 		total_light += lum;
 	}
 
-	for (int i = 0; i < active_spot_lights; i++) {
-		float atten = spot_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(spot_lights[i].position, spot_lights[i].diffuse, 
+	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+		float atten = spot_attenuation(i, cluster, vec3(f_position));
+		vec3 lum = mrp_lighting(SPOT_LIGHT(i, cluster).position,
+		                        SPOT_LIGHT(i, cluster).diffuse, 
 		                        vec3(f_position), view_dir,
 		                        albedo, f_normal, metallic, roughness);
 
 		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < active_directional_lights; i++) {
-		float atten = directional_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(directional_lights[i].position,
-		                        directional_lights[i].diffuse, 
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+		float atten = directional_attenuation(i, cluster, vec3(f_position));
+		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT(i, cluster).position,
+		                        DIRECTIONAL_LIGHT(i, cluster).diffuse, 
 		                        vec3(f_position), view_dir,
 		                        albedo, f_normal, metallic, roughness);
 

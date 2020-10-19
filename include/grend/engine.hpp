@@ -57,78 +57,15 @@ struct renderFlags {
 	bool syncshader = true;
 };
 
-class renderQueue {
-	public:
-		renderQueue(camera::ptr cam) { setCamera(cam); };
-		renderQueue(renderQueue& other) {
-			meshes        = other.meshes;
-			skinnedMeshes = other.skinnedMeshes;
-			lights        = other.lights;
-			probes        = other.probes;
-			cam           = other.cam;
-		}
-
-		void add(gameObject::ptr obj,
-		         float animTime = 0.0,
-		         glm::mat4 trans = glm::mat4(1),
-		         bool inverted = false);
-		void addSkinned(gameObject::ptr obj,
-		                gameSkin::ptr skin,
-		                float animTime = 0.0,
-		                glm::mat4 trans = glm::mat4(1),
-		                bool inverted = false);
-		void updateLights(Program::ptr program, renderAtlases& atlases);
-		void updateReflections(Program::ptr program,
-		                       renderAtlases& atlases,
-		                       skybox& sky);
-		void sort(void);
-		void cull(unsigned width, unsigned height);
-		unsigned flush(renderFramebuffer::ptr fb,
-		               renderFlags& flags,
-		               renderAtlases& atlases);
-		unsigned flush(unsigned width, unsigned height,
-		               renderFlags& flags,
-		               renderAtlases& atlases);
-		void shaderSync(Program::ptr program, renderAtlases& atlases);
-		void setCamera(camera::ptr newcam) { cam = newcam; };
-
-		camera::ptr cam = nullptr;
-	
-		// mat4 is calculated transform for the position of the node in the tree
-		// bool is inverted flag
-		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
-		std::map<gameSkin::ptr, std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>>> skinnedMeshes;
-		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
-		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
-
-	private:
-		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
-		void set_reflection_probe(gameReflectionProbe::ptr probe,
-		                          Program::ptr program,
-		                          renderAtlases& atlases);
-};
-
-void drawShadowCubeMap(renderQueue& queue,
-                       gameLightPoint::ptr light,
-                       Program::ptr shadowShader,
-                       renderAtlases& atlases);
-void drawReflectionProbe(renderQueue& queue,
-                         gameReflectionProbe::ptr probe,
-                         Program::ptr reflectionShader,
-                         renderAtlases& atlases,
-                         skybox& sky);
-
-class renderer {
-	// TODO: shouldn't be needed here anymore
-	friend class text_renderer;
-	friend class game_state;
+class renderContext {
+	struct renderFlags flags;
 
 	public:
-		typedef std::shared_ptr<renderer> ptr;
-		typedef std::weak_ptr<renderer> weakptr;
+		typedef std::shared_ptr<renderContext> ptr;
+		typedef std::weak_ptr<renderContext> weakptr;
 
-		renderer(context& ctx);
-		~renderer() { };
+		renderContext(context& ctx);
+		~renderContext() { };
 		void loadShaders(void);
 
 		// TODO: 
@@ -137,14 +74,10 @@ class renderer {
 		// look up stencil buffer index in drawn objects
 		gameMesh::ptr index(unsigned idx);
 
-		/*
-		void drawQueue(renderQueue& queue);
-		void drawSkybox(void);
-		void drawRefprobeSkybox(glm::mat4 view, glm::mat4 proj);
-		*/
-
 		// XXX
-		struct renderFlags getFlags(std::string name="main");
+		void setFlags(const renderFlags& newflags);
+		struct renderFlags getDefaultFlags(std::string name="main");
+		const renderFlags& getFlags(void);
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -155,16 +88,11 @@ class renderer {
 
 		// sky box
 		skybox defaultSkybox;
-
-		// TODO: camelCase
-		/*
-		std::unique_ptr<atlas> reflection_atlas;
-		std::unique_ptr<atlas> shadow_atlas;
-		*/
 		renderAtlases atlases;
 
 		// XXX: loaded shaders, here so they can be accessed from the editor
 		std::map<std::string, Program::ptr> shaders;
+		Buffer::ptr lightBuffer;
 
 	protected:
 		Program::ptr shader;
@@ -186,6 +114,113 @@ class renderer {
 		std::vector<gameReflectionProbe::ptr> active_refprobes;
 		*/
 };
+
+class renderQueue {
+	public:
+		renderQueue(camera::ptr cam) { setCamera(cam); };
+		renderQueue(renderQueue& other) {
+			meshes        = other.meshes;
+			skinnedMeshes = other.skinnedMeshes;
+			lights        = other.lights;
+			probes        = other.probes;
+			cam           = other.cam;
+		}
+
+		void add(gameObject::ptr obj,
+		         float animTime = 0.0,
+		         glm::mat4 trans = glm::mat4(1),
+		         bool inverted = false);
+		void addSkinned(gameObject::ptr obj,
+		                gameSkin::ptr skin,
+		                float animTime = 0.0,
+		                glm::mat4 trans = glm::mat4(1),
+		                bool inverted = false);
+		void updateLights(Program::ptr program, renderContext::ptr rctx);
+		void updateReflections(Program::ptr program, renderContext::ptr rctx);
+		void sort(void);
+		void cull(unsigned width, unsigned height);
+		unsigned flush(renderFramebuffer::ptr fb, renderContext::ptr rctx);
+		unsigned flush(unsigned width, unsigned height, renderContext::ptr rctx);
+		void shaderSync(Program::ptr program, renderContext::ptr rctx);
+		void setCamera(camera::ptr newcam) { cam = newcam; };
+
+		camera::ptr cam = nullptr;
+
+		// mat4 is calculated transform for the position of the node in the tree
+		// bool is inverted flag
+		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
+		std::map<gameSkin::ptr, std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>>> skinnedMeshes;
+		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
+		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
+
+	private:
+		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
+		void set_reflection_probe(gameReflectionProbe::ptr probe,
+		                          Program::ptr program,
+		                          renderAtlases& atlases);
+};
+
+void drawShadowCubeMap(renderQueue& queue,
+                       gameLightPoint::ptr light,
+					   renderContext::ptr rctx);
+void drawReflectionProbe(renderQueue& queue,
+                         gameReflectionProbe::ptr probe,
+                         renderContext::ptr rctx);
+
+#ifndef MAX_LIGHTS
+#warning "Should define MAX_LIGHTS somewhere eh"
+#define MAX_LIGHTS 8
+#endif
+
+struct point_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat intensity;     // 32
+	GLfloat radius;        // 36
+	GLuint  casts_shadows; // 40
+	GLfloat padding;       // 44, pad to 48
+	GLfloat shadowmap[24]; // 48, end 144
+} __attribute__((packed));
+
+struct spot_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat direction[3];  // 32
+	GLfloat intensity;     // 44
+	GLfloat radius;        // 48
+	GLfloat angle;         // 52
+	GLuint  casts_shadows; // 56
+	GLuint  padding;       // 60, pad to 64
+	GLfloat shadowmap[4];  // 64, end 80
+} __attribute__((packed));
+
+struct directional_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat direction[3];  // 32
+	GLfloat intensity;     // 44
+	GLuint  casts_shadows; // 48
+	GLfloat padding[3];    // 52, pad to 64
+	GLfloat shadowmap[4];  // 64, end 80
+} __attribute__((packed));
+
+struct lights_std140 {
+	GLuint uactive_point_lights;       // 0
+	GLuint uactive_spot_lights;        // 4
+	GLuint uactive_directional_lights; // 8
+	GLuint padding;                    // 12, end 16
+
+	point_std140 upoint_lights[MAX_LIGHTS];
+	spot_std140 uspot_lights[MAX_LIGHTS];
+	directional_std140 udirectional_lights[MAX_LIGHTS];
+} __attribute__((packed));
+
+void packLight(gameLightPoint::ptr light, point_std140 *p,
+               renderContext::ptr rctx);
+void packLight(gameLightSpot::ptr light, spot_std140 *p,
+               renderContext::ptr rctx);
+void packLight(gameLightDirectional::ptr light, directional_std140 *p,
+               renderContext::ptr rctx);
 
 float light_extent(struct point_light *p, float threshold=0.03);
 float light_extent(struct spot_light *s, float threshold=0.03);

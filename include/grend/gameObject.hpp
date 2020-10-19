@@ -173,6 +173,7 @@ class gameLight : public gameObject {
 		virtual float extent(float threshold=0.03) = 0;
 		// TODO: 'within(threshold, pos)' to test if a light affects a given point
 
+		// TODO: why not store things in std140 format to avoid packing?
 		glm::vec4 diffuse = glm::vec4(1);
 		float     intensity = 50.0;
 		bool      casts_shadows = false;
