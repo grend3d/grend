@@ -64,6 +64,8 @@ static void editRefProbe(gameMain *game, gameReflectionProbe::ptr probe) {
 	ImGui::Text("Reflection probe properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
+	ImGui::InputFloat3("Bounding box minimum", glm::value_ptr(probe->boundingBox.min));
+	ImGui::InputFloat3("Bounding box maximum", glm::value_ptr(probe->boundingBox.max));
 	ImGui::Checkbox("Static reflections", &probe->is_static);
 	ImGui::Checkbox("Rendered", &probe->have_map);
 	ImGui::Unindent(16.f);
@@ -81,12 +83,13 @@ void game_editor::objectEditorWindow(gameMain *game) {
 	ImGui::Text(selectedNode->typeString().c_str());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
-	ImGui::InputFloat3("position",
+	ImGui::InputFloat3("Position",
 		glm::value_ptr(selectedNode->transform.position));
-	ImGui::InputFloat3("scale",
+	ImGui::InputFloat3("Scale",
 		glm::value_ptr(selectedNode->transform.scale));
-	ImGui::InputFloat4("rotation",
+	ImGui::InputFloat4("Rotation",
 		glm::value_ptr(selectedNode->transform.rotation));
+	ImGui::Checkbox("Visible", &selectedNode->visible);
 	ImGui::Unindent(16.f);
 
 	if (selectedNode->type == gameObject::objType::Light) {

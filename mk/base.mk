@@ -7,7 +7,7 @@ CSRC   = $(wildcard src/*.c)
 OBJ   = $(DIMGUI_SRC:.cpp=.o) $(CPPSRC:.cpp=.o) $(CSRC:.c=.o)
 LIBSO = libgrend.so.0
 LIBA  = libgrend.a
-DEPS  = $(SRC:.cpp=.d)
+DEPS  = $(CSRC:.c=.d) $(CPPSRC:.cpp=.d)
 
 DEMO_TARGETS =
 DEMO_CLEAN =

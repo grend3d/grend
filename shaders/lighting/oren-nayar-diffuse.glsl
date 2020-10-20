@@ -16,4 +16,5 @@ float oren_nayar_diffuse(float rough, vec3 L, vec3 N, vec3 V) {
 	// TODO: math here probably isn't right, check cos(phi...)
 	//       guessing that it's the inverse angle of theta?
 	return mindot(N, L) * (A + (B*max(0.0, cos(phii - phir)*sin(alpha)*tan(beta))));
+	//return mindot(N, L) * (A + B*sin(alpha)*tan(beta));
 }

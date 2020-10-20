@@ -83,6 +83,7 @@ void game_editor::loadUIModels(void) {
 		= load_object(dir + "Z-Axis-Rotation-Spinner.obj");
 	UI_models["Cursor-Placement"]
 		= load_object(dir + "Cursor-Placement.obj");
+	UI_models["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
 
 	UI_objects = gameObject::ptr(new gameObject());
 	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
@@ -92,6 +93,7 @@ void game_editor::loadUIModels(void) {
 	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateZ));
 	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateY));
 	gameObject::ptr cursor = gameObject::ptr(new gameObject());
+	gameObject::ptr bbox   = gameObject::ptr(new gameObject());
 
 	setNode("X-Axis",           xptr,   UI_models["X-Axis-Pointer"]);
 	setNode("X-Rotation",       xrot,   UI_models["X-Axis-Rotation-Spinner"]);
@@ -100,6 +102,7 @@ void game_editor::loadUIModels(void) {
 	setNode("Z-Axis",           zptr,   UI_models["Z-Axis-Pointer"]);
 	setNode("Z-Rotation",       zrot,   UI_models["Z-Axis-Rotation-Spinner"]);
 	setNode("Cursor-Placement", cursor, UI_models["Cursor-Placement"]);
+	setNode("Bounding-Box",     bbox,   UI_models["Bounding-Box"]);
 
 	setNode("X-Axis", UI_objects, xptr);
 	setNode("Y-Axis", UI_objects, yptr);
@@ -108,7 +111,9 @@ void game_editor::loadUIModels(void) {
 	setNode("Y-Rotation", UI_objects, yrot);
 	setNode("Z-Rotation", UI_objects, zrot);
 	setNode("Cursor-Placement", UI_objects, cursor);
+	setNode("Bounding-Box", UI_objects, bbox);
 
+	bbox->visible = false;
 	compile_models(UI_models);
 	bind_cooked_meshes();
 }
@@ -238,6 +243,26 @@ void game_editor::logic(gameMain *game, float delta) {
 
 			ptr->transform = selectedNode->transform;
 			ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
+		}
+
+		if (selectedNode->type == gameObject::objType::ReflectionProbe) {
+			auto bbox = UI_objects->getNode("Bounding-Box");
+			auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+
+			glm::vec3 bmin = probe->transform.position + probe->boundingBox.min;
+			glm::vec3 bmax = probe->transform.position + probe->boundingBox.max;
+			glm::vec3 center = 0.5f*(bmax + bmin);
+			glm::vec3 extent = (bmax - bmin);
+
+			assert(bbox != nullptr);
+			bbox->visible = true;
+			bbox->transform.position = center;
+			bbox->transform.scale    = extent;
+
+		} else {
+			auto bbox = UI_objects->getNode("Bounding-Box");
+			assert(bbox != nullptr);
+			bbox->visible = false;
 		}
 	}
 

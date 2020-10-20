@@ -22,6 +22,8 @@ precision mediump samplerCube;
 #include <lib/tonemapping.glsl>
 #include <lib/atlas_cubemap.glsl>
 #include <lib/constants.glsl>
+// TODO: actually, rename this to parallax-correct, or probe-parallax-correct?
+#include <lib/parallax-cube.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 
 void main(void) {
@@ -35,7 +37,9 @@ void main(void) {
 	//normal_dir = normalize(TBN * normal_dir);
 	normal_dir = mix(f_normal, normalize(TBN * normal_dir), NORMAL_WEIGHT);
 
-	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
+	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
+	vec3 view_dir = normalize(view_pos - f_position.xyz);
+	//vec3 view_dir = normalize(cameraPosition - f_position.xyz);
 	mat4 mvp = p*v*m;
 
 	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
@@ -92,6 +96,7 @@ void main(void) {
 	}
 
 	float a = alpha(roughness);
+/*
 	//float a = roughness;
 	// TODO: s/8.0/max LOD/
 	vec3 refdir = reflect(-view_dir, normal_dir);
@@ -99,8 +104,21 @@ void main(void) {
 	// TODO: mipmap
 	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
+*/
 
-	total_light += 0.5 * (1.0 - a) * env * Fb;
+	//mat4 minv = inverse(m)*v_inv;
+	//mat4 minv = inverse(v);
+	//vec3 posws = vec3((minv * f_position));
+	//vec3 posws = vec3(v_inv*f_position);
+	vec3 posws = f_position.xyz;
+
+	//vec3 refdir = reflect((posws - view_pos), normal_dir);
+	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
+	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
+	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
+
+	total_light += env * Fb;
+	//total_light += 0.5 * (1.0 - a) * env * Fb;
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);

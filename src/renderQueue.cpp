@@ -10,8 +10,7 @@ void renderQueue::add(gameObject::ptr obj,
                       glm::mat4 trans,
                       bool inverted)
 {
-	if (obj == nullptr) {
-		// shouldn't happen, but just in case
+	if (obj == nullptr || !obj->visible) {
 		return;
 	}
 
@@ -66,6 +65,10 @@ void renderQueue::addSkinned(gameObject::ptr obj,
                              glm::mat4 trans,
                              bool inverted)
 {
+	if (obj == nullptr || !obj->visible) {
+		return;
+	}
+
 	if (obj->type == gameObject::objType::Mesh) {
 		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
 		skinnedMeshes[skin].push_back({trans, inverted, m});
@@ -374,6 +377,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 	flags.skinnedShader->set("v", view);
 	flags.skinnedShader->set("p", projection);
 	flags.skinnedShader->set("v_inv", v_inv);
+	flags.skinnedShader->set("cameraPosition", cam->position());
 	shaderSync(flags.skinnedShader, rctx);
 	gameSkin::ptr lastskin = nullptr;
 
@@ -644,4 +648,8 @@ void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
 		program->set(sloc, facevec);
 		DO_ERROR_CHECK();
 	}
+
+	program->set("refboxMin",        probe->transform.position + probe->boundingBox.min);
+	program->set("refboxMax",        probe->transform.position + probe->boundingBox.max);
+	program->set("refprobePosition", probe->transform.position);
 }

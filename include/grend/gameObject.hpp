@@ -5,6 +5,7 @@
 // TODO: move, for lights
 #include <grend/quadtree.hpp>
 #include <grend/animation.hpp>
+#include <grend/boundingBox.hpp>
 
 #include <memory>
 #include <map>
@@ -90,6 +91,7 @@ class gameObject {
 		// transform relative to parent
 		TRS transform;
 		std::vector<animationChannel::ptr> animations;
+		bool visible = true;
 
 		gameObject::ptr parent = nullptr;
 		std::map<std::string, gameObject::ptr> nodes;
@@ -248,6 +250,12 @@ class gameReflectionProbe : public gameObject {
 
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
 		quadtree::node_id faces[6];
+		// bounding box for parallax correction
+		AABB boundingBox = {
+			.min = glm::vec3(-1),
+			.max = glm::vec3(1),
+		};
+
 		bool changed = true;
 		bool is_static = true;
 		bool have_map = false;
