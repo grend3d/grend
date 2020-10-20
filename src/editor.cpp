@@ -175,7 +175,7 @@ gameObject::ptr grendx::loadModel(std::string path) {
 		return obj;
 	}
 
-	else if (ext == ".gltf") {
+	else if (ext == ".gltf" || ext == ".glb") {
 		model_map mods = load_gltf_models(path);
 		compile_models(mods);
 
@@ -193,7 +193,7 @@ gameObject::ptr grendx::loadModel(std::string path) {
 gameImport::ptr grendx::loadScene(std::string path) {
 	std::string ext = filename_extension(path);
 
-	if (ext == ".gltf") {
+	if (ext == ".gltf" || ext == ".glb") {
 		auto [objs, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
 

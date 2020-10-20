@@ -1203,11 +1203,19 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 	// TODO: parse extension, handle binary format
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model tgltf_model;
+	std::string ext = filename_extension(filename);
 
 	std::string err;
 	std::string warn;
+	bool loaded;
 
-	bool loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
+	if (ext == ".glb") {
+		loaded = loader.LoadBinaryFromFile(&tgltf_model, &err, &warn, filename);
+
+	} else {
+		// assume ascii otherwise
+		loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
+	}
 
 	if (!loaded) {
 		throw std::logic_error(err);
