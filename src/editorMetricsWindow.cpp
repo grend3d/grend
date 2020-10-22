@@ -25,8 +25,19 @@ void game_editor::metricsWindow(gameMain *game) {
 		std::to_string(game->metrics.drawnMeshes)
 		+ " meshes drawn";
 
+	float bufmb = dbgGlmanBuffered/1048576.f;
+	float texmb = dbgGlmanTexturesBuffered/1048576.f;
+	float totalmb = bufmb + texmb;
+
+	std::string buffered = "Buffers: " + std::to_string(bufmb) + "MiB";
+	std::string textures = "Textures: " + std::to_string(texmb) + "MiB";
+	std::string total = "Total: " + std::to_string(totalmb) + "MiB";
+
 	ImGui::Text(fpsStr.c_str());
 	ImGui::Text(meshes.c_str());
+	ImGui::Text(buffered.c_str());
+	ImGui::Text(textures.c_str());
+	ImGui::Text(total.c_str());
 
 	ImGui::End();
 }

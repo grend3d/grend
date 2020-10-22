@@ -75,6 +75,9 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	// TODO:
 	//texture_cache[texhash] = temp;
 	//return temp;
+
+	size_t roughsize = tex.pixels.size() * 1.33;
+	currentSize = glmanDbgUpdateTextures(currentSize, roughsize);
 }
 
 void Texture::cubemap(std::string directory, std::string extension) {

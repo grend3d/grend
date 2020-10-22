@@ -47,30 +47,44 @@ void Buffer::buffer(const void *ptr, size_t n) {
 	bind();
 	glBufferData(type, n, ptr, use);
 	DO_ERROR_CHECK();
+
+	currentSize = glmanDbgUpdateBuffered(currentSize, n);
 }
 
 void Buffer::buffer(const std::vector<GLfloat>& vec) {
 	bind();
 	glBufferData(type, sizeof(GLfloat) * vec.size(), vec.data(), use);
 	DO_ERROR_CHECK();
+
+	size_t vecbytes = sizeof(GLfloat) * vec.size();
+	currentSize = glmanDbgUpdateBuffered(currentSize, vecbytes);
 }
 
 void Buffer::buffer(const std::vector<GLushort>& vec) {
 	bind();
 	glBufferData(type, sizeof(GLushort) * vec.size(), vec.data(), use);
 	DO_ERROR_CHECK();
+
+	size_t vecbytes = sizeof(GLushort) * vec.size();
+	currentSize = glmanDbgUpdateBuffered(currentSize, vecbytes);
 }
 
 void Buffer::buffer(const std::vector<GLuint>& vec) {
 	bind();
 	glBufferData(type, sizeof(GLuint) * vec.size(), vec.data(), use);
 	DO_ERROR_CHECK();
+
+	size_t vecbytes = sizeof(GLuint) * vec.size();
+	currentSize = glmanDbgUpdateBuffered(currentSize, vecbytes);
 }
 
 void Buffer::buffer(const std::vector<glm::vec3>& vec) {
 	bind();
 	glBufferData(type, sizeof(glm::vec3) * vec.size(), vec.data(), use);
 	DO_ERROR_CHECK();
+
+	size_t vecbytes = sizeof(glm::vec3) * vec.size();
+	currentSize = glmanDbgUpdateBuffered(currentSize, vecbytes);
 }
 
 // namespace grendx

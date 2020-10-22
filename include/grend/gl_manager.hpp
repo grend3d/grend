@@ -58,6 +58,23 @@ enum {
 	VAO_QUAD_TEXCOORDS = 1,
 };
 
+// XXX: metrics for debugging/optimization
+// TODO: not global variables
+inline size_t dbgGlmanBuffered = 0;
+inline size_t dbgGlmanTexturesBuffered = 0;
+
+static inline size_t glmanDbgUpdateBuffered(size_t old, size_t thenew) {
+	dbgGlmanBuffered -= old;
+	dbgGlmanBuffered += thenew;
+	return thenew;
+}
+
+static inline size_t glmanDbgUpdateTextures(size_t old, size_t thenew) {
+	dbgGlmanTexturesBuffered -= old;
+	dbgGlmanTexturesBuffered += thenew;
+	return thenew;
+}
+
 class Obj {
 	public:
 		enum type {
@@ -101,11 +118,13 @@ class Obj {
 				case type::Buffer:
 					std::cerr << "Obj: freeing Buffer " << obj << std::endl;
 					glDeleteBuffers(1, &obj);
+					dbgGlmanBuffered -= currentSize;
 					break;
 
 				case type::Texture:
 					std::cerr << "Obj: freeing Texture " << obj << std::endl;
 					glDeleteTextures(1, &obj);
+					dbgGlmanTexturesBuffered -= currentSize;
 					break;
 
 				case type::Shader:
@@ -128,6 +147,10 @@ class Obj {
 
 		GLuint obj;
 		enum type objtype;
+
+		// XXX: used to keep track of how much memory sent to the GPU
+		//      (see glman... variables at top)
+		size_t currentSize = 0;
 };
 
 class Vao : public Obj {
