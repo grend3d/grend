@@ -255,6 +255,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 					case SDLK_l: return (int)mode::AddSomething;
 					case SDLK_g: return (int)mode::MoveSomething;
 					case SDLK_r: return (int)mode::RotateSomething;
+					case SDLK_f: return (int)mode::ScaleSomething;
 				}
 			}
 			return MODAL_NO_CHANGE;
@@ -312,6 +313,71 @@ void game_editor::loadInputBindings(gameMain *game) {
 		},
 		imguiWantsKeyboard);
 
+	// scale keybinds
+	inputBinds.bind(mode::ScaleSomething,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN) {
+				entbuf = selectedNode->transform;
+
+				switch (ev.key.keysym.sym) {
+					case SDLK_x: return (int)mode::ScaleX;
+					case SDLK_y: return (int)mode::ScaleY;
+					case SDLK_z: return (int)mode::ScaleZ;
+					default:     return (int)mode::View;
+				}
+			}
+			return MODAL_NO_CHANGE;
+		},
+		imguiWantsKeyboard);
+
+	inputBinds.bind(mode::View,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			int ret = MODAL_NO_CHANGE;
+
+			if (selectedNode == nullptr
+			    || selectedNode->type != gameObject::objType::ReflectionProbe)
+			{
+				// only reflection probes have editable bounding boxes for the
+				// time being
+				return ret;
+			}
+
+			if (ev.type == SDL_KEYDOWN) {
+				if (flags & bindFlags::Shift) {
+					switch (ev.key.keysym.sym) {
+						case SDLK_x: ret = mode::MoveAABBPosX; break;
+						case SDLK_y: ret = mode::MoveAABBPosY; break;
+						case SDLK_z: ret = mode::MoveAABBPosZ; break;
+						default: break;
+					}
+
+				} else {
+					switch (ev.key.keysym.sym) {
+						case SDLK_x: ret = mode::MoveAABBNegX; break;
+						case SDLK_y: ret = mode::MoveAABBNegY; break;
+						case SDLK_z: ret = mode::MoveAABBNegZ; break;
+						default: break;
+					}
+				}
+			}
+
+			if (ret != MODAL_NO_CHANGE) {
+				gameReflectionProbe::ptr probe =
+					std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+
+				// XXX: put bounding box in position/scale transform...
+				// TODO: don't do that
+				entbuf.position = probe->boundingBox.min;
+				entbuf.scale    = probe->boundingBox.max;
+
+				// XXX: no mouse click, pretend there was a click at the center
+				//      for movement purposes
+				clicked_x = clicked_y = 0.5;
+			}
+
+			return ret;
+		},
+		imguiWantsKeyboard);
 
 	inputBinds.bind(mode::AddObject,
 		makeClicker<gameObject>(this, game, "object E"),
@@ -349,6 +415,16 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::RotateX, releaseMove, imguiWantsMouse);
 	inputBinds.bind(mode::RotateY, releaseMove, imguiWantsMouse);
 	inputBinds.bind(mode::RotateZ, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::ScaleSomething, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::ScaleX, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::ScaleY, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::ScaleZ, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBPosX, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBPosY, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBPosZ, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBNegX, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBNegY, releaseMove, imguiWantsMouse);
+	inputBinds.bind(mode::MoveAABBNegZ, releaseMove, imguiWantsMouse);
 }
 
 void game_editor::handleInput(gameMain *game, SDL_Event& ev)
@@ -446,7 +522,86 @@ void game_editor::handleMoveRotate(gameMain *game) {
 				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
 			break;
 
+		// scale, unlike the others, has a mouse handler for the select mode,
+		// similar to blender
+		case mode::ScaleSomething:
+			selectedNode->transform.scale =
+				entbuf.scale + glm::vec3(TAUF*amount);
+			break;
+
+		case mode::ScaleX:
+			selectedNode->transform.scale =
+				entbuf.scale + glm::vec3(TAUF*amount, 0, 0);
+			break;
+
+		case mode::ScaleY:
+			selectedNode->transform.scale =
+				entbuf.scale + glm::vec3(0, TAUF*amount, 0);
+			break;
+
+		case mode::ScaleZ:
+			selectedNode->transform.scale =
+				entbuf.scale + glm::vec3(0, 0, TAUF*amount);
+			break;
+
 		default:
 			break;
+	}
+
+	if (selectedNode->type == gameObject::objType::ReflectionProbe) {
+		gameReflectionProbe::ptr probe =
+			std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+
+		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
+		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));
+		float reversed_z = sign(glm::dot(glm::vec3(0, 0, 1), -cam->right()));
+		float depth = glm::distance(probe->transform.position, cam->position());
+
+		switch (mode) {
+			case mode::MoveAABBPosX:
+				probe->boundingBox.max =
+					entbuf.scale 
+						+ glm::vec3(1, 0, 0)*depth*amount_x*reversed_x
+						+ glm::vec3(1, 0, 0)*depth*amount_y*reversed_y;
+				break;
+
+			case mode::MoveAABBPosY:
+				probe->boundingBox.max =
+					entbuf.scale
+						+ glm::vec3(0, 1, 0)*depth*amount_x*reversed_x
+						+ glm::vec3(0, 1, 0)*depth*amount_y*reversed_y;
+				break;
+
+			case mode::MoveAABBPosZ:
+				probe->boundingBox.max =
+					entbuf.scale
+						+ glm::vec3(0, 0, 1)*depth*amount_x*reversed_z
+						+ glm::vec3(0, 0, 1)*depth*amount_y*reversed_y*reversed_z;
+				break;
+
+			case mode::MoveAABBNegX:
+				probe->boundingBox.min =
+					entbuf.position
+						+ glm::vec3(1, 0, 0)*depth*amount_x*reversed_x
+						+ glm::vec3(1, 0, 0)*depth*amount_y*reversed_y;
+				break;
+
+			case mode::MoveAABBNegY:
+				probe->boundingBox.min =
+					entbuf.position
+						+ glm::vec3(0, 1, 0)*depth*amount_x*reversed_x
+						+ glm::vec3(0, 1, 0)*depth*amount_y*reversed_y;
+				break;
+
+			case mode::MoveAABBNegZ:
+				probe->boundingBox.min =
+					entbuf.position
+						+ glm::vec3(0, 0, 1)*depth*amount_x*reversed_z
+						+ glm::vec3(0, 0, 1)*depth*amount_y*reversed_y*reversed_z;
+				break;
+
+			default:
+				break;
+		}
 	}
 }

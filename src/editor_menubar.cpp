@@ -192,6 +192,16 @@ void game_editor::menubar(gameMain *game) {
 			"Rotate along X axis\0"
 			"Rotate along Y axis\0"
 			"Rotate along Z axis\0"
+			"Scale\0"
+			"Scale along X axis\0"
+			"Scale along Y axis\0"
+			"Scale along Z axis\0"
+			"Move bounding box upper X bound\0"
+			"Move bounding box upper Y bound\0"
+			"Move bounding box upper Z bound\0"
+			"Move bounding box lower X bound\0"
+			"Move bounding box lower Y bound\0"
+			"Move bounding box lower Z bound\0"
 			"\0");
 
 		set_mode((enum mode)mode);

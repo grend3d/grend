@@ -52,6 +52,16 @@ class game_editor : public gameView {
 			RotateX,
 			RotateY,
 			RotateZ,
+			ScaleSomething,
+			ScaleX,
+			ScaleY,
+			ScaleZ,
+			MoveAABBPosX,
+			MoveAABBPosY,
+			MoveAABBPosZ,
+			MoveAABBNegX,
+			MoveAABBNegY,
+			MoveAABBNegZ,
 		};
 
 		// TODO: don't need this anymore
