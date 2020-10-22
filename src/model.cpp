@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <optional>
 
 #include <stdint.h>
 
@@ -105,7 +106,6 @@ void gameModel::genTangents(void) {
 	unsigned mod = 3;
 
 	tangents.resize(vertices.size(), glm::vec3(0));
-	bitangents.resize(vertices.size(), glm::vec3(0));
 
 	// generate tangents for each triangle
 	for (auto& [name, ptr] : nodes) {
@@ -129,21 +129,15 @@ void gameModel::genTangents(void) {
 			glm::vec3 e1 = b - a, e2 = c - a;
 			glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
 
-			glm::vec3 tangent, bitangent;
+			glm::vec3 tangent;
 
 			float f = 1.f / (duv1.x * duv2.y - duv2.x * duv1.y);
 			tangent.x = f * (duv2.y * e1.x + duv1.y * e2.x);
 			tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
 			tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
 
-			bitangent.x = f * (-duv2.x * e1.x + duv1.x * e2.x);
-			bitangent.y = f * (-duv2.x * e1.y + duv1.x * e2.y);
-			bitangent.z = f * (-duv2.x * e1.z + duv1.x * e2.z);
-
 			tangents[elms[0]] = tangents[elms[1]] = tangents[elms[2]]
 				= glm::normalize(tangent);
-			bitangents[elms[0]] = bitangents[elms[1]] = bitangents[elms[2]]
-				= glm::normalize(bitangent);
 		}
 	}
 }
@@ -297,9 +291,7 @@ gameModel::ptr load_object(std::string filename) {
 		// TODO: should handle this
 	}
 
-	if (ret->tangents.size() != ret->vertices.size()
-	    || ret->bitangents.size() != ret->vertices.size())
-	{
+	if (ret->tangents.size() != ret->vertices.size()) {
 		std::cerr << " ? mismatched tangents and vertices: "
 			<< ret->tangents.size() << ", "
 			<< ret->vertices.size()
@@ -581,6 +573,27 @@ static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
 	}
 }
 
+static std::optional<grendx::AABB>
+gltf_accessor_aabb(tinygltf::Accessor& acc) {
+	bool have_aabb =
+		!acc.minValues.empty() && !acc.maxValues.empty()
+		&& acc.minValues.size() == 3
+		&& acc.maxValues.size() == 3;
+
+	if (have_aabb) {
+		auto& min = acc.minValues;
+		auto& max = acc.maxValues;
+
+		return std::optional<grendx::AABB>({
+			glm::vec3(min[0], min[1], min[2]),
+			glm::vec3(max[0], max[1], max[2]),
+		});
+
+	} else {
+		return {};
+	}
+}
+
 static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
                                        int accessor,
                                        std::vector<GLuint>& vec)
@@ -746,6 +759,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			int texcoord = -1;
 			int joints = -1;
 			int weights = -1;
+			int tangents = -1;
 
 			for (auto& attr : prim.attributes) {
 				if (attr.first == "NORMAL")     normals = attr.second;
@@ -753,6 +767,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				if (attr.first == "TEXCOORD_0") texcoord = attr.second;
 				if (attr.first == "JOINTS_0")   joints = attr.second; 
 				if (attr.first == "WEIGHTS_0")  weights = attr.second; 
+				if (attr.first == "TANGENT")    tangents = attr.second;
 			}
 
 			if (position < 0) {
@@ -803,6 +818,14 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				curModel->haveNormals = true;
 			}
 
+			if (tangents >= 0) {
+				check_index(tgltf_model.accessors, tangents);
+				std::cerr << "        have tangents... " << tangents << std::endl;
+
+				gltf_unpack_buffer(tgltf_model, tangents, curModel->tangents);
+				curModel->haveTangents = true;
+			}
+
 			if (position >= 0) {
 				check_index(tgltf_model.accessors, position);
 
@@ -812,6 +835,11 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
+
+				if (auto box = gltf_accessor_aabb(acc)) {
+					curModel->haveAABB = true;
+					modmesh->boundingBox = *box;
+				}
 			}
 
 			if (texcoord >= 0) {
@@ -844,6 +872,7 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			}
 		}
 
+		// generate anything not included
 		if (!curModel->haveNormals) {
 			curModel->genNormals();
 		}
@@ -852,9 +881,13 @@ grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			curModel->genTexcoords();
 		}
 
-		// TODO: parse tangents from gltf, if available
-		curModel->genTangents();
-		curModel->genAABBs();
+		if (!curModel->haveTangents) {
+			curModel->genTangents();
+		}
+
+		if (!curModel->haveAABB) {
+			curModel->genAABBs();
+		}
 	}
 
 	return ret;

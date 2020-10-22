@@ -121,7 +121,6 @@ class gameModel : public gameObject {
 		std::vector<glm::vec3> vertices;
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> tangents;
-		std::vector<glm::vec3> bitangents;
 		std::vector<glm::vec2> texcoords;
 		std::vector<usvec4>    joints;
 		std::vector<glm::vec4> weights;
@@ -134,6 +133,7 @@ class gameModel : public gameObject {
 		bool haveTexcoords = false;
 		bool haveTangents = false;
 		bool haveJoints = false;
+		bool haveAABB = false;
 };
 
 typedef std::map<std::string, gameMesh::ptr> mesh_map;

@@ -75,7 +75,7 @@ void compile_meshes(std::string objname, mesh_map& meshies) {
 }
 
 // TODO: move
-static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[4]) + sizeof(glm::vec2));
+static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[3]) + sizeof(glm::vec2));
 static const size_t JOINTPROP_SIZE = (sizeof(glm::vec4[2]));
 
 static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
@@ -142,7 +142,7 @@ void compile_model(std::string name, gameModel::ptr model) {
 
 	assert(model->vertices.size() == model->normals.size());
 	assert(model->vertices.size() == model->texcoords.size());
-	//assert(model->vertices.size() == model->tangents.size());
+	assert(model->vertices.size() == model->tangents.size());
 	//assert(model->vertices.size() == model->bitangents.size());
 
 	compiled_model::ptr obj = compiled_model::ptr(new compiled_model());
@@ -160,8 +160,7 @@ void compile_model(std::string name, gameModel::ptr model) {
 	obj->vertices_offset   = offset_ptr(offset);
 	obj->normals_offset    = offset_ptr(offset + sizeof(glm::vec3[1]));
 	obj->tangents_offset   = offset_ptr(offset + sizeof(glm::vec3[2]));
-	obj->bitangents_offset = offset_ptr(offset + sizeof(glm::vec3[3]));
-	obj->texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[4]));
+	obj->texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[3]));
 
 	// XXX: glm vectors don't have an iterator
 	auto push_vec = [&] (auto& props, const auto& vec) {
@@ -174,7 +173,6 @@ void compile_model(std::string name, gameModel::ptr model) {
 		push_vec(cooked_vertprops, model->vertices[i]);
 		push_vec(cooked_vertprops, model->normals[i]);
 		push_vec(cooked_vertprops, model->tangents[i]);
-		push_vec(cooked_vertprops, model->bitangents[i]);
 		push_vec(cooked_vertprops, model->texcoords[i]);
 	}
 
@@ -277,10 +275,6 @@ Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
 	glEnableVertexAttribArray(VAO_TANGENTS);
 	glVertexAttribPointer(VAO_TANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
 	                      obj->tangents_offset);
-
-	glEnableVertexAttribArray(VAO_BITANGENTS);
-	glVertexAttribPointer(VAO_BITANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->bitangents_offset);
 
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
 	glVertexAttribPointer(VAO_TEXCOORDS, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,

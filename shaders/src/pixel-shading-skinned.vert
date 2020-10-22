@@ -13,7 +13,7 @@ uniform mat4 m, v, p;
 void main(void) {
 	f_normal = normalize(v_normal);
 	f_tangent = normalize(v_tangent);
-	f_bitangent = normalize(v_bitangent);
+	f_bitangent = normalize(cross(v_normal, v_tangent));
 
 	mat4 skinMatrix =
 		a_weights.x * joints[int(a_joints.x)]
@@ -21,9 +21,9 @@ void main(void) {
 		+ a_weights.z * joints[int(a_joints.z)]
 		+ a_weights.w * joints[int(a_joints.w)];
 
-	vec3 T = normalize(vec3(m*skinMatrix * vec4(v_tangent, 0)));
-	vec3 B = normalize(vec3(m*skinMatrix * vec4(v_bitangent, 0)));
-	vec3 N = normalize(vec3(m*skinMatrix * vec4(v_normal, 0)));
+	vec3 T = normalize(vec3(m*skinMatrix * vec4(f_tangent, 0)));
+	vec3 B = normalize(vec3(m*skinMatrix * vec4(f_bitangent, 0)));
+	vec3 N = normalize(vec3(m*skinMatrix * vec4(f_normal, 0)));
 
 	TBN = mat3(T, B, N);
 
