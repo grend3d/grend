@@ -13,8 +13,13 @@ static gameModel::ptr  physmodel;
 
 game_editor::game_editor(gameMain *game) : gameView() {
 	objects = gameObject::ptr(new gameObject());
+	/*
 	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
+										  */
+	post = renderPostChain::ptr(new renderPostChain(
+		{game->rend->shaders["tonemap"]},
+		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	loading_thing = makePostprocessor<rOutput>(
 		load_program(GR_PREFIX "shaders/out/postprocess.vert",
@@ -139,8 +144,8 @@ void game_editor::render(gameMain *game) {
 	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
-	testpost->setSize(winsize_x, winsize_y);
-	testpost->draw(game->rend->framebuffer);
+	//post->setSize(winsize_x, winsize_y);
+	post->draw(game->rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
 //             the postprocessing shader doesn't see anything from the

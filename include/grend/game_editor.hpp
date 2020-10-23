@@ -26,7 +26,7 @@ gameObject::ptr loadMap(gameMain *game, std::string name="save.map");
 class game_editor : public gameView {
 	public:
 		game_editor(gameMain *game);
-		renderPostStage<rOutput>::ptr testpost;
+		renderPostChain::ptr post;
 		renderPostStage<rOutput>::ptr loading_thing;
 		Texture::ptr loading_img;
 

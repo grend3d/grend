@@ -6,7 +6,7 @@
 
 using namespace grendx;
 
-static renderPostStage<rOutput>::ptr testpost = nullptr;
+static renderPostChain::ptr post = nullptr;
 static gameObject::ptr testweapon = nullptr;
 
 static channelBuffers_ptr weaponSound =
@@ -19,8 +19,9 @@ struct nvg_data {
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
 
-	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
-		SCREEN_SIZE_X, SCREEN_SIZE_Y);
+	post = renderPostChain::ptr(new renderPostChain(
+		{game->rend->shaders["tonemap"]},
+		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
@@ -212,17 +213,16 @@ void playerView::render(gameMain *game) {
 	if (input.mode == modes::MainMenu) {
 		renderWorld(game, cam);
 
-		testpost->setSize(winsize_x, winsize_y);
-		testpost->draw(game->rend->framebuffer);
+		// TODO: need to set post size on resize event..
+		//post->setSize(winsize_x, winsize_y);
+		post->draw(game->rend->framebuffer);
 
 		// TODO: function to do this
 		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam);
-
-		testpost->setSize(winsize_x, winsize_y);
-		testpost->draw(game->rend->framebuffer);
+		post->draw(game->rend->framebuffer);
 
 		// TODO: function to do this
 		drawUIStuff(vgui.nvg, winsize_x, winsize_y);

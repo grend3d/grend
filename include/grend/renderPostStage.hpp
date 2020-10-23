@@ -156,12 +156,64 @@ class renderPostStage : public Storage {
 		}
 };
 
+class renderPostChain {
+	public:
+		typedef std::shared_ptr<renderPostChain> ptr;
+		typedef std::weak_ptr<renderPostChain> weakptr;
+
+		renderPostChain(std::vector<Program::ptr> stages,
+		                unsigned fb_x,
+		                unsigned fb_y)
+		{
+			if (stages.size() == 0) {
+				// TODO: could the fancy new c++ concepts/contraints do this?
+				throw std::logic_error("renderPostChain(): need at least one stage");
+			}
+
+			for (auto it = stages.begin(); it != stages.end(); it++) {
+				if (std::next(it) == stages.end()) {
+					output =
+						std::make_shared<renderPostStage<rOutput>>(*it, fb_x, fb_y);
+					break;
+
+				} else {
+					renderPostStage<rStage>::ptr stage =
+						std::make_shared<renderPostStage<rStage>>(*it, fb_x, fb_y);
+					prestages.push_back(stage);
+				}
+			}
+		}
+
+		void draw(renderFramebuffer::ptr fb) {
+			Texture::ptr current = fb->color;
+
+			for (auto& stage : prestages) {
+				stage->draw(current, fb->depth);
+				current = stage->renderTexture;
+			}
+
+			output->draw(current, fb->depth);
+		}
+
+		void setSize(unsigned fb_x, unsigned fb_y) {
+			for (auto& stage : prestages) {
+				stage->setSize(fb_x, fb_y);
+			}
+
+			output->setSize(fb_x, fb_y);
+		}
+
+	private:
+		std::vector<renderPostStage<rStage>::ptr> prestages;
+		renderPostStage<rOutput>::ptr output;
+};
+
 // NOTE: assumes the given program is not already linked
 template <class Storage>
 typename renderPostStage<Storage>::ptr
 makePostprocessor(Program::ptr program, unsigned fb_x, unsigned fb_y) {
-	program->attribute("v_position", 0);
-	program->attribute("v_texcoord", 1);
+	program->attribute("v_position", VAO_QUAD_VERTICES);
+	program->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	program->link();
 
 	return typename renderPostStage<Storage>::ptr(new renderPostStage<Storage>(program, fb_x, fb_y));
