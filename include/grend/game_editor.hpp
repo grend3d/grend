@@ -113,6 +113,7 @@ class game_editor : public gameView {
 		std::vector<editor_entry> dynamic_models;
 
 	private:
+		void renderWorldObjects(gameMain *game);
 		void menubar(gameMain *game);
 		void map_window(gameMain *game);
 		void objectEditorWindow(gameMain *game);
@@ -141,6 +142,8 @@ class game_editor : public gameView {
 		bool show_object_editor_window = false;
 		bool show_object_select_window = false;
 		bool show_metrics_window = true;
+		bool show_probes = true;
+		bool show_lights = true;
 
 		// last place the mouse was clicked, used for determining the amount of
 		// rotation, movement etc

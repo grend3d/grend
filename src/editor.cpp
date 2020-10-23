@@ -138,12 +138,15 @@ void game_editor::render(gameMain *game) {
 	game->rend->setFlags(unshadedFlags);
 	que.add(UI_objects);
 	que.flush(game->rend->framebuffer, game->rend);
+
 	game->rend->setFlags(game->rend->getDefaultFlags());
 	renderWorld(game, cam);
+	renderWorldObjects(game);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
 	post->draw(game->rend->framebuffer);
 
@@ -155,6 +158,58 @@ void game_editor::render(gameMain *game) {
 	render_editor(game);
 	render_imgui(game);
 #endif
+}
+
+void game_editor::renderWorldObjects(gameMain *game) {
+	auto flags = game->rend->getFlags();
+
+	// XXX: wasteful, a bit wrong
+	gameObject::ptr probeObj = std::make_shared<gameObject>();
+	setNode("model", probeObj, physmodel);
+
+	renderQueue tempque(cam);
+	renderQueue que(cam);
+	tempque.add(game->state->rootnode);
+
+	if (show_probes) {
+		auto probeFlags = flags;
+		probeFlags.mainShader = probeFlags.skinnedShader
+			= game->rend->shaders["refprobe_debug"];
+		game->rend->setFlags(probeFlags);
+
+		game->rend->shaders["refprobe_debug"]->bind();
+
+		glActiveTexture(GL_TEXTURE6);
+		game->rend->atlases.reflections->color_tex->bind();
+		game->rend->shaders["refprobe_debug"]->set("reflection_atlas", 6);
+
+		for (auto& [_, __, probe] : tempque.probes) {
+			probeObj->transform.position = probe->transform.position;
+			for (unsigned i = 0; i < 6; i++) {
+				std::string loc = "cubeface["+std::to_string(i)+"]";
+				glm::vec3 facevec =
+					game->rend->atlases.reflections->tex_vector(probe->faces[i]); 
+				game->rend->shaders["refprobe_debug"]->set(loc, facevec);
+			}
+
+			que.add(probeObj);
+			que.flush(game->rend->framebuffer, game->rend);
+		}
+	}
+
+	if (show_lights) {
+		auto unshadedFlags = flags;
+		unshadedFlags.mainShader = unshadedFlags.skinnedShader
+			= game->rend->shaders["unshaded"];
+
+		game->rend->setFlags(unshadedFlags);
+		for (auto& [_, __, light] : tempque.lights) {
+			probeObj->transform.position = light->transform.position;
+			probeObj->transform.scale = glm::vec3(0.5);
+			que.add(probeObj);
+			que.flush(game->rend->framebuffer, game->rend);
+		}
+	}
 }
 
 void game_editor::initImgui(gameMain *game) {

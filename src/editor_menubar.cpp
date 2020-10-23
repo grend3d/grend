@@ -123,6 +123,8 @@ void game_editor::menubar(gameMain *game) {
 			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
 			ImGui::SliderFloat("Light threshold", &light_threshold,
 			                   0.001, 1.f);
+			ImGui::Checkbox("Show environment probes", &show_probes);
+			ImGui::Checkbox("Show lights", &show_lights);
 
 			ImGui::EndMenu();
 		}
