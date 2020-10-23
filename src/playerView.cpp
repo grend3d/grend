@@ -19,7 +19,7 @@ struct nvg_data {
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
 
-	testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
 		SCREEN_SIZE_X, SCREEN_SIZE_Y);
 
 	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);

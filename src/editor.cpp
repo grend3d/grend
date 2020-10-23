@@ -13,7 +13,7 @@ static gameModel::ptr  physmodel;
 
 game_editor::game_editor(gameMain *game) : gameView() {
 	objects = gameObject::ptr(new gameObject());
-	testpost = makePostprocessor<rOutput>(game->rend->shaders["post"],
+	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 
 	loading_thing = makePostprocessor<rOutput>(

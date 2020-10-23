@@ -155,15 +155,15 @@ void renderContext::loadShaders(void) {
 	shaders["shadow-skinned"]->attribute("v_position", VAO_VERTICES);
 	shaders["shadow-skinned"]->link();
 
-	shaders["post"] = load_program(
+	shaders["tonemap"] = load_program(
 		GR_PREFIX "shaders/out/postprocess.vert",
-		GR_PREFIX "shaders/out/postprocess.frag"
+		GR_PREFIX "shaders/out/tonemap.frag"
 	);
 
 	// NOTE: post
-	shaders["post"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["post"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["post"]->link();
+	shaders["tonemap"]->attribute("v_position", VAO_QUAD_VERTICES);
+	shaders["tonemap"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
+	shaders["tonemap"]->link();
 
 	shaders["quadtest"] = load_program(
 		GR_PREFIX "shaders/out/quadtest.vert",
