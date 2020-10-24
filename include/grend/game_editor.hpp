@@ -43,6 +43,7 @@ class game_editor : public gameView {
 			AddSpotLight,
 			AddDirectionalLight,
 			AddReflectionProbe,
+			AddIrradianceProbe,
 			Select,
 			MoveSomething,
 			MoveX,

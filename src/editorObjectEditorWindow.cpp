@@ -60,7 +60,8 @@ static void editLight(gameMain *game, gameLight::ptr light) {
 	}
 }
 
-static void editRefProbe(gameMain *game, gameReflectionProbe::ptr probe) {
+template <class T>
+static void editRefProbe(gameMain *game, T probe) {
 	ImGui::Text("Reflection probe properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -98,6 +99,10 @@ void game_editor::objectEditorWindow(gameMain *game) {
 	} else if(selectedNode->type == gameObject::objType::ReflectionProbe) {
 		editRefProbe(game,
 			std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode));
+
+	} else if(selectedNode->type == gameObject::objType::IrradianceProbe) {
+		editRefProbe(game,
+			std::dynamic_pointer_cast<gameIrradianceProbe>(selectedNode));
 	}
 
 	{

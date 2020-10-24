@@ -37,13 +37,21 @@ class skybox {
 
 class renderAtlases {
 	public:
-		renderAtlases(unsigned ref_size = 2048, unsigned shadow_size = 2048) {
-			reflections = atlas::ptr(new atlas(ref_size));
-			shadows     = atlas::ptr(new atlas(shadow_size, atlas::mode::Depth));
+		renderAtlases(unsigned refSize = 2048,
+		              unsigned shadowSize = 2048,
+		              unsigned irradSize = 1024,
+		              unsigned coeffSize = 1024)
+		{
+			reflections = atlas::ptr(new atlas(refSize));
+			shadows     = atlas::ptr(new atlas(shadowSize, atlas::mode::Depth));
+			irradiance  = atlas::ptr(new atlas(irradSize));
+			irradianceCoefficients = atlas::ptr(new atlas(coeffSize));
 		}
 
 		atlas::ptr reflections;
 		atlas::ptr shadows;
+		atlas::ptr irradiance;
+		atlas::ptr irradianceCoefficients;
 };
 
 struct renderFlags {
@@ -152,10 +160,15 @@ class renderQueue {
 		std::map<gameSkin::ptr, std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>>> skinnedMeshes;
 		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
 		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
+		std::vector<std::tuple<glm::mat4, bool, gameIrradianceProbe::ptr>> irradProbes;
 
 	private:
 		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
+		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
 		void set_reflection_probe(gameReflectionProbe::ptr probe,
+		                          Program::ptr program,
+		                          renderAtlases& atlases);
+		void set_irradiance_probe(gameIrradianceProbe::ptr probe,
 		                          Program::ptr program,
 		                          renderAtlases& atlases);
 };
@@ -165,6 +178,9 @@ void drawShadowCubeMap(renderQueue& queue,
 					   renderContext::ptr rctx);
 void drawReflectionProbe(renderQueue& queue,
                          gameReflectionProbe::ptr probe,
+                         renderContext::ptr rctx);
+void drawIrradianceProbe(renderQueue& queue,
+                         gameIrradianceProbe::ptr probe,
                          renderContext::ptr rctx);
 
 #ifndef MAX_LIGHTS

@@ -399,6 +399,10 @@ void game_editor::loadInputBindings(gameMain *game) {
 		makeClicker<gameReflectionProbe>(this, game, "reflection probe E"),
 		imguiWantsMouse);
 
+	inputBinds.bind(mode::AddIrradianceProbe,
+		makeClicker<gameIrradianceProbe>(this, game, "irradiance probe E"),
+		imguiWantsMouse);
+
 	auto releaseMove = [&, game] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_MOUSEBUTTONUP
 		    && ev.button.button == SDL_BUTTON_LEFT)

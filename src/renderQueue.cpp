@@ -40,6 +40,11 @@ void renderQueue::add(gameObject::ptr obj,
 		gameReflectionProbe::ptr probe =
 			std::dynamic_pointer_cast<gameReflectionProbe>(obj);
 		probes.push_back({adjTrans, inverted, probe});
+
+	} else if (obj->type == gameObject::objType::IrradianceProbe) {
+		gameIrradianceProbe::ptr probe =
+			std::dynamic_pointer_cast<gameIrradianceProbe>(obj);
+		irradProbes.push_back({adjTrans, inverted, probe});
 	}
 
 	if (obj->type == gameObject::objType::None
@@ -119,6 +124,26 @@ renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
 		}
 
 		drawReflectionProbe(*this, probe, rctx);
+	}
+
+	for (auto& [_, __, radprobe] : irradProbes) {
+		auto& radtree = rctx->atlases.irradiance->tree;
+		auto& reftree = rctx->atlases.reflections->tree;
+
+		for (unsigned i = 0; i < 6; i++) {
+			// TODO: configurable size
+			if (!radtree.valid(radprobe->faces[i])) {
+				radprobe->faces[i] = radtree.alloc(16);
+			}
+
+			// TODO: coefficients
+
+			if (!reftree.valid(radprobe->source->faces[i])) {
+				radprobe->source->faces[i] = reftree.alloc(64);
+			}
+		}
+
+		drawIrradianceProbe(*this, radprobe, rctx);
 	}
 }
 
@@ -313,6 +338,10 @@ unsigned renderQueue::flush(unsigned width,
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
 				rctx->atlases);
+			set_irradiance_probe(
+				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+				flags.skinnedShader,
+				rctx->atlases);
 			drawMesh(flags, nullptr, flags.skinnedShader,
 			         transform, inverted, mesh);
 		}
@@ -326,6 +355,10 @@ unsigned renderQueue::flush(unsigned width,
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
+		set_irradiance_probe(
+			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+			flags.mainShader, rctx->atlases);
+
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -410,6 +443,10 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
 				rctx->atlases);
+			set_irradiance_probe(
+				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+				flags.skinnedShader,
+				rctx->atlases);
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
 			drawnMeshes++;
 		}
@@ -428,6 +465,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 		glm::vec4 apos = transform * glm::vec4(1);
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
+			flags.mainShader, rctx->atlases);
+		set_irradiance_probe(
+			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -634,6 +674,22 @@ gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 	return ret;
 }
 
+gameIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
+	gameIrradianceProbe::ptr ret = nullptr;
+	float mindist = HUGE_VALF;
+
+	// TODO: optimize this, O(N) is meh
+	for (auto& [_, __, p] : irradProbes) {
+		float dist = glm::distance(pos, p->transform.position);
+		if (!ret || dist < mindist) {
+			mindist = dist;
+			ret = p;
+		}
+	}
+
+	return ret;
+}
+
 void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
                                        Program::ptr program,
                                        renderAtlases& atlases)
@@ -652,4 +708,24 @@ void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
 	program->set("refboxMin",        probe->transform.position + probe->boundingBox.min);
 	program->set("refboxMax",        probe->transform.position + probe->boundingBox.max);
 	program->set("refprobePosition", probe->transform.position);
+}
+
+void renderQueue::set_irradiance_probe(gameIrradianceProbe::ptr probe,
+                                       Program::ptr program,
+                                       renderAtlases& atlases)
+{
+	if (!probe) {
+		return;
+	}
+
+	for (unsigned i = 0; i < 6; i++) {
+		std::string sloc = "irradiance_probe[" + std::to_string(i) + "]";
+		glm::vec3 facevec = atlases.irradiance->tex_vector(probe->faces[i]); 
+		program->set(sloc, facevec);
+		DO_ERROR_CHECK();
+	}
+
+	program->set("radboxMin",        probe->transform.position + probe->boundingBox.min);
+	program->set("radboxMax",        probe->transform.position + probe->boundingBox.max);
+	program->set("radprobePosition", probe->transform.position);
 }

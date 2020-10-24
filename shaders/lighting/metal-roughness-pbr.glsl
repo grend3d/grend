@@ -61,7 +61,7 @@ vec3 f_specular(vec3 F, float vis, float D) {
 }
 
 vec3 f_thing(vec3 spec, vec3 N, vec3 L, vec3 V) {
-	return spec / max(0.5, (4.0 * nzdot(N, L) * nzdot(N, V)));
+	return spec / max(2.0, (4.0 * nzdot(N, L) * nzdot(N, V)));
 }
 
 vec3 f_diffuse(vec3 F, vec3 c_diff) {

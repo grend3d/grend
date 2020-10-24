@@ -35,7 +35,7 @@ class gameObject {
 			Particles,       // particle system
 			Light,           // Light object, has Point/Spot/etc subclasses
 			ReflectionProbe, // Full reflection probe
-			Lightprobe,      // diffuse light probe
+			IrradianceProbe, // diffuse light probe
 			Camera,          // TODO: camera position marker
 		} type = objType::None;
 
@@ -251,6 +251,33 @@ class gameReflectionProbe : public gameObject {
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
 		quadtree::node_id faces[6];
 		// bounding box for parallax correction
+		AABB boundingBox = {
+			.min = glm::vec3(-1),
+			.max = glm::vec3(1),
+		};
+
+		bool changed = true;
+		bool is_static = true;
+		bool have_map = false;
+};
+
+class gameIrradianceProbe : public gameObject {
+	public:
+		typedef std::shared_ptr<gameIrradianceProbe> ptr;
+		typedef std::weak_ptr<gameIrradianceProbe> weakptr;
+
+		virtual std::string typeString(void) {
+			return "Irradiance probe";
+		}
+
+		gameIrradianceProbe() : gameObject(objType::IrradianceProbe) {
+			source = std::make_shared<gameReflectionProbe>();
+		};
+
+		gameReflectionProbe::ptr source;
+		quadtree::node_id faces[6];
+		quadtree::node_id coefficients[6];
+
 		AABB boundingBox = {
 			.min = glm::vec3(-1),
 			.max = glm::vec3(1),

@@ -160,3 +160,78 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 
 	probe->have_map = true;
 }
+
+void grendx::drawIrradianceProbe(renderQueue& queue,
+                                 gameIrradianceProbe::ptr probe,
+                                 renderContext::ptr rctx)
+{
+	// XXX
+	probe->source->transform = probe->transform;
+	probe->source->is_static = probe->is_static;
+	probe->source->have_map  = probe->have_map;
+	probe->source->changed   = probe->changed;
+	drawReflectionProbe(queue, probe->source, rctx);
+
+	//puts("got here");
+	if (probe->is_static && probe->have_map) {
+		// static probe already rendered, nothing to do
+		return;
+	}
+
+	for (unsigned i = 0; i < 6; i++) {
+		probe->faces[i] =
+			rctx->atlases.irradiance->tree.refresh(probe->faces[i]);
+		// TODO: coefficients, spherical harmonics
+	}
+
+	// TODO: check for updates inside some radius, return if none
+	// TODO: skinned reflection shader
+	//flags.mainShader = flags.skinnedShader = refShader;
+	Program::ptr convolve = rctx->shaders["irradiance-convolve"];
+	convolve->bind();
+
+	glActiveTexture(GL_TEXTURE6);
+	rctx->atlases.reflections->color_tex->bind();
+	convolve->set("reflection_atlas", 6);
+	DO_ERROR_CHECK();
+
+	for (unsigned i = 0; i < 6; i++) {
+		glm::vec3 facevec =
+			rctx->atlases.reflections->tex_vector(probe->source->faces[i]);
+		std::string sloc = "cubeface["+std::to_string(i)+"]";
+		convolve->set(sloc, facevec);
+	}
+
+	for (unsigned i = 0; i < 6; i++) {
+		quadinfo info = rctx->atlases.irradiance->tree.info(probe->faces[i]);
+		quadinfo sourceinfo =
+			rctx->atlases.reflections->tree.info(probe->source->faces[i]);
+
+		if (!rctx->atlases.irradiance->bind_atlas_fb(probe->faces[i])) {
+			std::cerr
+				<< "drawIrradianceProbe(): couldn't bind probe framebuffer"
+				<< std::endl;
+			continue;
+		}
+
+		bind_vao(get_screenquad_vao());
+		//glViewport(0, 0, info.size, info.size);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDepthMask(GL_FALSE);
+		disable(GL_DEPTH_TEST);
+		DO_ERROR_CHECK();
+
+		convolve->set("currentFace", int(i));
+		convolve->set("screen_x", float(info.size));
+		convolve->set("screen_y", float(info.size));
+		convolve->set("rend_x", float(sourceinfo.size));
+		convolve->set("rend_y", float(sourceinfo.size));
+		convolve->set("exposure", 1.f);
+
+		draw_screenquad();
+	}
+
+	puts("rendered irradiance probe");
+	probe->have_map = true;
+}

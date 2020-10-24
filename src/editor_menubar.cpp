@@ -160,6 +160,10 @@ void game_editor::menubar(gameMain *game) {
 				set_mode(mode::AddReflectionProbe);
 			}
 
+			if (ImGui::MenuItem("Add irradiance probe", "lr")) {
+				set_mode(mode::AddIrradianceProbe);
+			}
+
 			ImGui::EndMenu();
 		}
 
@@ -185,6 +189,7 @@ void game_editor::menubar(gameMain *game) {
 			"Add spot light\0"
 			"Add directional light\0"
 			"Add reflection probe\0"
+			"Add irradiance probe\0"
 			"Select\0"
 			"Move...\0"
 			"Move along X axis\0"

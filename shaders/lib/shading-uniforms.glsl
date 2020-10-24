@@ -50,12 +50,18 @@ uniform samplerCube skytexture;
 
 uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;
+uniform sampler2D irradiance_atlas;
 
 uniform vec3 reflection_probe[6];
 uniform vec3 refboxMin;
 uniform vec3 refboxMax;
 uniform vec3 refprobePosition;
 uniform vec3 cameraPosition;
+
+uniform vec3 irradiance_probe[6];
+uniform vec3 radboxMin;
+uniform vec3 radboxMax;
+uniform vec3 radprobePosition;
 
 uniform mat4 m, v, p;
 uniform mat3 m_3x3_inv_transp;

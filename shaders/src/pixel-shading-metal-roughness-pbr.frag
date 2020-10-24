@@ -39,11 +39,11 @@ void main(void) {
 
 	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
 	vec3 view_dir = normalize(view_pos - f_position.xyz);
-	//vec3 view_dir = normalize(cameraPosition - f_position.xyz);
 	mat4 mvp = p*v*m;
 
 	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
+	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 	vec3 albedo = texcolor.rgb;
 	float opacity = texcolor.a;
 
@@ -52,7 +52,8 @@ void main(void) {
 	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
 	//float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
 
-	vec3 total_light = vec3(0);
+	//vec3 total_light = vec3(0);
+	vec3 total_light = (roughness*roughness)*radmap.rgb;
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));
@@ -112,13 +113,13 @@ void main(void) {
 	//vec3 posws = vec3(v_inv*f_position);
 	vec3 posws = f_position.xyz;
 
-	//vec3 refdir = reflect((posws - view_pos), normal_dir);
+	//vec3 refdir = reflect(-view_dir, normal_dir);
 	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
 	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
 
-	total_light += env * Fb;
-	//total_light += 0.5 * (1.0 - a) * env * Fb;
+	//total_light += env * Fb;
+	total_light += 0.8 * (1.0 - a) * env * Fb;
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);

@@ -154,6 +154,18 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
 		ret = std::dynamic_pointer_cast<gameObject>(probe);
 
+	} else if (jay["type"] == "Irradiance probe"){
+		auto probe = std::make_shared<gameIrradianceProbe>();
+		auto bbox = jay["boundingBox"];
+
+		auto bmin = bbox["min"];
+		auto bmax = bbox["max"];
+
+		probe->is_static = jay["is_static"];
+		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
+		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
+		ret = std::dynamic_pointer_cast<gameObject>(probe);
+
 	} else {
 		ret = std::make_shared<gameObject>();
 	}
@@ -266,6 +278,17 @@ static json objectJson(gameObject::ptr obj) {
 
 	} else if (obj->type == gameObject::objType::ReflectionProbe) {
 		auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(obj);
+		auto bmin = probe->boundingBox.min;
+		auto bmax = probe->boundingBox.max;
+
+		ret["boundingBox"] = {
+			{"min", {bmin[0], bmin[1], bmin[2]}},
+			{"max", {bmax[0], bmax[1], bmax[2]}},
+		};
+		ret["is_static"] = probe->is_static;
+
+	} else if (obj->type == gameObject::objType::IrradianceProbe) {
+		auto probe = std::dynamic_pointer_cast<gameIrradianceProbe>(obj);
 		auto bmin = probe->boundingBox.min;
 		auto bmax = probe->boundingBox.max;
 

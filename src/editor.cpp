@@ -172,24 +172,46 @@ void game_editor::renderWorldObjects(gameMain *game) {
 	tempque.add(game->state->rootnode);
 
 	if (show_probes) {
-		auto probeFlags = flags;
-		probeFlags.mainShader = probeFlags.skinnedShader
-			= game->rend->shaders["refprobe_debug"];
+		auto  probeFlags = flags;
+		auto& debugShader = game->rend->shaders["refprobe_debug"];
+
+		probeFlags.mainShader = probeFlags.skinnedShader = debugShader;
 		game->rend->setFlags(probeFlags);
 
-		game->rend->shaders["refprobe_debug"]->bind();
+		debugShader->bind();
 
 		glActiveTexture(GL_TEXTURE6);
 		game->rend->atlases.reflections->color_tex->bind();
-		game->rend->shaders["refprobe_debug"]->set("reflection_atlas", 6);
+		debugShader->set("reflection_atlas", 6);
 
 		for (auto& [_, __, probe] : tempque.probes) {
 			probeObj->transform.position = probe->transform.position;
+			probeObj->transform.scale    = glm::vec3(0.5);
+
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
 					game->rend->atlases.reflections->tex_vector(probe->faces[i]); 
-				game->rend->shaders["refprobe_debug"]->set(loc, facevec);
+				debugShader->set(loc, facevec);
+			}
+
+			que.add(probeObj);
+			que.flush(game->rend->framebuffer, game->rend);
+		}
+
+		glActiveTexture(GL_TEXTURE6);
+		game->rend->atlases.irradiance->color_tex->bind();
+		debugShader->set("reflection_atlas", 6);
+
+		for (auto& [_, __, probe] : tempque.irradProbes) {
+			probeObj->transform.position = probe->transform.position;
+			probeObj->transform.scale    = glm::vec3(0.5);
+
+			for (unsigned i = 0; i < 6; i++) {
+				std::string loc = "cubeface["+std::to_string(i)+"]";
+				glm::vec3 facevec =
+					game->rend->atlases.irradiance->tex_vector(probe->faces[i]); 
+				debugShader->set(loc, facevec);
 			}
 
 			que.add(probeObj);
@@ -334,6 +356,7 @@ void game_editor::logic(gameMain *game, float delta) {
 		case mode::AddSpotLight:
 		case mode::AddDirectionalLight:
 		case mode::AddReflectionProbe:
+		case mode::AddIrradianceProbe:
 			{
 				auto ptr = UI_objects->getNode("Cursor-Placement");
 				assert(ptr != nullptr);

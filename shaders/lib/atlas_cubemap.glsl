@@ -24,6 +24,41 @@ vec3 textureCubeAtlasUV(vec3 dir) {
 	return vec3((f_uv + 1.0) * 0.5, float(face));
 }
 
+const vec3 cubedirs[6] = vec3[](
+	vec3(-1,  0,  0),
+	vec3( 0, -1,  0),
+	vec3( 0,  0, -1),
+	vec3( 1,  0,  0),
+	vec3( 0,  1,  0),
+	vec3( 0,  0,  1)
+);
+
+const vec3 cubeup[6] = vec3[](
+	vec3( 0, 1, 0),
+	vec3( 0, 0, 1),
+	vec3( 0, 1, 0),
+	vec3( 0, 1, 0),
+	vec3( 0, 0, 1),
+	vec3( 0, 1, 0)
+);
+
+const vec3 cuberight[6] = vec3[](
+	vec3( 0, 0,-1),
+	vec3(-1, 0, 0),
+	vec3( 1, 0, 0),
+	vec3( 0, 0, 1),
+	vec3( 1, 0, 0),
+	vec3(-1, 0, 0)
+);
+
+vec3 textureCubeAtlasDir(int face, vec2 uv) {
+	vec2 f_uv = (uv * 2.0) - 1.0; // [-1, 1], with center at 0
+	vec3 f_tan   = cuberight[face]*f_uv.x;
+	vec3 f_bitan = cubeup[face]   *f_uv.y;
+
+	return cubedirs[face] + f_tan + f_bitan;
+}
+
 vec4 textureCubeAtlas(in sampler2D atlas, vec3 cube[6], vec3 dir) {
 	vec3 dat = textureCubeAtlasUV(dir);
 	vec2 uv = dat.xy;
