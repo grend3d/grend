@@ -160,17 +160,31 @@ void game_editor::menubar(gameMain *game) {
 				set_mode(mode::AddReflectionProbe);
 			}
 
-			if (ImGui::MenuItem("Add irradiance probe", "lr")) {
+			if (ImGui::MenuItem("Add irradiance probe", "li")) {
 				set_mode(mode::AddIrradianceProbe);
 			}
 
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Tools")) {
+		if (ImGui::BeginMenu("Lighting")) {
+			// TODO: actually have everything set up to implement all of this,
+			//       how far we've come...
 			if (ImGui::MenuItem("Bake lighting", "CTRL+B")) {}
 			if (ImGui::MenuItem("Generate irradiance probes", "CTRL+L")) {}
 			if (ImGui::MenuItem("Generate reflectance cubemaps", "Shift-CTRL+L")) {}
+
+			if (ImGui::MenuItem("Re-render selected light maps", "CTRL+p")) {
+				if (selectedNode) {
+					invalidateLightMaps(selectedNode);
+				}
+			}
+
+			if (ImGui::MenuItem("Re-render all light maps", "CTRL+P")) {
+				if (game->state->rootnode) {
+					invalidateLightMaps(game->state->rootnode);
+				}
+			}
 
 			ImGui::EndMenu();
 		}

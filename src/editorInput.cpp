@@ -407,6 +407,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 		if (ev.type == SDL_MOUSEBUTTONUP
 		    && ev.button.button == SDL_BUTTON_LEFT)
 		{
+			invalidateLightMaps(selectedNode);
 			return (int)mode::View;
 		} else {
 			return MODAL_NO_CHANGE;

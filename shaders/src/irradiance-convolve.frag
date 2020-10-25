@@ -17,7 +17,7 @@ void main(void) {
 	vec4 sum = vec4(0);
 	vec3 curdir = textureCubeAtlasDir(currentFace, f_texcoord);
 	float size = float(textureSize(reflection_atlas, 0).x) * cubeface[0].z;
-	float div = size*size*4;
+	float div = size*size*3;
 	float inc = 1.0 / size;
 
 	for (int i = 0; i < 6; i++) {

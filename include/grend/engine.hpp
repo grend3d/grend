@@ -247,6 +247,7 @@ void set_material(Program::ptr program,
                   compiled_model::ptr obj,
                   std::string mat_name);
 void set_default_material(Program::ptr program);
+void invalidateLightMaps(gameObject::ptr tree);
 
 // namespace grendx
 }

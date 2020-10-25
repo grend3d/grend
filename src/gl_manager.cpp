@@ -142,7 +142,7 @@ void compile_model(std::string name, gameModel::ptr model) {
 
 	assert(model->vertices.size() == model->normals.size());
 	assert(model->vertices.size() == model->texcoords.size());
-	assert(model->vertices.size() == model->tangents.size());
+	//assert(model->vertices.size() == model->tangents.size());
 	//assert(model->vertices.size() == model->bitangents.size());
 
 	compiled_model::ptr obj = compiled_model::ptr(new compiled_model());
