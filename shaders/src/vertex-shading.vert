@@ -19,6 +19,7 @@ vec3 get_position(mat4 m, vec4 coord) {
 }
 
 void main(void) {
+	uint cluster = CURRENT_CLUSTER();
 	vec3 position = get_position(m, vec4(in_Position, 1.0));
 
 	// TODO: make this a uniform
@@ -32,37 +33,39 @@ void main(void) {
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
 
-	for (int i = 0; i < ACTIVE_POINTS; i++) {
-		float atten = point_attenuation(i, position);
+	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+		float atten = point_attenuation(i, cluster, position);
 
 		vec3 lum =
 			blinn_phong_lighting(
-				point_lights[i].position, point_lights[i].diffuse,
+				POINT_LIGHT(i, cluster).position,
+				POINT_LIGHT(i, cluster).diffuse,
 				position, view_dir, anmaterial.diffuse.xyz,
 				normal_dir, anmaterial.metalness);
 
 		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < ACTIVE_SPOTS; i++) {
-		float atten = spot_attenuation(i, position);
+	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+		float atten = spot_attenuation(i, cluster, position);
 
 		vec3 lum =
 			blinn_phong_lighting(
-				spot_lights[i].position, spot_lights[i].diffuse,
+				SPOT_LIGHT(i, cluster).position,
+				SPOT_LIGHT(i, cluster).diffuse,
 				position, view_dir, anmaterial.diffuse.xyz,
 				normal_dir, anmaterial.metalness);
 
 		total_light += lum*atten;
 	}
 
-	for (int i = 0; i < ACTIVE_DIRECTIONAL; i++) {
-		float atten = directional_attenuation(i, position);
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+		float atten = directional_attenuation(i, cluster, position);
 
 		vec3 lum =
 			blinn_phong_lighting(
-				directional_lights[i].position,
-				directional_lights[i].diffuse,
+				DIRECTIONAL_LIGHT(i, cluster).position,
+				DIRECTIONAL_LIGHT(i, cluster).diffuse,
 				position, view_dir, anmaterial.diffuse.xyz,
 				normal_dir, anmaterial.metalness);
 

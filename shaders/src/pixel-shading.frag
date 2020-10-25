@@ -19,6 +19,8 @@ precision mediump samplerCube;
 #include <lighting/fresnel-schlick.glsl>
 
 void main(void) {
+	uint cluster = CURRENT_CLUSTER();
+
 	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 	vec2 metalrough = texture2D(specular_map, f_texcoord).rg;
@@ -41,35 +43,35 @@ void main(void) {
 	                        anmaterial.diffuse.y * ambient_light.y,
 	                        anmaterial.diffuse.z * ambient_light.z);
 
-	for (int i = 0; i < ACTIVE_POINTS; i++) {
-		float atten = point_attenuation(i, f_position.xyz);
-		float shadow = point_shadow(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+		float atten = point_attenuation(i, cluster, f_position.xyz);
+		float shadow = point_shadow(i, cluster, vec3(f_position));
 
 		vec3 lum =
-			blinn_phong_lighting(point_lights[i].position,
-				point_lights[i].diffuse, f_position.xyz,
+			blinn_phong_lighting(POINT_LIGHT(i, cluster).position,
+				POINT_LIGHT(i, cluster).diffuse, f_position.xyz,
 				view_dir, albedo, normal_dir, specidx);
 
 		total_light += lum*atten*shadow;
 	}
 
-	for (int i = 0; i < ACTIVE_SPOTS; i++) {
-		float atten = spot_attenuation(i, f_position.xyz);
-		float shadow = spot_shadow(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+		float atten = spot_attenuation(i, cluster, f_position.xyz);
+		float shadow = spot_shadow(i, cluster, vec3(f_position));
 
 		vec3 lum =
-			blinn_phong_lighting(spot_lights[i].position,
-				spot_lights[i].diffuse, f_position.xyz,
+			blinn_phong_lighting(SPOT_LIGHT(i, cluster).position,
+				SPOT_LIGHT(i, cluster).diffuse, f_position.xyz,
 				view_dir, albedo, normal_dir, specidx);
 
 		total_light += lum*atten*shadow;
 	}
 
-	for (int i = 0; i < ACTIVE_DIRECTIONAL; i++) {
-		float atten = directional_attenuation(i, vec3(f_position));
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+		float atten = directional_attenuation(i, cluster, vec3(f_position));
 		vec3 lum =
-			blinn_phong_lighting(directional_lights[i].position,
-				directional_lights[i].diffuse, f_position.xyz,
+			blinn_phong_lighting(DIRECTIONAL_LIGHT(i, cluster).position,
+				DIRECTIONAL_LIGHT(i, cluster).diffuse, f_position.xyz,
 				view_dir, albedo, normal_dir, specidx);
 
 		total_light += lum*atten;
