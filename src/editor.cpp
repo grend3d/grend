@@ -179,16 +179,18 @@ void game_editor::renderWorldObjects(gameMain *game) {
 
 	if (show_probes) {
 		auto  probeFlags = flags;
-		auto& debugShader = game->rend->shaders["refprobe_debug"];
+		auto& refShader = game->rend->shaders["refprobe_debug"];
+		auto& irradShader = game->rend->shaders["irradprobe_debug"];
 
-		probeFlags.mainShader = probeFlags.skinnedShader = debugShader;
+		probeFlags.mainShader = probeFlags.skinnedShader = refShader;
 		game->rend->setFlags(probeFlags);
+		refShader->bind();
 
-		debugShader->bind();
-
+		/*
 		glActiveTexture(GL_TEXTURE6);
 		game->rend->atlases.reflections->color_tex->bind();
-		debugShader->set("reflection_atlas", 6);
+		refShader->set("reflection_atlas", 6);
+		*/
 
 		for (auto& [_, __, probe] : tempque.probes) {
 			probeObj->transform.position = probe->transform.position;
@@ -198,16 +200,22 @@ void game_editor::renderWorldObjects(gameMain *game) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
 					game->rend->atlases.reflections->tex_vector(probe->faces[i]); 
-				debugShader->set(loc, facevec);
+				refShader->set(loc, facevec);
 			}
 
 			que.add(probeObj);
 			que.flush(game->rend->framebuffer, game->rend);
 		}
 
+		probeFlags.mainShader = probeFlags.skinnedShader = irradShader;
+		game->rend->setFlags(probeFlags);
+		irradShader->bind();
+
+		/*
 		glActiveTexture(GL_TEXTURE6);
 		game->rend->atlases.irradiance->color_tex->bind();
-		debugShader->set("reflection_atlas", 6);
+		irradShader->set("reflection_atlas", 6);
+		*/
 
 		for (auto& [_, __, probe] : tempque.irradProbes) {
 			probeObj->transform.position = probe->transform.position;
@@ -217,7 +225,7 @@ void game_editor::renderWorldObjects(gameMain *game) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
 					game->rend->atlases.irradiance->tex_vector(probe->faces[i]); 
-				debugShader->set(loc, facevec);
+				irradShader->set(loc, facevec);
 			}
 
 			que.add(probeObj);

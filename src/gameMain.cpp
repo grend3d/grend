@@ -107,18 +107,6 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 
 		// TODO: constants for texture bindings, no magic numbers floating around
 		game->rend->shaders["main"]->bind();
-		glActiveTexture(GL_TEXTURE6);
-		game->rend->atlases.reflections->color_tex->bind();
-		game->rend->shaders["main"]->set("reflection_atlas", 6);
-		glActiveTexture(GL_TEXTURE7);
-		game->rend->atlases.shadows->depth_tex->bind();
-		game->rend->shaders["main"]->set("shadowmap_atlas", 7);
-		DO_ERROR_CHECK();
-		glActiveTexture(GL_TEXTURE8);
-		game->rend->atlases.irradiance->color_tex->bind();
-		game->rend->shaders["main"]->set("irradiance_atlas", 8);
-		DO_ERROR_CHECK();
-
 		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 

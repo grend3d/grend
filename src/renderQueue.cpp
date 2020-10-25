@@ -656,6 +656,20 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	                  spot_lights, directional_lights);
 	DO_ERROR_CHECK();
 #endif
+
+	glActiveTexture(GL_TEXTURE6);
+	rctx->atlases.reflections->color_tex->bind();
+	program->set("reflection_atlas", 6);
+
+	glActiveTexture(GL_TEXTURE7);
+	rctx->atlases.shadows->depth_tex->bind();
+	program->set("shadowmap_atlas", 7);
+	DO_ERROR_CHECK();
+
+	glActiveTexture(GL_TEXTURE8);
+	rctx->atlases.irradiance->color_tex->bind();
+	program->set("irradiance_atlas", 8);
+	DO_ERROR_CHECK();
 }
 
 gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {

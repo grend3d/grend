@@ -80,13 +80,13 @@ void renderContext::loadShaders(void) {
 
 	shaders["main"] = load_program(
 		GR_PREFIX "shaders/out/pixel-shading.vert",
-		//"shaders/out/pixel-shading.frag"
+		//GR_PREFIX "shaders/out/pixel-shading.frag"
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
 	shaders["main-skinned"] = load_program(
 		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
-		//"shaders/out/pixel-shading.frag"
+		//GR_PREFIX "shaders/out/pixel-shading.frag"
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
@@ -106,12 +106,19 @@ void renderContext::loadShaders(void) {
 		GR_PREFIX "shaders/out/ref_probe_debug.frag"
 	);
 
+	shaders["irradprobe_debug"] = load_program(
+		GR_PREFIX "shaders/out/ref_probe_debug.vert",
+		GR_PREFIX "shaders/out/irrad_probe_debug.frag"
+	);
+
 	shaders["unshaded"] = load_program(
 		GR_PREFIX "shaders/out/pixel-shading.vert",
 		GR_PREFIX "shaders/out/unshaded.frag"
 	);
 
-	for (auto& name : {"main", "refprobe", "refprobe_debug", "unshaded"}) {
+	for (auto& name : {"main", "refprobe", "refprobe_debug",
+	                   "irradprobe_debug", "unshaded"})
+	{
 		Program::ptr s = shaders[name];
 
 		s->attribute("in_Position", VAO_VERTICES);
