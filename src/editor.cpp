@@ -97,8 +97,9 @@ void game_editor::loadUIModels(void) {
 	gameObject::ptr xrot = gameObject::ptr(new clicker(this, mode::RotateX));
 	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateZ));
 	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateY));
-	gameObject::ptr cursor = gameObject::ptr(new gameObject());
-	gameObject::ptr bbox   = gameObject::ptr(new gameObject());
+	gameObject::ptr orientation = gameObject::ptr(new gameObject());
+	gameObject::ptr cursor      = gameObject::ptr(new gameObject());
+	gameObject::ptr bbox        = gameObject::ptr(new gameObject());
 
 	setNode("X-Axis",           xptr,   UI_models["X-Axis-Pointer"]);
 	setNode("X-Rotation",       xrot,   UI_models["X-Axis-Rotation-Spinner"]);
@@ -109,16 +110,21 @@ void game_editor::loadUIModels(void) {
 	setNode("Cursor-Placement", cursor, UI_models["Cursor-Placement"]);
 	setNode("Bounding-Box",     bbox,   UI_models["Bounding-Box"]);
 
-	setNode("X-Axis", UI_objects, xptr);
-	setNode("Y-Axis", UI_objects, yptr);
-	setNode("Z-Axis", UI_objects, zptr);
-	setNode("X-Rotation", UI_objects, xrot);
-	setNode("Y-Rotation", UI_objects, yrot);
-	setNode("Z-Rotation", UI_objects, zrot);
+	setNode("X-Axis", orientation, xptr);
+	setNode("Y-Axis", orientation, yptr);
+	setNode("Z-Axis", orientation, zptr);
+	setNode("X-Rotation", orientation, xrot);
+	setNode("Y-Rotation", orientation, yrot);
+	setNode("Z-Rotation", orientation, zrot);
+
+	setNode("Orientation-Indicator", UI_objects, orientation);
 	setNode("Cursor-Placement", UI_objects, cursor);
 	setNode("Bounding-Box", UI_objects, bbox);
 
 	bbox->visible = false;
+	orientation->visible = false;
+	cursor->visible = false;
+
 	compile_models(UI_models);
 	bind_cooked_meshes();
 }
@@ -317,11 +323,28 @@ void game_editor::handleCursorUpdate(gameMain *game) {
 void game_editor::logic(gameMain *game, float delta) {
 	cam->updatePosition(delta);
 
+	auto orientation = UI_objects->getNode("Orientation-Indicator");
+	auto cursor      = UI_objects->getNode("Cursor-Placement");
+	assert(orientation && cursor);
+
+	orientation->visible =
+		   selectedNode != nullptr
+		&& selectedNode->parent
+		&& selectedNode != game->state->rootnode;
+
+	cursor->visible =
+		   mode == mode::AddObject
+		|| mode == mode::AddPointLight
+		|| mode == mode::AddSpotLight
+		|| mode == mode::AddDirectionalLight
+		|| mode == mode::AddReflectionProbe
+		|| mode == mode::AddIrradianceProbe;
+
 	if (selectedNode) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
 		                  "X-Rotation", "Y-Rotation", "Z-Rotation"})
 		{
-			auto ptr = UI_objects->getNode(str);
+			auto ptr = orientation->getNode(str);
 
 			ptr->transform = selectedNode->transform;
 			ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
@@ -346,6 +369,7 @@ void game_editor::logic(gameMain *game, float delta) {
 			assert(bbox != nullptr);
 			bbox->visible = false;
 		}
+
 	}
 
 	handleMoveRotate(game);
