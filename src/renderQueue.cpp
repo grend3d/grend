@@ -160,8 +160,8 @@ void renderQueue::sort(void) {
 			auto& [a_trans, _,  a_mesh] = a;
 			auto& [b_trans, __, b_mesh] = b;
 
-			glm::vec4 ta = a_trans*glm::vec4(1);
-			glm::vec4 tb = b_trans*glm::vec4(1);
+			glm::vec4 ta = a_trans*glm::vec4(0, 0, 0, 1);
+			glm::vec4 tb = b_trans*glm::vec4(0, 0, 0, 1);
 			glm::vec3 va = glm::vec3(ta)/ta.w;
 			glm::vec3 vb = glm::vec3(tb)/tb.w;
 
@@ -438,7 +438,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 				offset = 0.0;
 			}
 
-			glm::vec4 apos = transform * glm::vec4(1);
+			glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
 			set_reflection_probe(
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
@@ -462,7 +462,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		glm::vec4 apos = transform * glm::vec4(1);
+		glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
