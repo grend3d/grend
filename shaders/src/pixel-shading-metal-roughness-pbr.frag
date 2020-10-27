@@ -53,7 +53,11 @@ void main(void) {
 	//float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
 
 	//vec3 total_light = vec3(0);
-	vec3 total_light = (roughness*roughness)*radmap.rgb;
+	vec3 total_light =
+		radmap.rgb
+		* anmaterial.diffuse.rgb
+		* albedo;
+		;
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));
@@ -119,7 +123,7 @@ void main(void) {
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
 
 	//total_light += env * Fb;
-	total_light += 0.8 * (1.0 - a) * env * Fb;
+	total_light += 0.5 * (1.0 - a) * env * Fb;
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);
