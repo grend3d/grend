@@ -401,35 +401,42 @@ void load_materials(gameModel::ptr model, std::string filename) {
 		}
 
 		else if (statement[0] == "map_Kd") {
-			//materials[current_material].diffuse_map = base_dir(filename) + statement[1];
-			model->materials[current_material].diffuse_map.
+			//materials[current_material].diffuseMap = base_dir(filename) + statement[1];
+			model->materials[current_material].diffuseMap.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
-			//materials[current_material].specular_map = base_dir(filename) + statement[1];
-			model->materials[current_material].metal_roughness_map.
+			//materials[current_material].specularMap = base_dir(filename) + statement[1];
+			model->materials[current_material].metalRoughnessMap.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
-			//materials[current_material].ambient_occ_map = base_dir(filename) + statement[1];
-			model->materials[current_material].ambient_occ_map.
+			//materials[current_material].ambient_occMap = base_dir(filename) + statement[1];
+			model->materials[current_material].ambientOcclusionMap.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
-			//materials[current_material].normal_map = base_dir(filename) + statement[1];
-			model->materials[current_material].normal_map.
+			//materials[current_material].normalMap = base_dir(filename) + statement[1];
+			model->materials[current_material].normalMap.
 				load_texture(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_bump") {
 			// bump/height map
 		}
+
+		/*
+		else if (statement[0] == "Ke" || statement[0] == "map_Ke") {
+			model->materials[current_material].emissiveMap.
+				load_texture(base_dir(filename) + statement[1]);
+		}
+		*/
 
 		// TODO: other light maps, attributes
 	}
@@ -682,24 +689,29 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		<< mat.occlusionTexture.index << std::endl;
 
 	if (pbr.baseColorTexture.index >= 0) {
-		mod_mat.diffuse_map =
+		mod_mat.diffuseMap =
 			gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
 	}
 
 	if (pbr.metallicRoughnessTexture.index >= 0) {
-		mod_mat.metal_roughness_map =
+		mod_mat.metalRoughnessMap =
 			gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
 	}
 
 
 	if (mat.normalTexture.index >= 0) {
-		mod_mat.normal_map =
+		mod_mat.normalMap =
 			gltf_load_texture(gltf_model, mat.normalTexture.index);
 	}
 
 	if (mat.occlusionTexture.index >= 0) {
-		mod_mat.ambient_occ_map =
+		mod_mat.ambientOcclusionMap =
 			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
+	}
+
+	if (mat.emissiveTexture.index >= 0) {
+		mod_mat.emissiveMap =
+			gltf_load_texture(gltf_model, mat.emissiveTexture.index);
 	}
 
 	if (mat.alphaMode == "BLEND") {
@@ -713,6 +725,8 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		mod_mat.blend = grendx::material::blend_mode::Mask;
 	}
 
+	auto& ev = mat.emissiveFactor;
+	mod_mat.emissive = glm::vec4(ev[0], ev[1], ev[2], 1.0);
 	mod_mat.roughness = pbr.roughnessFactor;
 	mod_mat.diffuse = mat_diffuse;
 	out_model->materials[matidxname] = mod_mat;

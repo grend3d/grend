@@ -51,13 +51,12 @@ void main(void) {
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
 	//float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
+	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 
 	//vec3 total_light = vec3(0);
 	vec3 total_light =
-		radmap.rgb
-		* anmaterial.diffuse.rgb
-		* albedo;
-		;
+		(radmap.rgb * anmaterial.diffuse.rgb * albedo)
+		+ (anmaterial.emissive.rgb * emissive.rgb);
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));

@@ -26,7 +26,8 @@ void main(void) {
 	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
 	float metallic = anmaterial.metalness;
 	float roughness = anmaterial.roughness;
-	vec3 total_light = vec3(0);
+	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
+	vec3 total_light = (anmaterial.emissive.rgb * emissive.rgb);
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));

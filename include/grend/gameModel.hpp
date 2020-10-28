@@ -35,9 +35,10 @@ struct material {
 		Blend,
 	};
 
-	glm::vec4 diffuse;
-	glm::vec4 ambient;
-	glm::vec4 specular;
+	glm::vec4 diffuse = {1, 1, 1, 1};
+	glm::vec4 ambient = {0, 0, 0, 0};
+	glm::vec4 specular = {1, 1, 1, 1};
+	glm::vec4 emissive = {0, 0, 0, 0};
 	GLfloat   roughness = 0.5;
 	GLfloat   metalness = 0.5;
 	GLfloat   opacity = 1.0;
@@ -49,16 +50,18 @@ struct material {
 		diffuse = other.diffuse;
 		ambient = other.ambient;
 		specular = other.specular;
+		emissive = other.emissive;
 		roughness = other.roughness;
 		opacity = other.opacity;
 		refract_idx = other.refract_idx;
 		blend = other.blend;
 	}
 
-	materialTexture diffuse_map;
-	materialTexture metal_roughness_map;
-	materialTexture normal_map;
-	materialTexture ambient_occ_map;
+	materialTexture diffuseMap;
+	materialTexture metalRoughnessMap;
+	materialTexture normalMap;
+	materialTexture ambientOcclusionMap;
+	materialTexture emissiveMap;
 };
 
 // TODO: camelCase

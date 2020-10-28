@@ -34,6 +34,7 @@ struct material {
 	vec4 diffuse;
 	vec4 ambient;
 	vec4 specular;
+	vec4 emissive;
 	float roughness;
 	float metalness;
 	float opacity;
@@ -42,11 +43,12 @@ struct material {
 // light maps
 uniform sampler2D diffuse_map;
 // TODO: this is the metal-roughness map, need to rename things
+//       camelCase while we're at it
 uniform sampler2D specular_map;
 uniform sampler2D normal_map;
 uniform sampler2D ambient_occ_map;
 uniform sampler2D alpha_map;
-uniform samplerCube skytexture;
+uniform sampler2D emissive_map;
 
 uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;

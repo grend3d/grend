@@ -319,6 +319,7 @@ class compiled_model {
 		std::map<std::string, Texture::ptr> mat_specular = {};
 		std::map<std::string, Texture::ptr> mat_normal   = {};
 		std::map<std::string, Texture::ptr> mat_ao       = {};
+		std::map<std::string, Texture::ptr> mat_emissive = {};
 
 		void *vertices_offset;
 		void *normals_offset;

@@ -221,20 +221,25 @@ void compile_model(std::string name, gameModel::ptr model) {
 		//obj->materials[name] = mat;
 		obj->materials[name].copy_properties(mat);
 
-		if (mat.diffuse_map.loaded()) {
-			obj->mat_textures[name] = texcache(mat.diffuse_map, true/*srgb*/);
+		if (mat.diffuseMap.loaded()) {
+			obj->mat_textures[name] = texcache(mat.diffuseMap, true/*srgb*/);
 		}
 
-		if (mat.metal_roughness_map.loaded()) {
-			obj->mat_specular[name] = texcache(mat.metal_roughness_map);
+		if (mat.metalRoughnessMap.loaded()) {
+			obj->mat_specular[name] = texcache(mat.metalRoughnessMap);
 		}
 
-		if (mat.normal_map.loaded()) {
-			obj->mat_normal[name]   = texcache(mat.normal_map);
+		if (mat.normalMap.loaded()) {
+			obj->mat_normal[name]   = texcache(mat.normalMap);
 		}
 
-		if (mat.ambient_occ_map.loaded()) {
-			obj->mat_ao[name]       = texcache(mat.ambient_occ_map);
+		if (mat.ambientOcclusionMap.loaded()) {
+			obj->mat_ao[name]       = texcache(mat.ambientOcclusionMap);
+		}
+
+		if (mat.emissiveMap.loaded()) {
+			// TODO: clearer sRGB flag
+			obj->mat_emissive[name] = texcache(mat.emissiveMap, true /* srgb */);
 		}
 	}
 
