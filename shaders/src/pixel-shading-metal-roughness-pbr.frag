@@ -41,7 +41,8 @@ void main(void) {
 	vec3 view_dir = normalize(view_pos - f_position.xyz);
 	mat4 mvp = p*v*m;
 
-	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
+	vec3 metal_roughness_idx =
+		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 	vec3 albedo = texcolor.rgb;
@@ -55,7 +56,7 @@ void main(void) {
 
 	//vec3 total_light = vec3(0);
 	vec3 total_light =
-		(radmap.rgb * anmaterial.diffuse.rgb * albedo)
+		(radmap.rgb * anmaterial.diffuse.rgb * albedo * roughness)
 		+ (anmaterial.emissive.rgb * emissive.rgb);
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {

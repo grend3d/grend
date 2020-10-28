@@ -23,9 +23,11 @@ void main(void) {
 	vec3 view_dir = normalize(vec3(v_inv * vec4(0, 0, 0, 1) - f_position));
 	mat4 mvp = p*v*m;
 
+	vec3 metal_roughness_idx =
+		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
 	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
-	float metallic = anmaterial.metalness;
-	float roughness = anmaterial.roughness;
+	float metallic = anmaterial.metalness * metal_roughness_idx.b;
+	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 	vec3 total_light = (anmaterial.emissive.rgb * emissive.rgb);
 

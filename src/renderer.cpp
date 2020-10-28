@@ -12,15 +12,15 @@ using namespace grendx;
 material default_material = {
 	.diffuse = {1, 1, 1, 1},
 	.ambient = {1, 1, 1, 1},
-	.specular = {0.5, 0.5, 0.5, 1},
-	.emissive = {0, 0, 0, 0},
-	.roughness = 0.9,
-	.metalness = 0.0,
+	.specular = {1, 1, 1, 1},
+	.emissive = {1, 1, 1, 1},
+	.roughness = 1.f,
+	.metalness = 0.f,
 	.opacity = 1,
 	.refract_idx = 1.5,
 
 	.diffuseMap          = materialTexture(GR_PREFIX "assets/tex/white.png"),
-	.metalRoughnessMap   = materialTexture(GR_PREFIX "assets/tex/green.png"),
+	.metalRoughnessMap   = materialTexture(GR_PREFIX "assets/tex/white.png"),
 	.normalMap           = materialTexture(GR_PREFIX "assets/tex/lightblue-normal.png"),
 	.ambientOcclusionMap = materialTexture(GR_PREFIX "assets/tex/white.png"),
 	.emissiveMap         = materialTexture(GR_PREFIX "assets/tex/black.png"),
@@ -285,7 +285,7 @@ void grendx::set_material(Program::ptr program,
 		program->set("emissive_map", 4);
 
 	} else {
-		default_aomap->bind();
+		default_emissive->bind();
 		program->set("emissive_map", 4);
 	}
 

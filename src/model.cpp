@@ -728,6 +728,7 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	auto& ev = mat.emissiveFactor;
 	mod_mat.emissive = glm::vec4(ev[0], ev[1], ev[2], 1.0);
 	mod_mat.roughness = pbr.roughnessFactor;
+	mod_mat.metalness = pbr.metallicFactor;
 	mod_mat.diffuse = mat_diffuse;
 	out_model->materials[matidxname] = mod_mat;
 }
