@@ -1,5 +1,6 @@
 #pragma once
 #include <lib/utility.glsl>
+#include <lib/constants.glsl>
 
 float oren_nayar_diffuse(float rough, vec3 L, vec3 N, vec3 V) {
 	// TODO: needs optimization
