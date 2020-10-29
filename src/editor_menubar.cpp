@@ -116,6 +116,9 @@ void game_editor::menubar(gameMain *game) {
 		}
 
 		if (ImGui::BeginMenu("Options")) {
+			int proj = (int)cam->project();
+			float scale = cam->scale();
+
 			ImGui::SliderFloat("Snap increment", &fidelity,
 			                  0.5f, 50.f, "%.1f");
 			ImGui::SliderFloat("Movement speed", &movement_speed,
@@ -123,10 +126,17 @@ void game_editor::menubar(gameMain *game) {
 			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
 			ImGui::SliderFloat("Light threshold", &light_threshold,
 			                   0.001, 1.f);
+
+			ImGui::Combo("Projection", &proj, "Perspective\0Orthographic\0");
+			ImGui::SliderFloat("Projection scale", &scale, 0.001, 0.2f);
+
 			ImGui::Checkbox("Show environment probes", &show_probes);
 			ImGui::Checkbox("Show lights", &show_lights);
 
 			ImGui::EndMenu();
+
+			cam->setProjection((enum camera::projection)proj);
+			cam->setScale(scale);
 		}
 
 		if (ImGui::BeginMenu("Objects")) {

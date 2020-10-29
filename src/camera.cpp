@@ -42,6 +42,11 @@ void camera::setViewport(unsigned x, unsigned y) {
 	updated = true;
 }
 
+void camera::setProjection(enum projection proj) {
+	projection_ = proj;
+	updated = true;
+}
+
 void camera::setFovx(float angle) {
 	fovx_ = angle;
 	fovy_ = (fovx_ * screenY) / screenX;
@@ -51,6 +56,11 @@ void camera::setFovx(float angle) {
 void camera::setFovy(float angle) {
 	fovy_ = angle;
 	fovx_ = (fovy_ * screenX) / screenY;
+	updated = true;
+}
+
+void camera::setScale(float scale) {
+	scale_ = scale;
 	updated = true;
 }
 
@@ -108,10 +118,16 @@ void camera::recalculatePlanes(void) {
 }
 
 glm::mat4 camera::projectionTransform(void) {
-	//float fov_y = (field_of_view_x * screen_y) / screen_x;
-	return glm::perspective(
-		glm::radians(fovy_),
-		(1.f*screenX) / screenY, near_, far_);
+	switch (projection_) {
+		case projection::Orthographic:
+			return glm::ortho(0.f, scale_*screenX, 0.f, scale_*screenY, near_, far_);
+
+		case projection::Perspective:
+		default:
+			return glm::perspective(
+				glm::radians(fovy_),
+				(1.f*screenX) / screenY, near_, far_);
+	}
 }
 
 glm::mat4 camera::viewTransform(void) {
