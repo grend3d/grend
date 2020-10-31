@@ -6,15 +6,46 @@
 
 using namespace grendx;
 
-// each return physics object ID
-uint64_t imp_physics::add_static_models(gameObject::ptr obj,
-                                        glm::mat4 transform)
+void impObject::setTransform(TRS& transform) {
+	position = transform.position;
+	rotation = transform.rotation;
+}
+
+TRS impObject::getTransform(void) {
+	return (TRS) {};
+}
+
+void impObject::setPosition(glm::vec3 pos) {
+	//objects[id].position = pos;
+	position = pos;
+}
+
+void impObject::setVelocity(glm::vec3 vel) {
+	//objects[id].velocity = vel;
+	velocity = vel;
+}
+
+glm::vec3 impObject::getVelocity(void) {
+	return velocity;
+}
+
+void impObject::setAcceleration(glm::vec3 accel) {
+	acceleration = accel;
+}
+
+glm::vec3 impObject::getAcceleration(void) {
+	return acceleration;
+}
+
+physicsObject::ptr
+impPhysics::addStaticModels(gameObject::ptr obj,
+                            glm::mat4 transform)
 {
 	glm::mat4 adjTrans = transform*obj->getTransform(0);
 
 	// XXX: for now, don't allocate an object for static meshes,
 	//      although it may be a useful thing in the future
-	uint64_t ret = 0;
+	physicsObject::ptr ret = 0;
 
 	if (obj->type == gameObject::objType::Model) {
 		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
@@ -22,89 +53,82 @@ uint64_t imp_physics::add_static_models(gameObject::ptr obj,
 	}
 
 	for (auto& [name, node] : obj->nodes) {
-		add_static_models(node, adjTrans);
+		addStaticModels(node, adjTrans);
 	}
 
 	return ret;
 }
 
-uint64_t imp_physics::add_sphere(gameObject::ptr obj,
-                                 glm::vec3 pos,
-                                 float mass,
-                                 float r)
+physicsObject::ptr
+impPhysics::addSphere(gameObject::ptr obj,
+                      glm::vec3 pos,
+                      float mass,
+                      float r)
 {
-	uint64_t ret = alloc_id();
+	impObject::ptr impobj = std::make_shared<impObject>();
 
-	objects[ret].obj = obj;
-	objects[ret].id = ret;
-	objects[ret].type = object::type::Sphere;
-	objects[ret].usphere.radius = r;
-	objects[ret].position = pos;
-	// TODO: mass parameter
-	objects[ret].inverse_mass = mass;
+	impobj->obj = obj;
+	impobj->type = impObject::type::Sphere;
+	impobj->usphere.radius = r;
+	impobj->position = pos;
+	impobj->inverseMass = mass;
 
-	return ret;
+	auto pobj = std::dynamic_pointer_cast<physicsObject>(impobj);
+	objects.insert(pobj);
+
+	return pobj;
 }
 
-uint64_t imp_physics::add_box(gameObject::ptr obj,
-                              glm::vec3 pos,
-                              float mass,
-                              float length,
-                              float width,
-                              float height)
+physicsObject::ptr
+impPhysics::addBox(gameObject::ptr obj,
+                   glm::vec3 pos,
+                   float mass,
+                   float length,
+                   float width,
+                   float height)
 {
-	uint64_t ret = alloc_id();
+	impObject::ptr ret = std::make_shared<impObject>();
 	// TODO: add_box()
 
-	return ret;
+	return std::dynamic_pointer_cast<physicsObject>(ret);
 }
 
 // TODO: implement add_model_mesh_boxes()
-std::map<gameMesh::ptr, uint64_t>
-imp_physics::add_model_mesh_boxes(gameModel::ptr mod) {
+std::map<gameMesh::ptr, physicsObject::ptr>
+impPhysics::addModelMeshBoxes(gameModel::ptr mod) {
 	return {};
 }
 
-void imp_physics::remove(uint64_t id) {
+void impPhysics::remove(physicsObject::ptr obj) {
+	objects.erase(obj);
+}
+
+void impPhysics::clear(void) {
 
 }
 
-void imp_physics::clear(void) {
-
+size_t impPhysics::numObjects(void) {
+	return objects.size();
 }
 
-void imp_physics::set_position(uint64_t id, glm::vec3 pos) {
-	objects[id].position = pos;
-}
+std::list<physics::collision> impPhysics::findCollisions(float delta) {
+	std::list<physics::collision> ret;
 
-void imp_physics::set_velocity(uint64_t id, glm::vec3 vel) {
-	objects[id].velocity = vel;
-}
+	for (auto& pobj : objects) {
+		impObject::ptr obj = std::dynamic_pointer_cast<impObject>(pobj);
 
-glm::vec3 imp_physics::get_velocity(uint64_t id) {
-	return objects[id].velocity;
-}
-
-void imp_physics::set_acceleration(uint64_t id, glm::vec3 accel) {
-	objects[id].acceleration = accel;
-}
-
-std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
-	std::list<imp_physics::collision> ret;
-
-	for (auto& [id, obj] : objects) {
 		glm::vec3 end =
-			obj.position
-			+ obj.velocity*delta
+			obj->position
+			+ obj->velocity*delta
 			// XXX: radius for sphere collisions only
-			+ glm::normalize(obj.velocity)*obj.usphere.radius*2.f;
+			+ glm::normalize(obj->velocity)*obj->usphere.radius*2.f;
 
-		auto [depth, normal] = static_geom.collides(obj.position, end);
+		auto [depth, normal] = static_geom.collides(obj->position, end);
 
 		if (depth > 0) {
 			ret.push_back({
-				id, 0,
-				obj.position,
+				obj, nullptr,
+				obj->position,
 				normal,
 				depth,
 			});
@@ -114,37 +138,39 @@ std::list<imp_physics::collision> imp_physics::find_collisions(float delta) {
 	return ret;
 }
 
-void imp_physics::step_simulation(float delta) {
+void impPhysics::stepSimulation(float delta) {
 	if (delta < 0 || std::isnan(delta) || std::isinf(delta)) {
 		// invalid delta, just return
 		return;
 	}
 
 	for (unsigned i = 0; i < 1; i++) {
-		const auto& collisions = find_collisions(delta);
+		const auto& collisions = findCollisions(delta);
 
 		for (const auto& x : collisions) {
-			auto& obj = objects[x.a];
+			auto& pobj = x.a;
+			impObject::ptr obj = std::dynamic_pointer_cast<impObject>(pobj);
 
-			obj.velocity = glm::reflect(obj.velocity, x.normal);
-			obj.position += x.normal*x.depth;
+			obj->velocity = glm::reflect(obj->velocity, x.normal);
+			obj->position += x.normal*x.depth;
 		}
 	}
 
-	for (auto& [id, obj] : objects) {
-		float d = pow(obj.drag_s, delta);
+	for (auto& pobj : objects) {
+		impObject::ptr obj = std::dynamic_pointer_cast<impObject>(pobj);
+		float d = pow(obj->drag_s, delta);
 
 		//obj.position += obj.velocity * delta;
-		obj.position += obj.velocity*delta + obj.acceleration*((delta*delta)/2);
-		obj.velocity += obj.acceleration*delta + glm::vec3(0, -15, 0)*delta;
-		obj.velocity *= powf(0.5, delta);
+		obj->position += obj->velocity*delta + obj->acceleration*((delta*delta)/2);
+		obj->velocity += obj->acceleration*delta + glm::vec3(0, -15, 0)*delta;
+		obj->velocity *= powf(0.5, delta);
 
-		if (obj.position.y < -25) {
+		if (obj->position.y < -25) {
 			// XXX: prevent objects from disappearing into the void
 			//obj.position = {0, 10, 0};
-			obj.position.y = 10;
+			obj->position.y = 10;
 		}
 
-		obj.obj->transform.position = obj.position;
+		obj->obj->transform.position = obj->position;
 	}
 }

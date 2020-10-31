@@ -3,7 +3,7 @@
 using namespace grendx;
 
 gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
-	phys   = physics::ptr(new imp_physics());
+	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
 	state  = game_state::ptr(new game_state());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));

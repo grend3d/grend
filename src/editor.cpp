@@ -44,8 +44,8 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	setNode("lmao", modb, physmodel);
 	setNode("fooa", game->state->physObjects, moda);
 	setNode("foob", game->state->physObjects, modb);
-	game->phys->add_sphere(moda, glm::vec3(0, 10, 0), 1.0, 1.0);
-	game->phys->add_sphere(modb, glm::vec3(-10, 10, 0), 1.0, 1.0);
+	game->phys->addSphere(moda, glm::vec3(0, 10, 0), 1.0, 1.0);
+	game->phys->addSphere(modb, glm::vec3(-10, 10, 0), 1.0, 1.0);
 
 	bind_cooked_meshes();
 	loadInputBindings(game);

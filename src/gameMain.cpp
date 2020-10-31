@@ -71,7 +71,7 @@ int gameMain::run(void) {
 
 void gameMain::step_physics(void) {
 	float dt = 1.0/frame_timer.last();
-	phys->step_simulation(dt);
+	phys->stepSimulation(dt);
 }
 
 void gameMain::logic(void) {

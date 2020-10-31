@@ -3,7 +3,7 @@
 using namespace grendx;
 
 gameMainWindow::gameMainWindow() : gameMain("grend") {
-	phys   = physics::ptr(new imp_physics());
+	phys   = physics::ptr(new impPhysics());
 	state  = game_state::ptr(new game_state());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));

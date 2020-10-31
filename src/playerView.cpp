@@ -23,7 +23,7 @@ playerView::playerView(gameMain *game) : gameView() {
 		{game->rend->shaders["tonemap"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
-	cameraPhysID = game->phys->add_sphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
+	cameraPhys = game->phys->addSphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
 
 	input.bind(modes::MainMenu,
@@ -99,8 +99,8 @@ void playerView::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.y*cam->up*delta;
 	cam->position += cam->velocity.x*cam->right*delta;
 	*/
-	game->phys->set_acceleration(cameraPhysID, cam->velocity());
-	game->phys->step_simulation(1.f/game->frame_timer.last());
+	cameraPhys->setAcceleration(cam->velocity());
+	game->phys->stepSimulation(1.f/game->frame_timer.last());
 
 	cam->setPosition(cameraObj->transform.position + glm::vec3(0, 1.5, 0));
 	cameraObj->transform.rotation = glm::quat(glm::vec3(

@@ -9,78 +9,93 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <list>
+#include <set>
 #include <memory>
 
 namespace grendx {
 
-class imp_physics : public physics {
-	public: 
-		typedef std::shared_ptr<imp_physics> ptr;
-		typedef std::weak_ptr<imp_physics>   weakptr;
+class impObject : public physicsObject {
+	friend class impPhysics;
 
-		struct object {
-			enum type {
-				Static,
-				Sphere,
-				Box,
-				Mesh,
-			};
+	public:
+		typedef std::shared_ptr<impObject> ptr;
+		typedef std::weak_ptr<impObject>   weakptr;
 
-			struct sphere {
-				float radius;
-			};
-
-			struct box {
-				float length;
-				float width;
-				float height;
-				// TODO: rotation, for boxes that closely fit the mesh
-			};
-
-			uint64_t id;
-
-			enum type type;
-			union { struct sphere usphere; struct box ubox; };
-
-			gameObject::ptr obj;
-			std::string model_name;
-			glm::vec3 position = {0, 0, 0};
-			glm::vec3 velocity = {0, 0, 0};
-			glm::vec3 acceleration = {0, 0, 0};
-			glm::vec3 angular_velocity = {0, 0, 0};
-			glm::quat rotation = {1, 0, 0, 0};
-			float inverse_mass = 0;
-			float drag_s = 0.9;
-			float gravity = -15.f;
+		enum type {
+			Static,
+			Sphere,
+			Box,
+			Mesh,
 		};
+
+		struct sphere {
+			float radius;
+		};
+
+		struct box {
+			float length;
+			float width;
+			float height;
+			// TODO: rotation, for boxes that closely fit the mesh
+		};
+
+		enum type type;
+		union { struct sphere usphere; struct box ubox; };
+
+		virtual void setTransform(TRS& transform);
+		virtual TRS  getTransform(void);
+
+		virtual void setPosition(glm::vec3 pos);
+		virtual void setVelocity(glm::vec3 vel);
+		virtual void setAcceleration(glm::vec3 accel);
+		virtual glm::vec3 getVelocity(void);
+		virtual glm::vec3 getAcceleration(void);
+
+	protected:
+		gameObject::ptr obj;
+		//std::string model_name;
+		glm::vec3 position = {0, 0, 0};
+		glm::vec3 velocity = {0, 0, 0};
+		glm::vec3 acceleration = {0, 0, 0};
+		glm::vec3 angularVelocity = {0, 0, 0};
+		glm::quat rotation = {1, 0, 0, 0};
+		float inverseMass = 0;
+		float drag_s = 0.9;
+		float gravity = -15.f;
+};
+
+class impPhysics : public physics {
+	public:
+		typedef std::shared_ptr<impPhysics> ptr;
+		typedef std::weak_ptr<impPhysics>   weakptr;
 
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
-		virtual uint64_t add_static_models(gameObject::ptr obj,
-		                                   glm::mat4 transform = glm::mat4(1));
+		virtual physicsObject::ptr
+			addStaticModels(gameObject::ptr obj,
+		                    glm::mat4 transform = glm::mat4(1));
 
 		// dynamic geometry, collisions with AABB tree
-		virtual uint64_t add_sphere(gameObject::ptr obj, glm::vec3 pos,
-		                            float mass, float r);
-		virtual uint64_t add_box(gameObject::ptr obj, glm::vec3 pos,
-		                        float mass, float length, float width,
-		                        float height);
+		virtual physicsObject::ptr
+			addSphere(gameObject::ptr obj, glm::vec3 pos,
+		              float mass, float r);
+		virtual physicsObject::ptr
+			addBox(gameObject::ptr obj, glm::vec3 pos,
+		           float mass, float length, float width,
+		           float height);
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		virtual std::map<gameMesh::ptr, uint64_t>
-			add_model_mesh_boxes(gameModel::ptr mod);
-		virtual void remove(uint64_t id);
+		virtual std::map<gameMesh::ptr, physicsObject::ptr>
+			addModelMeshBoxes(gameModel::ptr mod);
+		virtual void remove(physicsObject::ptr obj);
 		virtual void clear(void);
 
-		virtual void set_position(uint64_t id, glm::vec3 pos);
-		virtual void set_velocity(uint64_t id, glm::vec3 vel);
-		virtual glm::vec3 get_velocity(uint64_t id);
-		virtual void set_acceleration(uint64_t id, glm::vec3 accel);
-		virtual std::list<collision> find_collisions(float delta);
-		virtual void step_simulation(float delta);
+		virtual size_t numObjects(void);
+		virtual std::list<collision> findCollisions(float delta);
+		virtual void stepSimulation(float delta);
 
-		std::unordered_map<uint64_t, struct object> objects;
+		std::set<physicsObject::ptr> objects;
 		octree static_geom;
 };
 
