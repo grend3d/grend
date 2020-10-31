@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
 	gameMain *game = new gameMainDevWindow();
 	game->state->rootnode = loadMap(game);
-	game->phys->add_static_models(game->state->rootnode);
+	game->phys->addStaticModels(game->state->rootnode);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);
 	addCameraWeapon(player);
