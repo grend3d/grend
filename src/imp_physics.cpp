@@ -81,11 +81,9 @@ impPhysics::addSphere(gameObject::ptr obj,
 
 physicsObject::ptr
 impPhysics::addBox(gameObject::ptr obj,
-                   glm::vec3 pos,
+                   glm::vec3 position,
                    float mass,
-                   float length,
-                   float width,
-                   float height)
+                   AABBExtent& box)
 {
 	impObject::ptr ret = std::make_shared<impObject>();
 	// TODO: add_box()

@@ -28,6 +28,9 @@ CONF_GL_FLAGS=
 CONF_EM_FLAGS=
 CONF_GLSL_STRING=
 
+CONF_PHYSICS=imp
+CONF_PHYSICS_FLAGS=
+
 # Parse the given options
 for arg in $@; do
 	OPT_KEY="`echo $arg | cut -d= -f1`"
@@ -53,6 +56,7 @@ for arg in $@; do
 				                          to the PREFIX variable when copying files, and is
 				                          useful for cross-compiling, chroot installs, etc.
 				  -t,  --target=[api]     OpenGL api target (gles2, gles3, core330, core 430)
+				  -p,  --physics=[lib]    Physics implementation (imp, bullet)
 				  -d,  --debug            Specify that this is a debug build. This option
 				                          toggles some debugging messages.
 				  -s,  --static           Output a static executable.
@@ -63,6 +67,10 @@ for arg in $@; do
 
 		--target|-t)
 			CONF_GL_TARGET="$OPT_VAL"
+			;;
+
+		--physics|-p)
+			CONF_PHYSICS="$OPT_VAL"
 			;;
 
 		--debug|-d)
@@ -135,6 +143,27 @@ case "$CONF_GL_TARGET" in
 		;;
 esac
 
+case "$CONF_PHYSICS" in
+	bullet)
+		read CONF_PHYSICS_FLAGS <<- ENDFLAGS
+			-I/usr/include/bullet \
+			-lBulletDynamics -lBulletCollision -lLinearMath \
+			-DPHYSICS_BULLET
+		ENDFLAGS
+		;;
+
+	imp)
+		read CONF_PHYSICS_FLAGS <<- ENDFLAGS
+			-DPHYSICS_IMP
+		ENDFLAGS
+		;;
+
+	*)
+		echo "configure: error: Unknown physics implementation \"$CONF_PHYSICS\""
+		exit 1
+		;;
+esac
+
 if [ "$CONF_IS_EMSCRIPTEN" = 1 ]; then
 	# XXX: should be configurable (this is the configure script after all)
 	TOTAL_MEMORY=1048576000
@@ -172,6 +201,8 @@ echo "CONF_CFLAGS=$CONF_CFLAGS" >> mk/config.mk
 echo "CONF_GL_FLAGS=$CONF_GL_FLAGS" >> mk/config.mk
 echo "CONF_EM_FLAGS=$CONF_EM_FLAGS" >> mk/config.mk
 echo "CONF_GLSL_STRING=$CONF_GLSL_STRING" >> mk/config.mk
+echo "CONF_PHYSICS=$CONF_PHYSICS" >> mk/config.mk
+echo "CONF_PHYSICS_FLAGS=$CONF_PHYSICS_FLAGS" >> mk/config.mk
 echo "CONF_DEBUG=$CONF_DEBUG" >> mk/config.mk
 
 if [ "$CONF_IS_EMSCRIPTEN" = 1 ]; then

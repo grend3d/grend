@@ -1,9 +1,23 @@
 #include <grend/gameMainDevWindow.hpp>
 
+#ifdef PHYSICS_BULLET
+#include <grend/bulletPhysics.hpp>
+#elif defined(PHYSICS_IMP)
+// TODO: the great camelCasification
+#include <grend/imp_physics.hpp>
+#endif
+
 using namespace grendx;
 
 gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
+#if defined(PHYSICS_BULLET)
+	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
+#elif defined(PHYSICS_IMP)
 	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
+#else
+#error "No physics implementation defined!"
+#endif
+
 	state  = game_state::ptr(new game_state());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));

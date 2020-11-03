@@ -4,6 +4,7 @@
 #include <grend/gameModel.hpp>
 #include <grend/TRS.hpp>
 #include <grend/octree.hpp>
+#include <grend/boundingBox.hpp>
 
 #include <unordered_map>
 #include <unistd.h>
@@ -52,9 +53,10 @@ class physics {
 			addSphere(gameObject::ptr obj, glm::vec3 pos,
 		              float mass, float r) = 0;
 		virtual physicsObject::ptr
-			addBox(gameObject::ptr obj, glm::vec3 pos,
-		           float mass, float length, float width,
-		           float height) = 0;
+			addBox(gameObject::ptr obj,
+			       glm::vec3 position,
+			       float mass,
+				   AABBExtent& box) = 0;
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?

@@ -2,8 +2,23 @@
 
 using namespace grendx;
 
+#if defined(PHYSICS_BULLET)
+#include <grend/bulletPhysics.hpp>
+#elif defined(PHYSICS_IMP)
+// TODO: the great camelCasification
+#include <grend/imp_physics.hpp>
+#endif
+
+
 gameMainWindow::gameMainWindow() : gameMain("grend") {
-	phys   = physics::ptr(new impPhysics());
+#if defined(PHYSICS_BULLET)
+	phys = physics::ptr(new bulletPhysics());
+#elif defined(PHYSICS_IMP)
+	phys = physics::ptr(new impPhysics());
+#else
+#error "No physics implementation defined!"
+#endif
+
 	state  = game_state::ptr(new game_state());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));

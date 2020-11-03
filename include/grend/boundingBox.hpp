@@ -8,10 +8,37 @@ struct AABB {
 	glm::vec3 max;
 };
 
+struct AABBExtent {
+	glm::vec3 center;
+	glm::vec3 extent;
+};
+
 struct OBB {
 	glm::vec3 points[8];
 	glm::vec3 center;
 };
+
+static inline glm::vec3 boxCenter(const struct AABB& box) {
+	return (box.max + box.min)*0.5f;
+}
+
+static inline glm::vec3 boxExtent(const struct AABB& box) {
+	return (box.max - box.min)*0.5f;
+}
+
+static inline AABBExtent AABBToExtents(const struct AABB& box) {
+	return {
+		.center = boxCenter(box),
+		.extent = boxExtent(box)
+	};
+}
+
+static inline AABB ExtentsToAABB(const struct AABBExtent& box) {
+	return {
+		.min = box.center - box.extent,
+		.max = box.center + box.extent
+	};
+}
 
 // return OBB from AABB translation, m*a can rotate, skew, etc, the box,
 // resulting in a box that isn't aligned with the original axis.
