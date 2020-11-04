@@ -1,4 +1,5 @@
 #include <grend/renderFramebuffer.hpp>
+#include <grend/utility.hpp>
 
 using namespace grendx;
 
@@ -7,10 +8,14 @@ renderFramebuffer::renderFramebuffer(int Width, int Height)
 {
 	framebuffer = gen_framebuffer();
 	framebuffer->bind();
+
+	setSize(Width, Height);
+	/*
 	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
 	            gen_texture_color(width, height, rgbaf_if_supported()));
 	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
 	            gen_texture_depth_stencil(width, height));
+	 */
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		SDL_Die("incomplete!");
@@ -30,6 +35,17 @@ void renderFramebuffer::clear(void) {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	DO_ERROR_CHECK();
+}
+
+void renderFramebuffer::setSize(int Width, int Height) {
+	auto w = width  = max(1, Width);
+	auto h = height = max(1, Height);
+
+	framebuffer->bind();
+	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
+	            gen_texture_color(w, h, rgbaf_if_supported()));
+	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
+	            gen_texture_depth_stencil(w, h));
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {

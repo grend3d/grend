@@ -26,6 +26,21 @@ playerView::playerView(gameMain *game) : gameView() {
 	cameraPhys = game->phys->addSphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
 
+	input.bind(MODAL_ALL_MODES,
+		[&, game] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_WINDOWEVENT
+			    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				auto width = ev.window.data1;
+				auto height = ev.window.data2;
+
+				game->rend->framebuffer->setSize(width, height);
+				post->setSize(width, height);
+			}
+			return MODAL_NO_CHANGE;
+		});
+
+
 	input.bind(modes::MainMenu,
 		[&] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
