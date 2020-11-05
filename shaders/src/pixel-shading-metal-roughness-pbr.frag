@@ -54,9 +54,12 @@ void main(void) {
 	//float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 
+	vec3 Fspec = F(f_0(albedo, metallic), view_dir, normalize(view_dir + normal_dir));
+	vec3 Fdiff = 1.0 - Fspec;
+
 	//vec3 total_light = vec3(0);
 	vec3 total_light =
-		(radmap.rgb * anmaterial.diffuse.rgb * albedo * roughness)
+		(radmap.rgb * anmaterial.diffuse.rgb * albedo * Fdiff * aoidx)
 		+ (anmaterial.emissive.rgb * emissive.rgb);
 
 	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
