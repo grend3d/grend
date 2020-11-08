@@ -62,8 +62,8 @@ void bulletObject::setAcceleration(glm::vec3 accel) {
 
 glm::vec3 bulletObject::getVelocity(void) {
 	// TODO
-	return glm::vec3(0);
-
+	auto v = body->getLinearVelocity();
+	return glm::vec3(v.x(), v.y(), v.z());
 }
 
 glm::vec3 bulletObject::getAcceleration(void) {
