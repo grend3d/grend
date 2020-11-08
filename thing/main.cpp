@@ -57,7 +57,7 @@ void addCameraWeapon(gameView::ptr view) {
 	if (auto animations = findAnimations(objs)) {
 		for (auto& [name, ptr] : animations->groups) {
 			if (auto group = ptr.lock()) {
-				group->weight = (name == "idle")? 1.0 : 0.0;
+				group->weight = (name == "walking")? 1.0 : 0.0;
 			}
 		}
 	}
