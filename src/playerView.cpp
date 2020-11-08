@@ -107,6 +107,8 @@ void playerView::handleInput(gameMain *game, SDL_Event& ev) {
 	input.dispatch(ev);
 }
 
+static glm::vec3 lastvel = glm::vec3(0);
+
 void playerView::logic(gameMain *game, float delta) {
 	// TODO: cam->update(delta);
 	/*
@@ -114,15 +116,23 @@ void playerView::logic(gameMain *game, float delta) {
 	cam->position += cam->velocity.y*cam->up*delta;
 	cam->position += cam->velocity.x*cam->right*delta;
 	*/
-	cameraPhys->setAcceleration(cam->velocity());
+
+	if (cam->velocity() != lastvel) {
+		cameraPhys->setAcceleration(cam->velocity());
+		lastvel = cam->velocity();
+	}
+
 	game->phys->stepSimulation(1.f/game->frame_timer.last());
 
-	cam->setPosition(cameraObj->transform.position + glm::vec3(0, 1.5, 0));
+	//cam->setPosition(cameraObj->transform.position + glm::vec3(0, 1.5, 0));
+	cam->setPosition(cameraObj->transform.position - 5.f*cam->direction());
+	/*
 	cameraObj->transform.rotation = glm::quat(glm::vec3(
 		// pitch, yaw, roll
 		cam->direction().y*-0.5f,
 		atan2(cam->direction().x, cam->direction().z),
 		0));
+		*/
 
 }
 
