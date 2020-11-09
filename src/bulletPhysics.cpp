@@ -44,8 +44,17 @@ TRS bulletObject::getTransform(void) {
 		float(trans.getOrigin().getZ())
 	);
 
+	btQuaternionFloatData bdata;
+	trans.getRotation().serializeFloat(bdata);
+	glm::quat rotation = glm::quat(
+		// glm quats are wxyz, btquaternion xyzw
+		bdata.m_floats[3], bdata.m_floats[0],
+		bdata.m_floats[1], bdata.m_floats[2]
+	);
+
 	return {
 		.position = position,
+		.rotation = rotation,
 	};
 }
 
@@ -57,7 +66,9 @@ void bulletObject::setVelocity(glm::vec3 vel) {
 }
 
 void bulletObject::setAcceleration(glm::vec3 accel) {
+	// TODO: how do you set acceleration?
 	body->setLinearVelocity(btVector3(accel.x, accel.y, accel.z));
+	//body->applyCentralImpulse(btVector3(accel.x, accel.y, accel.z));
 }
 
 glm::vec3 bulletObject::getVelocity(void) {
@@ -159,6 +170,7 @@ bulletPhysics::addBox(gameObject::ptr obj,
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
+	ret->body->setAngularFactor(btScalar(1));
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
@@ -204,11 +216,7 @@ void bulletPhysics::stepSimulation(float delta) {
 		}
 
 		if (ptr->mass != 0) {
-			ptr->obj->transform.position = glm::vec3(
-				float(trans.getOrigin().getX()),
-				float(trans.getOrigin().getY()),
-				float(trans.getOrigin().getZ())
-			);
+			ptr->obj->transform = ptr->getTransform();
 		}
 	}
 }

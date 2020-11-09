@@ -12,12 +12,16 @@ static gameObject::ptr testweapon = nullptr;
 static channelBuffers_ptr weaponSound =
 	openAudio(GR_PREFIX "assets/sfx/impact.ogg");
 
+static gameModel::ptr cuboid = generate_cuboid(1.0, 1.0, 1.0);
+
 struct nvg_data {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
 };
 
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
+	compile_model("physcuboid", cuboid);
+	bind_cooked_meshes();
 
 	post = renderPostChain::ptr(new renderPostChain(
 		{game->rend->shaders["tonemap"]},
@@ -95,6 +99,25 @@ playerView::playerView(gameMain *game) : gameView() {
 				auto sound = openAudio(GR_PREFIX "assets/sfx/impact.ogg");
 				auto ptr = std::make_shared<stereoAudioChannel>(sound);
 				game->audio->add(ptr);
+
+				std::cerr << "Added a box physics object" << std::endl;
+				gameObject::ptr box = std::make_shared<gameObject>();
+				glm::vec3 pos =
+					cameraObj->transform.position + 2.f*cam->direction()
+					+ glm::vec3(0, 2, 0);
+				box->transform.position = pos;
+				setNode("model", box, cuboid);
+				AABBExtent ext = { glm::vec3(0.f), glm::vec3(0.5f) };
+				physicsObject::ptr boxObj = game->phys->addBox(box, pos, 1.f, ext);
+				boxObj->setVelocity(5.f*cam->direction());
+
+				// XXX: need better way to attach arbitrary objects
+				//      could have physObjects just be a list, and handle that
+				//      on it's own?
+				//      (like add(...) with list override)
+				static unsigned counter = 0;
+				std::string name = "testing this" + std::to_string(counter++);
+				setNode(name, game->state->physObjects, box);
 			}
 
 			return MODAL_NO_CHANGE;
