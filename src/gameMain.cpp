@@ -97,9 +97,9 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		float fticks = SDL_GetTicks() / 1000.0f;
 
 		que.add(game->state->rootnode, fticks);
+		que.add(game->state->physObjects);
 		que.updateLights(game->rend->shaders["shadow"], game->rend);
 		que.updateReflections(game->rend->shaders["refprobe"], game->rend);
-		que.add(game->state->physObjects);
 		DO_ERROR_CHECK();
 
 		game->rend->framebuffer->framebuffer->bind();

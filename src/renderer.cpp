@@ -177,6 +177,16 @@ void renderContext::loadShaders(void) {
 	shaders["tonemap"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["tonemap"]->link();
 
+	shaders["psaa"] = load_program(
+		GR_PREFIX "shaders/out/postprocess.vert",
+		GR_PREFIX "shaders/out/psaa.frag"
+	);
+
+	// NOTE: post
+	shaders["psaa"]->attribute("v_position", VAO_QUAD_VERTICES);
+	shaders["psaa"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
+	shaders["psaa"]->link();
+
 	shaders["irradiance-convolve"] = load_program(
 		GR_PREFIX "shaders/out/postprocess.vert",
 		GR_PREFIX "shaders/out/irradiance-convolve.frag"

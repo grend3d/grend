@@ -18,7 +18,7 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 										  */
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->shaders["tonemap"]},
+		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	loading_thing = makePostprocessor<rOutput>(

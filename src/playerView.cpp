@@ -24,7 +24,7 @@ playerView::playerView(gameMain *game) : gameView() {
 	bind_cooked_meshes();
 
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->shaders["tonemap"]},
+		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	cameraPhys = game->phys->addSphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
