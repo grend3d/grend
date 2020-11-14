@@ -32,10 +32,11 @@ void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 	vec3 ambient_light = vec3(0.1);
 	// TODO: normal mapping still borked
-	//vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
-	vec3 normal_dir = normalize(normidx * 2.0 - 1.0);
+	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
+	//vec3 normal_dir = normalize(normidx * 2.0 - 1.0);
 	//normal_dir = normalize(TBN * normal_dir);
-	normal_dir = mix(f_normal, normalize(TBN * normal_dir), NORMAL_WEIGHT);
+	//normal_dir = mix(f_normal, normalize(TBN * normal_dir), NORMAL_WEIGHT);
+	//vec3 normal_dir = f_normal;
 
 	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
 	vec3 view_dir = normalize(view_pos - f_position.xyz);
@@ -46,7 +47,7 @@ void main(void) {
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 	vec3 albedo = texcolor.rgb;
-	float opacity = texcolor.a;
+	float opacity = texcolor.a * anmaterial.opacity;
 
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;

@@ -7,7 +7,7 @@ float nzdot(vec3 a, vec3 b) {
 }
 
 float posdot(vec3 a, vec3 b) {
-	return max(0.1, dot(a, b));
+	return max(0.001, dot(a, b));
 }
 
 float mindot(vec3 a, vec3 b) {

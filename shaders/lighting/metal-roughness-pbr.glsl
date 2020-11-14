@@ -36,14 +36,14 @@ float G(float a, vec3 N, vec3 L, vec3 V) {
 float G(float a, vec3 N, vec3 L, vec3 V) {
 	float a2 = a*a;
 
-	/*
 	float foo = 0.5
 		/ ((posdot(N, L) * sqrt(pow(dot(N, V), 2.0) * (1.0 - a2) + a2))
 		+  (posdot(N, V) * sqrt(pow(dot(N, L), 2.0) * (1.0 - a2) + a2)));
-		*/
+		/*
 	float foo = 0.5
 		/ ((max(a+0.0001, dot(N, L)) * sqrt(pow(dot(N, V), 2.0) * (1.0 - a2) + a2))
 		+  (max(a+0.0001, dot(N, V)) * sqrt(pow(dot(N, L), 2.0) * (1.0 - a2) + a2)));
+		*/
 
 	return foo;
 }
