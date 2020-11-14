@@ -15,6 +15,14 @@ struct TRS {
 	}
 };
 
+static inline struct TRS addTRS(const struct TRS& a, const struct TRS& b) {
+	return (TRS) {
+		.position = a.position + b.position, // TODO: scale?
+		.rotation = b.rotation, // TODO
+		.scale    = a.scale * b.scale,
+	};
+}
+
 static inline struct TRS mixtrs(struct TRS& a, struct TRS& b, float amount) {
 	struct TRS ret;
 

@@ -45,8 +45,7 @@ class physics {
 
 		// add non-moveable geometry
 		virtual physicsObject::ptr
-		    addStaticModels(gameObject::ptr obj,
-		                    glm::mat4 transform = glm::mat4(1)) = 0;
+		    addStaticModels(gameObject::ptr obj, const TRS& transform) = 0;
 
 		// add dynamic rigid bodies
 		virtual physicsObject::ptr
@@ -57,6 +56,12 @@ class physics {
 			       glm::vec3 position,
 			       float mass,
 				   AABBExtent& box) = 0;
+		virtual physicsObject::ptr
+			addStaticMesh(gameObject::ptr obj,
+			              const TRS& transform,
+			              gameModel::ptr model,
+			              gameMesh::ptr mesh) = 0;
+
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?

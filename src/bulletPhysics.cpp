@@ -86,23 +86,31 @@ glm::vec3 bulletObject::getAcceleration(void) {
 // non-moveable geometry, collisions with octree
 physicsObject::ptr
 bulletPhysics::addStaticModels(gameObject::ptr obj,
-                               glm::mat4 transform)
+                               const TRS& transform)
 {
-	glm::mat4 adjTrans = transform*obj->getTransform(0);
-
 	// XXX: for now, don't allocate an object for static meshes,
 	//      although it may be a useful thing in the future
 	physicsObject::ptr ret = nullptr;
 
 	if (obj->type == gameObject::objType::Mesh) {
 		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
+		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj->parent);
+
+		if (mesh && model) {
+			addStaticMesh(obj, transform, model, mesh);
+		}
+
+		/*
+		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
 
 		glm::vec4 pos = adjTrans*glm::vec4(0, 0, 0, 1);
 		AABBExtent box = AABBToExtents(mesh->boundingBox);
 		addBox(mesh, glm::vec3(pos)/pos.w, 0.f, box);
+		*/
 	}
 
 	for (auto& [name, node] : obj->nodes) {
+		TRS adjTrans = addTRS(transform, node->transform);
 		addStaticModels(node, adjTrans);
 	}
 
@@ -169,6 +177,58 @@ bulletPhysics::addBox(gameObject::ptr obj,
 	// TODO: apparently motion state is optional? what does it provide?
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
+	ret->body->setLinearFactor(btVector3(1, 1, 1));
+	ret->body->setAngularFactor(btScalar(1));
+	world->addRigidBody(ret->body);
+
+	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	objects.insert(p);
+	return p;
+}
+
+physicsObject::ptr
+bulletPhysics::addStaticMesh(gameObject::ptr obj,
+                             const TRS& transform,
+                             gameModel::ptr model,
+                             gameMesh::ptr mesh)
+{
+	btTriangleIndexVertexArray* indexArray =
+		new btTriangleIndexVertexArray(mesh->faces.size() / 3,
+		                               (int*)mesh->faces.data(),
+		                               sizeof(GLuint[3]),
+		                               model->vertices.size(),
+		                               (GLfloat*)model->vertices.data(),
+									   sizeof(GLfloat[3]));
+
+	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->mass = 0.f;
+	ret->obj = obj;
+	ret->shape = new btBvhTriangleMeshShape(indexArray, true /* useQuantizedAabbCompression */ );
+	//ret->shape->setMargin(0.05);
+
+	btVector3 scale(transform.scale.x, transform.scale.y, transform.scale.z);
+	ret->shape->setLocalScaling(scale);
+
+	//bool isDynamic = mass != 0.f;
+	btVector3 localInertia(0, 0, 0);
+	btTransform trans;
+
+	//glm::vec3 pos = position + box.center;
+	glm::vec3 pos = transform.position;
+	glm::quat rot = transform.rotation;
+	trans.setIdentity();
+	trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
+	trans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
+
+	/*
+	if (isDynamic) {
+		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
+	}
+	*/
+
+	// TODO: apparently motion state is optional? what does it provide?
+	ret->motionState = new btDefaultMotionState(trans);
+	ret->body = new btRigidBody(btScalar(0.f), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
 	ret->body->setAngularFactor(btScalar(1));
 	world->addRigidBody(ret->body);

@@ -53,8 +53,7 @@ class bulletPhysics : public physics {
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
 		virtual physicsObject::ptr
-			addStaticModels(gameObject::ptr obj,
-		                    glm::mat4 transform = glm::mat4(1));
+			addStaticModels(gameObject::ptr obj, const TRS& transform);
 
 		// dynamic geometry, collisions with AABB tree
 		virtual physicsObject::ptr
@@ -65,6 +64,11 @@ class bulletPhysics : public physics {
 			       glm::vec3 position,
 			       float mass,
 				   AABBExtent& box);
+		virtual physicsObject::ptr
+			addStaticMesh(gameObject::ptr obj,
+			              const TRS& transform,
+			              gameModel::ptr model,
+			              gameMesh::ptr mesh);
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?

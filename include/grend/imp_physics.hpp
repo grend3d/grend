@@ -86,6 +86,13 @@ class impPhysics : public physics {
 			       float mass,
 				   AABBExtent& box);
 
+		virtual physicsObject::ptr
+			addMesh(gameObject::ptr obj,
+			        glm::vec3 position,
+			        float mass,
+			        gameModel::ptr model,
+			        gameMesh::ptr mesh);
+
 		// map of submesh name to physics object ID
 		// TODO: multimap?
 		virtual std::map<gameMesh::ptr, physicsObject::ptr>
