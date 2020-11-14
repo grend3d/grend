@@ -68,9 +68,11 @@ int main(int argc, char *argv[]) {
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
 
+	TRS staticPosition; // default
+
 	gameMain *game = new gameMainDevWindow();
 	game->state->rootnode = loadMap(game);
-	game->phys->addStaticModels(game->state->rootnode);
+	game->phys->addStaticModels(game->state->rootnode, staticPosition);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);
 	addCameraWeapon(player);
