@@ -1,5 +1,5 @@
-#include <grend/gl_manager.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/glManager.hpp>
+#include <grend/glmIncludes.hpp>
 
 #include <string>
 #include <vector>

@@ -11,7 +11,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include <grend/opengl-includes.hpp>
+#include <grend/openglIncludes.hpp>
 
 namespace grendx {
 

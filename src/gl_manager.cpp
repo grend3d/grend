@@ -1,4 +1,4 @@
-#include <grend/gl_manager.hpp>
+#include <grend/glManager.hpp>
 #include <grend/gameModel.hpp>
 
 #include <string>

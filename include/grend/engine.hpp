@@ -3,15 +3,15 @@
 #include <grend/renderFramebuffer.hpp>
 #include <grend/renderPostStage.hpp>
 #include <grend/gameObject.hpp>
-#include <grend/gl_manager.hpp>
-#include <grend/sdl-context.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/glManager.hpp>
+#include <grend/sdlContext.hpp>
+#include <grend/glmIncludes.hpp>
 #include <grend/gameModel.hpp>
-#include <grend/texture-atlas.hpp>
+#include <grend/textureAtlas.hpp>
 #include <grend/quadtree.hpp>
 #include <grend/camera.hpp>
 
-#include <grend/geometry-gen.hpp>
+#include <grend/geometryGeneration.hpp>
 
 #include <list>
 #include <memory>

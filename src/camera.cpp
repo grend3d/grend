@@ -1,5 +1,5 @@
 #include <grend/camera.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/glmIncludes.hpp>
 #include <grend/boundingBox.hpp>
 
 using namespace grendx;

@@ -1,7 +1,7 @@
 #pragma once
-#include <grend/glm-includes.hpp>
-#include <grend/opengl-includes.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/glmIncludes.hpp>
+#include <grend/openglIncludes.hpp>
+#include <grend/sdlContext.hpp>
 // TODO: move, for lights
 #include <grend/quadtree.hpp>
 #include <grend/animation.hpp>

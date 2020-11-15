@@ -1,9 +1,9 @@
 #pragma once
 // for forward declaration of gameModel
 #include <grend/gameModel.hpp>
-#include <grend/sdl-context.hpp>
-#include <grend/opengl-includes.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/sdlContext.hpp>
+#include <grend/openglIncludes.hpp>
+#include <grend/glmIncludes.hpp>
 
 #include <vector>
 #include <map>

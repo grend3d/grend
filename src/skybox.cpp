@@ -1,6 +1,6 @@
 #include <grend/engine.hpp>
-#include <grend/gl_manager.hpp>
-#include <grend/geometry-gen.hpp> // TODO: camelCase
+#include <grend/glManager.hpp>
+#include <grend/geometryGeneration.hpp> // TODO: camelCase
 
 using namespace grendx;
 

@@ -1,4 +1,4 @@
-#include <grend/game_editor.hpp>
+#include <grend/gameEditor.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/examples/imgui_impl_sdl.h>

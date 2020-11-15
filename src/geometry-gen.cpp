@@ -1,4 +1,4 @@
-#include <grend/geometry-gen.hpp>
+#include <grend/geometryGeneration.hpp>
 #include <grend/gameModel.hpp>
 
 namespace grendx {

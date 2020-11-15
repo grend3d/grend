@@ -1,6 +1,6 @@
 #pragma once
 
-#include <grend/glm-includes.hpp>
+#include <grend/glmIncludes.hpp>
 #include <grend/gameModel.hpp>
 #include <grend/octree.hpp>
 #include <grend/physics.hpp>

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <grend/gameObject.hpp>
-#include <grend/glm-includes.hpp>
-#include <grend/opengl-includes.hpp>
+#include <grend/glmIncludes.hpp>
+#include <grend/openglIncludes.hpp>
 #include <grend/boundingBox.hpp>
 #include <string>
 #include <vector>
@@ -69,7 +69,7 @@ struct material {
 };
 
 // TODO: camelCase
-// defined in gl_manager.hpp
+// defined in glManager.hpp
 class compiled_mesh;
 class compiled_model;
 
@@ -157,4 +157,4 @@ std::pair<gameImport::ptr, model_map> load_gltf_scene(std::string filename);
 }
 
 // handle forward declaration of compiled_model
-#include <grend/gl_manager.hpp>
+#include <grend/glManager.hpp>

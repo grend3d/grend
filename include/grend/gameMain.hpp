@@ -2,7 +2,7 @@
 
 #include <grend/gameState.hpp> // TODO: rename to gameState.h
 #include <grend/engine.hpp>     // TODO: rename to renderer.h
-#include <grend/gl_manager.hpp> // TODO: rename
+#include <grend/glManager.hpp> // TODO: rename
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
 #include <grend/audioMixer.hpp>

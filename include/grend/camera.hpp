@@ -1,5 +1,5 @@
 #pragma once
-#include <grend/glm-includes.hpp>
+#include <grend/glmIncludes.hpp>
 #include <memory>
 
 namespace grendx {

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <grend/quadtree.hpp>
-#include <grend/glm-includes.hpp>
-#include <grend/opengl-includes.hpp>
-#include <grend/gl_manager.hpp>
+#include <grend/glmIncludes.hpp>
+#include <grend/openglIncludes.hpp>
+#include <grend/glManager.hpp>
 #include <memory>
 
 namespace grendx {

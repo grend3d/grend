@@ -1,7 +1,7 @@
 #include <grend/vecGUI.hpp>
-#include <grend/opengl-includes.hpp>
-#include <grend/gl_manager.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/openglIncludes.hpp>
+#include <grend/glManager.hpp>
+#include <grend/sdlContext.hpp>
 #include <assert.h>
 
 using namespace grendx;

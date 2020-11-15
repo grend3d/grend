@@ -4,7 +4,7 @@
 #include <grend/bulletPhysics.hpp>
 #elif defined(PHYSICS_IMP)
 // TODO: the great camelCasification
-#include <grend/imp_physics.hpp>
+#include <grend/impPhysics.hpp>
 #endif
 
 using namespace grendx;

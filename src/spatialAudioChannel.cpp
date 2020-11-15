@@ -1,5 +1,5 @@
 #include <grend/audioMixer.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <grend/utility.hpp>
 #include <stdint.h>
 

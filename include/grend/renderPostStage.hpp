@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend/renderFramebuffer.hpp>
-#include <grend/gl_manager.hpp>
+#include <grend/glManager.hpp>
 
 namespace grendx {
 

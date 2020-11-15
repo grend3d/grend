@@ -1,5 +1,5 @@
-#include <grend/game_editor.hpp>
-#include <grend/file_dialog.hpp>
+#include <grend/gameEditor.hpp>
+#include <grend/fileDialog.hpp>
 
 // TODO: debugging, remove
 #include <iostream>

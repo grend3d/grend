@@ -1,7 +1,7 @@
 #pragma once
 
-#include <grend/gl_manager.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/glManager.hpp>
+#include <grend/sdlContext.hpp>
 #include <grend/engine.hpp>
 #include <SDL_ttf.h>
 

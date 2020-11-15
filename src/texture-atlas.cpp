@@ -1,4 +1,4 @@
-#include <grend/texture-atlas.hpp>
+#include <grend/textureAtlas.hpp>
 #include <stdio.h>
 #include <iostream>
 

@@ -2,9 +2,9 @@
 
 #include <grend/gameObject.hpp>
 #include <grend/gameModel.hpp>
-#include <grend/glm-includes.hpp>
-#include <grend/geometry-gen.hpp>
-#include <grend/gl_manager.hpp>
+#include <grend/glmIncludes.hpp>
+#include <grend/geometryGeneration.hpp>
+#include <grend/glManager.hpp>
 #include <grend/utility.hpp>
 #include <grend/text.hpp>
 #include <grend/physics.hpp>

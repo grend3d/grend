@@ -1,5 +1,5 @@
 #include <grend/timers.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <chrono>
 
 using namespace grendx;

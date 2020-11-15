@@ -2,8 +2,8 @@
 
 #include <grend/gameState.hpp>   // TODO: rename to gameState.h
 #include <grend/engine.hpp>      // TODO: rename to renderer.h
-#include <grend/game_editor.hpp> // TODO: gameEditor
-#include <grend/imp_physics.hpp>
+#include <grend/gameEditor.hpp> // TODO: gameEditor
+#include <grend/impPhysics.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <grend/engine.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/gameObject.hpp>
 #include <grend/gameModel.hpp>
-#include <grend/glm-includes.hpp>
-#include <grend/gl_manager.hpp>
+#include <grend/glmIncludes.hpp>
+#include <grend/glManager.hpp>
 #include <grend/utility.hpp>
 #include <grend/physics.hpp>
 #include <grend/camera.hpp>

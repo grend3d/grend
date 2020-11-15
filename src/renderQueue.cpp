@@ -1,6 +1,6 @@
 #include <grend/engine.hpp>
 #include <grend/utility.hpp>
-#include <grend/texture-atlas.hpp>
+#include <grend/textureAtlas.hpp>
 #include <math.h>
 
 using namespace grendx;

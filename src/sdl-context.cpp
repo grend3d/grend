@@ -1,4 +1,4 @@
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <stdexcept>
 #include <iostream>
 

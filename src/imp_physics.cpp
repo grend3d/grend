@@ -1,5 +1,5 @@
 #include <grend/physics.hpp>
-#include <grend/imp_physics.hpp>
+#include <grend/impPhysics.hpp>
 
 // TODO: physics abstract class with derived implementations
 //#include <bullet/btBulletDynamicsCommon.h>

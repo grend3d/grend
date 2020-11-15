@@ -1,5 +1,5 @@
 #include <grend/modalSDLInput.hpp>
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <iostream>
 
 using namespace grendx;

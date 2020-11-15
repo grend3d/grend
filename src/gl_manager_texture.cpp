@@ -1,5 +1,5 @@
-#include <grend/gl_manager.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/glManager.hpp>
+#include <grend/glmIncludes.hpp>
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>

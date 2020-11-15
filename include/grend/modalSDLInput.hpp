@@ -1,6 +1,6 @@
 #pragma once
 #include <functional>
-#include <grend/sdl-context.hpp>
+#include <grend/sdlContext.hpp>
 #include <map>
 #include <vector>
 #include <utility> // std::pair

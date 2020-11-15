@@ -1,4 +1,4 @@
-#include <grend/game_editor.hpp>
+#include <grend/gameEditor.hpp>
 #include <grend/utility.hpp>
 #include <iostream>
 #include <fstream>

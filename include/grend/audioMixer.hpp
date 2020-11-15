@@ -1,6 +1,6 @@
 #pragma once
-#include <grend/sdl-context.hpp>
-#include <grend/glm-includes.hpp>
+#include <grend/sdlContext.hpp>
+#include <grend/glmIncludes.hpp>
 #include <grend/camera.hpp>
 
 #include <memory>

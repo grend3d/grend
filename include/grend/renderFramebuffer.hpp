@@ -2,7 +2,7 @@
 
 #include <grend/gameObject.hpp>
 #include <grend/gameModel.hpp>
-#include <grend/gl_manager.hpp>
+#include <grend/glManager.hpp>
 
 #include <vector>
 
