@@ -33,6 +33,10 @@ static GLenum   currentFaceOrder;
 
 std::map<uint32_t, Texture::weakptr> textureCache;
 
+compiledModel::~compiledModel() {
+	std::cerr << "Freeing a compiledModel" << std::endl;
+}
+
 void initializeOpengl(void) {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
@@ -304,9 +308,10 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 	Vao::ptr orig_vao = currentVao;
 
 	for (std::string& mesh_name : obj->meshes) {
-		std::cerr << " # binding mesh " << mesh_name << std::endl;
-		cookedMeshes[mesh_name]->vao
-			= preloadMeshVao(obj, cookedMeshes[mesh_name]);
+		if (auto ptr = cookedMeshes[mesh_name].lock()) {
+			std::cerr << " # binding mesh " << mesh_name << std::endl;
+			ptr->vao = preloadMeshVao(obj, ptr);
+		}
 	}
 
 	return orig_vao;
@@ -317,9 +322,11 @@ void bindCookedMeshes(void) {
 	cookedVertprops_vbo->buffer(cookedVertprops);
 	cookedElementVbo->buffer(cookedElements);
 
-	for (auto& [name, ptr] : cookedModels) {
-		std::cerr << " # binding " << name << std::endl;
-		ptr->vao = preloadModelVao(ptr);
+	for (auto& [name, wptr] : cookedModels) {
+		if (auto ptr = wptr.lock()) {
+			std::cerr << " # binding " << name << std::endl;
+			ptr->vao = preloadModelVao(ptr);
+		}
 	}
 }
 

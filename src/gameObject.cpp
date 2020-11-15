@@ -3,6 +3,10 @@
 
 using namespace grendx;
 
+gameObject::~gameObject() {
+	std::cerr << "Freeing a " << idString() << std::endl;
+}
+
 size_t grendx::allocateObjID(void) {
 	static size_t counter = 0;
 	return ++counter;
@@ -20,13 +24,15 @@ gameObject::ptr gameObject::getNode(std::string name) {
 }
 
 gameObject::ptr grendx::unlink(gameObject::ptr node) {
-	if (node != nullptr && node->parent) {
-		for (auto& [key, ptr] : node->parent->nodes) {
-			if (node == ptr) {
-				gameObject::ptr ret = node->parent;
-				node->parent->nodes.erase(key);
-				node->parent = nullptr;
-				return ret;
+	if (node != nullptr) {
+		if (auto p = node->parent.lock()) {
+			for (auto& [key, ptr] : p->nodes) {
+				if (node == ptr) {
+					gameObject::ptr ret = p;
+					p->nodes.erase(key);
+					node->parent.reset();
+					return ret;
+				}
 			}
 		}
 	}

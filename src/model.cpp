@@ -1027,7 +1027,7 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 
 	for (unsigned i = 0; i < obj->joints.size(); i++) {
 		auto& ptr = obj->joints[i];
-		if (ptr->parent == nullptr) {
+		if (ptr->parent.expired()) {
 			std::string name = "rootjoint["+std::to_string(i)+"]";
 			setNode(name, joints, ptr);
 		}

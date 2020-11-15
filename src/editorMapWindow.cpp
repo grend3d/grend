@@ -74,7 +74,7 @@ void gameEditor::addnodesRec(const std::string& name,
 void gameEditor::addnodes(std::string name, gameObject::ptr obj) {
 	std::set<gameObject::ptr> path;
 
-	for (gameObject::ptr p = selectedNode; p; p = p->parent) {
+	for (gameObject::ptr p = selectedNode; p; p = p->parent.lock()) {
 		path.insert(p);
 	}
 

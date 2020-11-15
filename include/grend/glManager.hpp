@@ -305,6 +305,8 @@ class compiledModel {
 		typedef std::shared_ptr<compiledModel> ptr;
 		typedef std::weak_ptr<compiledModel> weakptr;
 
+		~compiledModel();
+
 		//rhandle vao;
 		Vao::ptr vao;
 		GLint verticesSize;
@@ -333,8 +335,8 @@ class compiledModel {
 };
 
 // TODO: weakptr, once model loading stuff is straightened out
-typedef std::map<std::string, compiledMesh::ptr> cookedMeshMap;
-typedef std::map<std::string, compiledModel::ptr> cookedModelMap;
+typedef std::map<std::string, compiledMesh::weakptr> cookedMeshMap;
+typedef std::map<std::string, compiledModel::weakptr> cookedModelMap;
 Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
 
 // defined in gameModel.hpp

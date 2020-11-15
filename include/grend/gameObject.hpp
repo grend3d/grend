@@ -43,27 +43,28 @@ class gameObject {
 		typedef std::weak_ptr<gameObject> weakptr;
 
 		gameObject(enum objType t = objType::None) : type(t) {};
+		~gameObject();
 
 		// handlers for basic input events
 		virtual void onLeftClick() {
 			// default handlers just call upwards
 			std::cerr << "left click " << idString() << std::endl;
-			if (parent) { parent->onLeftClick(); }
+			if (auto p = parent.lock()) { p->onLeftClick(); }
 		};
 
 		virtual void onMiddleClick() {
 			std::cerr << "middle click " << idString() << std::endl;
-			if (parent) { parent->onMiddleClick(); }
+			if (auto p = parent.lock()) { p->onMiddleClick(); }
 		};
 
 		virtual void onRightClick() {
 			std::cerr << "right click " << idString() << std::endl;
-			if (parent) { parent->onRightClick(); }
+			if (auto p = parent.lock()) { p->onRightClick(); }
 		};
 
 		virtual void onHover() {
 			std::cerr << "hover " << idString() << std::endl;
-			if (parent) { parent->onHover(); }
+			if (auto p = parent.lock()) { p->onHover(); }
 		};
 
 		virtual std::string typeString(void) {
@@ -93,7 +94,7 @@ class gameObject {
 		std::vector<animationChannel::ptr> animations;
 		bool visible = true;
 
-		gameObject::ptr parent = nullptr;
+		gameObject::weakptr parent;
 		std::map<std::string, gameObject::ptr> nodes;
 		uint64_t physics_id = 0; // for unlinking when the object is removed
 		GLenum face_order  = GL_CCW;

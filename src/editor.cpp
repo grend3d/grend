@@ -64,8 +64,8 @@ class clicker : public gameObject {
 			std::cerr << "have mode: " << clickmode << std::endl;
 			editor->setMode(clickmode);
 
-			if (parent) {
-				parent->onLeftClick();
+			if (auto p = parent.lock()) {
+				p->onLeftClick();
 			}
 		}
 
@@ -170,8 +170,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
-	gameObject::ptr probeObj = std::make_shared<gameObject>();
-	setNode("model", probeObj, physmodel);
+	//gameObject::ptr probeObj = std::make_shared<gameObject>();
+	//setNode("model", probeObj, physmodel);
 
 	renderQueue tempque(cam);
 	renderQueue que(cam);
@@ -182,15 +182,10 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto& refShader = game->rend->shaders["refprobe_debug"];
 		auto& irradShader = game->rend->shaders["irradprobe_debug"];
 
+		/*
 		probeFlags.mainShader = probeFlags.skinnedShader = refShader;
 		game->rend->setFlags(probeFlags);
 		refShader->bind();
-
-		/*
-		glActiveTexture(GL_TEXTURE6);
-		game->rend->atlases.reflections->color_tex->bind();
-		refShader->set("reflection_atlas", 6);
-		*/
 
 		for (auto& [_, __, probe] : tempque.probes) {
 			probeObj->transform.position = probe->transform.position;
@@ -211,12 +206,6 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		game->rend->setFlags(probeFlags);
 		irradShader->bind();
 
-		/*
-		glActiveTexture(GL_TEXTURE6);
-		game->rend->atlases.irradiance->color_tex->bind();
-		irradShader->set("reflection_atlas", 6);
-		*/
-
 		for (auto& [_, __, probe] : tempque.irradProbes) {
 			probeObj->transform.position = probe->transform.position;
 			probeObj->transform.scale    = glm::vec3(0.5);
@@ -231,8 +220,10 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			que.add(probeObj);
 			que.flush(game->rend->framebuffer, game->rend);
 		}
+		*/
 	}
 
+	/*
 	if (showLights) {
 		auto unshadedFlags = flags;
 		unshadedFlags.mainShader = unshadedFlags.skinnedShader
@@ -246,6 +237,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			que.flush(game->rend->framebuffer, game->rend);
 		}
 	}
+	*/
 }
 
 void gameEditor::initImgui(gameMain *game) {
@@ -337,7 +329,7 @@ void gameEditor::logic(gameMain *game, float delta) {
 
 	orientation->visible =
 		   selectedNode != nullptr
-		&& selectedNode->parent
+		&& !selectedNode->parent.expired()
 		&& selectedNode != game->state->rootnode;
 
 	cursor->visible =
@@ -408,7 +400,7 @@ void gameEditor::showLoadingScreen(gameMain *game) {
 }
 
 bool gameEditor::isUIObject(gameObject::ptr obj) {
-	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
+	for (gameObject::ptr temp = obj; temp; temp = temp->parent.lock()) {
 		if (temp == UIObjects) {
 			return true;
 		}
@@ -418,7 +410,7 @@ bool gameEditor::isUIObject(gameObject::ptr obj) {
 }
 
 gameObject::ptr gameEditor::getNonModel(gameObject::ptr obj) {
-	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
+	for (gameObject::ptr temp = obj; temp; temp = temp->parent.lock()) {
 		if (temp->type != gameObject::objType::Mesh
 		    && temp->type != gameObject::objType::Model)
 		{

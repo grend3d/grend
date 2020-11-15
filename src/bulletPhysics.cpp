@@ -93,20 +93,14 @@ bulletPhysics::addStaticModels(gameObject::ptr obj,
 	physicsObject::ptr ret = nullptr;
 
 	if (obj->type == gameObject::objType::Mesh) {
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj->parent);
+		if (auto p = obj->parent.lock()) {
+			gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
+			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
 
-		if (mesh && model) {
-			addStaticMesh(obj, transform, model, mesh);
+			if (mesh && model) {
+				addStaticMesh(obj, transform, model, mesh);
+			}
 		}
-
-		/*
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-
-		glm::vec4 pos = adjTrans*glm::vec4(0, 0, 0, 1);
-		AABBExtent box = AABBToExtents(mesh->boundingBox);
-		addBox(mesh, glm::vec3(pos)/pos.w, 0.f, box);
-		*/
 	}
 
 	for (auto& [name, node] : obj->nodes) {

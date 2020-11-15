@@ -172,13 +172,21 @@ void renderQueue::sort(void) {
 	for (auto& it : meshes) {
 		auto [transform, inverted, mesh] = it;
 
-		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
-		auto& mat = mod->materials[mesh->material];
+		if (auto p = mesh->parent.lock()) {
+			gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(p);
 
-		if (mat.blend != material::blend_mode::Opaque) {
-			transparent.push_back(it);
-		} else {
-			opaque.push_back(it);
+			if (mod) {
+				auto& mat = mod->materials[mesh->material];
+
+				if (mat.blend != material::blend_mode::Opaque) {
+					transparent.push_back(it);
+				} else {
+					opaque.push_back(it);
+				}
+
+			} else {
+				// TODO: print warning message if it's not a model
+			}
 		}
 	}
 
@@ -264,18 +272,27 @@ static void drawMesh(renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(mesh->parent);
-	assert(mod->compiled);
-	set_material(program, mod->comped_model, mesh->material);
-	auto& mat = mod->materials[mesh->material];
+	if (auto p = mesh->parent.lock()) {
+		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(p);
 
-	// enable()/disable() cache state, no need to worry about toggling
-	// too much state if queue is sorted
-	if (mat.blend != material::blend_mode::Opaque) {
-		// TODO: handle mask blends
-		enable(GL_BLEND);
-	} else {
-		disable(GL_BLEND);
+		if (mod) {
+			assert(mod->compiled);
+			set_material(program, mod->comped_model, mesh->material);
+			auto& mat = mod->materials[mesh->material];
+
+			// enable()/disable() cache state, no need to worry about toggling
+			// too much state if queue is sorted
+			if (mat.blend != material::blend_mode::Opaque) {
+				// TODO: handle mask blends
+				enable(GL_BLEND);
+			} else {
+				disable(GL_BLEND);
+			}
+
+		} else {
+			// TODO: print warning message
+			// TODO: deduplicate this code
+		}
 	}
 
 	// TODO: need to keep track of the model face order
@@ -320,7 +337,7 @@ unsigned renderQueue::flush(unsigned width,
 					gameObject::ptr temp = skin->joints[i];
 					glm::mat4 accum = glm::mat4(1);
 
-					for (; temp != skin && temp; temp = temp->parent) {
+					for (; temp != skin && temp; temp = temp->parent.lock()) {
 						accum = temp->getTransform(tim)*accum;
 					}
 
@@ -425,7 +442,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 					gameObject::ptr temp = skin->joints[i];
 					glm::mat4 accum = glm::mat4(1);
 
-					for (; temp != skin && temp; temp = temp->parent) {
+					for (; temp != skin && temp; temp = temp->parent.lock()) {
 						accum = temp->getTransform(tim)*accum;
 					}
 
