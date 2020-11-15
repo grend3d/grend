@@ -20,8 +20,8 @@ struct nvg_data {
 
 playerView::playerView(gameMain *game) : gameView() {
 	static const float speed = 15.f;
-	compile_model("physcuboid", cuboid);
-	bind_cooked_meshes();
+	compileModel("physcuboid", cuboid);
+	bindCookedMeshes();
 
 	post = renderPostChain::ptr(new renderPostChain(
 		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
@@ -159,7 +159,7 @@ void playerView::logic(gameMain *game, float delta) {
 
 static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	Framebuffer().bind();
-	set_default_gl_flags();
+	setDefaultGlFlags();
 
 	disable(GL_DEPTH_TEST);
 	disable(GL_SCISSOR_TEST);

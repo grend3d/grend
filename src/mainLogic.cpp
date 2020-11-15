@@ -14,8 +14,8 @@ using namespace grendx;
 
 // TODO: probably won't be used, convenience here is pretty minimal
 // TODO: move to gameModel stuff
-model_map load_library(std::string dir) {
-	model_map ret;
+modelMap load_library(std::string dir) {
+	modelMap ret;
 	struct dirent *dirent;
 	DIR *dirp;
 
@@ -55,17 +55,17 @@ static std::pair<std::string, std::string> obj_models[] = {
 	{"Z-Axis-Rotation-Spinner", "assets/obj/UI/Z-Axis-Rotation-Spinner.obj"},
 };
 
-static model_map gen_internal_models(void) {
+static modelMap gen_internal_models(void) {
 	return {
 		{"unit_cube",        generate_cuboid(1, 1, 1)},
 	};
 }
 
 // TODO: should start thinking about splitting initialization into smaller functions
-game_state::game_state() {
+gameState::gameState() {
 	rootnode = gameObject::ptr(new gameObject());
 	physObjects = gameObject::ptr(new gameObject());
 }
 
-game_state::~game_state() {
+gameState::~gameState() {
 }

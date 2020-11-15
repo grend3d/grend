@@ -11,7 +11,7 @@ using namespace grendx;
 
 static gameModel::ptr  physmodel;
 
-game_editor::game_editor(gameMain *game) : gameView() {
+gameEditor::gameEditor(gameMain *game) : gameView() {
 	objects = gameObject::ptr(new gameObject());
 	/*
 	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
@@ -22,13 +22,13 @@ game_editor::game_editor(gameMain *game) : gameView() {
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	loading_thing = makePostprocessor<rOutput>(
-		load_program(GR_PREFIX "shaders/out/postprocess.vert",
+		loadProgram(GR_PREFIX "shaders/out/postprocess.vert",
 		             GR_PREFIX "shaders/out/texpresent.frag"),
 		SCREEN_SIZE_X,
 		SCREEN_SIZE_Y
 	);
 
-	loading_img = gen_texture();
+	loading_img = genTexture();
 	loading_img->buffer(materialTexture(GR_PREFIX "assets/tex/loading-splash.png"));
 
 	clear(game);
@@ -38,7 +38,7 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	auto moda = std::make_shared<gameObject>();
 	auto modb = std::make_shared<gameObject>();
 	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
-	compile_model("testphys", physmodel);
+	compileModel("testphys", physmodel);
 
 	setNode("lmao", moda, physmodel);
 	setNode("lmao", modb, physmodel);
@@ -47,50 +47,50 @@ game_editor::game_editor(gameMain *game) : gameView() {
 	game->phys->addSphere(moda, glm::vec3(0, 10, 0), 1.0, 1.0);
 	game->phys->addSphere(modb, glm::vec3(-10, 10, 0), 1.0, 1.0);
 
-	bind_cooked_meshes();
+	bindCookedMeshes();
 	loadInputBindings(game);
-	set_mode(mode::View);
+	setMode(mode::View);
 
 	// XXX
-	show_object_editor_window = true;
+	showObjectEditorWindow = true;
 };
 
 class clicker : public gameObject {
 	public:
-		clicker(game_editor *ptr, enum game_editor::mode click)
+		clicker(gameEditor *ptr, enum gameEditor::mode click)
 			: gameObject(), editor(ptr), clickmode(click) {}; 
 
 		virtual void onLeftClick() {
 			std::cerr << "have mode: " << clickmode << std::endl;
-			editor->set_mode(clickmode);
+			editor->setMode(clickmode);
 
 			if (parent) {
 				parent->onLeftClick();
 			}
 		}
 
-		game_editor *editor;
-		enum game_editor::mode clickmode;
+		gameEditor *editor;
+		enum gameEditor::mode clickmode;
 };
 
-void game_editor::loadUIModels(void) {
+void gameEditor::loadUIModels(void) {
 	// TODO: Need to swap Z/Y pointer and spinner models
 	//       blender coordinate system isn't the same as opengl's (duh)
 	std::string dir = GR_PREFIX "assets/obj/UI/";
-	UI_models["X-Axis-Pointer"] = load_object(dir + "X-Axis-Pointer.obj");
-	UI_models["Y-Axis-Pointer"] = load_object(dir + "Y-Axis-Pointer.obj");
-	UI_models["Z-Axis-Pointer"] = load_object(dir + "Z-Axis-Pointer.obj");
-	UI_models["X-Axis-Rotation-Spinner"]
+	UIModels["X-Axis-Pointer"] = load_object(dir + "X-Axis-Pointer.obj");
+	UIModels["Y-Axis-Pointer"] = load_object(dir + "Y-Axis-Pointer.obj");
+	UIModels["Z-Axis-Pointer"] = load_object(dir + "Z-Axis-Pointer.obj");
+	UIModels["X-Axis-Rotation-Spinner"]
 		= load_object(dir + "X-Axis-Rotation-Spinner.obj");
-	UI_models["Y-Axis-Rotation-Spinner"]
+	UIModels["Y-Axis-Rotation-Spinner"]
 		= load_object(dir + "Y-Axis-Rotation-Spinner.obj");
-	UI_models["Z-Axis-Rotation-Spinner"]
+	UIModels["Z-Axis-Rotation-Spinner"]
 		= load_object(dir + "Z-Axis-Rotation-Spinner.obj");
-	UI_models["Cursor-Placement"]
+	UIModels["Cursor-Placement"]
 		= load_object(dir + "Cursor-Placement.obj");
-	UI_models["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
+	UIModels["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
 
-	UI_objects = gameObject::ptr(new gameObject());
+	UIObjects = gameObject::ptr(new gameObject());
 	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
 	gameObject::ptr yptr = gameObject::ptr(new clicker(this, mode::MoveZ));
 	gameObject::ptr zptr = gameObject::ptr(new clicker(this, mode::MoveY));
@@ -101,14 +101,14 @@ void game_editor::loadUIModels(void) {
 	gameObject::ptr cursor      = gameObject::ptr(new gameObject());
 	gameObject::ptr bbox        = gameObject::ptr(new gameObject());
 
-	setNode("X-Axis",           xptr,   UI_models["X-Axis-Pointer"]);
-	setNode("X-Rotation",       xrot,   UI_models["X-Axis-Rotation-Spinner"]);
-	setNode("Y-Axis",           yptr,   UI_models["Y-Axis-Pointer"]);
-	setNode("Y-Rotation",       yrot,   UI_models["Y-Axis-Rotation-Spinner"]);
-	setNode("Z-Axis",           zptr,   UI_models["Z-Axis-Pointer"]);
-	setNode("Z-Rotation",       zrot,   UI_models["Z-Axis-Rotation-Spinner"]);
-	setNode("Cursor-Placement", cursor, UI_models["Cursor-Placement"]);
-	setNode("Bounding-Box",     bbox,   UI_models["Bounding-Box"]);
+	setNode("X-Axis",           xptr,   UIModels["X-Axis-Pointer"]);
+	setNode("X-Rotation",       xrot,   UIModels["X-Axis-Rotation-Spinner"]);
+	setNode("Y-Axis",           yptr,   UIModels["Y-Axis-Pointer"]);
+	setNode("Y-Rotation",       yrot,   UIModels["Y-Axis-Rotation-Spinner"]);
+	setNode("Z-Axis",           zptr,   UIModels["Z-Axis-Pointer"]);
+	setNode("Z-Rotation",       zrot,   UIModels["Z-Axis-Rotation-Spinner"]);
+	setNode("Cursor-Placement", cursor, UIModels["Cursor-Placement"]);
+	setNode("Bounding-Box",     bbox,   UIModels["Bounding-Box"]);
 
 	setNode("X-Axis", orientation, xptr);
 	setNode("Y-Axis", orientation, yptr);
@@ -117,19 +117,19 @@ void game_editor::loadUIModels(void) {
 	setNode("Y-Rotation", orientation, yrot);
 	setNode("Z-Rotation", orientation, zrot);
 
-	setNode("Orientation-Indicator", UI_objects, orientation);
-	setNode("Cursor-Placement", UI_objects, cursor);
-	setNode("Bounding-Box", UI_objects, bbox);
+	setNode("Orientation-Indicator", UIObjects, orientation);
+	setNode("Cursor-Placement", UIObjects, cursor);
+	setNode("Bounding-Box", UIObjects, bbox);
 
 	bbox->visible = false;
 	orientation->visible = false;
 	cursor->visible = false;
 
-	compile_models(UI_models);
-	bind_cooked_meshes();
+	compileModels(UIModels);
+	bindCookedMeshes();
 }
 
-void game_editor::render(gameMain *game) {
+void gameEditor::render(gameMain *game) {
 	renderQueue que(cam);
 	auto flags = game->rend->getFlags();
 
@@ -142,7 +142,7 @@ void game_editor::render(gameMain *game) {
 	unshadedFlags.mainShader = unshadedFlags.skinnedShader
 		= game->rend->shaders["unshaded"];
 	game->rend->setFlags(unshadedFlags);
-	que.add(UI_objects);
+	que.add(UIObjects);
 	que.flush(game->rend->framebuffer, game->rend);
 
 	game->rend->setFlags(game->rend->getDefaultFlags());
@@ -161,12 +161,12 @@ void game_editor::render(gameMain *game) {
 //             render framebuffer, although the depth/stencil buffer seems
 //             to be there...
 #if GLSL_VERSION > 100
-	render_editor(game);
-	render_imgui(game);
+	renderEditor(game);
+	renderImgui(game);
 #endif
 }
 
-void game_editor::renderWorldObjects(gameMain *game) {
+void gameEditor::renderWorldObjects(gameMain *game) {
 	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
@@ -177,7 +177,7 @@ void game_editor::renderWorldObjects(gameMain *game) {
 	renderQueue que(cam);
 	tempque.add(game->state->rootnode);
 
-	if (show_probes) {
+	if (showProbes) {
 		auto  probeFlags = flags;
 		auto& refShader = game->rend->shaders["refprobe_debug"];
 		auto& irradShader = game->rend->shaders["irradprobe_debug"];
@@ -233,7 +233,7 @@ void game_editor::renderWorldObjects(gameMain *game) {
 		}
 	}
 
-	if (show_lights) {
+	if (showLights) {
 		auto unshadedFlags = flags;
 		unshadedFlags.mainShader = unshadedFlags.skinnedShader
 			= game->rend->shaders["unshaded"];
@@ -248,7 +248,7 @@ void game_editor::renderWorldObjects(gameMain *game) {
 	}
 }
 
-void game_editor::initImgui(gameMain *game) {
+void gameEditor::initImgui(gameMain *game) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -266,7 +266,7 @@ gameObject::ptr grendx::loadModel(std::string path) {
 	if (ext == ".obj") {
 		//model m(path);
 		gameModel::ptr m = load_object(path);
-		compile_model(path, m);
+		compileModel(path, m);
 
 		// add the model at 0,0
 		auto obj = gameObject::ptr(new gameObject());
@@ -277,8 +277,8 @@ gameObject::ptr grendx::loadModel(std::string path) {
 	}
 
 	else if (ext == ".gltf" || ext == ".glb") {
-		model_map mods = load_gltf_models(path);
-		compile_models(mods);
+		modelMap mods = load_gltf_models(path);
+		compileModels(mods);
 
 		for (auto& [name, model] : mods) {
 			// add the models at 0,0
@@ -299,14 +299,14 @@ gameImport::ptr grendx::loadScene(std::string path) {
 		std::cerr << "load_scene(): loading scene" << std::endl;
 
 		std::string import_name = "import["+std::to_string(objs->id)+"]";
-		compile_models(mods);
+		compileModels(mods);
 		return objs;
 	}
 
 	return nullptr;
 }
 
-void game_editor::reload_shaders(gameMain *game) {
+void gameEditor::reloadShaders(gameMain *game) {
 	for (auto& [name, shader] : game->rend->shaders) {
 		if (!shader->reload()) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
@@ -314,25 +314,25 @@ void game_editor::reload_shaders(gameMain *game) {
 	}
 }
 
-void game_editor::set_mode(enum mode newmode) {
+void gameEditor::setMode(enum mode newmode) {
 	mode = newmode;
 	inputBinds.setMode(mode);
 }
 
-void game_editor::handleCursorUpdate(gameMain *game) {
+void gameEditor::handleCursorUpdate(gameMain *game) {
 	// TODO: reuse this for cursor code
 	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
 	entbuf.position = glm::vec3(
-		align(cam->direction().x*edit_distance + cam->position().x),
-		align(cam->direction().y*edit_distance + cam->position().y),
-		align(cam->direction().z*edit_distance + cam->position().z));
+		align(cam->direction().x*editDistance + cam->position().x),
+		align(cam->direction().y*editDistance + cam->position().y),
+		align(cam->direction().z*editDistance + cam->position().z));
 }
 
-void game_editor::logic(gameMain *game, float delta) {
+void gameEditor::logic(gameMain *game, float delta) {
 	cam->updatePosition(delta);
 
-	auto orientation = UI_objects->getNode("Orientation-Indicator");
-	auto cursor      = UI_objects->getNode("Cursor-Placement");
+	auto orientation = UIObjects->getNode("Orientation-Indicator");
+	auto cursor      = UIObjects->getNode("Cursor-Placement");
 	assert(orientation && cursor);
 
 	orientation->visible =
@@ -359,7 +359,7 @@ void game_editor::logic(gameMain *game, float delta) {
 		}
 
 		if (selectedNode->type == gameObject::objType::ReflectionProbe) {
-			auto bbox = UI_objects->getNode("Bounding-Box");
+			auto bbox = UIObjects->getNode("Bounding-Box");
 			auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
 
 			glm::vec3 bmin = probe->transform.position + probe->boundingBox.min;
@@ -373,7 +373,7 @@ void game_editor::logic(gameMain *game, float delta) {
 			bbox->transform.scale    = extent;
 
 		} else {
-			auto bbox = UI_objects->getNode("Bounding-Box");
+			auto bbox = UIObjects->getNode("Bounding-Box");
 			assert(bbox != nullptr);
 			bbox->visible = false;
 		}
@@ -390,7 +390,7 @@ void game_editor::logic(gameMain *game, float delta) {
 		case mode::AddReflectionProbe:
 		case mode::AddIrradianceProbe:
 			{
-				auto ptr = UI_objects->getNode("Cursor-Placement");
+				auto ptr = UIObjects->getNode("Cursor-Placement");
 				assert(ptr != nullptr);
 				handleCursorUpdate(game);
 				ptr->transform.position = entbuf.position;
@@ -401,15 +401,15 @@ void game_editor::logic(gameMain *game, float delta) {
 }
 
 
-void game_editor::showLoadingScreen(gameMain *game) {
+void gameEditor::showLoadingScreen(gameMain *game) {
 	// TODO: maybe not this
 	loading_thing->draw(loading_img, nullptr);
 	SDL_GL_SwapWindow(game->ctx.window);
 }
 
-bool game_editor::isUIObject(gameObject::ptr obj) {
+bool gameEditor::isUIObject(gameObject::ptr obj) {
 	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
-		if (temp == UI_objects) {
+		if (temp == UIObjects) {
 			return true;
 		}
 	}
@@ -417,7 +417,7 @@ bool game_editor::isUIObject(gameObject::ptr obj) {
 	return false;
 }
 
-gameObject::ptr game_editor::getNonModel(gameObject::ptr obj) {
+gameObject::ptr gameEditor::getNonModel(gameObject::ptr obj) {
 	for (gameObject::ptr temp = obj; temp; temp = temp->parent) {
 		if (temp->type != gameObject::objType::Mesh
 		    && temp->type != gameObject::objType::Model)
@@ -429,7 +429,7 @@ gameObject::ptr game_editor::getNonModel(gameObject::ptr obj) {
 	return nullptr;
 }
 
-void game_editor::clear(gameMain *game) {
+void gameEditor::clear(gameMain *game) {
 	showLoadingScreen(game);
 
 	cam->setPosition({0, 0, 0});
@@ -440,32 +440,32 @@ void game_editor::clear(gameMain *game) {
 }
 
 // TODO: rename 'renderer' to 'rend' or something
-void game_editor::render_imgui(gameMain *game) {
+void gameEditor::renderImgui(gameMain *game) {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void game_editor::render_editor(gameMain *game) {
+void gameEditor::renderEditor(gameMain *game) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(game->ctx.window);
 	ImGui::NewFrame();
 
 	menubar(game);
 
-	if (show_metrics_window) {
+	if (showMetricsWindow) {
 		//ImGui::ShowMetricsWindow();
 		metricsWindow(game);
 	}
 
-	if (show_map_window) {
-		map_window(game);
+	if (showMapWindow) {
+		mapWindow(game);
 	}
 
-	if (show_object_select_window) {
-		object_select_window(game);
+	if (showObjectSelectWindow) {
+		objectSelectWindow(game);
 	}
 
-	if (selectedNode && show_object_editor_window) {
+	if (selectedNode && showObjectEditorWindow) {
 		objectEditorWindow(game);
 	}
 }

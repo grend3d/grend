@@ -19,7 +19,7 @@ class gameView;
 class gameMain {
 	public:
 		gameMain(std::string name="grendx") : ctx(name.c_str()) {
-			initialize_opengl();
+			initializeOpengl();
 		}
 
 		virtual int step(void);
@@ -33,7 +33,7 @@ class gameMain {
 
 		bool running = false;
 		context ctx;
-		std::shared_ptr<game_state>    state = nullptr;
+		std::shared_ptr<gameState>    state = nullptr;
 		std::shared_ptr<gameView>      view  = nullptr;
 		std::shared_ptr<renderContext> rend  = nullptr;
 		std::shared_ptr<physics>       phys  = nullptr;

@@ -65,11 +65,11 @@ bool Shader::reload(void) {
 	return false;
 }
 
-Program::ptr load_program(std::string vert, std::string frag) {
-	Program::ptr prog = gen_program();
+Program::ptr loadProgram(std::string vert, std::string frag) {
+	Program::ptr prog = genProgram();
 
-	prog->vertex = gen_shader(GL_VERTEX_SHADER);
-	prog->fragment = gen_shader(GL_FRAGMENT_SHADER);
+	prog->vertex = genShader(GL_VERTEX_SHADER);
+	prog->fragment = genShader(GL_FRAGMENT_SHADER);
 
 	prog->vertex->load(vert);
 	prog->fragment->load(frag);

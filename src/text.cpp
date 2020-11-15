@@ -16,11 +16,11 @@ text_renderer::text_renderer(renderContext::ptr eng,
 		throw std::logic_error(std::string(__func__) + ": " + TTF_GetError());
 	}
 
-	text_vbo = gen_buffer(GL_ARRAY_BUFFER);
-	text_texture = gen_texture();
+	text_vbo = genBuffer(GL_ARRAY_BUFFER);
+	text_texture = genTexture();
 
-	Vao::ptr orig_vao = get_current_vao();
-	text_vao = bind_vao(gen_vao());
+	Vao::ptr orig_vao = getCurrentVao();
+	text_vao = bindVao(genVao());
 
 	text_vbo->bind();
 	glEnableVertexAttribArray(0);
@@ -29,7 +29,7 @@ text_renderer::text_renderer(renderContext::ptr eng,
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
-	text_shader = load_program(
+	text_shader = loadProgram(
 		"shaders/out/UI.vert",
 		"shaders/out/UI.frag"
 	);
@@ -38,7 +38,7 @@ text_renderer::text_renderer(renderContext::ptr eng,
 	text_shader->attribute("v_texcoord", 1);
 	text_shader->link();
 
-	bind_vao(orig_vao);
+	bindVao(orig_vao);
 	DO_ERROR_CHECK();
 }
 
@@ -50,7 +50,7 @@ void text_renderer::render(glm::vec3 pos,
                            std::string str,
                            SDL_Color color)
 {
-	bind_vao(text_vao);
+	bindVao(text_vao);
 	text_shader->bind();
 	//rend->set_shader(text_shader);
 
@@ -74,7 +74,7 @@ void text_renderer::render(glm::vec3 pos,
 	DO_ERROR_CHECK();
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rgba_surf->w, rgba_surf->h, 0,
-	             surface_gl_format(rgba_surf), GL_UNSIGNED_BYTE, rgba_surf->pixels);
+	             surfaceGlFormat(rgba_surf), GL_UNSIGNED_BYTE, rgba_surf->pixels);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	DO_ERROR_CHECK();

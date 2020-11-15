@@ -38,7 +38,7 @@ renderContext::renderContext(context& ctx) {
 	DO_ERROR_CHECK();
 
 #if GLSL_VERSION >= 140
-	lightBuffer = gen_buffer(GL_UNIFORM_BUFFER);
+	lightBuffer = genBuffer(GL_UNIFORM_BUFFER);
 	lightBuffer->bind();
 	lightBuffer->allocate(sizeof(lights_std140));
 #endif
@@ -58,11 +58,11 @@ renderContext::renderContext(context& ctx) {
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	//std::cerr << "loaded cubemap" << std::endl;
 
-	default_diffuse         = gen_texture();
-	default_metal_roughness = gen_texture();
-	default_normmap         = gen_texture();
-	default_aomap           = gen_texture();
-	default_emissive        = gen_texture();
+	default_diffuse         = genTexture();
+	default_metal_roughness = genTexture();
+	default_normmap         = genTexture();
+	default_aomap           = genTexture();
+	default_emissive        = genTexture();
 
 	default_diffuse->buffer(default_material.diffuseMap, true);
 	default_emissive->buffer(default_material.emissiveMap, true);
@@ -77,46 +77,46 @@ renderContext::renderContext(context& ctx) {
 void renderContext::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
 	/*
-	shaders["main"] = load_program(
+	shaders["main"] = loadProgram(
 		GR_PREFIX "shaders/out/vertex-shading.vert",
 		GR_PREFIX "shaders/out/vertex-shading.frag"
 	);
 	*/
 
-	shaders["main"] = load_program(
+	shaders["main"] = loadProgram(
 		GR_PREFIX "shaders/out/pixel-shading.vert",
 		//GR_PREFIX "shaders/out/pixel-shading.frag"
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
-	shaders["main-skinned"] = load_program(
+	shaders["main-skinned"] = loadProgram(
 		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
 		//GR_PREFIX "shaders/out/pixel-shading.frag"
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
-	shaders["refprobe"] = load_program(
+	shaders["refprobe"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe.frag"
 	);
 
 	// TODO: skinned vertex shader
-	shaders["refprobe-skinned"] = load_program(
+	shaders["refprobe-skinned"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe.frag"
 	);
 
-	shaders["refprobe_debug"] = load_program(
+	shaders["refprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
 		GR_PREFIX "shaders/out/ref_probe_debug.frag"
 	);
 
-	shaders["irradprobe_debug"] = load_program(
+	shaders["irradprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
 		GR_PREFIX "shaders/out/irrad_probe_debug.frag"
 	);
 
-	shaders["unshaded"] = load_program(
+	shaders["unshaded"] = loadProgram(
 		GR_PREFIX "shaders/out/pixel-shading.vert",
 		GR_PREFIX "shaders/out/unshaded.frag"
 	);
@@ -152,7 +152,7 @@ void renderContext::loadShaders(void) {
 	shaders["refprobe-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
 	shaders["refprobe-skinned"]->link();
 
-	shaders["shadow"] = load_program(
+	shaders["shadow"] = loadProgram(
 		GR_PREFIX "shaders/out/depth.vert",
 		GR_PREFIX "shaders/out/depth.frag"
 	);
@@ -160,14 +160,14 @@ void renderContext::loadShaders(void) {
 	shaders["shadow"]->link();
 
 	// TODO: skinned vertex shader
-	shaders["shadow-skinned"] = load_program(
+	shaders["shadow-skinned"] = loadProgram(
 		GR_PREFIX "shaders/out/depth.vert",
 		GR_PREFIX "shaders/out/depth.frag"
 	);
 	shaders["shadow-skinned"]->attribute("v_position", VAO_VERTICES);
 	shaders["shadow-skinned"]->link();
 
-	shaders["tonemap"] = load_program(
+	shaders["tonemap"] = loadProgram(
 		GR_PREFIX "shaders/out/postprocess.vert",
 		GR_PREFIX "shaders/out/tonemap.frag"
 	);
@@ -177,7 +177,7 @@ void renderContext::loadShaders(void) {
 	shaders["tonemap"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["tonemap"]->link();
 
-	shaders["psaa"] = load_program(
+	shaders["psaa"] = loadProgram(
 		GR_PREFIX "shaders/out/postprocess.vert",
 		GR_PREFIX "shaders/out/psaa.frag"
 	);
@@ -187,7 +187,7 @@ void renderContext::loadShaders(void) {
 	shaders["psaa"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["psaa"]->link();
 
-	shaders["irradiance-convolve"] = load_program(
+	shaders["irradiance-convolve"] = loadProgram(
 		GR_PREFIX "shaders/out/postprocess.vert",
 		GR_PREFIX "shaders/out/irradiance-convolve.frag"
 	);
@@ -198,7 +198,7 @@ void renderContext::loadShaders(void) {
 	shaders["irradiance-convolve"]->link();
 
 
-	shaders["quadtest"] = load_program(
+	shaders["quadtest"] = loadProgram(
 		GR_PREFIX "shaders/out/quadtest.vert",
 		GR_PREFIX "shaders/out/quadtest.frag"
 	);
@@ -229,7 +229,7 @@ const renderFlags& renderContext::getFlags(void) {
 }
 
 void grendx::set_material(Program::ptr program,
-                          compiled_model::ptr obj,
+                          compiledModel::ptr obj,
                           std::string mat_name)
 {
 	if (obj->materials.find(mat_name) == obj->materials.end()) {
@@ -250,8 +250,8 @@ void grendx::set_material(Program::ptr program,
 	program->set("anmaterial.opacity", mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (obj->mat_textures.find(mat_name) != obj->mat_textures.end()) {
-		obj->mat_textures[mat_name]->bind();
+	if (obj->matTextures.find(mat_name) != obj->matTextures.end()) {
+		obj->matTextures[mat_name]->bind();
 		program->set("diffuse_map", 0);
 
 	} else {
@@ -260,8 +260,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (obj->mat_specular.find(mat_name) != obj->mat_specular.end()) {
-		obj->mat_specular[mat_name]->bind();
+	if (obj->matSpecular.find(mat_name) != obj->matSpecular.end()) {
+		obj->matSpecular[mat_name]->bind();
 		program->set("specular_map", 1);
 
 	} else {
@@ -270,8 +270,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE2);
-	if (obj->mat_normal.find(mat_name) != obj->mat_normal.end()) {
-		obj->mat_normal[mat_name]->bind();
+	if (obj->matNormal.find(mat_name) != obj->matNormal.end()) {
+		obj->matNormal[mat_name]->bind();
 		program->set("normal_map", 2);
 
 	} else {
@@ -280,8 +280,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE3);
-	if (obj->mat_ao.find(mat_name) != obj->mat_ao.end()) {
-		obj->mat_ao[mat_name]->bind();
+	if (obj->matAo.find(mat_name) != obj->matAo.end()) {
+		obj->matAo[mat_name]->bind();
 		program->set("ambient_occ_map", 3);
 
 	} else {
@@ -290,8 +290,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE4);
-	if (obj->mat_emissive.find(mat_name) != obj->mat_emissive.end()) {
-		obj->mat_emissive[mat_name]->bind();
+	if (obj->matEmissive.find(mat_name) != obj->matEmissive.end()) {
+		obj->matEmissive[mat_name]->bind();
 		program->set("emissive_map", 4);
 
 	} else {

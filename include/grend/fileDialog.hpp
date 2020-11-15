@@ -8,9 +8,9 @@
 
 namespace grendx {
 
-class file_dialog {
+class fileDialog {
 	public:
-		enum ent_type {
+		enum entType {
 			Directory,
 			Model,
 			Map,
@@ -21,20 +21,20 @@ class file_dialog {
 		struct f_dirent {
 			std::string name;
 			size_t size;
-			enum ent_type type;
+			enum entType type;
 		};
 
-		file_dialog(std::string t = "Select File") : title(t) {
-			current_dir[0] = '\0';
+		fileDialog(std::string t = "Select File") : title(t) {
+			currentDir[0] = '\0';
 			chdir(".");
 		};
 
-		bool prompt_filename(void);
+		bool promptFilename(void);
 		void show(void);
 		void clear(void);
 		void chdir(std::string dir);
 		void listdir(void);
-		void handle_doubleclicken(struct f_dirent& ent);
+		void handleDoubleclick(struct f_dirent& ent);
 		void select(struct f_dirent& ent);
 
 		bool selected = false;
@@ -43,11 +43,11 @@ class file_dialog {
 
 	private:
 		bool active = false;
-		int cursor_pos = -1;
+		int cursorPos = -1;
 
 		enum { FD_PATH_MAX = 256, };
-		char current_dir[FD_PATH_MAX];
-		std::vector<struct f_dirent> dir_contents;
+		char currentDir[FD_PATH_MAX];
+		std::vector<struct f_dirent> dirContents;
 };
 
 // namespace grendx

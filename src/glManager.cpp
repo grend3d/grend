@@ -11,67 +11,67 @@
 
 namespace grendx {
 
-static cooked_mesh_map  cooked_meshes;
-static cooked_model_map cooked_models;
+static cookedMeshMap  cookedMeshes;
+static cookedModelMap cookedModels;
 
-static std::vector<GLfloat> cooked_joints;
-static std::vector<GLfloat> cooked_vertprops;
-static std::vector<GLuint> cooked_elements;
+static std::vector<GLfloat> cookedJoints;
+static std::vector<GLfloat> cookedVertprops;
+static std::vector<GLuint> cookedElements;
 
-static Buffer::ptr cooked_vertprops_vbo;
-static Buffer::ptr cooked_element_vbo;
-static Buffer::ptr cooked_joints_vbo;
-static Buffer::ptr screenquad_vbo;
-static Vao::ptr screenquad_vao;
+static Buffer::ptr cookedVertprops_vbo;
+static Buffer::ptr cookedElementVbo;
+static Buffer::ptr cookedJoints_vbo;
+static Buffer::ptr screenquadVbo;
+static Vao::ptr screenquadVao;
 
 // cache of features currently enabled
-static std::set<GLenum> feature_cache;
+static std::set<GLenum> featureCache;
 
 // current state
-static Vao::ptr current_vao;
-static GLenum   current_face_order;
+static Vao::ptr currentVao;
+static GLenum   currentFaceOrder;
 
-std::map<uint32_t, Texture::weakptr> texture_cache;
+std::map<uint32_t, Texture::weakptr> textureCache;
 
-void initialize_opengl(void) {
+void initializeOpengl(void) {
 	std::cerr << " # Got here, " << __func__ << std::endl;
 	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
 
 	// make sure we start with a bound VAO
-	bind_vao(gen_vao());
+	bindVao(genVao());
 
 	// initialize state for quad that fills the screen
-	preload_screenquad();
+	preloadScreenquad();
 
-	cooked_vertprops.clear();
-	cooked_elements.clear();
+	cookedVertprops.clear();
+	cookedElements.clear();
 
-	cooked_vertprops_vbo = gen_buffer(GL_ARRAY_BUFFER);
-	cooked_element_vbo = gen_buffer(GL_ELEMENT_ARRAY_BUFFER);
-	cooked_joints_vbo = gen_buffer(GL_ARRAY_BUFFER);
+	cookedVertprops_vbo = genBuffer(GL_ARRAY_BUFFER);
+	cookedElementVbo = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	cookedJoints_vbo = genBuffer(GL_ARRAY_BUFFER);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void compile_meshes(std::string objname, mesh_map& meshies) {
+void compileMeshes(std::string objname, meshMap& meshies) {
 	for (const auto& [name, mesh] : meshies) {
-		compiled_mesh::ptr foo = compiled_mesh::ptr(new compiled_mesh());
+		compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 		std::string meshname = objname + "." + name;
 		std::cerr << ">>> compiling mesh " << meshname << std::endl;
 
 		mesh->comped_mesh = foo;
 		mesh->compiled = true;
 
-		//foo.elements_size = x.second.faces.size() * sizeof(GLushort);
-		foo->elements_size = mesh->faces.size();
-		foo->elements_offset = reinterpret_cast<void*>
-		                      (cooked_elements.size() * sizeof(GLuint));
-		cooked_elements.insert(cooked_elements.end(), mesh->faces.begin(),
-		                                              mesh->faces.end());
+		//foo.elementsSize = x.second.faces.size() * sizeof(GLushort);
+		foo->elementsSize = mesh->faces.size();
+		foo->elementsOffset = reinterpret_cast<void*>
+		                      (cookedElements.size() * sizeof(GLuint));
+		cookedElements.insert(cookedElements.end(), mesh->faces.begin(),
+		                                            mesh->faces.end());
 		foo->material = mesh->material;
-		cooked_meshes[meshname] = foo;
+		cookedMeshes[meshname] = foo;
 	}
-	//fprintf(stderr, " > elements size %lu\n", cooked_elements.size());
+	//fprintf(stderr, " > elements size %lu\n", cookedElements.size());
 }
 
 // TODO: move
@@ -118,9 +118,9 @@ Texture::ptr texcache(const materialTexture& tex, bool srgb) {
 	}
 
 	uint32_t hash = dumbhash(tex.pixels);
-	auto it = texture_cache.find(hash);
+	auto it = textureCache.find(hash);
 
-	if (it != texture_cache.end()) {
+	if (it != textureCache.end()) {
 		if (auto observe = it->second.lock()) {
 			static const unsigned sizes[4] = {256, 512, 2048, 4096};
 			fprintf(stderr, "texture cache hit: %08x (%uK)\n",
@@ -129,15 +129,15 @@ Texture::ptr texcache(const materialTexture& tex, bool srgb) {
 		}
 	}
 
-	Texture::ptr ret = gen_texture();
+	Texture::ptr ret = genTexture();
 
-	texture_cache[hash] = ret;
+	textureCache[hash] = ret;
 	ret->buffer(tex, srgb);
 
 	return ret;
 }
 
-void compile_model(std::string name, gameModel::ptr model) {
+void compileModel(std::string name, gameModel::ptr model) {
 	std::cerr << " >>> compiling " << name << std::endl;
 
 	assert(model->vertices.size() == model->normals.size());
@@ -145,22 +145,22 @@ void compile_model(std::string name, gameModel::ptr model) {
 	//assert(model->vertices.size() == model->tangents.size());
 	//assert(model->vertices.size() == model->bitangents.size());
 
-	compiled_model::ptr obj = compiled_model::ptr(new compiled_model());
+	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
 	model->comped_model = obj;
 	model->compiled = true;
 	// TODO: might be able to clear vertex info after compiling here
-	obj->vertices_size = model->vertices.size() * VERTPROP_SIZE;
+	obj->verticesSize = model->vertices.size() * VERTPROP_SIZE;
 
-	size_t offset = cooked_vertprops.size() * sizeof(GLfloat);
+	size_t offset = cookedVertprops.size() * sizeof(GLfloat);
 
 	auto offset_ptr = [] (uintptr_t off) {
 		return reinterpret_cast<void*>(off);
 	};
 
-	obj->vertices_offset   = offset_ptr(offset);
-	obj->normals_offset    = offset_ptr(offset + sizeof(glm::vec3[1]));
-	obj->tangents_offset   = offset_ptr(offset + sizeof(glm::vec3[2]));
-	obj->texcoords_offset  = offset_ptr(offset + sizeof(glm::vec3[3]));
+	obj->verticesOffset   = offset_ptr(offset);
+	obj->normalsOffset    = offset_ptr(offset + sizeof(glm::vec3[1]));
+	obj->tangentsOffset   = offset_ptr(offset + sizeof(glm::vec3[2]));
+	obj->texcoordsOffset  = offset_ptr(offset + sizeof(glm::vec3[3]));
 
 	// XXX: glm vectors don't have an iterator
 	auto push_vec = [&] (auto& props, const auto& vec) {
@@ -170,29 +170,29 @@ void compile_model(std::string name, gameModel::ptr model) {
 	};
 
 	for (unsigned i = 0; i < model->vertices.size(); i++) {
-		push_vec(cooked_vertprops, model->vertices[i]);
-		push_vec(cooked_vertprops, model->normals[i]);
-		push_vec(cooked_vertprops, model->tangents[i]);
-		push_vec(cooked_vertprops, model->texcoords[i]);
+		push_vec(cookedVertprops, model->vertices[i]);
+		push_vec(cookedVertprops, model->normals[i]);
+		push_vec(cookedVertprops, model->tangents[i]);
+		push_vec(cookedVertprops, model->texcoords[i]);
 	}
 
 	if (model->haveJoints) {
 		std::cerr << " > have joints, " << model->joints.size()
 			<< " of em" << std::endl;
-		size_t jointoff = cooked_joints.size() * sizeof(GLfloat);
+		size_t jointoff = cookedJoints.size() * sizeof(GLfloat);
 
 		obj->haveJoints = true;
-		obj->joints_offset  = offset_ptr(jointoff);
-		obj->weights_offset = offset_ptr(jointoff + sizeof(glm::vec4[1]));
+		obj->jointsOffset  = offset_ptr(jointoff);
+		obj->weightsOffset = offset_ptr(jointoff + sizeof(glm::vec4[1]));
 
 		for (unsigned i = 0; i < model->joints.size(); i++) {
-			push_vec(cooked_joints, model->joints[i]);
-			push_vec(cooked_joints, model->weights[i]);
+			push_vec(cookedJoints, model->joints[i]);
+			push_vec(cookedJoints, model->weights[i]);
 		}
 	}
 
 	// collect mesh subnodes from the model
-	mesh_map meshes;
+	meshMap meshes;
 	for (auto& [meshname, ptr] : model->nodes) {
 		if (ptr->type == gameObject::objType::Mesh) {
 			// TODO: mesh naming is kind of crap
@@ -204,8 +204,8 @@ void compile_model(std::string name, gameModel::ptr model) {
 		}
 	}
 
-	//compile_meshes(name, model->meshes);
-	compile_meshes(name, meshes);
+	//compileMeshes(name, model->meshes);
+	compileMeshes(name, meshes);
 
 	/*
 	// copy mesh names
@@ -222,104 +222,104 @@ void compile_model(std::string name, gameModel::ptr model) {
 		obj->materials[name].copy_properties(mat);
 
 		if (mat.diffuseMap.loaded()) {
-			obj->mat_textures[name] = texcache(mat.diffuseMap, true/*srgb*/);
+			obj->matTextures[name] = texcache(mat.diffuseMap, true/*srgb*/);
 		}
 
 		if (mat.metalRoughnessMap.loaded()) {
-			obj->mat_specular[name] = texcache(mat.metalRoughnessMap);
+			obj->matSpecular[name] = texcache(mat.metalRoughnessMap);
 		}
 
 		if (mat.normalMap.loaded()) {
-			obj->mat_normal[name]   = texcache(mat.normalMap);
+			obj->matNormal[name]   = texcache(mat.normalMap);
 		}
 
 		if (mat.ambientOcclusionMap.loaded()) {
-			obj->mat_ao[name]       = texcache(mat.ambientOcclusionMap);
+			obj->matAo[name]       = texcache(mat.ambientOcclusionMap);
 		}
 
 		if (mat.emissiveMap.loaded()) {
 			// TODO: clearer sRGB flag
-			obj->mat_emissive[name] = texcache(mat.emissiveMap, true /* srgb */);
+			obj->matEmissive[name] = texcache(mat.emissiveMap, true /* srgb */);
 		}
 	}
 
-	cooked_models[name] = obj;
+	cookedModels[name] = obj;
 }
 
-void compile_models(model_map& models) {
+void compileModels(modelMap& models) {
 	for (const auto& x : models) {
-		compile_model(x.first, x.second);
+		compileModel(x.first, x.second);
 	}
 }
 
-Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh::ptr mesh) {
+Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	if (mesh == nullptr) {
 		std::cerr << "/!\\ Have broken mesh name..." << std::endl;
-		return current_vao;
+		return currentVao;
 	}
 
-	Vao::ptr orig_vao = current_vao;
-	Vao::ptr ret = bind_vao(gen_vao());
+	Vao::ptr orig_vao = currentVao;
+	Vao::ptr ret = bindVao(genVao());
 
-	//bind_vbo(cooked_element_vbo, GL_ELEMENT_ARRAY_BUFFER);
-	cooked_element_vbo->bind();
+	//bind_vbo(cookedElementVbo, GL_ELEMENT_ARRAY_BUFFER);
+	cookedElementVbo->bind();
 	glEnableVertexAttribArray(VAO_ELEMENTS);
 	glVertexAttribPointer(VAO_ELEMENTS, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
-	                      mesh->elements_offset);
+	                      mesh->elementsOffset);
 
-	cooked_vertprops_vbo->bind();
-	//bind_vbo(cooked_vertprops_vbo, GL_ARRAY_BUFFER);
+	cookedVertprops_vbo->bind();
+	//bind_vbo(cookedVertprops_vbo, GL_ARRAY_BUFFER);
 	glEnableVertexAttribArray(VAO_VERTICES);
 	glVertexAttribPointer(VAO_VERTICES, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->vertices_offset);
+	                      obj->verticesOffset);
 
 	glEnableVertexAttribArray(VAO_NORMALS);
 	glVertexAttribPointer(VAO_NORMALS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->normals_offset);
+	                      obj->normalsOffset);
 
 	glEnableVertexAttribArray(VAO_TANGENTS);
 	glVertexAttribPointer(VAO_TANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->tangents_offset);
+	                      obj->tangentsOffset);
 
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
 	glVertexAttribPointer(VAO_TEXCOORDS, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->texcoords_offset);
+	                      obj->texcoordsOffset);
 
 	if (obj->haveJoints) {
-		cooked_joints_vbo->bind();
+		cookedJoints_vbo->bind();
 		glEnableVertexAttribArray(VAO_JOINTS);
 		glVertexAttribPointer(VAO_JOINTS, 4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  obj->joints_offset);
+							  obj->jointsOffset);
 		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
 		glVertexAttribPointer(VAO_JOINT_WEIGHTS,
 		                      4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  obj->weights_offset);
+							  obj->weightsOffset);
 	}
 
-	bind_vao(orig_vao);
+	bindVao(orig_vao);
 	return ret;
 }
 
-Vao::ptr preload_model_vao(compiled_model::ptr obj) {
-	Vao::ptr orig_vao = current_vao;
+Vao::ptr preloadModelVao(compiledModel::ptr obj) {
+	Vao::ptr orig_vao = currentVao;
 
 	for (std::string& mesh_name : obj->meshes) {
 		std::cerr << " # binding mesh " << mesh_name << std::endl;
-		cooked_meshes[mesh_name]->vao
-			= preload_mesh_vao(obj, cooked_meshes[mesh_name]);
+		cookedMeshes[mesh_name]->vao
+			= preloadMeshVao(obj, cookedMeshes[mesh_name]);
 	}
 
 	return orig_vao;
 }
 
-void bind_cooked_meshes(void) {
-	cooked_joints_vbo->buffer(cooked_joints);
-	cooked_vertprops_vbo->buffer(cooked_vertprops);
-	cooked_element_vbo->buffer(cooked_elements);
+void bindCookedMeshes(void) {
+	cookedJoints_vbo->buffer(cookedJoints);
+	cookedVertprops_vbo->buffer(cookedVertprops);
+	cookedElementVbo->buffer(cookedElements);
 
-	for (auto& [name, ptr] : cooked_models) {
+	for (auto& [name, ptr] : cookedModels) {
 		std::cerr << " # binding " << name << std::endl;
-		ptr->vao = preload_model_vao(ptr);
+		ptr->vao = preloadModelVao(ptr);
 	}
 }
 
@@ -333,12 +333,12 @@ static std::vector<GLfloat> screenquad_data = {
 	-1, -1,  0, 0, 0,
 };
 
-void preload_screenquad(void) {
-	screenquad_vbo = gen_buffer(GL_ARRAY_BUFFER);
-	Vao::ptr orig_vao = current_vao;
-	screenquad_vao = bind_vao(gen_vao());
+void preloadScreenquad(void) {
+	screenquadVbo = genBuffer(GL_ARRAY_BUFFER);
+	Vao::ptr orig_vao = currentVao;
+	screenquadVao = bindVao(genVao());
 
-	screenquad_vbo->buffer(screenquad_data);
+	screenquadVbo->buffer(screenquad_data);
 	glEnableVertexAttribArray(VAO_QUAD_VERTICES);
 	glVertexAttribPointer(VAO_QUAD_VERTICES,
 	                      3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
@@ -347,11 +347,11 @@ void preload_screenquad(void) {
 	                      2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
-	bind_vao(orig_vao);
+	bindVao(orig_vao);
 }
 
-void draw_screenquad(void) {
-	bind_vao(get_screenquad_vao());
+void drawScreenquad(void) {
+	bindVao(getScreenquadVao());
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	DO_ERROR_CHECK();
 }
@@ -389,47 +389,47 @@ void check_errors(int line, const char *filename, const char *func) {
 }
 
 // TODO: camelCase
-Vao::ptr gen_vao(void) {
+Vao::ptr genVao(void) {
 	GLuint temp;
 	glGenVertexArrays(1, &temp);
 	DO_ERROR_CHECK();
 	return Vao::ptr(new Vao(temp));
 }
 
-Buffer::ptr gen_buffer(GLuint type, GLenum use) {
+Buffer::ptr genBuffer(GLuint type, GLenum use) {
 	GLuint temp;
 	glGenBuffers(1, &temp);
 	return std::make_shared<Buffer>(temp, type, use);
 }
 
-Texture::ptr gen_texture(void) {
+Texture::ptr genTexture(void) {
 	GLuint temp;
 	glGenTextures(1, &temp);
 	DO_ERROR_CHECK();
 	return Texture::ptr(new Texture(temp));
 }
 
-Shader::ptr gen_shader(GLuint type) {
+Shader::ptr genShader(GLuint type) {
 	GLuint temp = glCreateShader(type);
 	DO_ERROR_CHECK();
 	return Shader::ptr(new Shader(temp));
 }
 
-Program::ptr gen_program(void) {
+Program::ptr genProgram(void) {
 	GLuint temp = glCreateProgram();
 	DO_ERROR_CHECK();
 	return Program::ptr(new Program(temp));
 }
 
-Framebuffer::ptr gen_framebuffer(void) {
+Framebuffer::ptr genFramebuffer(void) {
 	GLuint temp;
 	glGenFramebuffers(1, &temp);
 	DO_ERROR_CHECK();
 	return Framebuffer::ptr(new Framebuffer(temp));
 }
 
-Texture::ptr gen_texture_color(unsigned width, unsigned height, GLenum format) {
-	Texture::ptr ret = gen_texture();
+Texture::ptr genTextureColor(unsigned width, unsigned height, GLenum format) {
+	Texture::ptr ret = genTexture();
 
 	glBindTexture(GL_TEXTURE_2D, ret->obj);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
@@ -441,8 +441,8 @@ Texture::ptr gen_texture_color(unsigned width, unsigned height, GLenum format) {
 }
 
 Texture::ptr
-gen_texture_depth_stencil(unsigned width, unsigned height, GLenum format) {
-	Texture::ptr ret = gen_texture();
+genTextureDepthStencil(unsigned width, unsigned height, GLenum format) {
+	Texture::ptr ret = genTexture();
 
 	glBindTexture(GL_TEXTURE_2D, ret->obj);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
@@ -454,30 +454,30 @@ gen_texture_depth_stencil(unsigned width, unsigned height, GLenum format) {
 	return ret;
 }
 
-Vao::ptr get_current_vao(void) {
-	return current_vao;
+Vao::ptr getCurrentVao(void) {
+	return currentVao;
 }
 
-Vao::ptr get_screenquad_vao(void) {
-	return screenquad_vao;
+Vao::ptr getScreenquadVao(void) {
+	return screenquadVao;
 }
 
-Vao::ptr bind_vao(Vao::ptr v) {
-	current_vao = v;
+Vao::ptr bindVao(Vao::ptr v) {
+	currentVao = v;
 	v->bind();
 	DO_ERROR_CHECK();
 	return v;
 }
 
-GLenum surface_gl_format(SDL_Surface *surf) {
-	return surface_gl_format(surf->format->BytesPerPixel);
+GLenum surfaceGlFormat(SDL_Surface *surf) {
+	return surfaceGlFormat(surf->format->BytesPerPixel);
 }
 
-GLenum surface_gl_format(const materialTexture& tex) {
-	return surface_gl_format(tex.channels);
+GLenum surfaceGlFormat(const materialTexture& tex) {
+	return surfaceGlFormat(tex.channels);
 }
 
-GLenum surface_gl_format(int channels) {
+GLenum surfaceGlFormat(int channels) {
 	switch (channels) {
 		case 1: return GL_RED;
 		case 2: return GL_RG;
@@ -489,14 +489,14 @@ GLenum surface_gl_format(int channels) {
 	return GL_RGBA;
 }
 
-void set_face_order(GLenum face_order) {
-	if (face_order != current_face_order) {
-		current_face_order = face_order;
+void setFaceOrder(GLenum face_order) {
+	if (face_order != currentFaceOrder) {
+		currentFaceOrder = face_order;
 		glFrontFace(face_order);
 	}
 }
 
-void set_default_gl_flags(void) {
+void setDefaultGlFlags(void) {
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 	disable(GL_CULL_FACE);
@@ -519,18 +519,18 @@ void set_default_gl_flags(void) {
 }
 
 void enable(GLenum feature) {
-	if (feature_cache.find(feature) == feature_cache.end()) {
+	if (featureCache.find(feature) == featureCache.end()) {
 		glEnable(feature);
-		feature_cache.insert(feature);
+		featureCache.insert(feature);
 	}
 }
 
 void disable(GLenum feature) {
-	auto it = feature_cache.find(feature);
+	auto it = featureCache.find(feature);
 
-	if (it != feature_cache.end()) {
+	if (it != featureCache.end()) {
 		glDisable(feature);
-		feature_cache.erase(it);
+		featureCache.erase(it);
 	}
 }
 

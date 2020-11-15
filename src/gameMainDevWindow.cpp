@@ -18,11 +18,11 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
 #error "No physics implementation defined!"
 #endif
 
-	state  = game_state::ptr(new game_state());
+	state  = gameState::ptr(new gameState());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));
 
-	editor = gameView::ptr(new game_editor(this));
+	editor = gameView::ptr(new gameEditor(this));
 	view   = editor;
 	audio->setCamera(view->cam);
 

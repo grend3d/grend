@@ -280,13 +280,13 @@ static void drawMesh(renderFlags& flags,
 
 	// TODO: need to keep track of the model face order
 	if (flags.cull_faces) {
-		set_face_order(inverted? GL_CW : GL_CCW);
+		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
 	auto& cmesh = mesh->comped_mesh;
-	bind_vao(cmesh->vao);
-	glDrawElements(GL_TRIANGLES, cmesh->elements_size,
-				   GL_UNSIGNED_INT, cmesh->elements_offset);
+	bindVao(cmesh->vao);
+	glDrawElements(GL_TRIANGLES, cmesh->elementsSize,
+				   GL_UNSIGNED_INT, cmesh->elementsOffset);
 }
 
 unsigned renderQueue::flush(unsigned width,

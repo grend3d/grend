@@ -33,7 +33,7 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
 	        tex.width, tex.height, tex.channels);
 
-	GLenum texformat = surface_gl_format(tex);
+	GLenum texformat = surfaceGlFormat(tex);
 	bind();
 
 #ifdef NO_FORMAT_CONVERSION
@@ -70,10 +70,10 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	/*
 	SDL_FreeSurface(texture);
 
-	texture_cache[filename] = temp;
+	textureCache[filename] = temp;
 	*/
 	// TODO:
-	//texture_cache[texhash] = temp;
+	//textureCache[texhash] = temp;
 	//return temp;
 
 	size_t roughsize = tex.pixels.size() * 1.33;
@@ -112,7 +112,7 @@ void Texture::cubemap(std::string directory, std::string extension) {
 		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        width, height, 0, channels);
 
-		GLenum texformat = surface_gl_format(channels);
+		GLenum texformat = surfaceGlFormat(channels);
 
 #ifdef NO_FORMAT_CONVERSION
 		srgb_to_linear(surf, width*height*channels);
@@ -150,7 +150,7 @@ void Texture::cubemap(std::string directory, std::string extension) {
 				width, height, 0, channels);
 
 
-			GLenum texformat = surface_gl_format(channels);
+			GLenum texformat = surfaceGlFormat(channels);
 #ifdef NO_FORMAT_CONVERSION
 			// again, SRGB fallback, also maybe have a function to init textures
 			glTexImage2D(direction, i, texformat, width, height, 0,

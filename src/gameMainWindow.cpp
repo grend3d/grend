@@ -19,7 +19,7 @@ gameMainWindow::gameMainWindow() : gameMain("grend") {
 #error "No physics implementation defined!"
 #endif
 
-	state  = game_state::ptr(new game_state());
+	state  = gameState::ptr(new gameState());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));
 }

@@ -6,11 +6,11 @@ using namespace grendx;
 
 skybox::skybox() {
 	model = generate_cuboid(1, 1, 1); // unit cube
-	compile_model("defaultSkyboxCuboid", model);
+	compileModel("defaultSkyboxCuboid", model);
 	// TODO: need like a "bind new meshes" function
-	bind_cooked_meshes();
+	bindCookedMeshes();
 
-	program = load_program(
+	program = loadProgram(
 		GR_PREFIX "shaders/out/skybox.vert",
 		GR_PREFIX "shaders/out/skybox.frag"
 	);
@@ -26,7 +26,7 @@ skybox::skybox() {
 	link_program(program);
 	*/
 
-	map = gen_texture();
+	map = genTexture();
 	map->cubemap(GR_PREFIX "assets/tex/cubes/default/", ".png");
 }
 
@@ -48,9 +48,9 @@ void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {
 		std::dynamic_pointer_cast<gameMesh>(model->getNode("mesh"));
 	auto& cmesh = mesh->comped_mesh;
 
-	bind_vao(cmesh->vao);
-	glDrawElements(GL_TRIANGLES, cmesh->elements_size,
-			GL_UNSIGNED_INT, cmesh->elements_offset);
+	bindVao(cmesh->vao);
+	glDrawElements(GL_TRIANGLES, cmesh->elementsSize,
+			GL_UNSIGNED_INT, cmesh->elementsOffset);
 	glDepthMask(GL_TRUE);
 }
 

@@ -52,7 +52,7 @@ void vecGUI::newFrame(int wx, int wy) {
 	// XXX: should this be a seperate function? Or should the caller
 	//      be responsible for setting this up
 	Framebuffer().bind();
-	set_default_gl_flags();
+	setDefaultGlFlags();
 
 	disable(GL_DEPTH_TEST);
 	disable(GL_SCISSOR_TEST);

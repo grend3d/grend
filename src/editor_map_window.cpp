@@ -42,7 +42,7 @@ static const ImGuiTreeNodeFlags base_flags
 	| ImGuiTreeNodeFlags_OpenOnDoubleClick
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
-void game_editor::addnodes_rec(const std::string& name,
+void gameEditor::addnodesRec(const std::string& name,
                                gameObject::ptr obj,
                                std::set<gameObject::ptr>& selectedPath)
 {
@@ -63,7 +63,7 @@ void game_editor::addnodes_rec(const std::string& name,
 			}
 
 			for (auto& [subname, ptr] : obj->nodes) {
-				addnodes_rec(subname, ptr, selectedPath);
+				addnodesRec(subname, ptr, selectedPath);
 			}
 
 			ImGui::TreePop();
@@ -71,18 +71,18 @@ void game_editor::addnodes_rec(const std::string& name,
 	}
 }
 
-void game_editor::addnodes(std::string name, gameObject::ptr obj) {
+void gameEditor::addnodes(std::string name, gameObject::ptr obj) {
 	std::set<gameObject::ptr> path;
 
 	for (gameObject::ptr p = selectedNode; p; p = p->parent) {
 		path.insert(p);
 	}
 
-	addnodes_rec(name, obj, path);
+	addnodesRec(name, obj, path);
 }
 
-void game_editor::map_window(gameMain *game) {
-	ImGui::Begin("Objects", &show_map_window);
+void gameEditor::mapWindow(gameMain *game) {
+	ImGui::Begin("Objects", &showMapWindow);
 	addnodes("Objects", game->state->rootnode);
 	ImGui::End();
 }

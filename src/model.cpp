@@ -733,8 +733,8 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 	out_model->materials[matidxname] = mod_mat;
 }
 
-grendx::model_map grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
-	model_map ret;
+grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
+	modelMap ret;
 
 	for (auto& mesh : tgltf_model.meshes) {
 		grendx::gameModel::ptr curModel =
@@ -926,7 +926,7 @@ static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
 	assert_type(acc.type, expected);
 }
 
-static void assert_component_type(tinygltf::Model& mod, int accidx, int expected)
+static void assert_componentType(tinygltf::Model& mod, int accidx, int expected)
 {
 	check_index(mod.accessors, accidx);
 	auto& acc = mod.accessors[accidx];
@@ -1041,7 +1041,7 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 	*/
 
 	assert_accessor_type(gmod, skin.inverseBindMatrices, TINYGLTF_TYPE_MAT4);
-	assert_component_type(gmod, skin.inverseBindMatrices,
+	assert_componentType(gmod, skin.inverseBindMatrices,
 	                      TINYGLTF_COMPONENT_TYPE_FLOAT);
 	gltf_unpack_buffer(gmod, skin.inverseBindMatrices, obj->inverseBind);
 
@@ -1079,7 +1079,7 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 
 static gameObject::ptr
 load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
-                          model_map& models,
+                          modelMap& models,
                           animation_map& anims,
                           int nodeidx)
 {
@@ -1143,7 +1143,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 	// TODO: range check
 	auto& sampler = anim.samplers[chan.sampler];
 	assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
-	assert_component_type(gmod, sampler.input,
+	assert_componentType(gmod, sampler.input,
 		TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 	animation::ptr chananim;
@@ -1155,7 +1155,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		chananim = objanim;
 
 		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-		assert_component_type(gmod, sampler.output,
+		assert_componentType(gmod, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
 		gltf_unpack_buffer(gmod, sampler.output, objanim->translations);
 		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
@@ -1167,7 +1167,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		chananim = objanim;
 
 		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC4);
-		assert_component_type(gmod, sampler.output,
+		assert_componentType(gmod, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
 		gltf_unpack_buffer(gmod, sampler.output, objanim->rotations);
 		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
@@ -1179,7 +1179,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		chananim = objanim;
 		
 		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-		assert_component_type(gmod, sampler.output,
+		assert_componentType(gmod, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
 		gltf_unpack_buffer(gmod, sampler.output, objanim->scales);
 		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
@@ -1231,7 +1231,7 @@ static animation_map collectAnimations(tinygltf::Model& gmod) {
 static gameImport::ptr
 load_gltf_scene_nodes(std::string filename,
                       tinygltf::Model& gmod,
-                      model_map& models)
+                      modelMap& models)
 {
 	gameImport::ptr ret = std::make_shared<gameImport>(filename);
 	auto anims = collectAnimations(gmod);
@@ -1280,13 +1280,13 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 	return tgltf_model;
 }
 
-static void updateModelSources(grendx::model_map& models, std::string filename) {
+static void updateModelSources(grendx::modelMap& models, std::string filename) {
 	for (auto& [name, model] : models) {
 		model->sourceFile = filename;
 	}
 }
 
-grendx::model_map grendx::load_gltf_models(std::string filename) {
+grendx::modelMap grendx::load_gltf_models(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
 	auto models = load_gltf_models(gmod);
 	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
@@ -1295,10 +1295,10 @@ grendx::model_map grendx::load_gltf_models(std::string filename) {
 	return models;
 }
 
-std::pair<grendx::gameImport::ptr, grendx::model_map>
+std::pair<grendx::gameImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
 	tinygltf::Model gmod = open_gltf_model(filename);
-	grendx::model_map models = load_gltf_models(gmod);
+	grendx::modelMap models = load_gltf_models(gmod);
 	gameImport::ptr ret = load_gltf_scene_nodes(filename, gmod, models);
 
 	updateModelSources(models, filename);

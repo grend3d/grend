@@ -10,15 +10,15 @@
 
 using namespace grendx;
 
-static file_dialog open_dialog("Open File");
-static file_dialog save_as_dialog("Save As...");
+static fileDialog open_dialog("Open File");
+static fileDialog save_as_dialog("Save As...");
 
-static file_dialog import_model_dialog("Import Model");
-static file_dialog import_scene_dialog("Import Scene");
-static file_dialog import_map_dialog("Import Map");
+static fileDialog import_model_dialog("Import Model");
+static fileDialog import_scene_dialog("Import Scene");
+static fileDialog import_map_dialog("Import Map");
 
-static void handle_prompts(game_editor *editor, gameMain *game) {
-	if (open_dialog.prompt_filename()) {
+static void handle_prompts(gameEditor *editor, gameMain *game) {
+	if (open_dialog.promptFilename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
@@ -28,7 +28,7 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 			= loadMap(game, open_dialog.selection);
 	}
 
-	if (save_as_dialog.prompt_filename()) {
+	if (save_as_dialog.promptFilename()) {
 		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
 
 		// TODO: some way to save a subnode as it's own map
@@ -37,7 +37,7 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		save_as_dialog.clear();
 	}
 
-	if (import_model_dialog.prompt_filename()) {
+	if (import_model_dialog.promptFilename()) {
 		std::cout << "Importing a thing! at "
 		          << import_model_dialog.selection << std::endl;
 		import_model_dialog.clear();
@@ -46,10 +46,10 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		auto obj = loadModel(import_model_dialog.selection);
 		std::string name = "model["+std::to_string(obj->id)+"]";
 		setNode(name, editor->selectedNode, obj);
-		bind_cooked_meshes();
+		bindCookedMeshes();
 	}
 
-	if (import_scene_dialog.prompt_filename()) {
+	if (import_scene_dialog.promptFilename()) {
 		std::cout << "Importing a scene! at "
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
@@ -57,17 +57,17 @@ static void handle_prompts(game_editor *editor, gameMain *game) {
 		auto obj = loadScene(import_scene_dialog.selection);
 		std::string name = "import["+std::to_string(obj->id)+"]";
 		setNode(name, editor->selectedNode, obj);
-		bind_cooked_meshes();
+		bindCookedMeshes();
 	}
 
-	if (import_map_dialog.prompt_filename()) {
+	if (import_map_dialog.promptFilename()) {
 		std::cout << "Importing a map! at "
 		          << import_map_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 	}
 }
 
-void game_editor::menubar(gameMain *game) {
+void gameEditor::menubar(gameMain *game) {
 	static bool demo_window = false;
 
 	if (ImGui::BeginMainMenuBar()) {
@@ -94,7 +94,7 @@ void game_editor::menubar(gameMain *game) {
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reload_shaders(game); }
+			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reloadShaders(game); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
@@ -121,17 +121,17 @@ void game_editor::menubar(gameMain *game) {
 
 			ImGui::SliderFloat("Snap increment", &fidelity,
 			                  0.5f, 50.f, "%.1f");
-			ImGui::SliderFloat("Movement speed", &movement_speed,
+			ImGui::SliderFloat("Movement speed", &movementSpeed,
 			                  1.f, 100.f, "%.1f");
 			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
-			ImGui::SliderFloat("Light threshold", &light_threshold,
+			ImGui::SliderFloat("Light threshold", &lightThreshold,
 			                   0.001, 1.f);
 
 			ImGui::Combo("Projection", &proj, "Perspective\0Orthographic\0");
 			ImGui::SliderFloat("Projection scale", &scale, 0.001, 0.2f);
 
-			ImGui::Checkbox("Show environment probes", &show_probes);
-			ImGui::Checkbox("Show lights", &show_lights);
+			ImGui::Checkbox("Show environment probes", &showProbes);
+			ImGui::Checkbox("Show lights", &showLights);
 
 			ImGui::EndMenu();
 
@@ -141,37 +141,37 @@ void game_editor::menubar(gameMain *game) {
 
 		if (ImGui::BeginMenu("Objects")) {
 			if (ImGui::MenuItem("Map editor", "o"))
-				show_map_window = true;
+				showMapWindow = true;
 			if (ImGui::MenuItem("Object editor", "r"))
-				show_object_editor_window = true;
+				showObjectEditorWindow = true;
 			if (ImGui::MenuItem("Object selection"))
-				show_object_select_window = true;
+				showObjectSelectWindow = true;
 
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Add object", "lo")) {
-				set_mode(mode::AddObject);
+				setMode(mode::AddObject);
 			}
 
 			if (ImGui::MenuItem("Add point light", "lp")) {
-				set_mode(mode::AddPointLight);
+				setMode(mode::AddPointLight);
 			}
 
 			if (ImGui::MenuItem("Add spot light", "ls")) {
-				set_mode(mode::AddSpotLight);
+				setMode(mode::AddSpotLight);
 			}
 
 			if (ImGui::MenuItem("Add directional light", "ld")) {
-				set_mode(mode::AddDirectionalLight);
+				setMode(mode::AddDirectionalLight);
 			}
 
 			if (ImGui::MenuItem("Add reflection probe", "lr")) {
-				set_mode(mode::AddReflectionProbe);
+				setMode(mode::AddReflectionProbe);
 			}
 
 			if (ImGui::MenuItem("Add irradiance probe", "li")) {
-				set_mode(mode::AddIrradianceProbe);
+				setMode(mode::AddIrradianceProbe);
 			}
 
 			ImGui::EndMenu();
@@ -235,7 +235,7 @@ void game_editor::menubar(gameMain *game) {
 			"Move bounding box lower Z bound\0"
 			"\0");
 
-		set_mode((enum mode)mode);
+		setMode((enum mode)mode);
 		ImGui::EndMainMenuBar();
 	}
 

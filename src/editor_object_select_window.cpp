@@ -6,8 +6,8 @@
 
 using namespace grendx;
 
-void game_editor::object_select_window(gameMain *game) {
-	ImGui::Begin("Loaded Objects", &show_object_select_window);
+void gameEditor::objectSelectWindow(gameMain *game) {
+	ImGui::Begin("Loaded Objects", &showObjectSelectWindow);
 
 	// TODO: another way to select from loaded models
 	for (auto it = models.begin(); it != models.end(); it++) {

@@ -214,7 +214,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 			continue;
 		}
 
-		bind_vao(get_screenquad_vao());
+		bindVao(getScreenquadVao());
 		//glViewport(0, 0, info.size, info.size);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -229,7 +229,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 		convolve->set("rend_y", float(sourceinfo.size));
 		convolve->set("exposure", 1.f);
 
-		draw_screenquad();
+		drawScreenquad();
 	}
 
 	puts("rendered irradiance probe");

@@ -5,17 +5,17 @@
 using namespace grendx;
 
 atlas::atlas(size_t dimension, enum mode m) : tree(dimension) {
-	framebuffer = gen_framebuffer();
+	framebuffer = genFramebuffer();
 	framebuffer->bind();
 
 	if (m == mode::Color) {
 		color_tex =
 			framebuffer->attach(GL_COLOR_ATTACHMENT0,
-				gen_texture_color(dimension, dimension, rgbaf_if_supported()));
+				genTextureColor(dimension, dimension, rgbaf_if_supported()));
 	}
 
 	depth_tex = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, 
-	                gen_texture_depth_stencil(dimension, dimension));
+	                genTextureDepthStencil(dimension, dimension));
 }
 
 bool atlas::bind_atlas_fb(quadtree::node_id id) {

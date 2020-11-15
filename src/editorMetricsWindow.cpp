@@ -6,8 +6,8 @@
 
 using namespace grendx;
 
-void game_editor::metricsWindow(gameMain *game) {
-	ImGui::Begin("Engine metrics", &show_metrics_window);
+void gameEditor::metricsWindow(gameMain *game) {
+	ImGui::Begin("Engine metrics", &showMetricsWindow);
 
 	std::pair<float, float> minmax = {0, 0}; // TODO: implementation
 	float fps = game->frame_timer.average();

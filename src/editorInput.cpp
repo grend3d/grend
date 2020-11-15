@@ -5,7 +5,7 @@
 
 using namespace grendx;
 
-void game_editor::handleSelectObject(gameMain *game) {
+void gameEditor::handleSelectObject(gameMain *game) {
 	// TODO: functions for this
 	int x, y;
 	int win_x, win_y;
@@ -20,9 +20,9 @@ void game_editor::handleSelectObject(gameMain *game) {
 
 	if (clicked) {
 		clicked->onLeftClick();
-		clicked_x = (x*1.f / win_x);
-		clicked_y = ((win_y - y)*1.f / win_y);
-		click_depth = glm::distance(clicked->transform.position, cam->position());
+		clickedX = (x*1.f / win_x);
+		clickedY = ((win_y - y)*1.f / win_y);
+		clickDepth = glm::distance(clicked->transform.position, cam->position());
 
 		if (isUIObject(clicked)) {
 			entbuf = selectedNode->transform;
@@ -52,7 +52,7 @@ static bool imguiWantsMouse(void) {
 }
 
 
-static void handleAddNode(game_editor *editor,
+static void handleAddNode(gameEditor *editor,
                           std::string name,
                           gameObject::ptr obj)
 {
@@ -64,7 +64,7 @@ static void handleAddNode(game_editor *editor,
 };
 
 template <class T>
-static bindFunc makeClicker(game_editor *editor,
+static bindFunc makeClicker(gameEditor *editor,
                             gameMain *game,
                             std::string name)
 {
@@ -76,14 +76,14 @@ static bindFunc makeClicker(game_editor *editor,
 			auto ptr = std::make_shared<T>();
 			std::string nodename = name + std::to_string(ptr->id);
 			handleAddNode(editor, nodename, ptr);
-			return (int)game_editor::mode::View;
+			return (int)gameEditor::mode::View;
 		}
 
 		return MODAL_NO_CHANGE;
 	};
 }
 
-void game_editor::loadInputBindings(gameMain *game) {
+void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_WINDOWEVENT
@@ -105,12 +105,12 @@ void game_editor::loadInputBindings(gameMain *game) {
 				auto v = cam->velocity();
 
 				switch (ev.key.keysym.sym) {
-					case SDLK_w: v.z =  movement_speed; break;
-					case SDLK_s: v.z = -movement_speed; break;
-					case SDLK_a: v.x =  movement_speed; break;
-					case SDLK_d: v.x = -movement_speed; break;
-					case SDLK_q: v.y =  movement_speed; break;
-					case SDLK_e: v.y = -movement_speed; break;
+					case SDLK_w: v.z =  movementSpeed; break;
+					case SDLK_s: v.z = -movementSpeed; break;
+					case SDLK_a: v.x =  movementSpeed; break;
+					case SDLK_d: v.x = -movementSpeed; break;
+					case SDLK_q: v.y =  movementSpeed; break;
+					case SDLK_e: v.y = -movementSpeed; break;
 					default: break;
 				}
 
@@ -139,7 +139,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 			    && ev.key.keysym.sym == SDLK_r
 			    && flags & bindFlags::Control)
 			{
-					reload_shaders(game);
+					reloadShaders(game);
 			}
 			return MODAL_NO_CHANGE;
 		},
@@ -236,7 +236,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_MOUSEWHEEL) {
-				edit_distance -= ev.wheel.y/1.f /* scroll sensitivity */;
+				editDistance -= ev.wheel.y/1.f /* scroll sensitivity */;
 			}
 
 			return MODAL_NO_CHANGE;
@@ -386,7 +386,7 @@ void game_editor::loadInputBindings(gameMain *game) {
 
 				// XXX: no mouse click, pretend there was a click at the center
 				//      for movement purposes
-				clicked_x = clicked_y = 0.5;
+				clickedX = clickedY = 0.5;
 			}
 
 			return ret;
@@ -446,11 +446,11 @@ void game_editor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::MoveAABBNegZ, releaseMove, imguiWantsMouse);
 }
 
-void game_editor::handleInput(gameMain *game, SDL_Event& ev)
+void gameEditor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	ImGui_ImplSDL2_ProcessEvent(&ev);
 	// TODO: camelCase
-	set_mode((enum mode)inputBinds.dispatch(ev));
+	setMode((enum mode)inputBinds.dispatch(ev));
 }
 
 // TODO: move to utility
@@ -466,7 +466,7 @@ static T sign(T x) {
 	}
 }
 
-void game_editor::handleMoveRotate(gameMain *game) {
+void gameEditor::handleMoveRotate(gameMain *game) {
 	int x, y;
 	int win_x, win_y;
 	Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
@@ -474,8 +474,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 
 	float adj_x = x / (1.f*win_x);
 	float adj_y = (win_y - y) / (1.f * win_y);
-	float amount_x = adj_x - clicked_x;
-	float amount_y = adj_y - clicked_y;
+	float amount_x = adj_x - clickedX;
+	float amount_y = adj_y - clickedY;
 	float amount = amount_x + amount_y;
 	float reversed_x;
 	float reversed_y;
@@ -492,8 +492,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 
 			selectedNode->transform.position =
 				entbuf.position
-				+ dir*click_depth*amount_x*reversed_x
-				+ dir*click_depth*amount_y*reversed_y
+				+ dir*clickDepth*amount_x*reversed_x
+				+ dir*clickDepth*amount_y*reversed_y
 				;
 			break;
 
@@ -505,8 +505,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 
 			selectedNode->transform.position =
 				entbuf.position
-				+ dir*click_depth*amount_x*reversed_x
-				+ dir*click_depth*amount_y*reversed_y
+				+ dir*clickDepth*amount_x*reversed_x
+				+ dir*clickDepth*amount_y*reversed_y
 				;
 			break;
 
@@ -518,8 +518,8 @@ void game_editor::handleMoveRotate(gameMain *game) {
 
 			selectedNode->transform.position =
 				entbuf.position
-				+ dir*click_depth*amount_x*reversed_x
-				+ dir*click_depth*amount_y*reversed_y
+				+ dir*clickDepth*amount_x*reversed_x
+				+ dir*clickDepth*amount_y*reversed_y
 				;
 			break;
 

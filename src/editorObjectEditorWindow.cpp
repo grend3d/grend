@@ -92,13 +92,13 @@ static void editModel(gameMain *game, gameModel::ptr model) {
 	}
 }
 
-void game_editor::objectEditorWindow(gameMain *game) {
+void gameEditor::objectEditorWindow(gameMain *game) {
 	if (!selectedNode) {
 		// should check before calling this, but just in case...
 		return;
 	}
 
-	ImGui::Begin("Object editor", &show_object_editor_window, 
+	ImGui::Begin("Object editor", &showObjectEditorWindow, 
 	             ImGuiWindowFlags_AlwaysAutoResize);
 
 	ImGui::Text(selectedNode->typeString().c_str());

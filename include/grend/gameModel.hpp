@@ -70,8 +70,8 @@ struct material {
 
 // TODO: camelCase
 // defined in glManager.hpp
-class compiled_mesh;
-class compiled_model;
+class compiledMesh;
+class compiledModel;
 
 class gameMesh : public gameObject {
 	public:
@@ -84,7 +84,7 @@ class gameMesh : public gameObject {
 			return "Mesh";
 		}
 
-		std::shared_ptr<compiled_mesh> comped_mesh;
+		std::shared_ptr<compiledMesh> comped_mesh;
 		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
@@ -117,7 +117,7 @@ class gameModel : public gameObject {
 		// TODO: some sort of specifier for generated meshes
 		std::string sourceFile = "";
 		bool compiled = false;
-		std::shared_ptr<compiled_model> comped_model;
+		std::shared_ptr<compiledModel> comped_model;
 
 		// TODO: allow attaching shaders to objects
 		//Program::ptr shader = nullptr;
@@ -143,18 +143,18 @@ class gameModel : public gameObject {
 		bool haveAABB = false;
 };
 
-typedef std::map<std::string, gameMesh::ptr> mesh_map;
-typedef std::map<std::string, gameModel::ptr> model_map;
+typedef std::map<std::string, gameMesh::ptr> meshMap;
+typedef std::map<std::string, gameModel::ptr> modelMap;
 
 gameModel::ptr load_object(std::string filename);
 void           load_materials(gameModel::ptr model, std::string filename);
-model_map load_gltf_models(std::string filename);
-model_map load_gltf_models(tinygltf::Model& tgltf_model);
-std::pair<gameImport::ptr, model_map> load_gltf_scene(std::string filename);
+modelMap load_gltf_models(std::string filename);
+modelMap load_gltf_models(tinygltf::Model& tgltf_model);
+std::pair<gameImport::ptr, modelMap> load_gltf_scene(std::string filename);
 // TODO: load scene
 
 // namespace grendx
 }
 
-// handle forward declaration of compiled_model
+// handle forward declaration of compiledModel
 #include <grend/glManager.hpp>

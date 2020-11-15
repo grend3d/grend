@@ -287,27 +287,27 @@ class Framebuffer : public Obj {
 };
 
 // TODO: camelCase
-class compiled_mesh {
+class compiledMesh {
 	public:
-		typedef std::shared_ptr<compiled_mesh> ptr;
-		typedef std::weak_ptr<compiled_mesh> weakptr;
+		typedef std::shared_ptr<compiledMesh> ptr;
+		typedef std::weak_ptr<compiledMesh> weakptr;
 
 		std::string material;
 		Vao::ptr vao;
 
-		GLint elements_size;
-		void *elements_offset;
+		GLint elementsSize;
+		void *elementsOffset;
 };
 
 // TODO: camelCase
-class compiled_model {
+class compiledModel {
 	public:
-		typedef std::shared_ptr<compiled_model> ptr;
-		typedef std::weak_ptr<compiled_model> weakptr;
+		typedef std::shared_ptr<compiledModel> ptr;
+		typedef std::weak_ptr<compiledModel> weakptr;
 
 		//rhandle vao;
 		Vao::ptr vao;
-		GLint vertices_size;
+		GLint verticesSize;
 
 		std::vector<std::string> meshes;
 		// NOTE: duplicating materials here because the model may not be valid
@@ -315,56 +315,56 @@ class compiled_model {
 		//       optimizations to be done in buffering all the material info
 		//       to the shaders during initialization
 		std::map<std::string, material> materials   = {};
-		std::map<std::string, Texture::ptr> mat_textures = {};
-		std::map<std::string, Texture::ptr> mat_specular = {};
-		std::map<std::string, Texture::ptr> mat_normal   = {};
-		std::map<std::string, Texture::ptr> mat_ao       = {};
-		std::map<std::string, Texture::ptr> mat_emissive = {};
+		std::map<std::string, Texture::ptr> matTextures = {};
+		std::map<std::string, Texture::ptr> matSpecular = {};
+		std::map<std::string, Texture::ptr> matNormal   = {};
+		std::map<std::string, Texture::ptr> matAo       = {};
+		std::map<std::string, Texture::ptr> matEmissive = {};
 
-		void *vertices_offset;
-		void *normals_offset;
-		void *texcoords_offset;
-		void *tangents_offset;
-		void *bitangents_offset;
+		void *verticesOffset;
+		void *normalsOffset;
+		void *texcoordsOffset;
+		void *tangentsOffset;
+		void *bitangentsOffset;
 
 		bool haveJoints = false;
-		void *joints_offset;
-		void *weights_offset;
+		void *jointsOffset;
+		void *weightsOffset;
 };
 
 // TODO: weakptr, once model loading stuff is straightened out
-typedef std::map<std::string, compiled_mesh::ptr> cooked_mesh_map;
-typedef std::map<std::string, compiled_model::ptr> cooked_model_map;
+typedef std::map<std::string, compiledMesh::ptr> cookedMeshMap;
+typedef std::map<std::string, compiledModel::ptr> cookedModelMap;
 Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
 
 // defined in gameModel.hpp
 class gameModel;
 
-void initialize_opengl(void);
-void compile_meshes(std::string objname, mesh_map& meshies);
-void compile_model(std::string name, std::shared_ptr<gameModel> mod);
-void compile_models(model_map& models);
-Vao::ptr preload_mesh_vao(compiled_model::ptr obj, compiled_mesh& mesh);
-Vao::ptr preload_model_vao(compiled_model::ptr mesh);
-void bind_cooked_meshes(void);
-Vao::ptr get_current_vao(void);
-Vao::ptr get_screenquad_vao(void);
-Vao::ptr bind_vao(Vao::ptr vao);
-void set_face_order(GLenum face_order);
-void set_default_gl_flags(void);
+void initializeOpengl(void);
+void compileMeshes(std::string objname, meshMap& meshies);
+void compileModel(std::string name, std::shared_ptr<gameModel> mod);
+void compileModels(modelMap& models);
+Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh& mesh);
+Vao::ptr preloadModelVao(compiledModel::ptr mesh);
+void bindCookedMeshes(void);
+Vao::ptr getCurrentVao(void);
+Vao::ptr getScreenquadVao(void);
+Vao::ptr bindVao(Vao::ptr vao);
+void setFaceOrder(GLenum face_order);
+void setDefaultGlFlags(void);
 
 void enable(GLenum feature);
 void disable(GLenum feature);
 
-void preload_screenquad(void);
-void draw_screenquad(void);
+void preloadScreenquad(void);
+void drawScreenquad(void);
 
-Vao::ptr         gen_vao(void);
-Buffer::ptr      gen_buffer(GLuint type, GLenum use = GL_STATIC_DRAW);
-Texture::ptr     gen_texture(void);
-Shader::ptr      gen_shader(GLuint type);
-Program::ptr     gen_program(void);
-Framebuffer::ptr gen_framebuffer(void);
+Vao::ptr         genVao(void);
+Buffer::ptr      genBuffer(GLuint type, GLenum use = GL_STATIC_DRAW);
+Texture::ptr     genTexture(void);
+Shader::ptr      genShader(GLuint type);
+Program::ptr     genProgram(void);
+Framebuffer::ptr genFramebuffer(void);
 
 // TODO: defining these as functions to leave open the possibility of
 //       determining this at runtime
@@ -374,16 +374,16 @@ static inline GLenum rgbaf_if_supported(void) { return GL_RGBA; }
 static inline GLenum rgbaf_if_supported(void) { return GL_RGBA16F; }
 #endif
 
-Texture::ptr gen_texture_color(unsigned width, unsigned height,
+Texture::ptr genTextureColor(unsigned width, unsigned height,
 							   GLenum format=GL_RGBA);
-Texture::ptr gen_texture_depth_stencil(unsigned width, unsigned height,
+Texture::ptr genTextureDepthStencil(unsigned width, unsigned height,
 									   GLenum format=GL_DEPTH24_STENCIL8);
 
-Program::ptr load_program(std::string vert, std::string frag);
+Program::ptr loadProgram(std::string vert, std::string frag);
 
-GLenum surface_gl_format(SDL_Surface *surf);
-GLenum surface_gl_format(int channels);
-GLenum surface_gl_format(const materialTexture& tex);
+GLenum surfaceGlFormat(SDL_Surface *surf);
+GLenum surfaceGlFormat(int channels);
+GLenum surfaceGlFormat(const materialTexture& tex);
 
 // namespace grendx
 }

@@ -23,9 +23,9 @@ void saveMap(gameMain *game,
 			 std::string name="save.map");
 gameObject::ptr loadMap(gameMain *game, std::string name="save.map");
 
-class game_editor : public gameView {
+class gameEditor : public gameView {
 	public:
-		game_editor(gameMain *game);
+		gameEditor(gameMain *game);
 		renderPostChain::ptr post;
 		renderPostStage<rOutput>::ptr loading_thing;
 		Texture::ptr loading_img;
@@ -66,7 +66,7 @@ class game_editor : public gameView {
 		};
 
 		// TODO: don't need this anymore
-		struct editor_entry {
+		struct editorEntry {
 			std::string name;
 			std::string classname = "<default>";
 			glm::vec3   position;
@@ -83,47 +83,47 @@ class game_editor : public gameView {
 			//       this model, although that might be better off in the model class itself...
 		};
 
-		void update_models(gameMain *game);
-		void reload_shaders(gameMain *game);
-		void set_mode(enum mode newmode);
+		void updateModels(gameMain *game);
+		void reloadShaders(gameMain *game);
+		void setMode(enum mode newmode);
 		// TODO: rename 'engine' to 'renderer' or something
-		void render_imgui(gameMain *game);
-		void render_editor(gameMain *game);
-		void render_map_models(gameMain *game);
+		void renderImgui(gameMain *game);
+		void renderEditor(gameMain *game);
+		void renderMapModels(gameMain *game);
 
 		void logic(gameMain *game, float delta);
 		void clear(gameMain *game);
 
 		int mode = mode::View;
-		model_map::const_iterator edit_model;
+		modelMap::const_iterator edit_model;
 		gameObject::ptr objects;
-		gameObject::ptr UI_objects;
-		model_map models;
-		model_map UI_models;
+		gameObject::ptr UIObjects;
+		modelMap models;
+		modelMap UIModels;
 
 		gameObject::ptr selectedNode = nullptr;
-		float movement_speed = 10.f;
+		float movementSpeed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
-		float light_threshold = 0.03;
-		float edit_distance = 5;
+		float lightThreshold = 0.03;
+		float editDistance = 5;
 		TRS entbuf;
 
 		// Map editing things
 		// TODO: don't need dynamic_models anymore
-		std::vector<editor_entry> dynamic_models;
+		std::vector<editorEntry> dynamic_models;
 
 	private:
 		void renderWorldObjects(gameMain *game);
 		void menubar(gameMain *game);
-		void map_window(gameMain *game);
+		void mapWindow(gameMain *game);
 		void objectEditorWindow(gameMain *game);
 		void metricsWindow(gameMain *game);
-		void object_select_window(gameMain *game);
+		void objectSelectWindow(gameMain *game);
 
 		// populates map object tree
 		void addnodes(std::string name, gameObject::ptr obj);
-		void addnodes_rec(const std::string& name,
+		void addnodesRec(const std::string& name,
 		                  gameObject::ptr obj,
 		                  std::set<gameObject::ptr>& selectedPath);
 
@@ -139,19 +139,19 @@ class game_editor : public gameView {
 		gameObject::ptr getNonModel(gameObject::ptr obj);
 
 		modalSDLInput inputBinds;
-		bool show_map_window = false;
-		bool show_object_editor_window = false;
-		bool show_object_select_window = false;
-		bool show_metrics_window = true;
-		bool show_probes = true;
-		bool show_lights = true;
+		bool showMapWindow = false;
+		bool showObjectEditorWindow = false;
+		bool showObjectSelectWindow = false;
+		bool showMetricsWindow = true;
+		bool showProbes = true;
+		bool showLights = true;
 
 		// last place the mouse was clicked, used for determining the amount of
 		// rotation, movement etc
 		// (position / width, height)
-		float clicked_x, clicked_y;
+		float clickedX, clickedY;
 		// distance from cursor to camera at the last click
-		float click_depth;
+		float clickDepth;
 };
 
 // namespace grendx

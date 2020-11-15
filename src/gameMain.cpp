@@ -36,7 +36,7 @@ int gameMain::step(void) {
 		//step_physics();
 		view->logic(this, fticks);
 
-		set_default_gl_flags();
+		setDefaultGlFlags();
 		rend->framebuffer->clear();
 		view->render(this);
 

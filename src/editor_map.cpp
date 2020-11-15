@@ -38,18 +38,18 @@ static inline T parse_vec(std::string& str) {
 	return ret;
 }
 
-static model_map xxx_load_model(std::string filename, std::string objName) {
+static modelMap xxx_load_model(std::string filename, std::string objName) {
 	auto ext = filename_extension(filename);
-	model_map models;
+	modelMap models;
 
 	if (ext == ".obj") {
 		auto model = load_object(filename);
 		models[objName] = model;
-		compile_model(objName, model);
+		compileModel(objName, model);
 
 	} else if (ext == ".gltf") {
 		models = load_gltf_models(filename);
-		compile_models(models);
+		compileModels(models);
 	}
 
 	return models;
@@ -63,7 +63,7 @@ class modelCache {
 				sources[source] = xxx_load_model(source, name);
 			}
 
-			model_map& models = sources[source];
+			modelMap& models = sources[source];
 
 			// hmm... just added it to the map no?
 			return (models.find(name) != models.end())
@@ -79,7 +79,7 @@ class modelCache {
 			return scenes[source];
 		}
 
-		std::map<std::string, model_map> sources;
+		std::map<std::string, modelMap> sources;
 		std::map<std::string, gameImport::ptr> scenes;
 };
 
@@ -201,7 +201,7 @@ gameObject::ptr grendx::loadMap(gameMain *game, std::string name) {
 	}
 
 	json j;
-	model_map models;
+	modelMap models;
 
 	try {
 		gameObject::ptr ret = nullptr;
@@ -212,7 +212,7 @@ gameObject::ptr grendx::loadMap(gameMain *game, std::string name) {
 		ret = loadNodes(cache, "", j["root"]);
 
 		// assume there were new loaded models
-		bind_cooked_meshes();
+		bindCookedMeshes();
 		return ret;
 
 	} catch (std::exception& e) {

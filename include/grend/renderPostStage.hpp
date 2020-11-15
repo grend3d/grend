@@ -51,11 +51,11 @@ class rStage : public rUninitialized {
 		}
 
 		virtual void setSize(unsigned fb_x, unsigned fb_y) {
-			framebuffer = gen_framebuffer();
+			framebuffer = genFramebuffer();
 			framebuffer->bind();
 			renderTexture =
 				framebuffer->attach(GL_COLOR_ATTACHMENT0,
-					gen_texture_color(fb_x, fb_y, rgbaf_if_supported()));
+					genTextureColor(fb_x, fb_y, rgbaf_if_supported()));
 
 			width = fb_x;
 			height = fb_y;
@@ -83,7 +83,7 @@ class renderPostStage : public Storage {
 			program->bind();
 			glViewport(0, 0, this->width, this->height);
 
-			bind_vao(get_screenquad_vao());
+			bindVao(getScreenquadVao());
 
 			if (previous) {
 				glActiveTexture(GL_TEXTURE6);
@@ -113,7 +113,7 @@ class renderPostStage : public Storage {
 			program->bind();
 			glViewport(0, 0, this->width, this->height);
 
-			bind_vao(get_screenquad_vao());
+			bindVao(getScreenquadVao());
 
 			glActiveTexture(GL_TEXTURE6);
 			previous->color->bind();
@@ -152,7 +152,7 @@ class renderPostStage : public Storage {
 			program->set("exposure", 1.f);
 
 			DO_ERROR_CHECK();
-			draw_screenquad();
+			drawScreenquad();
 		}
 };
 

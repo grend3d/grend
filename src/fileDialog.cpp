@@ -13,7 +13,7 @@
 
 using namespace grendx;
 
-bool file_dialog::prompt_filename(void) {
+bool fileDialog::promptFilename(void) {
 	if (selected) return true;
 	if (!active) return false;
 
@@ -23,19 +23,19 @@ bool file_dialog::prompt_filename(void) {
 	}
 
 	ImGui::SameLine();
-	if (ImGui::InputText("Path", current_dir, FD_PATH_MAX)) {
+	if (ImGui::InputText("Path", currentDir, FD_PATH_MAX)) {
 		listdir();
 	}
 
-	for (int i = 0; i < dir_contents.size(); i++) {
-		auto& ent = dir_contents[i];
+	for (int i = 0; i < dirContents.size(); i++) {
+		auto& ent = dirContents[i];
 
 		ImGui::Separator();
-		if (ImGui::Selectable(ent.name.c_str(), cursor_pos == i)) {
-			if (cursor_pos == i) {
-				handle_doubleclicken(ent);
+		if (ImGui::Selectable(ent.name.c_str(), cursorPos == i)) {
+			if (cursorPos == i) {
+				handleDoubleclick(ent);
 			} else {
-				cursor_pos = i;
+				cursorPos = i;
 			}
 		}
 
@@ -44,7 +44,7 @@ bool file_dialog::prompt_filename(void) {
 		ImGui::Text(sz.c_str());
 
 		ImGui::SameLine(300);
-		ImGui::Text((ent.type == ent_type::Directory)? "[DIR]" : "[FILE]");
+		ImGui::Text((ent.type == entType::Directory)? "[DIR]" : "[FILE]");
 	}
 
 	//ImGui::Columns(1);
@@ -57,8 +57,8 @@ bool file_dialog::prompt_filename(void) {
 
 	ImGui::SameLine();
 	if (ImGui::Button("OK")) {
-		if (cursor_pos > -1) {
-			select(dir_contents[cursor_pos]);
+		if (cursorPos > -1) {
+			select(dirContents[cursorPos]);
 		}
 	}
 
@@ -66,33 +66,33 @@ bool file_dialog::prompt_filename(void) {
 	return selected;
 }
 
-void file_dialog::chdir(std::string dir) {
+void fileDialog::chdir(std::string dir) {
 	// TODO: safe
-	strcat(current_dir, dir.c_str());
-	strcat(current_dir, "/");
+	strcat(currentDir, dir.c_str());
+	strcat(currentDir, "/");
 
 	listdir();
 }
 
-void file_dialog::listdir(void) {
+void fileDialog::listdir(void) {
 	DIR *dirp;
 
-	if ((dirp = opendir(current_dir))) {
+	if ((dirp = opendir(currentDir))) {
 		struct dirent *dent;
-		dir_contents.clear();
-		cursor_pos = -1;
+		dirContents.clear();
+		cursorPos = -1;
 
 		while ((dent = readdir(dirp))) {
-			dir_contents.push_back({
+			dirContents.push_back({
 				.name = std::string(dent->d_name),
 				.size = dent->d_reclen,
 				.type = (dent->d_type == DT_DIR)
-					? ent_type::Directory
-					: ent_type::File,
+					? entType::Directory
+					: entType::File,
 			});
 		}
 
-		std::sort(dir_contents.begin(), dir_contents.end(),
+		std::sort(dirContents.begin(), dirContents.end(),
 			[&] (struct f_dirent& a, struct f_dirent& b) {
 				return (a.type != b.type)
 					? a.type < b.type
@@ -101,9 +101,9 @@ void file_dialog::listdir(void) {
 	}
 }
 
-void file_dialog::handle_doubleclicken(struct f_dirent& ent) {
+void fileDialog::handleDoubleclick(struct f_dirent& ent) {
 	switch (ent.type) {
-		case ent_type::Directory:
+		case entType::Directory:
 			chdir(ent.name);
 			break;
 
@@ -113,16 +113,16 @@ void file_dialog::handle_doubleclicken(struct f_dirent& ent) {
 	}
 }
 
-void file_dialog::select(struct f_dirent& ent) {
+void fileDialog::select(struct f_dirent& ent) {
 	selected = true;
-	selection = std::string(current_dir) + "/" + ent.name;
+	selection = std::string(currentDir) + "/" + ent.name;
 }
 
-void file_dialog::show(void) {
+void fileDialog::show(void) {
 	active = true;
 	selected = false;
 }
 
-void file_dialog::clear(void) {
+void fileDialog::clear(void) {
 	active = selected = false;
 }
