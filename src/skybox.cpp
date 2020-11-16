@@ -12,7 +12,7 @@ skybox::skybox() {
 
 	program = loadProgram(
 		GR_PREFIX "shaders/out/skybox.vert",
-		GR_PREFIX "shaders/out/skybox.frag"
+		GR_PREFIX "shaders/out/dynamic-skybox.frag"
 	);
 
 	program->attribute("v_position", VAO_VERTICES);

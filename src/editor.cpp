@@ -170,8 +170,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
-	//gameObject::ptr probeObj = std::make_shared<gameObject>();
-	//setNode("model", probeObj, physmodel);
+	gameObject::ptr probeObj = std::make_shared<gameObject>();
+	setNode("model", probeObj, physmodel);
 
 	renderQueue tempque(cam);
 	renderQueue que(cam);
@@ -182,7 +182,6 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto& refShader = game->rend->shaders["refprobe_debug"];
 		auto& irradShader = game->rend->shaders["irradprobe_debug"];
 
-		/*
 		probeFlags.mainShader = probeFlags.skinnedShader = refShader;
 		game->rend->setFlags(probeFlags);
 		refShader->bind();
@@ -220,10 +219,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			que.add(probeObj);
 			que.flush(game->rend->framebuffer, game->rend);
 		}
-		*/
 	}
 
-	/*
 	if (showLights) {
 		auto unshadedFlags = flags;
 		unshadedFlags.mainShader = unshadedFlags.skinnedShader
@@ -237,7 +234,6 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			que.flush(game->rend->framebuffer, game->rend);
 		}
 	}
-	*/
 }
 
 void gameEditor::initImgui(gameMain *game) {
