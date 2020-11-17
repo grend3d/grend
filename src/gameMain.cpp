@@ -35,6 +35,9 @@ int gameMain::step(void) {
 
 		//step_physics();
 		view->logic(this, fticks);
+		if (jobs != nullptr) {
+			jobs->runDeferred();
+		}
 
 		setDefaultGlFlags();
 		rend->framebuffer->clear();

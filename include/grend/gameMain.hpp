@@ -4,6 +4,7 @@
 #include <grend/engine.hpp>     // TODO: rename to renderer.h
 #include <grend/glManager.hpp> // TODO: rename
 #include <grend/gameView.hpp>
+#include <grend/jobQueue.hpp>
 #include <grend/timers.hpp>
 #include <grend/audioMixer.hpp>
 #include <grend/camera.hpp>
@@ -33,11 +34,12 @@ class gameMain {
 
 		bool running = false;
 		context ctx;
-		std::shared_ptr<gameState>    state = nullptr;
+		std::shared_ptr<gameState>     state = nullptr;
 		std::shared_ptr<gameView>      view  = nullptr;
 		std::shared_ptr<renderContext> rend  = nullptr;
 		std::shared_ptr<physics>       phys  = nullptr;
 		std::shared_ptr<audioMixer>    audio = nullptr;
+		std::shared_ptr<jobQueue>      jobs  = nullptr;
 
 		// FPS info
 		sma_counter frame_timer;

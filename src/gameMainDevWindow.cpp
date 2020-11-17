@@ -21,10 +21,49 @@ gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
 	state  = gameState::ptr(new gameState());
 	rend   = renderContext::ptr(new renderContext(ctx));
 	audio  = audioMixer::ptr(new audioMixer(ctx));
-
 	editor = gameView::ptr(new gameEditor(this));
+	jobs   = jobQueue::ptr(new jobQueue());
 	view   = editor;
+
+	jobs->addAsync([](){
+		std::cout << "job queue seems to be working!" << std::endl;
+		return true;
+	});
+
 	audio->setCamera(view->cam);
+
+	input.bind(MODAL_ALL_MODES,
+		[&, this] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_b) {
+				std::cout << "adding an async task..." << std::endl;
+				jobs->addAsync([=] () {
+					unsigned long sum = 0;
+					unsigned target = rand();
+					for (unsigned i = 0; i < target; i++) sum += i;
+
+					std::cout
+						<< "hey, asyncronous task here! launched from a lambda!"
+						<< std::endl;
+					std::cout << "sum " << target << ": " << sum << std::endl;
+
+					auto fut = jobs->addDeferred([=] () {
+						std::cout
+							<< "sup, deferred task here. very cool. "
+							<< "(sum was " << sum << " btw)"
+							<< std::endl;
+						return true;
+					});
+
+					std::cout << "waiting for deferred call..." << std::endl;
+					fut.wait();
+					std::cout << "have deferred: " << fut.get() << std::endl;
+
+					return true;
+				});
+			}
+
+			return MODAL_NO_CHANGE;
+		});
 
 	input.bind(modes::Editor,
 		[&] (SDL_Event& ev, unsigned flags) {

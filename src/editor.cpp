@@ -170,7 +170,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
-	gameObject::ptr probeObj = std::make_shared<gameObject>();
+	static gameObject::ptr probeObj = std::make_shared<gameObject>();
 	setNode("model", probeObj, physmodel);
 
 	renderQueue tempque(cam);
