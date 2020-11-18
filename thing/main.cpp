@@ -71,19 +71,26 @@ int main(int argc, char *argv[]) {
 	TRS staticPosition; // default
 
 	gameMain *game = new gameMainDevWindow();
+
+	game->jobs->addAsync([=] {
+		auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
+		foo->worldPosition = glm::vec3(-10, 0, -5);
+		game->audio->add(foo);
+		return true;
+	});
+
+	game->jobs->addAsync([=] {
+		auto bar = openSpatialLoop(GR_PREFIX "assets/sfx/Meditating Beat.ogg");
+		bar->worldPosition = glm::vec3(0, 0, -5);
+		game->audio->add(bar);
+		return true;
+	});
+
 	game->state->rootnode = loadMap(game);
 	game->phys->addStaticModels(game->state->rootnode, staticPosition);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);
 	addCameraWeapon(player);
-
-	auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
-	foo->worldPosition = glm::vec3(-10, 0, -5);
-	game->audio->add(foo);
-
-	auto bar = openSpatialLoop(GR_PREFIX "assets/sfx/Meditating Beat.ogg");
-	bar->worldPosition = glm::vec3(0, 0, -5);
-	game->audio->add(bar);
 
 	game->run();
 	return 0;
