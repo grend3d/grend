@@ -197,6 +197,13 @@ void renderContext::loadShaders(void) {
 	shaders["irradiance-convolve"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
 	shaders["irradiance-convolve"]->link();
 
+	shaders["specular-convolve"] = loadProgram(
+		GR_PREFIX "shaders/out/postprocess.vert",
+		GR_PREFIX "shaders/out/specular-convolve.frag"
+	);
+	shaders["specular-convolve"]->attribute("v_position", VAO_QUAD_VERTICES);
+	shaders["specular-convolve"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
+	shaders["specular-convolve"]->link();
 
 	shaders["quadtest"] = loadProgram(
 		GR_PREFIX "shaders/out/quadtest.vert",

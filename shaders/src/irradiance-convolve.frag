@@ -34,7 +34,4 @@ void main(void) {
 	}
 
 	FRAG_COLOR = vec4(sum.xyz / div / length(curdir), 1.0);
-	//FRAG_COLOR = vec4(f_texcoord, 0, 1.0);
-	//FRAG_COLOR = vec4(vec3(length(curdir)), 1.0);
-	//FRAG_COLOR = vec4(vec3(float(currentFace)/6.0), 1.0);
 }

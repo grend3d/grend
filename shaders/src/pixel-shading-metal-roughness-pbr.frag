@@ -25,18 +25,13 @@ precision mediump samplerCube;
 // TODO: actually, rename this to parallax-correct, or probe-parallax-correct?
 #include <lib/parallax-cube.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
+#include <lib/reflectionMipmap.glsl>
 
 void main(void) {
 	uint cluster = CURRENT_CLUSTER();
 
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
-	vec3 ambient_light = vec3(0.1);
-	// TODO: normal mapping still borked
 	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
-	//vec3 normal_dir = normalize(normidx * 2.0 - 1.0);
-	//normal_dir = normalize(TBN * normal_dir);
-	//normal_dir = mix(f_normal, normalize(TBN * normal_dir), NORMAL_WEIGHT);
-	//vec3 normal_dir = f_normal;
 
 	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
 	vec3 view_dir = normalize(view_pos - f_position.xyz);
@@ -52,13 +47,12 @@ void main(void) {
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
-	//float aoidx = texture2D(ambient_occ_map, f_texcoord).r;
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 
 	vec3 Fspec = F(f_0(albedo, metallic), view_dir, normalize(view_dir + normal_dir));
 	vec3 Fdiff = 1.0 - Fspec;
 
-	//vec3 total_light = vec3(0);
+	// ambient light, from irradiance map
 	vec3 total_light =
 		(radmap.rgb * anmaterial.diffuse.rgb * albedo * Fdiff * aoidx)
 		+ (anmaterial.emissive.rgb * emissive.rgb);
@@ -105,28 +99,23 @@ void main(void) {
 	}
 
 	float a = alpha(roughness);
-/*
-	//float a = roughness;
-	// TODO: s/8.0/max LOD/
-	vec3 refdir = reflect(-view_dir, normal_dir);
-	//vec3 env = vec3(textureLod(skytexture, refdir, 8.0*a));
-	// TODO: mipmap
-	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
-	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
-*/
-
-	//mat4 minv = inverse(m)*v_inv;
-	//mat4 minv = inverse(v);
-	//vec3 posws = vec3((minv * f_position));
-	//vec3 posws = vec3(v_inv*f_position);
 	vec3 posws = f_position.xyz;
 
-	//vec3 refdir = reflect(-view_dir, normal_dir);
-	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
-	vec3 env = textureCubeAtlas(reflection_atlas, reflection_probe, refdir).rgb;
-	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + refdir));
+	vec3 test[6] = vec3[](
+		reflection_probe[0],
+		reflection_probe[1],
+		reflection_probe[2],
+		reflection_probe[3],
+		reflection_probe[4],
+		reflection_probe[5]
+	);
 
-	//total_light += env * Fb;
+	vec3 altdir = reflect(-view_dir, normal_dir);
+	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
+	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
+	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
+	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
+
 	total_light += 0.5 * (1.0 - a) * env * Fb;
 
 #if ENABLE_REFRACTION
@@ -135,17 +124,9 @@ void main(void) {
 	if (anmaterial.opacity < 1.0) {
 		// TODO: handle refraction indexes
 		vec3 dir = refract(-view_dir, normal_dir, 1.0/1.5);
-		vec3 ref = textureCubeAtlas(reflection_atlas, reflection_probe, dir).rgb;
-		//ref_light = anmaterial.diffuse.xyz * 0.5*ref;
+		vec3 ref = textureCubeAtlas(reflection_atlas, test, dir).rgb;
 		ref_light = 0.9*ref;
 	}
-/*
-	if (anmaterial.opacity < 1.0) {
-		ref_light = anmaterial.diffuse.xyz
-			* 0.5*vec3(textureCube(skytexture,
-			                       refract(-view_dir, normal_dir, 1.0/1.5)));
-	}
-*/
 
 	total_light += ref_light;
 #endif
@@ -153,7 +134,4 @@ void main(void) {
 	// apply tonemapping here if there's no postprocessing step afterwards
 	total_light = EARLY_TONEMAP(total_light, 1.0);
 	FRAG_COLOR = vec4(total_light, opacity);
-
-	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
-	//gl_FragColor = dispnorm;
 }

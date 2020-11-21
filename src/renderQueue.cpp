@@ -116,13 +116,27 @@ void
 renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
 	for (auto& [_, __, probe] : probes) {
 		auto& reftree = rctx->atlases.reflections->tree;
+		auto& radtree = rctx->atlases.irradiance->tree;
+
+		// allocate from reflection atlas for top level reflections
 		for (unsigned i = 0; i < 6; i++) {
-			if (!reftree.valid(probe->faces[i])) {
+			if (!reftree.valid(probe->faces[0][i])) {
 				// TODO: configurable size
-				probe->faces[i] = reftree.alloc(256);
+				probe->faces[0][i] = reftree.alloc(128);
 			}
 		}
 
+		// allocate from irradiance atlas for lower level (blurrier) reflections
+		for (unsigned k = 1; k < 5; k++) {
+			for (unsigned i = 0; i < 6; i++) {
+				if (!radtree.valid(probe->faces[k][i])) {
+					// TODO: configurable size
+					probe->faces[k][i] = radtree.alloc(128 >> k);
+				}
+			}
+		}
+
+		probe->have_convolved = true;
 		drawReflectionProbe(*this, probe, rctx);
 	}
 
@@ -138,11 +152,12 @@ renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
 
 			// TODO: coefficients
 
-			if (!reftree.valid(radprobe->source->faces[i])) {
-				radprobe->source->faces[i] = reftree.alloc(64);
+			if (!reftree.valid(radprobe->source->faces[0][i])) {
+				radprobe->source->faces[0][i] = reftree.alloc(64);
 			}
 		}
 
+		radprobe->source->have_convolved = false;
 		drawIrradianceProbe(*this, radprobe, rctx);
 	}
 }
@@ -729,11 +744,21 @@ void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
 		return;
 	}
 
-	for (unsigned i = 0; i < 6; i++) {
-		std::string sloc = "reflection_probe[" + std::to_string(i) + "]";
-		glm::vec3 facevec = atlases.reflections->tex_vector(probe->faces[i]); 
-		program->set(sloc, facevec);
-		DO_ERROR_CHECK();
+	for (unsigned k = 0; k < 5; k++) {
+		for (unsigned i = 0; i < 6; i++) {
+			std::string sloc =
+				"reflection_probe["+std::to_string(k*6 + i)+"]";
+			glm::vec3 facevec;
+
+			if (k == 0) {
+				facevec = atlases.reflections->tex_vector(probe->faces[k][i]);
+			} else {
+				facevec = atlases.irradiance->tex_vector(probe->faces[k][i]);
+			}
+
+			program->set(sloc, facevec);
+			DO_ERROR_CHECK();
+		}
 	}
 
 	program->set("refboxMin",        probe->transform.position + probe->boundingBox.min);

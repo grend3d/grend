@@ -54,7 +54,14 @@ uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;
 uniform sampler2D irradiance_atlas;
 
-uniform vec3 reflection_probe[6];
+// TODO: probably should consider having this be set once per frame,
+//       moving probe data into the lights buffer
+// TODO: configurable number of reflection mips
+
+// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
+// (not using reflection_atlas since you can't both read and write to a bound
+//  framebuffer texture)
+uniform vec3 reflection_probe[30];
 uniform vec3 refboxMin;
 uniform vec3 refboxMax;
 uniform vec3 refprobePosition;

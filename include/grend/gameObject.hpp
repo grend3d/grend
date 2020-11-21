@@ -250,7 +250,7 @@ class gameReflectionProbe : public gameObject {
 		}
 
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
-		quadtree::node_id faces[6];
+		quadtree::node_id faces[5][6];
 		// bounding box for parallax correction
 		AABB boundingBox = {
 			.min = glm::vec3(-1),
@@ -260,6 +260,7 @@ class gameReflectionProbe : public gameObject {
 		bool changed = true;
 		bool is_static = true;
 		bool have_map = false;
+		bool have_convolved = false;
 };
 
 class gameIrradianceProbe : public gameObject {

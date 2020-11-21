@@ -193,7 +193,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
-					game->rend->atlases.reflections->tex_vector(probe->faces[i]); 
+					game->rend->atlases.reflections->tex_vector(probe->faces[0][i]);
 				refShader->set(loc, facevec);
 			}
 

@@ -44,8 +44,8 @@ class quadtree {
 
 		unsigned dimension;
 		unsigned block_size;
-		node_id alloced_ids = 1;
-		cache_stamp cache_counter = 1;
+		node_id alloced_ids = 1024;
+		cache_stamp cache_counter = 1024;
 };
 
 class quadtree::node {
@@ -59,15 +59,15 @@ class quadtree::node {
 		unsigned get_max_free(void);
 		void update_tree(void);
 
-		unsigned x, y, size;
-		unsigned max_free;
+		unsigned x = 0, y = 0, size = 0;
+		unsigned max_free = 0;
 
 		node *parent = nullptr;
 		node *subnodes[2][2];
-		bool pinned = false;;
+		bool pinned = false;
 
-		quadtree::node_id id;
-		quadtree::cache_stamp stamp;
+		quadtree::node_id id = 0;
+		quadtree::cache_stamp stamp = 0;
 };
 
 // namespace grendx
