@@ -317,8 +317,8 @@ static void drawMesh(renderFlags& flags,
 
 	auto& cmesh = mesh->comped_mesh;
 	bindVao(cmesh->vao);
-	glDrawElements(GL_TRIANGLES, cmesh->elementsSize,
-				   GL_UNSIGNED_INT, cmesh->elementsOffset);
+	glDrawElements(GL_TRIANGLES, cmesh->elements->size / sizeof(GLuint),
+				   GL_UNSIGNED_INT, (void*)cmesh->elements->offset);
 }
 
 unsigned renderQueue::flush(unsigned width,

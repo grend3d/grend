@@ -49,8 +49,8 @@ void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {
 	auto& cmesh = mesh->comped_mesh;
 
 	bindVao(cmesh->vao);
-	glDrawElements(GL_TRIANGLES, cmesh->elementsSize,
-			GL_UNSIGNED_INT, cmesh->elementsOffset);
+	glDrawElements(GL_TRIANGLES, cmesh->elements->size / sizeof(GLfloat),
+			GL_UNSIGNED_INT, (void*)cmesh->elements->offset);
 	glDepthMask(GL_TRUE);
 }
 

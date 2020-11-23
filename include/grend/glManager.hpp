@@ -4,6 +4,7 @@
 #include <grend/sdlContext.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
+#include <grend/bufferAllocator.hpp>
 
 #include <vector>
 #include <map>
@@ -292,11 +293,16 @@ class compiledMesh {
 		typedef std::shared_ptr<compiledMesh> ptr;
 		typedef std::weak_ptr<compiledMesh> weakptr;
 
+		~compiledMesh();
+
 		std::string material;
 		Vao::ptr vao;
 
+		/*
 		GLint elementsSize;
 		void *elementsOffset;
+		*/
+		bufferNode *elements = nullptr;
 };
 
 // TODO: camelCase
@@ -309,7 +315,7 @@ class compiledModel {
 
 		//rhandle vao;
 		Vao::ptr vao;
-		GLint verticesSize;
+		//GLint verticesSize;
 
 		std::vector<std::string> meshes;
 		// NOTE: duplicating materials here because the model may not be valid
@@ -323,15 +329,21 @@ class compiledModel {
 		std::map<std::string, Texture::ptr> matAo       = {};
 		std::map<std::string, Texture::ptr> matEmissive = {};
 
+		/*
 		void *verticesOffset;
 		void *normalsOffset;
 		void *texcoordsOffset;
 		void *tangentsOffset;
 		void *bitangentsOffset;
+		*/
+		bufferNode *vertices = nullptr;
 
 		bool haveJoints = false;
+		bufferNode *joints = nullptr;
+		/*
 		void *jointsOffset;
 		void *weightsOffset;
+		*/
 };
 
 // TODO: weakptr, once model loading stuff is straightened out
