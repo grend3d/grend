@@ -2,6 +2,7 @@
 #include <grend/gameState.hpp>
 #include <grend/engine.hpp>
 #include <grend/glManager.hpp>
+#include <grend/geometryGeneration.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/examples/imgui_impl_sdl.h>

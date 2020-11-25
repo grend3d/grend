@@ -11,8 +11,6 @@
 #include <grend/quadtree.hpp>
 #include <grend/camera.hpp>
 
-#include <grend/geometryGeneration.hpp>
-
 #include <list>
 #include <memory>
 #include <tuple>

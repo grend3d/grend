@@ -1,4 +1,5 @@
 #include <grend/gameState.hpp>
+#include <grend/geometryGeneration.hpp>
 
 // TODO: move timing stuff to its own file, maybe have a profiler class...
 #include <unistd.h>

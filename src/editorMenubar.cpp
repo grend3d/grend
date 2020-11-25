@@ -63,7 +63,12 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	if (import_map_dialog.promptFilename()) {
 		std::cout << "Importing a map! at "
 		          << import_map_dialog.selection << std::endl;
-		import_scene_dialog.clear();
+		import_map_dialog.clear();
+
+		auto obj = loadMap(game, import_map_dialog.selection);
+		std::string name = "map["+std::to_string(obj->id)+"]";
+		setNode(name, editor->selectedNode, obj);
+		//bindCookedMeshes();
 	}
 }
 

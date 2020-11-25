@@ -1,9 +1,8 @@
 #pragma once
 
+#include <grend/gameObject.hpp>
 #include <grend/glmIncludes.hpp>
-#include <grend/gameModel.hpp>
 #include <grend/TRS.hpp>
-#include <grend/octree.hpp>
 #include <grend/boundingBox.hpp>
 
 #include <unordered_map>
@@ -11,13 +10,22 @@
 #include <stdint.h>
 #include <list>
 #include <memory>
+#include <iostream>
 
 namespace grendx {
+
+// forward declaration, gameModel.hpp at end
+class gameModel;
+class gameMesh;
 
 class physicsObject {
 	public:
 		typedef std::shared_ptr<physicsObject> ptr;
 		typedef std::weak_ptr<physicsObject>   weakptr;
+
+		~physicsObject() {
+			this->removeSelf();
+		}
 
 		virtual void setTransform(TRS& transform) = 0;
 		virtual TRS  getTransform(void) = 0;
@@ -27,6 +35,7 @@ class physicsObject {
 		virtual void setAcceleration(glm::vec3 accel) = 0;
 		virtual glm::vec3 getVelocity(void) = 0;
 		virtual glm::vec3 getAcceleration(void) = 0;
+		virtual void removeSelf(void) { std::cerr << "AAAAAAAAAAAAAAAAAAAAAAA\n"; }; 
 };
 
 class physics {
@@ -59,14 +68,14 @@ class physics {
 		virtual physicsObject::ptr
 			addStaticMesh(gameObject::ptr obj,
 			              const TRS& transform,
-			              gameModel::ptr model,
-			              gameMesh::ptr mesh) = 0;
+			              std::shared_ptr<gameModel> model,
+			              std::shared_ptr<gameMesh>  mesh) = 0;
 
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		virtual std::map<gameMesh::ptr, physicsObject::ptr>
-			addModelMeshBoxes(gameModel::ptr mod) = 0;
+		virtual std::map<std::shared_ptr<gameMesh>, physicsObject::ptr>
+			addModelMeshBoxes(std::shared_ptr<gameModel> mod) = 0;
 		virtual void remove(physicsObject::ptr obj) = 0;
 		virtual void clear(void) = 0;
 
@@ -76,3 +85,5 @@ class physics {
 
 // namespace grendx
 }
+
+#include <grend/gameModel.hpp>

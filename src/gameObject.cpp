@@ -5,6 +5,10 @@ using namespace grendx;
 
 gameObject::~gameObject() {
 	std::cerr << "Freeing a " << idString() << std::endl;
+
+	if (physObj != nullptr) {
+		physObj->removeSelf();
+	}
 }
 
 size_t grendx::allocateObjID(void) {

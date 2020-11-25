@@ -3,6 +3,56 @@
 
 namespace grendx {
 
+gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
+                                 float x, float y, heightFunction func)
+{
+	gameModel::ptr ret = gameModel::ptr(new gameModel());
+	gameMesh::ptr mesh = gameMesh::ptr(new gameMesh());
+
+	unsigned xverts = width / unitsPerVert + 1;
+	unsigned yverts = height / unitsPerVert + 1;
+	float xinc = unitsPerVert / width;
+	float yinc = unitsPerVert / height;
+
+	for (unsigned k = 0; k < xverts; k++) {
+		for (unsigned j = 0; j < yverts; j++) {
+			float vx = k * unitsPerVert;
+			float vz = j * unitsPerVert;
+			float height = func(x + vx, y + vz);
+
+			ret->vertices.push_back(glm::vec3(vx, height, vz));
+			ret->texcoords.push_back({vx / 12.0, vz / 12.0});
+		}
+	}
+
+	for (unsigned k = 0; k + 1 < xverts; k++) {
+		for (unsigned j = 0; j + 1 < yverts; j++) {
+			GLuint vs[4] = {
+				j*xverts + k,
+				j*xverts + k + 1,
+				(j + 1)*xverts + k,
+				(j + 1)*xverts + k + 1,
+			};
+
+			mesh->faces.push_back(vs[0]);
+			mesh->faces.push_back(vs[1]);
+			mesh->faces.push_back(vs[2]);
+
+			mesh->faces.push_back(vs[3]);
+			mesh->faces.push_back(vs[2]);
+			mesh->faces.push_back(vs[1]);
+		}
+	}
+
+	setNode("mesh", ret, mesh);
+	ret->genNormals();
+	ret->genTangents();
+
+	ret->haveNormals = ret->haveTexcoords = ret->haveTangents = true;
+
+	return ret;
+}
+
 gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	//model ret;
 	gameModel::ptr ret = gameModel::ptr(new gameModel());

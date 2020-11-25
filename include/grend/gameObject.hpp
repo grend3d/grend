@@ -21,6 +21,9 @@ namespace grendx {
 
 size_t allocateObjID(void);
 
+// forward declaration, physics.hpp include at end
+class physicsObject;
+
 // TODO: start switching things to camelCase
 class gameObject {
 	public:
@@ -96,7 +99,8 @@ class gameObject {
 
 		gameObject::weakptr parent;
 		std::map<std::string, gameObject::ptr> nodes;
-		uint64_t physics_id = 0; // for unlinking when the object is removed
+		// for unlinking when the object is removed
+		std::shared_ptr<physicsObject> physObj;
 		GLenum face_order  = GL_CCW;
 };
 
@@ -292,3 +296,6 @@ class gameIrradianceProbe : public gameObject {
 
 // namespace grendx
 }
+
+#include <grend/physics.hpp>
+

@@ -23,7 +23,7 @@ class playerView : public gameView {
 		playerView(gameMain *game);
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void render(gameMain *game);
-		void logic(gameMain *game, float delta);
+		virtual void logic(gameMain *game, float delta);
 
 		gameObject::ptr cameraObj = std::make_shared<gameObject>();
 		physicsObject::ptr cameraPhys;

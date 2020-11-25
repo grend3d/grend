@@ -24,6 +24,16 @@ bulletPhysics::~bulletPhysics() {
 	delete collisionConfig;
 }
 
+#include <iostream>
+
+void bulletObject::removeSelf(void) {
+	std::cerr << "AAAAAAAAAAAAAAAAAA: got here! removing bullet object" << std::endl;
+	if (runtime) {
+		std::cerr << "removing bullet object 0x" << std::hex << this << std::endl;
+		runtime->remove(this);
+	}
+}
+
 void bulletObject::setTransform(TRS& transform) {
 
 }
@@ -117,8 +127,10 @@ physicsObject::ptr
 bulletPhysics::addSphere(gameObject::ptr obj, glm::vec3 pos,
                          float mass, float r)
 {
-	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	std::lock_guard<std::mutex> lock(bulletMutex);
 
+	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->runtime = this;
 	ret->mass = mass;
 	ret->obj = obj;
 	ret->shape = new btSphereShape(btScalar(r));
@@ -141,6 +153,7 @@ bulletPhysics::addSphere(gameObject::ptr obj, glm::vec3 pos,
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	obj->physObj = p;
 	objects.insert(p);
 	return p;
 }
@@ -151,7 +164,10 @@ bulletPhysics::addBox(gameObject::ptr obj,
                       float mass,
                       AABBExtent& box)
 {
+	std::lock_guard<std::mutex> lock(bulletMutex);
+
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->runtime = this;
 	ret->mass = mass;
 	ret->obj = obj;
 	ret->shape = new btBoxShape(btVector3(box.extent.x, box.extent.y, box.extent.z));
@@ -176,6 +192,7 @@ bulletPhysics::addBox(gameObject::ptr obj,
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	obj->physObj = p;
 	objects.insert(p);
 	return p;
 }
@@ -186,6 +203,8 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
                              gameModel::ptr model,
                              gameMesh::ptr mesh)
 {
+	std::lock_guard<std::mutex> lock(bulletMutex);
+
 	btTriangleIndexVertexArray* indexArray =
 		new btTriangleIndexVertexArray(mesh->faces.size() / 3,
 		                               (int*)mesh->faces.data(),
@@ -195,6 +214,7 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 									   sizeof(GLfloat[3]));
 
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->runtime = this;
 	ret->mass = 0.f;
 	ret->obj = obj;
 	ret->shape = new btBvhTriangleMeshShape(indexArray, true /* useQuantizedAabbCompression */ );
@@ -228,6 +248,7 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	obj->physObj = p;
 	objects.insert(p);
 	return p;
 }
@@ -240,11 +261,31 @@ bulletPhysics::addModelMeshBoxes(gameModel::ptr mod) {
 }
 
 void bulletPhysics::remove(physicsObject::ptr obj) {
+	//std::lock_guard<std::mutex> lock(bulletMutex);
+	bulletObject::ptr bobj = std::dynamic_pointer_cast<bulletObject>(obj);
+	std::cerr << "remove(): got here, removing an object" << std::endl;
 
+	if (bobj) {
+		std::cerr << "remove(): really removing" << std::endl;
+		objects.erase(obj);
+		world->removeRigidBody(bobj->body);
+	}
+}
+
+void bulletPhysics::remove(bulletObject *ptr) {
+	std::lock_guard<std::mutex> lock(bulletMutex);
+	// XXX: linear search here is terrible, need more efficient solution
+	if (ptr) {
+		for (auto it = objects.begin(); it != objects.end(); it++) {
+			if (it->get() == ptr) {
+				remove(*it);
+				break;
+			}
+		}
+	}
 }
 
 void bulletPhysics::clear(void) {
-
 }
 
 size_t bulletPhysics::numObjects(void) {
@@ -256,6 +297,7 @@ std::list<physics::collision> bulletPhysics::findCollisions(float delta) {
 }
 
 void bulletPhysics::stepSimulation(float delta) {
+	std::lock_guard<std::mutex> lock(bulletMutex);
 	world->stepSimulation(1.f/ 60.f, 10);
 
 	for (auto& k : objects) {
@@ -270,7 +312,9 @@ void bulletPhysics::stepSimulation(float delta) {
 		}
 
 		if (ptr->mass != 0) {
-			ptr->obj->transform = ptr->getTransform();
+			if (auto ref = ptr->obj.lock()) {
+				ref->transform = ptr->getTransform();
+			}
 		}
 	}
 }

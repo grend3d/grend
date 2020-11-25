@@ -50,6 +50,7 @@ class impObject : public physicsObject {
 		virtual void setAcceleration(glm::vec3 accel);
 		virtual glm::vec3 getVelocity(void);
 		virtual glm::vec3 getAcceleration(void);
+		virtual void removeSelf(void) {};
 
 	protected:
 		gameObject::ptr obj;

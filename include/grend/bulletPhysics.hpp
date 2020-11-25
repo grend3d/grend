@@ -12,11 +12,13 @@
 #include <list>
 #include <set>
 #include <memory>
+#include <mutex>
 
 #include "btBulletDynamicsCommon.h"
 
 namespace grendx {
 
+class bulletPhysics;
 class bulletObject : public physicsObject {
 	friend class bulletPhysics;
 
@@ -32,10 +34,12 @@ class bulletObject : public physicsObject {
 		virtual void setAcceleration(glm::vec3 accel);
 		virtual glm::vec3 getVelocity(void);
 		virtual glm::vec3 getAcceleration(void);
+		virtual void removeSelf(void);
 
 	protected:
-		gameObject::ptr obj;
-		//std::string model_name;
+		gameObject::weakptr obj;
+		bulletPhysics *runtime = nullptr;
+
 		btRigidBody *body;
 		btCollisionShape *shape;
 		btDefaultMotionState *motionState;
@@ -75,6 +79,7 @@ class bulletPhysics : public physics {
 		virtual std::map<gameMesh::ptr, physicsObject::ptr>
 			addModelMeshBoxes(gameModel::ptr mod);
 		virtual void remove(physicsObject::ptr obj);
+		virtual void remove(bulletObject *ptr);
 		virtual void clear(void);
 
 		virtual size_t numObjects(void);
@@ -89,6 +94,7 @@ class bulletPhysics : public physics {
 		btDiscreteDynamicsWorld *world;
 
 		std::set<physicsObject::ptr> objects;
+		std::mutex bulletMutex;
 };
 
 // namespace grendx
