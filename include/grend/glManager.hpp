@@ -193,7 +193,7 @@ class Texture : public Obj {
 		typedef std::weak_ptr<Texture> weakptr;
 
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
-		void buffer(const materialTexture& tex, bool srgb=false);
+		void buffer(materialTexture::ptr tex, bool srgb=false);
 		void cubemap(std::string directory, std::string extension=".jpg");
 		void bind(GLenum target = GL_TEXTURE_2D) {
 			glBindTexture(target, obj);
@@ -295,14 +295,17 @@ class compiledMesh {
 
 		~compiledMesh();
 
-		std::string material;
 		Vao::ptr vao;
-
-		/*
-		GLint elementsSize;
-		void *elementsOffset;
-		*/
 		bufferNode *elements = nullptr;
+
+		material::materialFactors factors;
+		struct loadedTextures {
+			Texture::ptr diffuse;
+			Texture::ptr metalRoughness;
+			Texture::ptr normal;
+			Texture::ptr ambientOcclusion;
+			Texture::ptr emissive;
+		} textures;
 };
 
 // TODO: camelCase
@@ -318,16 +321,15 @@ class compiledModel {
 		//GLint verticesSize;
 
 		std::vector<std::string> meshes;
-		// NOTE: duplicating materials here because the model may not be valid
-		//       for the lifetime of the compiled model, and there's some possible
-		//       optimizations to be done in buffering all the material info
-		//       to the shaders during initialization
-		std::map<std::string, material> materials   = {};
+
+		//std::map<std::string, material> materials   = {};
+		/*
 		std::map<std::string, Texture::ptr> matTextures = {};
 		std::map<std::string, Texture::ptr> matSpecular = {};
 		std::map<std::string, Texture::ptr> matNormal   = {};
 		std::map<std::string, Texture::ptr> matAo       = {};
 		std::map<std::string, Texture::ptr> matEmissive = {};
+		*/
 
 		/*
 		void *verticesOffset;
@@ -349,7 +351,7 @@ class compiledModel {
 // TODO: weakptr, once model loading stuff is straightened out
 typedef std::map<std::string, compiledMesh::weakptr> cookedMeshMap;
 typedef std::map<std::string, compiledModel::weakptr> cookedModelMap;
-Texture::ptr texcache(const materialTexture& tex, bool srgb = false);
+Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
 
 // defined in gameModel.hpp
 class gameModel;
@@ -360,6 +362,7 @@ void compileModel(std::string name, std::shared_ptr<gameModel> mod);
 void compileModels(modelMap& models);
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh& mesh);
 Vao::ptr preloadModelVao(compiledModel::ptr mesh);
+void bindModel(compiledModel::ptr model);
 void bindCookedMeshes(void);
 Vao::ptr getCurrentVao(void);
 Vao::ptr getScreenquadVao(void);

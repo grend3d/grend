@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stdint.h>
@@ -17,6 +18,9 @@ namespace grendx {
 //       would be a very good thing
 class materialTexture {
 	public:
+		typedef std::shared_ptr<materialTexture> ptr;
+		typedef std::weak_ptr<materialTexture> weakptr;
+
 		materialTexture() { };
 		materialTexture(std::string filename);
 		void load_texture(std::string filename);
@@ -29,43 +33,37 @@ class materialTexture {
 };
 
 struct material {
+	typedef std::shared_ptr<material> ptr;
+	typedef std::weak_ptr<material>   weakptr;
+
 	enum blend_mode {
 		Opaque,
 		Mask,
 		Blend,
 	};
 
-	glm::vec4 diffuse = {1, 1, 1, 1};
-	glm::vec4 ambient = {0, 0, 0, 0};
-	glm::vec4 specular = {1, 1, 1, 1};
-	glm::vec4 emissive = {1, 1, 1, 1};
-	GLfloat   roughness = 1.0;
-	// XXX: default metalness factor should be 1.0 for gltf, but
-	//      gltf always includes a metalness factor, so use 0.f (no metalness)
-	//      for .obj files
-	GLfloat   metalness = 0.0;
-	GLfloat   opacity = 1.0;
-	GLfloat   refract_idx = 1.5;
-	enum blend_mode blend = blend_mode::Opaque;
+	struct materialFactors {
+		glm::vec4 diffuse = {1, 1, 1, 1};
+		glm::vec4 ambient = {0, 0, 0, 0};
+		glm::vec4 specular = {1, 1, 1, 1};
+		glm::vec4 emissive = {1, 1, 1, 1};
+		GLfloat   roughness = 1.0;
+		// XXX: default metalness factor should be 1.0 for gltf, but
+		//      gltf always includes a metalness factor, so use 0.f (no metalness)
+		//      for .obj files
+		GLfloat   metalness = 0.0;
+		GLfloat   opacity = 1.0;
+		GLfloat   refract_idx = 1.5;
+		enum blend_mode blend = blend_mode::Opaque;
+	} factors;
 
-	void copy_properties(const struct material& other) {
-		// copy everything but textures
-		diffuse = other.diffuse;
-		ambient = other.ambient;
-		specular = other.specular;
-		emissive = other.emissive;
-		roughness = other.roughness;
-		metalness = other.metalness;
-		opacity = other.opacity;
-		refract_idx = other.refract_idx;
-		blend = other.blend;
-	}
-
-	materialTexture diffuseMap;
-	materialTexture metalRoughnessMap;
-	materialTexture normalMap;
-	materialTexture ambientOcclusionMap;
-	materialTexture emissiveMap;
+	struct materialMaps {
+		materialTexture::ptr diffuse;
+		materialTexture::ptr metalRoughness;
+		materialTexture::ptr normal;
+		materialTexture::ptr ambientOcclusion;
+		materialTexture::ptr emissive;
+	} maps;
 };
 
 // TODO: camelCase
@@ -88,7 +86,8 @@ class gameMesh : public gameObject {
 		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
-		std::string material = "(null)";
+		//std::string material = "(null)";
+		material::ptr meshMaterial;
 		std::vector<GLuint> faces;
 		struct AABB boundingBox;
 };
@@ -133,7 +132,7 @@ class gameModel : public gameObject {
 		std::vector<glm::vec4> weights;
 
 		// TODO: maybe materials can be subnodes...
-		std::map<std::string, material> materials;
+		//std::map<std::string, material> materials;
 
 		// used to determine if normals, etc need to be generated
 		bool haveNormals = false;
@@ -147,7 +146,9 @@ typedef std::map<std::string, gameMesh::ptr> meshMap;
 typedef std::map<std::string, gameModel::ptr> modelMap;
 
 gameModel::ptr load_object(std::string filename);
-void           load_materials(gameModel::ptr model, std::string filename);
+std::map<std::string, material::ptr>
+  load_materials(gameModel::ptr model, std::string filename);
+
 modelMap load_gltf_models(std::string filename);
 modelMap load_gltf_models(tinygltf::Model& tgltf_model);
 std::pair<gameImport::ptr, modelMap> load_gltf_scene(std::string filename);

@@ -30,8 +30,9 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 		SCREEN_SIZE_Y
 	);
 
+	// XXX: constructing a full shared pointer for this is a bit wasteful...
 	loading_img = genTexture();
-	loading_img->buffer(materialTexture(GR_PREFIX "assets/tex/loading-splash.png"));
+	loading_img->buffer(std::make_shared<materialTexture>(GR_PREFIX "assets/tex/loading-splash.png"));
 
 	clear(game);
 	initImgui(game);

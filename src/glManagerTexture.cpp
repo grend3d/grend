@@ -29,16 +29,16 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 	}
 }
 
-void Texture::buffer(const materialTexture& tex, bool srgb) {
+void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
-	        tex.width, tex.height, tex.channels);
+	        tex->width, tex->height, tex->channels);
 
-	GLenum texformat = surfaceGlFormat(tex);
+	GLenum texformat = surfaceGlFormat(tex->channels);
 	bind();
 
 #ifdef NO_FORMAT_CONVERSION
 	// XXX: need something more efficient
-	std::vector<uint8_t> temp = tex.pixels;
+	std::vector<uint8_t> temp = tex->pixels;
 
 	if (srgb) {
 		srgb_to_linear(temp);
@@ -47,13 +47,13 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	// TODO: fallback SRBG conversion
 	glTexImage2D(GL_TEXTURE_2D,
 	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
-	             0, texformat, tex.width, tex.height,
+	             0, texformat, tex->width, tex->height,
 	             0, texformat, GL_UNSIGNED_BYTE, temp.data());
 
 #else
 	glTexImage2D(GL_TEXTURE_2D,
-	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
-	             0, texformat, GL_UNSIGNED_BYTE, tex.pixels.data());
+	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
+	             0, texformat, GL_UNSIGNED_BYTE, tex->pixels.data());
 #endif
 
 	DO_ERROR_CHECK();
@@ -76,7 +76,7 @@ void Texture::buffer(const materialTexture& tex, bool srgb) {
 	//textureCache[texhash] = temp;
 	//return temp;
 
-	size_t roughsize = tex.pixels.size() * 1.33;
+	size_t roughsize = tex->pixels.size() * 1.33;
 	currentSize = glmanDbgUpdateTextures(currentSize, roughsize);
 }
 

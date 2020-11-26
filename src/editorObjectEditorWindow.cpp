@@ -74,21 +74,25 @@ static void editRefProbe(gameMain *game, T probe) {
 
 static void editModel(gameMain *game, gameModel::ptr model) {
 	if (model->comped_model) {
+		// TODO: reimplement material editing stuff, will be able to do much
+		//       more after refactoring stuff here
+#if 0
 		for (auto& [name, mat] : model->comped_model->materials) {
 			std::string matname = "Material " + name;
 			ImGui::Separator();
 			ImGui::Text(matname.c_str());
 			ImGui::Indent(16.f);
 
-			ImGui::ColorEdit4("Diffuse factor", glm::value_ptr(mat.diffuse));
-			ImGui::InputFloat4("Emission factor", glm::value_ptr(mat.emissive));
-			ImGui::SliderFloat("Roughness", &mat.roughness, 0.f, 1.f);
-			ImGui::SliderFloat("Metalness", &mat.metalness, 0.f, 1.f);
-			ImGui::SliderFloat("Opacity", &mat.opacity, 0.f, 1.f);
-			ImGui::SliderFloat("Refraction index", &mat.refract_idx, 0.1f, 10.f);
+			ImGui::ColorEdit4("Diffuse factor", glm::value_ptr(mat.factors.diffuse));
+			ImGui::InputFloat4("Emission factor", glm::value_ptr(mat.factors.emissive));
+			ImGui::SliderFloat("Roughness", &mat.factors.roughness, 0.f, 1.f);
+			ImGui::SliderFloat("Metalness", &mat.factors.metalness, 0.f, 1.f);
+			ImGui::SliderFloat("Opacity", &mat.factors.opacity, 0.f, 1.f);
+			ImGui::SliderFloat("Refraction index", &mat.factors.refract_idx, 0.1f, 10.f);
 
 			ImGui::Unindent(16.f);
 		}
+#endif
 	}
 }
 

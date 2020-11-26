@@ -9,23 +9,7 @@
 
 using namespace grendx;
 
-material default_material = {
-	.diffuse = {1, 1, 1, 1},
-	.ambient = {1, 1, 1, 1},
-	.specular = {1, 1, 1, 1},
-	.emissive = {1, 1, 1, 1},
-	.roughness = 1.f,
-	.metalness = 0.f,
-	.opacity = 1,
-	.refract_idx = 1.5,
-
-	.diffuseMap          = materialTexture(GR_PREFIX "assets/tex/white.png"),
-	.metalRoughnessMap   = materialTexture(GR_PREFIX "assets/tex/white.png"),
-	.normalMap           = materialTexture(GR_PREFIX "assets/tex/lightblue-normal.png"),
-	.ambientOcclusionMap = materialTexture(GR_PREFIX "assets/tex/white.png"),
-	.emissiveMap         = materialTexture(GR_PREFIX "assets/tex/black.png"),
-};
-
+material::ptr default_material;
 Texture::ptr default_diffuse, default_metal_roughness;
 Texture::ptr default_normmap, default_aomap;
 Texture::ptr default_emissive;
@@ -57,6 +41,27 @@ renderContext::renderContext(context& ctx) {
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	//std::cerr << "loaded cubemap" << std::endl;
+	//
+	default_material = std::make_shared<material>();
+	default_material->factors.diffuse = {1, 1, 1, 1},
+	default_material->factors.ambient = {1, 1, 1, 1},
+	default_material->factors.specular = {1, 1, 1, 1},
+	default_material->factors.emissive = {1, 1, 1, 1},
+	default_material->factors.roughness = 1.f,
+	default_material->factors.metalness = 0.f,
+	default_material->factors.opacity = 1,
+	default_material->factors.refract_idx = 1.5,
+
+	default_material->maps.diffuse
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+	default_material->maps.metalRoughness
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+	default_material->maps.normal
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/lightblue-normal.png"),
+	default_material->maps.ambientOcclusion
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+	default_material->maps.emissive
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
 
 	default_diffuse         = genTexture();
 	default_metal_roughness = genTexture();
@@ -64,11 +69,11 @@ renderContext::renderContext(context& ctx) {
 	default_aomap           = genTexture();
 	default_emissive        = genTexture();
 
-	default_diffuse->buffer(default_material.diffuseMap, true);
-	default_emissive->buffer(default_material.emissiveMap, true);
-	default_metal_roughness->buffer(default_material.metalRoughnessMap);
-	default_normmap->buffer(default_material.normalMap);
-	default_aomap->buffer(default_material.ambientOcclusionMap);
+	default_diffuse->buffer(default_material->maps.diffuse, true);
+	default_emissive->buffer(default_material->maps.emissive, true);
+	default_metal_roughness->buffer(default_material->maps.metalRoughness);
+	default_normmap->buffer(default_material->maps.normal);
+	default_aomap->buffer(default_material->maps.ambientOcclusion);
 
 	loadShaders();
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
@@ -235,30 +240,20 @@ const renderFlags& renderContext::getFlags(void) {
 	return flags;
 }
 
-void grendx::set_material(Program::ptr program,
-                          compiledModel::ptr obj,
-                          std::string mat_name)
-{
-	if (obj->materials.find(mat_name) == obj->materials.end()) {
-		// TODO: maybe show a warning
-		set_default_material(program);
-		//std::cerr << " ! couldn't find material " << mat_name << std::endl;
-		return;
-	}
+void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
+	material::materialFactors& mat = mesh->factors;
 
-	material& mat = obj->materials[mat_name];
-
-	program->set("anmaterial.diffuse", mat.diffuse);
-	program->set("anmaterial.ambient", mat.ambient);
-	program->set("anmaterial.specular", mat.specular);
-	program->set("anmaterial.emissive", mat.emissive);
+	program->set("anmaterial.diffuse",   mat.diffuse);
+	program->set("anmaterial.ambient",   mat.ambient);
+	program->set("anmaterial.specular",  mat.specular);
+	program->set("anmaterial.emissive",  mat.emissive);
 	program->set("anmaterial.roughness", mat.roughness);
 	program->set("anmaterial.metalness", mat.metalness);
-	program->set("anmaterial.opacity", mat.opacity);
+	program->set("anmaterial.opacity",   mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (obj->matTextures.find(mat_name) != obj->matTextures.end()) {
-		obj->matTextures[mat_name]->bind();
+	if (mesh->textures.diffuse) {
+		mesh->textures.diffuse->bind();
 		program->set("diffuse_map", 0);
 
 	} else {
@@ -267,8 +262,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE1);
-	if (obj->matSpecular.find(mat_name) != obj->matSpecular.end()) {
-		obj->matSpecular[mat_name]->bind();
+	if (mesh->textures.metalRoughness) {
+		mesh->textures.metalRoughness->bind();
 		program->set("specular_map", 1);
 
 	} else {
@@ -277,8 +272,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE2);
-	if (obj->matNormal.find(mat_name) != obj->matNormal.end()) {
-		obj->matNormal[mat_name]->bind();
+	if (mesh->textures.normal) {
+		mesh->textures.normal->bind();
 		program->set("normal_map", 2);
 
 	} else {
@@ -287,8 +282,8 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE3);
-	if (obj->matAo.find(mat_name) != obj->matAo.end()) {
-		obj->matAo[mat_name]->bind();
+	if (mesh->textures.ambientOcclusion) {
+		mesh->textures.ambientOcclusion->bind();
 		program->set("ambient_occ_map", 3);
 
 	} else {
@@ -297,8 +292,9 @@ void grendx::set_material(Program::ptr program,
 	}
 
 	glActiveTexture(GL_TEXTURE4);
-	if (obj->matEmissive.find(mat_name) != obj->matEmissive.end()) {
-		obj->matEmissive[mat_name]->bind();
+	if (mesh->textures.emissive) {
+		//obj->matEmissive[mat_name]->bind();
+		mesh->textures.emissive->bind();
 		program->set("emissive_map", 4);
 
 	} else {
@@ -310,15 +306,15 @@ void grendx::set_material(Program::ptr program,
 }
 
 void grendx::set_default_material(Program::ptr program) {
-	material& mat = default_material;
+	material::ptr mat = default_material;
 
-	program->set("anmaterial.diffuse", mat.diffuse);
-	program->set("anmaterial.ambient", mat.ambient);
-	program->set("anmaterial.specular", mat.specular);
-	program->set("anmaterial.emissive", mat.emissive);
-	program->set("anmaterial.roughness", mat.roughness);
-	program->set("anmaterial.metalness", mat.metalness);
-	program->set("anmaterial.opacity", mat.opacity);
+	program->set("anmaterial.diffuse",   mat->factors.diffuse);
+	program->set("anmaterial.ambient",   mat->factors.ambient);
+	program->set("anmaterial.specular",  mat->factors.specular);
+	program->set("anmaterial.emissive",  mat->factors.emissive);
+	program->set("anmaterial.roughness", mat->factors.roughness);
+	program->set("anmaterial.metalness", mat->factors.metalness);
+	program->set("anmaterial.opacity",   mat->factors.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
 	default_diffuse->bind();

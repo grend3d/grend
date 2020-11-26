@@ -187,21 +187,10 @@ void renderQueue::sort(void) {
 	for (auto& it : meshes) {
 		auto [transform, inverted, mesh] = it;
 
-		if (auto p = mesh->parent.lock()) {
-			gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(p);
-
-			if (mod) {
-				auto& mat = mod->materials[mesh->material];
-
-				if (mat.blend != material::blend_mode::Opaque) {
-					transparent.push_back(it);
-				} else {
-					opaque.push_back(it);
-				}
-
-			} else {
-				// TODO: print warning message if it's not a model
-			}
+		if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+			transparent.push_back(it);
+		} else {
+			opaque.push_back(it);
 		}
 	}
 
@@ -287,27 +276,15 @@ static void drawMesh(renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (auto p = mesh->parent.lock()) {
-		gameModel::ptr mod = std::dynamic_pointer_cast<gameModel>(p);
+	set_material(program, mesh->comped_mesh);
 
-		if (mod) {
-			assert(mod->compiled);
-			set_material(program, mod->comped_model, mesh->material);
-			auto& mat = mod->materials[mesh->material];
-
-			// enable()/disable() cache state, no need to worry about toggling
-			// too much state if queue is sorted
-			if (mat.blend != material::blend_mode::Opaque) {
-				// TODO: handle mask blends
-				enable(GL_BLEND);
-			} else {
-				disable(GL_BLEND);
-			}
-
-		} else {
-			// TODO: print warning message
-			// TODO: deduplicate this code
-		}
+	// enable()/disable() cache state, no need to worry about toggling
+	// too much state if queue is sorted
+	if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+		// TODO: handle mask blends
+		enable(GL_BLEND);
+	} else {
+		disable(GL_BLEND);
 	}
 
 	// TODO: need to keep track of the model face order
@@ -315,10 +292,11 @@ static void drawMesh(renderFlags& flags,
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
-	auto& cmesh = mesh->comped_mesh;
-	bindVao(cmesh->vao);
-	glDrawElements(GL_TRIANGLES, cmesh->elements->size / sizeof(GLuint),
-				   GL_UNSIGNED_INT, (void*)cmesh->elements->offset);
+	bindVao(mesh->comped_mesh->vao);
+	glDrawElements(GL_TRIANGLES,
+	               mesh->comped_mesh->elements->size / sizeof(GLuint),
+	               GL_UNSIGNED_INT,
+	               (void*)mesh->comped_mesh->elements->offset);
 }
 
 unsigned renderQueue::flush(unsigned width,

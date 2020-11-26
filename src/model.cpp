@@ -164,6 +164,7 @@ gameModel::ptr load_object(std::string filename) {
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
 	std::vector<glm::vec2> texbuf = {};
+	std::map<std::string, material::ptr> materials;
 
 	if (!input.good()) {
 		// TODO: exception
@@ -194,14 +195,17 @@ gameModel::ptr load_object(std::string filename) {
 		else if (statement[0] == "mtllib") {
 			std::string temp = base_dir(filename) + statement[1];
 			std::cerr << " > using material " << temp << std::endl;
-			load_materials(ret, temp);
+			auto mats = load_materials(ret, temp);
+			materials.insert(mats.begin(), mats.end());
 		}
 
 		else if (statement[0] == "usemtl") {
 			std::cerr << " > using material " << statement[1] << std::endl;
 			current_mesh = gameMesh::ptr(new gameMesh());
-			current_mesh->material = statement[1];
-			current_mesh_name = mesh_name + ":" + current_mesh->material;
+			//current_mesh->material = statement[1];
+			// TODO: check that material exists
+			current_mesh->meshMaterial = materials[statement[1]];
+			current_mesh_name = mesh_name + ":" + statement[1];
 
 			setNode(current_mesh_name, ret, current_mesh);
 		}
@@ -323,7 +327,9 @@ void materialTexture::load_texture(std::string filename) {
 	stbi_image_free(datas);
 }
 
-void load_materials(gameModel::ptr model, std::string filename) {
+std::map<std::string, material::ptr>
+load_materials(gameModel::ptr model, std::string filename) {
+	std::map<std::string, material::ptr> ret;
 	std::ifstream input(filename);
 	std::string current_material = "default";
 	std::string line;
@@ -332,7 +338,7 @@ void load_materials(gameModel::ptr model, std::string filename) {
 		// TODO: exception
 		std::cerr << "Warning: couldn't load material library from "
 			<< filename << std::endl;
-		return;
+		return ret;
 	}
 
 	stbi_set_flip_vertically_on_load(true);
@@ -347,37 +353,37 @@ void load_materials(gameModel::ptr model, std::string filename) {
 		if (statement[0] == "newmtl") {
 			std::cerr << "   - new material: " << statement[1] << std::endl;
 			current_material = statement[1];
+			ret[current_material] = std::make_shared<material>();
 		}
 
 		else if (statement[0] == "Ka") {
-			model->materials[current_material].ambient =
+			ret[current_material]->factors.ambient =
 				glm::vec4(std::stof(statement[1]),
 			              std::stof(statement[2]),
 			              std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "Kd") {
-			model->materials[current_material].diffuse =
+			ret[current_material]->factors.diffuse =
 				glm::vec4(std::stof(statement[1]),
 			              std::stof(statement[2]),
 			              std::stof(statement[3]), 1);
-
 		}
 
 		else if (statement[0] == "Ks") {
-			model->materials[current_material].specular =
+			ret[current_material]->factors.specular =
 				glm::vec4(std::stof(statement[1]),
 			             std::stof(statement[2]),
 			             std::stof(statement[3]), 1);
 		}
 
 		else if (statement[0] == "d") {
-			model->materials[current_material].opacity
+			ret[current_material]->factors.opacity
 				= std::stof(statement[1]);
 		}
 
 		else if (statement[0] == "Ns") {
-			model->materials[current_material].roughness =
+			ret[current_material]->factors.roughness =
 				1.f - std::stof(statement[1])/1000.f;
 		}
 
@@ -389,42 +395,38 @@ void load_materials(gameModel::ptr model, std::string filename) {
 				case 6:
 				case 7:
 				case 9:
-					model->materials[current_material].blend
+					ret[current_material]->factors.blend
 						= material::blend_mode::Blend;
 					break;
 
 				default:
-					model->materials[current_material].blend
+					ret[current_material]->factors.blend
 						= material::blend_mode::Opaque;
 					break;
 			}
 		}
 
 		else if (statement[0] == "map_Kd") {
-			//materials[current_material].diffuseMap = base_dir(filename) + statement[1];
-			model->materials[current_material].diffuseMap.
-				load_texture(base_dir(filename) + statement[1]);
+			ret[current_material]->maps.diffuse =
+				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
-			//materials[current_material].specularMap = base_dir(filename) + statement[1];
-			model->materials[current_material].metalRoughnessMap.
-				load_texture(base_dir(filename) + statement[1]);
+			ret[current_material]->maps.metalRoughness =
+				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
-			//materials[current_material].ambient_occMap = base_dir(filename) + statement[1];
-			model->materials[current_material].ambientOcclusionMap.
-				load_texture(base_dir(filename) + statement[1]);
+			ret[current_material]->maps.ambientOcclusion =
+				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
-			//materials[current_material].normalMap = base_dir(filename) + statement[1];
-			model->materials[current_material].normalMap.
-				load_texture(base_dir(filename) + statement[1]);
+			ret[current_material]->maps.normal =
+				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_bump") {
@@ -442,6 +444,7 @@ void load_materials(gameModel::ptr model, std::string filename) {
 	}
 
 	stbi_set_flip_vertically_on_load(false);
+	return ret;
 }
 
 // namespace grendx
@@ -622,9 +625,9 @@ static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
 	}
 }
 
-static grendx::materialTexture
+static grendx::materialTexture::ptr
 gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
-	grendx::materialTexture ret;
+	grendx::materialTexture::ptr ret = std::make_shared<grendx::materialTexture>();
 
 	auto& tex = gltf_texture(gltf_model, tex_idx);
 	std::cerr << "        + texture source: " << tex.source << std::endl;
@@ -634,31 +637,30 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 		<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
 
-	ret.pixels.insert(ret.pixels.end(),
+	ret->pixels.insert(ret->pixels.end(),
 			img.image.begin(), img.image.end());
-	ret.width = img.width;
-	ret.height = img.height;
-	ret.channels = img.component;
-	ret.size = ret.width * ret.height * ret.channels;
+	ret->width = img.width;
+	ret->height = img.height;
+	ret->channels = img.component;
+	ret->size = ret->width * ret->height * ret->channels;
 
 	return ret;
 }
 
-static void gltf_load_material(tinygltf::Model& gltf_model,
-                               grendx::gameModel::ptr out_model,
-                               int material_idx,
-                               std::string mesh_name)
+static grendx::material::ptr
+  gltf_load_material(tinygltf::Model& gltf_model, int material_idx)
 {
-	// TODO: maybe should pass sub-mesh name as an argument
-	std::string temp_name = mesh_name + ":" + std::to_string(material_idx);
-	struct grendx::material mod_mat;
+	grendx::material::ptr ret = std::make_shared<grendx::material>();
 	auto& mat = gltf_material(gltf_model, material_idx);
 
+	/*
 	assert(out_model->hasNode(temp_name));
 	grendx::gameMesh::ptr mesh
 		= std::dynamic_pointer_cast<grendx::gameMesh>(out_model->nodes[temp_name]);
 	std::string matidxname = mat.name + ":" + std::to_string(material_idx);
 	mesh->material = matidxname;
+	*/
+	std::string matidxname = ":" + std::to_string(material_idx);
 
 	auto& pbr = mat.pbrMetallicRoughness;
 	auto& base_color = pbr.baseColorFactor;
@@ -689,48 +691,49 @@ static void gltf_load_material(tinygltf::Model& gltf_model,
 		<< mat.occlusionTexture.index << std::endl;
 
 	if (pbr.baseColorTexture.index >= 0) {
-		mod_mat.diffuseMap =
+		ret->maps.diffuse =
 			gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
 	}
 
 	if (pbr.metallicRoughnessTexture.index >= 0) {
-		mod_mat.metalRoughnessMap =
+		ret->maps.metalRoughness =
 			gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
 	}
 
 
 	if (mat.normalTexture.index >= 0) {
-		mod_mat.normalMap =
+		ret->maps.normal =
 			gltf_load_texture(gltf_model, mat.normalTexture.index);
 	}
 
 	if (mat.occlusionTexture.index >= 0) {
-		mod_mat.ambientOcclusionMap =
+		ret->maps.ambientOcclusion =
 			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
 	}
 
 	if (mat.emissiveTexture.index >= 0) {
-		mod_mat.emissiveMap =
+		ret->maps.emissive =
 			gltf_load_texture(gltf_model, mat.emissiveTexture.index);
 	}
 
 	if (mat.alphaMode == "BLEND") {
 		// XXX:
-		mod_mat.opacity = mat.alphaCutoff;
-		mod_mat.blend = grendx::material::blend_mode::Blend;
+		ret->factors.opacity = mat.alphaCutoff;
+		ret->factors.blend = grendx::material::blend_mode::Blend;
 
 	} else if (mat.alphaMode == "MASK") {
 		// XXX:
-		mod_mat.opacity = mat.alphaCutoff;
-		mod_mat.blend = grendx::material::blend_mode::Mask;
+		ret->factors.opacity = mat.alphaCutoff;
+		ret->factors.blend = grendx::material::blend_mode::Mask;
 	}
 
 	auto& ev = mat.emissiveFactor;
-	mod_mat.emissive = glm::vec4(ev[0], ev[1], ev[2], 1.0);
-	mod_mat.roughness = pbr.roughnessFactor;
-	mod_mat.metalness = pbr.metallicFactor;
-	mod_mat.diffuse = mat_diffuse;
-	out_model->materials[matidxname] = mod_mat;
+	ret->factors.emissive  = glm::vec4(ev[0], ev[1], ev[2], 1.0);
+	ret->factors.roughness = pbr.roughnessFactor;
+	ret->factors.metalness = pbr.metallicFactor;
+	ret->factors.diffuse   = mat_diffuse;
+
+	return ret;
 }
 
 grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
@@ -759,12 +762,12 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			setNode(temp_name, curModel, modmesh);
 
 			if (prim.material >= 0) {
-				gltf_load_material(tgltf_model, curModel,
-				                   prim.material, mesh.name + suffix);
+				modmesh->meshMaterial = 
+					gltf_load_material(tgltf_model, prim.material);
 
 			} else {
-				modmesh->material = "(null)";
-				//ret[mesh.name].meshes[temp_name].material = "(null)";
+				// XXX: a little wasteful
+				modmesh->meshMaterial = std::make_shared<material>();
 			}
 
 			// accessor indices
