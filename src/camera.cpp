@@ -64,6 +64,16 @@ void camera::setScale(float scale) {
 	updated = true;
 }
 
+void camera::setNear(float near) {
+	near_ = near;
+	updated = true;
+}
+
+void camera::setFar(float far) {
+	far_ = far;
+	updated = true;
+}
+
 // for debugging output
 // TODO: remove
 #include <stdio.h>

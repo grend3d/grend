@@ -14,6 +14,7 @@ static gameModel::ptr  physmodel;
 
 gameEditor::gameEditor(gameMain *game) : gameView() {
 	objects = gameObject::ptr(new gameObject());
+	cam->setFar(1000.0);
 	/*
 	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);

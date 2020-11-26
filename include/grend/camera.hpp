@@ -27,6 +27,8 @@ class camera {
 		const float fovx() { return fovx_; };
 		const float fovy() { return fovy_; };
 		const float scale() { return scale_; };
+		const float near() { return near_; };
+		const float far() { return far_; };
 
 		void setPosition(glm::vec3 pos);
 		void updatePosition(float delta); // increment by velocity
@@ -38,6 +40,8 @@ class camera {
 		void setFovx(float angle);
 		void setFovy(float angle);
 		void setScale(float scale);
+		void setNear(float near);
+		void setFar(float far);
 		void recalculatePlanes(void);
 
 		glm::mat4 projectionTransform(void);
