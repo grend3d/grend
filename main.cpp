@@ -121,23 +121,7 @@ static float landscapeThing(float x, float y) {
 	return a1 + a2 + a3 + a4;
 }
 
-material landscapeMaterial = {
-	.diffuse = {1, 1, 1, 1},
-	.ambient = {1, 1, 1, 1},
-	.specular = {1, 1, 1, 1},
-	.emissive = {1, 1, 1, 1},
-	.roughness = 1.f,
-	.metalness = 0.f,
-	.opacity = 1,
-	.refract_idx = 1.5,
-
-	.diffuseMap          = materialTexture("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_diff_2k.jpg"),
-	.metalRoughnessMap   = materialTexture("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_rough_green_2k.jpg"),
-	.normalMap           = materialTexture("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_nor_2k.jpg"),
-	.ambientOcclusionMap = materialTexture("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_ao_2k.jpg"),
-	.emissiveMap         = materialTexture(GR_PREFIX "assets/tex/black.png"),
-};
-
+material::ptr landscapeMaterial;
 static gameObject::ptr landscapeNodes = std::make_shared<gameObject>();
 
 class landscapeGenView : public playerView {
@@ -147,7 +131,7 @@ class landscapeGenView : public playerView {
 		std::future<bool> genjob;
 };
 
-static const int   gridsize = 7;
+static const int   gridsize = 9;
 static const float cellsize = 24.f;
 
 static gameObject::ptr
@@ -180,8 +164,7 @@ generateLandscape(glm::vec3 curpos, glm::vec3 genpos, gameMain *game) {
 					ptr->transform.position = glm::vec3(coord.x, 0, coord.z);
 					gameMesh::ptr mesh =
 						std::dynamic_pointer_cast<gameMesh>(ptr->nodes["mesh"]);
-					mesh->material = "grass";
-					ptr->materials["grass"] = landscapeMaterial;
+					mesh->meshMaterial = landscapeMaterial;
 					std::string name = "gen["+std::to_string(int(x))+"]["+std::to_string(int(y))+"]" + std::to_string(rand());
 
 					gameObject::ptr foo = std::make_shared<gameObject>();
@@ -275,6 +258,27 @@ int main(int argc, char *argv[]) {
 	std::cerr << "entering main()" << std::endl;
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
+
+	landscapeMaterial = std::make_shared<material>();
+	landscapeMaterial->factors.diffuse = {1, 1, 1, 1};
+	landscapeMaterial->factors.ambient = {1, 1, 1, 1};
+	landscapeMaterial->factors.specular = {1, 1, 1, 1};
+	landscapeMaterial->factors.emissive = {1, 1, 1, 1};
+	landscapeMaterial->factors.roughness = 1.f;
+	landscapeMaterial->factors.metalness = 0.f;
+	landscapeMaterial->factors.opacity = 1;
+	landscapeMaterial->factors.refract_idx = 1.5;
+
+	landscapeMaterial->maps.diffuse
+		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_diff_2k.jpg");
+	landscapeMaterial->maps.metalRoughness
+		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_rough_green_2k.jpg");
+	landscapeMaterial->maps.normal
+		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_nor_2k.jpg");
+	landscapeMaterial->maps.ambientOcclusion
+		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_ao_2k.jpg");
+	landscapeMaterial->maps.emissive
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png");
 
 	TRS staticPosition; // default
 
