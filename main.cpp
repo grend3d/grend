@@ -175,7 +175,7 @@ generateLandscape(glm::vec3 curpos, glm::vec3 genpos, gameMain *game) {
 				futures.push_back(game->jobs->addAsync([=] {
 					float off = cellsize * (gridsize / 2);
 					glm::vec3 coord = (curpos * cellsize) - glm::vec3(off, 0, off) + glm::vec3(x*cellsize, 0, y*cellsize);
-					auto ptr = generateHeightmap(cellsize, cellsize, 4.0, coord.x, coord.z, landscapeThing);
+					auto ptr = generateHeightmap(cellsize, cellsize, 1.0, coord.x, coord.z, landscapeThing);
 					//auto ptr = generateHeightmap(24, 24, 0.5, coord.x, coord.z, thing);
 					ptr->transform.position = glm::vec3(coord.x, 0, coord.z);
 					gameMesh::ptr mesh =
@@ -187,17 +187,17 @@ generateLandscape(glm::vec3 curpos, glm::vec3 genpos, gameMain *game) {
 					gameObject::ptr foo = std::make_shared<gameObject>();
 					setNode("asdfasdf", foo, ptr);
 					std::cerr << "trying to add physics model" << std::endl;
-					game->phys->addStaticModels(foo, TRS());
 
 					auto fut = game->jobs->addDeferred([=]{
 							std::cerr << "generating new model" << std::endl;
 						compileModel(name, ptr);
+						//bindModel(ptr->comped_model);
 						return true;
 					});
 
-					fut.wait();
-
+					game->phys->addStaticModels(foo, TRS());
 					temp[x][y] = ptr;
+					fut.wait();
 					return true;
 				}));
 
@@ -317,6 +317,7 @@ int main(int argc, char *argv[]) {
 
 	game->phys->addStaticModels(game->state->rootnode, staticPosition);
 	gameView::ptr player = std::make_shared<landscapeGenView>(game);
+	player->cam->setFar(1000.0);
 	game->setView(player);
 	addCameraWeapon(player);
 
