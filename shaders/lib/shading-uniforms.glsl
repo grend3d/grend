@@ -54,19 +54,7 @@ uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;
 uniform sampler2D irradiance_atlas;
 
-// TODO: probably should consider having this be set once per frame,
-//       moving probe data into the lights buffer
-// TODO: configurable number of reflection mips
-
-// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
-// (not using reflection_atlas since you can't both read and write to a bound
-//  framebuffer texture)
-uniform vec3 reflection_probe[30];
-uniform vec3 refboxMin;
-uniform vec3 refboxMax;
-uniform vec3 refprobePosition;
 uniform vec3 cameraPosition;
-
 uniform vec3 irradiance_probe[6];
 uniform vec3 radboxMin;
 uniform vec3 radboxMax;
@@ -92,6 +80,11 @@ layout(std430, binding = 1) buffer plights {
 	uint active_point_lights;
 	uint active_spot_lights;
 	uint active_directional_lights;
+
+	vec3 reflection_probe[30];
+	vec3 refboxMin;
+	vec3 refboxMax;
+	vec3 refprobePosition;
 
 	point_light point[1024];
 	uint point_clusters[16*16*16 * MAX_LIGHTS];
@@ -120,6 +113,15 @@ layout (std140) uniform lights {
 	uint uactive_spot_lights;
 	uint uactive_directional_lights;
 
+	// TODO: configurable number of reflection mips
+	// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
+	// (not using reflection_atlas since you can't both read and write to a bound
+	//  framebuffer texture)
+	vec3 reflection_probe[30];
+	vec3 refboxMin;
+	vec3 refboxMax;
+	vec3 refprobePosition;
+
 	point_light       upoint_lights[MAX_LIGHTS];
 	spot_light        uspot_lights[MAX_LIGHTS];
 	directional_light udirectional_lights[MAX_LIGHTS];
@@ -138,13 +140,23 @@ layout (std140) uniform lights {
 // otherwise fallback to regular old uniforms
 #else
 
-uniform point_light point_lights[MAX_LIGHTS];
-uniform spot_light spot_lights[MAX_LIGHTS];
-uniform directional_light directional_lights[MAX_LIGHTS];
-
 uniform uint active_point_lights;
 uniform uint active_spot_lights;
 uniform uint active_directional_lights;
+
+// TODO: configurable number of reflection mips
+
+// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
+// (not using reflection_atlas since you can't both read and write to a bound
+//  framebuffer texture)
+uniform vec3 reflection_probe[30];
+uniform vec3 refboxMin;
+uniform vec3 refboxMax;
+uniform vec3 refprobePosition;
+
+uniform point_light point_lights[MAX_LIGHTS];
+uniform spot_light spot_lights[MAX_LIGHTS];
+uniform directional_light directional_lights[MAX_LIGHTS];
 
 #define CURRENT_CLUSTER()  (0u) 
 

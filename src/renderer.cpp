@@ -404,6 +404,41 @@ void grendx::packLight(gameLightDirectional::ptr light,
 	}
 }
 
+void grendx::packRefprobe(gameReflectionProbe::ptr probe,
+                          lights_std140 *p,
+                          renderContext::ptr rctx)
+{
+	if (probe == nullptr) {
+		return;
+	}
+
+	// TODO: configurable number of mipmap levels
+	for (unsigned k = 0; k < 5; k++) {
+		for (unsigned i = 0; i < 6; i++) {
+			glm::vec3 facevec;
+
+			if (k == 0) {
+				facevec = rctx->atlases.reflections->tex_vector(probe->faces[k][i]);
+			} else {
+				facevec = rctx->atlases.irradiance->tex_vector(probe->faces[k][i]);
+			}
+
+			memcpy(p->reflection_probe + 4*((6*k) + i),
+			       glm::value_ptr(facevec),
+			       sizeof(GLfloat[3]));
+		}
+	}
+
+	glm::vec3 boxmin = probe->transform.position + probe->boundingBox.min;
+	glm::vec3 boxmax = probe->transform.position + probe->boundingBox.max;
+
+	memcpy(p->refboxMin, glm::value_ptr(boxmin), sizeof(GLfloat[3]));
+	memcpy(p->refboxMax, glm::value_ptr(boxmax), sizeof(GLfloat[3]));
+	memcpy(p->refprobePosition,
+	       glm::value_ptr(probe->transform.position),
+	       sizeof(GLfloat[3]));
+}
+
 void grendx::invalidateLightMaps(gameObject::ptr tree) {
 	if (tree->type == gameObject::objType::Light) {
 		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(tree);

@@ -314,10 +314,11 @@ unsigned renderQueue::flush(unsigned width,
 	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv = glm::inverse(view);
 
-	flags.mainShader->bind();
-	flags.mainShader->set("v", view);
-	flags.mainShader->set("p", projection);
-	flags.mainShader->set("v_inv", v_inv);
+	flags.skinnedShader->bind();
+	flags.skinnedShader->set("v", view);
+	flags.skinnedShader->set("p", projection);
+	flags.skinnedShader->set("v_inv", v_inv);
+	flags.skinnedShader->set("cameraPosition", cam->position());
 
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
 		float offset = -1.0;
@@ -344,10 +345,12 @@ unsigned renderQueue::flush(unsigned width,
 			}
 
 			glm::vec4 apos = transform * glm::vec4(1);
+			/*
 			set_reflection_probe(
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
 				rctx->atlases);
+				*/
 			set_irradiance_probe(
 				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
@@ -360,11 +363,19 @@ unsigned renderQueue::flush(unsigned width,
 		DO_ERROR_CHECK();
 	}
 
+	flags.mainShader->bind();
+	flags.mainShader->set("v", view);
+	flags.mainShader->set("p", projection);
+	flags.mainShader->set("v_inv", v_inv);
+	flags.mainShader->set("cameraPosition", cam->position());
+
 	for (auto& [transform, inverted, mesh] : meshes) {
 		glm::vec4 apos = transform * glm::vec4(1);
+		/*
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
+			*/
 		set_irradiance_probe(
 			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
@@ -449,10 +460,12 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 			}
 
 			glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
+			/*
 			set_reflection_probe(
 				nearest_reflection_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
 				rctx->atlases);
+				*/
 			set_irradiance_probe(
 				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
 				flags.skinnedShader,
@@ -469,13 +482,16 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 	flags.mainShader->set("v", view);
 	flags.mainShader->set("p", projection);
 	flags.mainShader->set("v_inv", v_inv);
+	flags.mainShader->set("cameraPosition", cam->position());
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
 		glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
+		/*
 		set_reflection_probe(
 			nearest_reflection_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
+			*/
 		set_irradiance_probe(
 			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
 			flags.mainShader, rctx->atlases);
@@ -582,6 +598,7 @@ static void syncPlainUniforms(Program::ptr program,
 
 static void syncUniformBuffer(Program::ptr program,
 	                          renderContext::ptr rctx,
+	                          gameReflectionProbe::ptr refprobe,
 	                          std::vector<gameLightPoint::ptr>& points,
 	                          std::vector<gameLightSpot::ptr>& spots,
 	                          std::vector<gameLightDirectional::ptr>& directionals)
@@ -596,6 +613,8 @@ static void syncUniformBuffer(Program::ptr program,
 	lightbuf.uactive_point_lights       = pactive;
 	lightbuf.uactive_spot_lights        = sactive;
 	lightbuf.uactive_directional_lights = dactive;
+
+	packRefprobe(refprobe, &lightbuf, rctx);
 
 	// so much nicer
 	for (size_t i = 0; i < pactive; i++) {
@@ -612,7 +631,6 @@ static void syncUniformBuffer(Program::ptr program,
 		gameLightDirectional::ptr light = directionals[i];
 		packLight(light, lightbuf.udirectional_lights + i, rctx);
 	}
-
 
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
 	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights_std140), &lightbuf);
@@ -655,15 +673,19 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 		}
 	}
 
+	auto refprobe = nearest_reflection_probe(cam->position());
+
 #if GLSL_VERSION >= 140
 	program->setUniformBlock("lights", rctx->lightBuffer);
-	syncUniformBuffer(program, rctx, point_lights,
+	syncUniformBuffer(program, rctx, refprobe, point_lights,
 	                  spot_lights, directional_lights);
 	DO_ERROR_CHECK();
 
 #else
 	syncPlainUniforms(program, rctx, point_lights,
 	                  spot_lights, directional_lights);
+
+	set_reflection_probe(refprobe, program, rctx->atlases);
 	DO_ERROR_CHECK();
 #endif
 

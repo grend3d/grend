@@ -47,6 +47,7 @@ gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 	setNode("mesh", ret, mesh);
 	ret->genNormals();
 	ret->genTangents();
+	ret->genAABBs();
 
 	ret->haveNormals = ret->haveTexcoords = ret->haveTangents = true;
 

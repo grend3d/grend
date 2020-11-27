@@ -224,6 +224,11 @@ struct lights_std140 {
 	GLuint uactive_directional_lights; // 8
 	GLuint padding;                    // 12, end 16
 
+	GLfloat reflection_probe[30 * 4];
+	GLfloat refboxMin[4];
+	GLfloat refboxMax[4];
+	GLfloat refprobePosition[4];
+
 	point_std140 upoint_lights[MAX_LIGHTS];
 	spot_std140 uspot_lights[MAX_LIGHTS];
 	directional_std140 udirectional_lights[MAX_LIGHTS];
@@ -235,6 +240,8 @@ void packLight(gameLightSpot::ptr light, spot_std140 *p,
                renderContext::ptr rctx);
 void packLight(gameLightDirectional::ptr light, directional_std140 *p,
                renderContext::ptr rctx);
+void packRefprobe(gameReflectionProbe::ptr probe, lights_std140 *p,
+                  renderContext::ptr rctx);
 
 float light_extent(struct point_light *p, float threshold=0.03);
 float light_extent(struct spot_light *s, float threshold=0.03);
