@@ -33,6 +33,10 @@ void impObject::setAcceleration(glm::vec3 accel) {
 	acceleration = accel;
 }
 
+void impObject::setAngularFactor(float amount) {
+	// TODO: implement impObject::setAngularFactor();
+}
+
 glm::vec3 impObject::getAcceleration(void) {
 	return acceleration;
 }

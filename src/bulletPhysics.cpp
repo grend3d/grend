@@ -76,9 +76,12 @@ void bulletObject::setVelocity(glm::vec3 vel) {
 }
 
 void bulletObject::setAcceleration(glm::vec3 accel) {
-	// TODO: how do you set acceleration?
-	body->setLinearVelocity(btVector3(accel.x, accel.y, accel.z));
-	//body->applyCentralImpulse(btVector3(accel.x, accel.y, accel.z));
+	body->applyCentralForce(btVector3(accel.x, accel.y, accel.z));
+}
+
+void bulletObject::setAngularFactor(float amount) {
+	body->setAngularFactor(btScalar(amount));
+	// TODO: implement impObject::setAngularFactor();
 }
 
 glm::vec3 bulletObject::getVelocity(void) {
