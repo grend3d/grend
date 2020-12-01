@@ -45,6 +45,7 @@ void addCameraWeapon(gameView::ptr view) {
 
 	// leaving old stuff here for debugging
 	objs->transform.scale = glm::vec3(0.1f);
+	objs->transform.position = glm::vec3(0, -1, 0);
 	//objs->transform.scale = glm::vec3(2.f);
 	//objs->transform.position = glm::vec3(-0.3, 1.1, 1.25);
 	//objs->transform.rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
@@ -64,12 +65,12 @@ void addCameraWeapon(gameView::ptr view) {
 }
 
 int main(int argc, char *argv[]) {
-	std::cerr << "entering main()" << std::endl;
-	std::cerr << "started SDL context" << std::endl;
-	std::cerr << "have game state" << std::endl;
+	if (argc < 2) {
+		std::cerr << "Usage: map-viewer filename.map" << std::endl;
+		return 0;
+	}
 
 	TRS staticPosition; // default
-
 	gameMain *game = new gameMainDevWindow();
 
 	game->jobs->addAsync([=] {
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
 		return true;
 	});
 
-	game->state->rootnode = loadMap(game);
+	game->state->rootnode = loadMap(game, argv[1]);
 	game->phys->addStaticModels(game->state->rootnode, staticPosition);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);

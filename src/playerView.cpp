@@ -3,6 +3,7 @@
 #include <grend/audioMixer.hpp>
 #include <grend/controllers.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <grend/geometryGeneration.hpp>
 
 using namespace grendx;
 
@@ -134,7 +135,7 @@ static glm::vec3 lastvel = glm::vec3(0);
 
 void playerView::logic(gameMain *game, float delta) {
 	if (cam->velocity() != lastvel) {
-		cameraPhys->setAcceleration(cam->velocity());
+		cameraPhys->setVelocity(cam->velocity());
 		lastvel = cam->velocity();
 	}
 
