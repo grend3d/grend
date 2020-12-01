@@ -1,6 +1,7 @@
 #include <grend/camera.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/boundingBox.hpp>
+#include <grend/utility.hpp>
 
 using namespace grendx;
 
@@ -187,39 +188,42 @@ bool camera::boxInFrustum(const struct AABB& box) {
 bool camera::boxInFrustum(const struct OBB& box) {
 	recalculatePlanes();
 	bool anyIn = false;
+	float distances[6][8];
 
-	// XXX: if the center is in the frustum, it's in the frustum.
-	//      hack to get around things popping out of existence when
-	//      the object is in frustum but the vertices are outside
-	// TODO: proper test for this, can't quite figure out a quick way
-	//       and don't want to spend too much time on it...
-	bool centerInPlanes = true;
-	for (unsigned k = 0; k < 6; k++) {
-		auto& p = planes[k];
-		float dist = glm::dot(p.n, box.center) + p.d;
-
-		if (dist < 0) {
-			centerInPlanes = false;
-			break;
+	// precalculate distances to avoid calculating them again in edge testing
+	for (unsigned i = 0; i < 8; i++) {
+		for (unsigned k = 0; k < 6; k++) {
+			auto& p = planes[k];
+			distances[k][i] = glm::dot(p.n, box.points[i]) + p.d;
 		}
 	}
-
-	anyIn = centerInPlanes;
 
 	for (unsigned i = 0; i < 8 && !anyIn; i++) {
 		bool pointInPlanes = true;
 
 		for (unsigned k = 0; k < 6; k++) {
-			auto& p = planes[k];
-			float dist = glm::dot(p.n, box.points[i]) + p.d;
+			if (distances[k][i] <= 0) {
+				bool edgeIn = false;
+				unsigned aPlane = k ^ 1;
 
-			if (dist < 0) {
-				pointInPlanes = false;
-				break;
+				// Count the point as in if an adjacent edge is in the plane,
+				// so that edges that pass through parallel (camera) planes will
+				// be counted
+				for (unsigned n = 0; n < 3; n++) {
+					unsigned aPoint = i ^ (1 << n); 
+					bool m = distances[k][aPoint] >= 0 && distances[aPlane][i] >= 0;
+					edgeIn |= m;
+				}
+
+				// can't be in the plane if the point isn't in and no edges are in
+				if (!edgeIn) {
+					pointInPlanes = false;
+					break;
+				}
 			}
 		}
 
-		anyIn = anyIn || pointInPlanes;
+		anyIn |= pointInPlanes;
 	}
 
 	return anyIn;

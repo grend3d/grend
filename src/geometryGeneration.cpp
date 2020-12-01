@@ -165,6 +165,7 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 	setNode("mesh", ret, mesh);
 	ret->genNormals();
 	ret->genTangents();
+	ret->genAABBs();
 
 	// TODO: these should be set in gen...()
 	ret->haveNormals = ret->haveTexcoords = true;
