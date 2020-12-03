@@ -346,9 +346,12 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 
 void grendx::packLight(gameLightPoint::ptr light,
                        point_std140 *p,
-                       renderContext::ptr rctx)
+                       renderContext::ptr rctx,
+                       glm::mat4& trans)
 {
-	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	glm::vec3 rpos = applyTransform(trans);
+
+	memcpy(p->position, glm::value_ptr(rpos), sizeof(float[3]));
 	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
 	p->intensity = light->intensity;
 	p->radius    = light->radius;
@@ -364,12 +367,14 @@ void grendx::packLight(gameLightPoint::ptr light,
 
 void grendx::packLight(gameLightSpot::ptr light,
                        spot_std140 *p,
-                       renderContext::ptr rctx)
+                       renderContext::ptr rctx,
+                       glm::mat4& trans)
 {
+	glm::vec3 rpos = applyTransform(trans);
 	glm::vec3 rotvec =
 		glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
 
-	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	memcpy(p->position, glm::value_ptr(rpos), sizeof(float[3]));
 	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
 	memcpy(p->direction, glm::value_ptr(rotvec), sizeof(float[3]));
 
@@ -386,12 +391,14 @@ void grendx::packLight(gameLightSpot::ptr light,
 
 void grendx::packLight(gameLightDirectional::ptr light,
                        directional_std140 *p,
-                       renderContext::ptr rctx)
+                       renderContext::ptr rctx,
+                       glm::mat4& trans)
 {
+	glm::vec3 rpos = applyTransform(trans);
 	glm::vec3 rotvec =
 		glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
 
-	memcpy(p->position, glm::value_ptr(light->transform.position), sizeof(float[3]));
+	memcpy(p->position, glm::value_ptr(rpos), sizeof(float[3]));
 	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
 	memcpy(p->direction, glm::value_ptr(rotvec), sizeof(float[3]));
 
@@ -406,11 +413,15 @@ void grendx::packLight(gameLightDirectional::ptr light,
 
 void grendx::packRefprobe(gameReflectionProbe::ptr probe,
                           lights_std140 *p,
-                          renderContext::ptr rctx)
+                          renderContext::ptr rctx,
+                          glm::mat4& trans)
 {
 	if (probe == nullptr) {
 		return;
 	}
+
+	// TODO: translation
+	glm::vec3 rpos = applyTransform(trans);
 
 	// TODO: configurable number of mipmap levels
 	for (unsigned k = 0; k < 5; k++) {
@@ -429,14 +440,12 @@ void grendx::packRefprobe(gameReflectionProbe::ptr probe,
 		}
 	}
 
-	glm::vec3 boxmin = probe->transform.position + probe->boundingBox.min;
-	glm::vec3 boxmax = probe->transform.position + probe->boundingBox.max;
+	glm::vec3 boxmin = rpos + probe->boundingBox.min;
+	glm::vec3 boxmax = rpos + probe->boundingBox.max;
 
 	memcpy(p->refboxMin, glm::value_ptr(boxmin), sizeof(GLfloat[3]));
 	memcpy(p->refboxMax, glm::value_ptr(boxmax), sizeof(GLfloat[3]));
-	memcpy(p->refprobePosition,
-	       glm::value_ptr(probe->transform.position),
-	       sizeof(GLfloat[3]));
+	memcpy(p->refprobePosition, glm::value_ptr(rpos), sizeof(GLfloat[3]));
 }
 
 void grendx::invalidateLightMaps(gameObject::ptr tree) {

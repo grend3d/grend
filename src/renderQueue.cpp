@@ -87,6 +87,10 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 void renderQueue::updateLights(Program::ptr program, renderContext::ptr rctx) {
 	// TODO: should probably apply the transform to light position
 	for (auto& [_, __, light] : lights) {
+		if (!light->casts_shadows) {
+			continue;
+		}
+
 		if (light->lightType == gameLight::lightTypes::Point) {
 			// TODO: check against view frustum to see if this light is visible,
 			//       avoid rendering shadow maps if not
@@ -175,10 +179,8 @@ void renderQueue::sort(void) {
 			auto& [a_trans, _,  a_mesh] = a;
 			auto& [b_trans, __, b_mesh] = b;
 
-			glm::vec4 ta = a_trans*glm::vec4(0, 0, 0, 1);
-			glm::vec4 tb = b_trans*glm::vec4(0, 0, 0, 1);
-			glm::vec3 va = glm::vec3(ta)/ta.w;
-			glm::vec3 vb = glm::vec3(tb)/tb.w;
+			glm::vec3 va = applyTransform(a_trans);
+			glm::vec3 vb = applyTransform(b_trans);
 
 			return glm::distance(cam->position(), va)
 				< glm::distance(cam->position(), vb);
@@ -240,12 +242,9 @@ void renderQueue::cull(unsigned width, unsigned height) {
 	for (auto it = lights.begin(); it != lights.end(); it++) {
 		auto& [trans, _, lit] = *it;
 
-		glm::vec4 temp = (trans)*glm::vec4(0, 0, 0, 1);
-		glm::vec3 pos = glm::vec3(temp) / temp.w;
-
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
-		if (cam->sphereInFrustum(pos, lit->extent())) {
+		if (cam->sphereInFrustum(applyTransform(trans), lit->extent())) {
 			tempLights.push_back(*it);
 		}
 	}
@@ -293,10 +292,16 @@ static void drawMesh(renderFlags& flags,
 	}
 
 	bindVao(mesh->comped_mesh->vao);
+	/*
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glLineWidth(2.0);
+	enable(GL_LINE_SMOOTH);
+	*/
 	glDrawElements(GL_TRIANGLES,
 	               mesh->comped_mesh->elements->size / sizeof(GLuint),
 	               GL_UNSIGNED_INT,
 	               (void*)mesh->comped_mesh->elements->offset);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 unsigned renderQueue::flush(unsigned width,
@@ -459,15 +464,8 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 				offset = 0.0;
 			}
 
-			glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
-			/*
-			set_reflection_probe(
-				nearest_reflection_probe(glm::vec3(apos)/apos.w),
-				flags.skinnedShader,
-				rctx->atlases);
-				*/
 			set_irradiance_probe(
-				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+				nearest_irradiance_probe(applyTransform(transform)),
 				flags.skinnedShader,
 				rctx->atlases);
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
@@ -486,14 +484,8 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		glm::vec4 apos = transform * glm::vec4(0, 0, 0, 1);
-		/*
-		set_reflection_probe(
-			nearest_reflection_probe(glm::vec3(apos)/apos.w),
-			flags.mainShader, rctx->atlases);
-			*/
 		set_irradiance_probe(
-			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+			nearest_irradiance_probe(applyTransform(transform)),
 			flags.mainShader, rctx->atlases);
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -595,13 +587,16 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 }
 
+typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
+typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
+typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
 
 static void syncUniformBuffer(Program::ptr program,
 	                          renderContext::ptr rctx,
 	                          gameReflectionProbe::ptr refprobe,
-	                          std::vector<gameLightPoint::ptr>& points,
-	                          std::vector<gameLightSpot::ptr>& spots,
-	                          std::vector<gameLightDirectional::ptr>& directionals)
+	                          pointList& points,
+	                          spotList& spots,
+	                          dirList& directionals)
 {
 	size_t pactive = min(MAX_LIGHTS, points.size());
 	size_t sactive = min(MAX_LIGHTS, spots.size());
@@ -614,22 +609,23 @@ static void syncUniformBuffer(Program::ptr program,
 	lightbuf.uactive_spot_lights        = sactive;
 	lightbuf.uactive_directional_lights = dactive;
 
-	packRefprobe(refprobe, &lightbuf, rctx);
+	glm::mat4 xxx(1);
+	packRefprobe(refprobe, &lightbuf, rctx, xxx);
 
 	// so much nicer
 	for (size_t i = 0; i < pactive; i++) {
-		gameLightPoint::ptr light = points[i];
-		packLight(light, lightbuf.upoint_lights + i, rctx);
+		gameLightPoint::ptr light = points[i].second;
+		packLight(light, lightbuf.upoint_lights + i, rctx, points[i].first);
 	}
 
 	for (size_t i = 0; i < sactive; i++) {
-		gameLightSpot::ptr light = spots[i];
-		packLight(light, lightbuf.uspot_lights + i, rctx);
+		gameLightSpot::ptr light = spots[i].second;
+		packLight(light, lightbuf.uspot_lights + i, rctx, spots[i].first);
 	}
 
 	for (size_t i = 0; i < dactive; i++) {
-		gameLightDirectional::ptr light = directionals[i];
-		packLight(light, lightbuf.udirectional_lights + i, rctx);
+		gameLightDirectional::ptr light = directionals[i].second;
+		packLight(light, lightbuf.udirectional_lights + i, rctx, directionals[i].first);
 	}
 
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
@@ -638,9 +634,9 @@ static void syncUniformBuffer(Program::ptr program,
 }
 
 void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
-	std::vector<gameLightPoint::ptr>       point_lights;
-	std::vector<gameLightSpot::ptr>        spot_lights;
-	std::vector<gameLightDirectional::ptr> directional_lights;
+	pointList point_lights;
+	spotList  spot_lights;
+	dirList   directional_lights;
 
 	for (auto& [trans, _, light] : lights) {
 		switch (light->lightType) {
@@ -648,7 +644,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				{
 					gameLightPoint::ptr plit =
 						std::dynamic_pointer_cast<gameLightPoint>(light);
-					point_lights.push_back(plit);
+					point_lights.push_back({trans, plit});
 				}
 				break;
 
@@ -656,7 +652,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				{
 					gameLightSpot::ptr slit =
 						std::dynamic_pointer_cast<gameLightSpot>(light);
-					spot_lights.push_back(slit);
+					spot_lights.push_back({trans, slit});
 				}
 				break;
 
@@ -664,7 +660,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				{
 					gameLightDirectional::ptr dlit =
 						std::dynamic_pointer_cast<gameLightDirectional>(light);
-					directional_lights.push_back(dlit);
+					directional_lights.push_back({trans, dlit});
 				}
 				break;
 

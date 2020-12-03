@@ -189,8 +189,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		game->rend->setFlags(probeFlags);
 		refShader->bind();
 
-		for (auto& [_, __, probe] : tempque.probes) {
-			probeObj->transform.position = probe->transform.position;
+		for (auto& [trans, __, probe] : tempque.probes) {
+			probeObj->transform.position = applyTransform(trans);
 			probeObj->transform.scale    = glm::vec3(0.5);
 
 			for (unsigned i = 0; i < 6; i++) {
@@ -208,8 +208,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		game->rend->setFlags(probeFlags);
 		irradShader->bind();
 
-		for (auto& [_, __, probe] : tempque.irradProbes) {
-			probeObj->transform.position = probe->transform.position;
+		for (auto& [trans, __, probe] : tempque.irradProbes) {
+			probeObj->transform.position = applyTransform(trans);
 			probeObj->transform.scale    = glm::vec3(0.5);
 
 			for (unsigned i = 0; i < 6; i++) {
@@ -230,8 +230,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			= game->rend->shaders["unshaded"];
 
 		game->rend->setFlags(unshadedFlags);
-		for (auto& [_, __, light] : tempque.lights) {
-			probeObj->transform.position = light->transform.position;
+		for (auto& [trans, __, light] : tempque.lights) {
+			probeObj->transform.position = applyTransform(trans);
 			probeObj->transform.scale = glm::vec3(0.5);
 			que.add(probeObj);
 			que.flush(game->rend->framebuffer, game->rend);

@@ -235,13 +235,13 @@ struct lights_std140 {
 } __attribute__((packed));
 
 void packLight(gameLightPoint::ptr light, point_std140 *p,
-               renderContext::ptr rctx);
+               renderContext::ptr rctx, glm::mat4& trans);
 void packLight(gameLightSpot::ptr light, spot_std140 *p,
-               renderContext::ptr rctx);
+               renderContext::ptr rctx, glm::mat4& trans);
 void packLight(gameLightDirectional::ptr light, directional_std140 *p,
-               renderContext::ptr rctx);
+               renderContext::ptr rctx, glm::mat4& trans);
 void packRefprobe(gameReflectionProbe::ptr probe, lights_std140 *p,
-                  renderContext::ptr rctx);
+                  renderContext::ptr rctx, glm::mat4& trans);
 
 float light_extent(struct point_light *p, float threshold=0.03);
 float light_extent(struct spot_light *s, float threshold=0.03);

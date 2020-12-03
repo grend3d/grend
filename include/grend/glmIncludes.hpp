@@ -9,3 +9,12 @@
 #include <glm/gtx/transform.hpp>
 //#include <glm/gtx/matrix_decompose.hpp>
 
+namespace grendx {
+
+static inline glm::vec3 applyTransform(const glm::mat4& m, glm::vec3 v={0, 0, 0}) {
+	glm::vec4 apos = m*glm::vec4(v, 1.0);
+	return glm::vec3(apos) / apos.w;
+}
+
+// namespace grendx;
+}
