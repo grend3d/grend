@@ -16,7 +16,7 @@
 
 // XXX:  toggle using textures/models I have locally, don't want to
 //       bloat the assets folder again
-#define LOCAL_BUILD 0
+#define LOCAL_BUILD 1
 
 using namespace grendx;
 
@@ -226,6 +226,24 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 						setNode("tree", ntree, treeNode);
 						setNode(name, ptr, ntree);
 					}
+
+					int randlight = (posgrad.y + 1.0)*0.5 * 7 * (1.0 - baseElevation/50.0);
+
+					for (int i = 0; i < randlight; i++) {
+						gameObject::ptr nlit = std::make_shared<gameLightPoint>();
+						glm::vec2 pos = randomGradient(glm::vec2(2*coord.x + i, 2*coord.z + i));
+
+						float tx = ((pos.x + 1)*0.5) * cellsize;
+						float ty = ((pos.y + 1)*0.5) * cellsize;
+
+						nlit->transform.position = glm::vec3(
+							tx, landscapeThing(coord.x + tx, coord.z + ty) + 1.5, ty
+						);
+
+						std::string name = "point["+std::to_string(i)+"]";
+						setNode(name, ptr, nlit);
+					}
+
 					temp[x][y] = ptr;
 					fut.wait();
 					return true;
