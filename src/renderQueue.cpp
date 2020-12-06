@@ -432,6 +432,10 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 		enable(GL_DEPTH_TEST);
 		glDepthMask(GL_TRUE);
 		glDepthFunc(GL_LESS);
+
+	} else {
+		disable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
 	}
 
 	assert(fb != nullptr);

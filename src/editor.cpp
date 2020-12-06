@@ -95,11 +95,11 @@ void gameEditor::loadUIModels(void) {
 
 	UIObjects = gameObject::ptr(new gameObject());
 	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
-	gameObject::ptr yptr = gameObject::ptr(new clicker(this, mode::MoveZ));
-	gameObject::ptr zptr = gameObject::ptr(new clicker(this, mode::MoveY));
+	gameObject::ptr yptr = gameObject::ptr(new clicker(this, mode::MoveY));
+	gameObject::ptr zptr = gameObject::ptr(new clicker(this, mode::MoveZ));
 	gameObject::ptr xrot = gameObject::ptr(new clicker(this, mode::RotateX));
-	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateZ));
-	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateY));
+	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateY));
+	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateZ));
 	gameObject::ptr orientation = gameObject::ptr(new gameObject());
 	gameObject::ptr cursor      = gameObject::ptr(new gameObject());
 	gameObject::ptr bbox        = gameObject::ptr(new gameObject());
@@ -136,21 +136,23 @@ void gameEditor::render(gameMain *game) {
 	renderQueue que(cam);
 	auto flags = game->rend->getFlags();
 
-	// draw UI objects before others, to avoid UI objects not being in the
-	// stencil buffer if the stencil counter overflows (and so not being
-	// clickable)
+	game->rend->setFlags(game->rend->getDefaultFlags());
+	renderWorld(game, cam);
+	renderWorldObjects(game);
+
+	// TODO: this results in cursor not being clickable if the render
+	//       object buffer has more than the stencil buffer can hold...
+	//       also current stencil buffer access results in syncronizing the pipeline,
+	//       need an overall better solution for clickable things
 	// TODO: maybe attach shaders to gameObjects
 	// TODO: skinned unshaded shader
 	auto unshadedFlags = flags;
 	unshadedFlags.mainShader = unshadedFlags.skinnedShader
 		= game->rend->shaders["unshaded"];
+	unshadedFlags.depth = false;
 	game->rend->setFlags(unshadedFlags);
 	que.add(UIObjects);
 	que.flush(game->rend->framebuffer, game->rend);
-
-	game->rend->setFlags(game->rend->getDefaultFlags());
-	renderWorld(game, cam);
-	renderWorldObjects(game);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
@@ -346,7 +348,8 @@ void gameEditor::logic(gameMain *game, float delta) {
 			auto ptr = orientation->getNode(str);
 
 			ptr->transform = selectedNode->transform;
-			ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
+			//ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
+			ptr->transform.scale = glm::vec3(glm::distance(ptr->transform.position, cam->position()) * 0.22);
 		}
 
 		if (selectedNode->type == gameObject::objType::ReflectionProbe) {

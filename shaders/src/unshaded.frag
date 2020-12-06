@@ -12,5 +12,5 @@ precision mediump samplerCube;
 void main(void) {
 	vec3 albedo = anmaterial.diffuse.rgb * anmaterial.diffuse.w;
 
-	FRAG_COLOR = vec4(albedo, 1.0);
+	FRAG_COLOR = vec4(albedo, anmaterial.opacity);
 }
