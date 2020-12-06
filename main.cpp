@@ -230,12 +230,14 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					int randlight = (posgrad.y + 1.0)*0.5 * 7 * (1.0 - baseElevation/50.0);
 
 					for (int i = 0; i < randlight; i++) {
-						gameObject::ptr nlit = std::make_shared<gameLightPoint>();
+						gameLightPoint::ptr nlit = std::make_shared<gameLightPoint>();
 						glm::vec2 pos = randomGradient(glm::vec2(2*coord.x + i, 2*coord.z + i));
 
 						float tx = ((pos.x + 1)*0.5) * cellsize;
 						float ty = ((pos.y + 1)*0.5) * cellsize;
 
+						nlit->radius = 0.15;
+						nlit->intensity = 500.0;
 						nlit->transform.position = glm::vec3(
 							tx, landscapeThing(coord.x + tx, coord.z + ty) + 1.5, ty
 						);
