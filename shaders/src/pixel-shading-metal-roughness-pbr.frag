@@ -41,7 +41,7 @@ void main(void) {
 		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
-	vec3 albedo = texcolor.rgb;
+	vec3 albedo = anmaterial.diffuse.rgb * texcolor.rgb * anmaterial.diffuse.w;
 	float opacity = texcolor.a * anmaterial.opacity;
 
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
@@ -57,7 +57,7 @@ void main(void) {
 		(radmap.rgb * anmaterial.diffuse.rgb * albedo * Fdiff * aoidx)
 		+ (anmaterial.emissive.rgb * emissive.rgb);
 
-	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+	for (uint i = 0u; i < ACTIVE_POINTS(cluster); i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));
 		float shadow = point_shadow(i, cluster, vec3(f_position));
 
@@ -72,7 +72,7 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+	for (uint i = 0u; i < ACTIVE_SPOTS(cluster); i++) {
 		float atten = spot_attenuation(i, cluster, vec3(f_position));
 		float shadow = spot_shadow(i, cluster, vec3(f_position));
 		vec3 lum =
@@ -87,7 +87,7 @@ void main(void) {
 		total_light += lum*atten*aoidx;
 	}
 
-	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL(cluster); i++) {
 		float atten = directional_attenuation(i, cluster, vec3(f_position));
 		vec3 lum = mrp_lighting(
 			vec3(f_position) - DIRECTIONAL_LIGHT(i, cluster).direction,
@@ -116,7 +116,9 @@ void main(void) {
 	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
 
+	//total_light *= 0.001;
 	total_light += 0.5 * (1.0 - a) * env * Fb;
+//	total_light += env;
 
 #if ENABLE_REFRACTION
 	vec3 ref_light = vec3(0);
@@ -133,5 +135,10 @@ void main(void) {
 
 	// apply tonemapping here if there's no postprocessing step afterwards
 	total_light = EARLY_TONEMAP(total_light, 1.0);
+#if 0
+	FRAG_COLOR = vec4(total_light +
+		vec3(0.01*pow(float((cluster / 2u)), 1.0/2.2), pow(0.05*float(ACTIVE_POINTS(cluster)), 1.0/2.2), 0), opacity);
+#else
 	FRAG_COLOR = vec4(total_light, opacity);
+#endif
 }

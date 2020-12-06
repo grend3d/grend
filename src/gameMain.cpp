@@ -114,6 +114,10 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		DO_ERROR_CHECK();
 
 		que.cull(game->rend->framebuffer->width, game->rend->framebuffer->height);
+		que.sort();
+		buildTilemap(que, game->rend);
+		que.updateReflectionProbe(game->rend);
+		//buildTilemap(que, game->rend);
 		game->rend->setFlags(game->rend->getDefaultFlags());
 		game->metrics.drawnMeshes += que.flush(game->rend->framebuffer, game->rend);
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);

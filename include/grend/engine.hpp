@@ -17,9 +17,94 @@
 
 #include <stdint.h>
 
-static const size_t MAX_LIGHTS = 16;
-
 namespace grendx {
+
+#ifndef MAX_LIGHTS
+#define MAX_LIGHTS 8
+#endif
+
+// TODO: need some unified location to put this, there's a duplicated definition
+//       of this in shaders/lib/shading-uniforms.glsl
+#if defined(CLUSTERED_LIGHTS) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
+// for clustered, tiled, number of possible light objects available (ie. in view)
+#ifndef MAX_POINT_LIGHT_OBJECTS
+#define MAX_POINT_LIGHT_OBJECTS 1024
+#endif
+
+#ifndef MAX_SPOT_LIGHT_OBJECTS
+#define MAX_SPOT_LIGHT_OBJECTS 1024
+#endif
+
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS 32
+#endif
+
+#else // if < opengl 4.3
+#ifndef MAX_POINT_LIGHT_OBJECTS
+#define MAX_POINT_LIGHT_OBJECTS 64
+#endif
+
+#ifndef MAX_SPOT_LIGHT_OBJECTS
+#define MAX_SPOT_LIGHT_OBJECTS 32
+#endif
+
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#endif
+#endif // < opengl 4.3
+
+struct point_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat intensity;     // 32
+	GLfloat radius;        // 36
+	GLuint  casts_shadows; // 40
+	GLfloat padding;       // 44, pad to 48
+	GLfloat shadowmap[24]; // 48, end 144
+} __attribute__((packed));
+
+struct spot_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat direction[3];  // 32
+	GLfloat intensity;     // 44
+	GLfloat radius;        // 48
+	GLfloat angle;         // 52
+	GLuint  casts_shadows; // 56
+	GLuint  padding;       // 60, pad to 64
+	GLfloat shadowmap[4];  // 64, end 80
+} __attribute__((packed));
+
+struct directional_std140 {
+	GLfloat position[4];   // 0
+	GLfloat diffuse[4];    // 16
+	GLfloat direction[3];  // 32
+	GLfloat intensity;     // 44
+	GLuint  casts_shadows; // 48
+	GLfloat padding[3];    // 52, pad to 64
+	GLfloat shadowmap[4];  // 64, end 80
+} __attribute__((packed));
+
+struct lights_std140 {
+	GLuint uactive_point_lights;       // 0
+	GLuint uactive_spot_lights;        // 4
+	GLuint uactive_directional_lights; // 8
+	GLuint padding;                    // 12, end 16
+
+	GLfloat reflection_probe[30 * 4];
+	GLfloat refboxMin[4];
+	GLfloat refboxMax[4];
+	GLfloat refprobePosition[4];       // end 528 + 16
+
+	point_std140 upoint_lights[MAX_POINT_LIGHT_OBJECTS];
+	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS];
+	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS];
+} __attribute__((packed));
+
+struct light_tiles_std140 {
+	GLfloat point_tiles[8*24*MAX_LIGHTS];
+	GLfloat spot_tiles[8*24*MAX_LIGHTS];
+} __attribute__((packed));
 
 class skybox {
 	public:
@@ -99,6 +184,10 @@ class renderContext {
 		// XXX: loaded shaders, here so they can be accessed from the editor
 		std::map<std::string, Program::ptr> shaders;
 		Buffer::ptr lightBuffer;
+		Buffer::ptr lightTiles;
+
+		lights_std140      lightBufferCtx;
+		light_tiles_std140 lightTilesCtx;
 
 	protected:
 		Program::ptr shader;
@@ -143,6 +232,7 @@ class renderQueue {
 		                bool inverted = false);
 		void updateLights(Program::ptr program, renderContext::ptr rctx);
 		void updateReflections(Program::ptr program, renderContext::ptr rctx);
+		void updateReflectionProbe(renderContext::ptr rctx);
 		void sort(void);
 		void cull(unsigned width, unsigned height);
 		unsigned flush(renderFramebuffer::ptr fb, renderContext::ptr rctx);
@@ -181,58 +271,7 @@ void drawIrradianceProbe(renderQueue& queue,
                          gameIrradianceProbe::ptr probe,
                          renderContext::ptr rctx);
 
-#ifndef MAX_LIGHTS
-#warning "Should define MAX_LIGHTS somewhere eh"
-#define MAX_LIGHTS 8
-#endif
-
-struct point_std140 {
-	GLfloat position[4];   // 0
-	GLfloat diffuse[4];    // 16
-	GLfloat intensity;     // 32
-	GLfloat radius;        // 36
-	GLuint  casts_shadows; // 40
-	GLfloat padding;       // 44, pad to 48
-	GLfloat shadowmap[24]; // 48, end 144
-} __attribute__((packed));
-
-struct spot_std140 {
-	GLfloat position[4];   // 0
-	GLfloat diffuse[4];    // 16
-	GLfloat direction[3];  // 32
-	GLfloat intensity;     // 44
-	GLfloat radius;        // 48
-	GLfloat angle;         // 52
-	GLuint  casts_shadows; // 56
-	GLuint  padding;       // 60, pad to 64
-	GLfloat shadowmap[4];  // 64, end 80
-} __attribute__((packed));
-
-struct directional_std140 {
-	GLfloat position[4];   // 0
-	GLfloat diffuse[4];    // 16
-	GLfloat direction[3];  // 32
-	GLfloat intensity;     // 44
-	GLuint  casts_shadows; // 48
-	GLfloat padding[3];    // 52, pad to 64
-	GLfloat shadowmap[4];  // 64, end 80
-} __attribute__((packed));
-
-struct lights_std140 {
-	GLuint uactive_point_lights;       // 0
-	GLuint uactive_spot_lights;        // 4
-	GLuint uactive_directional_lights; // 8
-	GLuint padding;                    // 12, end 16
-
-	GLfloat reflection_probe[30 * 4];
-	GLfloat refboxMin[4];
-	GLfloat refboxMax[4];
-	GLfloat refprobePosition[4];
-
-	point_std140 upoint_lights[MAX_LIGHTS];
-	spot_std140 uspot_lights[MAX_LIGHTS];
-	directional_std140 udirectional_lights[MAX_LIGHTS];
-} __attribute__((packed));
+void buildTilemap(renderQueue& queue, renderContext::ptr rctx);
 
 void packLight(gameLightPoint::ptr light, point_std140 *p,
                renderContext::ptr rctx, glm::mat4& trans);

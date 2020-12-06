@@ -1,5 +1,5 @@
 #pragma once
-#include <lib/shading-uniforms.glsl>
+//#include <lib/shading-uniforms.glsl>
 #include <lib/utility.glsl>
 #include <lib/constants.glsl>
 
@@ -78,9 +78,7 @@ vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
 	vec3 light_dir = normalize(light_vertex / dist);
 	vec3 half_dir = normalize(light_dir + view);
 
-	vec3 base = anmaterial.diffuse.w * light_color.w
-		* vec3(light_color)*vec3(anmaterial.diffuse)
-		* albedo;
+	vec3 base = light_color.w * vec3(light_color) * albedo;
 
 	vec3 Fa = F(f_0(base, metallic), view, half_dir);
 	vec3 ca = c_diff(base, metallic);

@@ -167,11 +167,25 @@ renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
 }
 
 void renderQueue::sort(void) {
-	typedef std::tuple<glm::mat4, bool, gameMesh::ptr> draw_ent;
+	typedef std::tuple<glm::mat4, bool, gameMesh::ptr>  draw_ent;
+	typedef std::tuple<glm::mat4, bool, gameLight::ptr> light_ent;
 
 	// TODO: better way to do this, in-place?
 	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> transparent;
 	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> opaque;
+
+	std::sort(lights.begin(), lights.end(),
+		[&] (light_ent& a, light_ent& b) {
+			// TODO: why not just define a struct
+			auto& [a_trans, _,  a_mesh] = a;
+			auto& [b_trans, __, b_mesh] = b;
+
+			glm::vec3 va = applyTransform(a_trans);
+			glm::vec3 vb = applyTransform(b_trans);
+
+			return glm::distance(cam->position(), va)
+				< glm::distance(cam->position(), vb);
+		});
 
 	std::sort(meshes.begin(), meshes.end(),
 		[&] (draw_ent& a, draw_ent& b) {
@@ -590,6 +604,149 @@ static void syncPlainUniforms(Program::ptr program,
 typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
 typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
 typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
+typedef std::tuple<pointList, spotList, dirList> lightLists;
+
+// TODO: possibly move this to it's own file
+#include <grend/plane.hpp>
+void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
+	lights_std140&      lightbuf = rctx->lightBufferCtx;
+	light_tiles_std140& tilebuf  = rctx->lightTilesCtx;
+
+	camera::ptr cam = queue.cam;
+	float rx = glm::radians(cam->fovx());
+	float ry = glm::radians(cam->fovy());
+
+	size_t activePoints = 0;
+	size_t activeSpots = 0;
+	size_t activeDirs = 0;
+
+	// TODO: put arrays in one big struct so that this can be just one memset()
+	memset(&lightbuf.upoint_lights, 0, sizeof(lightbuf.upoint_lights));
+	memset(&lightbuf.uspot_lights, 0, sizeof(lightbuf.uspot_lights));
+	memset(&lightbuf.udirectional_lights, 0, sizeof(lightbuf.udirectional_lights));
+	memset(&tilebuf,  0, sizeof(tilebuf));
+
+	// TODO: parallelism
+	auto buildTiles = [&] (gameLight::ptr lit, glm::mat4& trans, unsigned idx) {
+		plane planes[6];
+		glm::vec3 dirs[6];
+		glm::vec3 nearpos = cam->position() + cam->direction()*cam->near();
+
+		unsigned y = 0;
+		for (float ty = ry/2.0; ty > -ry/2.0; ty -= ry/8.0, y++) {
+			unsigned x = 0;
+			for (float tx = rx/2.0; tx > -rx/2.0; tx -= rx/24.0, x++) {
+				unsigned cluster = MAX_LIGHTS * (x + y*24);
+				// TODO: rectlinear project doesn't map world angles to screen
+				//       space uniformly, need to adjust world angles for uniform
+				//       screen angles
+				// left
+				planes[0].n = glm::rotate(cam->right(), tx, cam->up());
+				planes[0].d = -glm::dot(planes[0].n, nearpos);
+
+				// right
+				planes[1].n = -glm::rotate(cam->right(), tx - rx/24.f, cam->up());
+				planes[1].d = -glm::dot(planes[1].n, nearpos);
+
+				// bottom
+				planes[2].n = glm::rotate(cam->up(), ty, cam->right());
+				planes[2].d = -glm::dot(planes[2].n, nearpos);
+
+				// top
+				planes[3].n = -glm::rotate(cam->up(), ty - ry/8.f, cam->right());
+				planes[3].d = -glm::dot(planes[3].n, nearpos);
+
+				// near
+				planes[4].n = cam->direction();
+				planes[4].d = -glm::dot(planes[4].n, nearpos);
+
+				// far
+				planes[5].n = -cam->direction();
+				planes[5].d = -glm::dot(planes[5].n, cam->position() + cam->direction()*cam->far());
+
+				unsigned in = 0;
+				for (unsigned i = 0; i < 6; i++) {
+					///in += planes[i].inPlane(applyTransform(trans), lit->extent(0.1));
+					in += planes[i].inPlane(applyTransform(trans), lit->extent());
+				}
+
+				if (in == 6) {
+					if (lit->lightType == gameLight::lightTypes::Point) {
+						gameLightPoint::ptr plit =
+							std::dynamic_pointer_cast<gameLightPoint>(lit);
+
+						unsigned cur  = tilebuf.point_tiles[cluster];
+						unsigned next = cur + 1;
+
+						if (next < MAX_LIGHTS) {
+							tilebuf.point_tiles[cluster]        = next;
+							tilebuf.point_tiles[cluster + next] = idx;
+						}
+
+					} else if (lit->lightType == gameLight::lightTypes::Spot) {
+						gameLightSpot::ptr plit =
+							std::dynamic_pointer_cast<gameLightSpot>(lit);
+
+						unsigned cur  = tilebuf.spot_tiles[cluster];
+						unsigned next = cur + 1;
+
+						if (next < MAX_LIGHTS) {
+							tilebuf.spot_tiles[cluster]        = next;
+							tilebuf.spot_tiles[cluster + next] = idx;
+						}
+					}
+				}
+			}
+		}
+	};
+
+	for (auto& [trans, _, lit] : queue.lights) {
+		glm::vec3 pos = applyTransform(trans);
+
+		if (activePoints < MAX_POINT_LIGHT_OBJECTS &&
+		    lit->lightType == gameLight::lightTypes::Point)
+		{
+			gameLightPoint::ptr plit =
+				std::dynamic_pointer_cast<gameLightPoint>(lit);
+
+			packLight(plit,
+					  lightbuf.upoint_lights + activePoints,
+					  rctx, trans);
+			buildTiles(lit, trans, activePoints);
+			activePoints++;
+
+		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS
+		           && lit->lightType == gameLight::lightTypes::Spot)
+		{
+			gameLightSpot::ptr slit =
+				std::dynamic_pointer_cast<gameLightSpot>(lit);
+
+			packLight(slit,
+					  lightbuf.uspot_lights + activeSpots,
+					  rctx, trans);
+			buildTiles(lit, trans, activeSpots);
+			activeSpots++;
+
+		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS
+		          && lit->lightType == gameLight::lightTypes::Directional)
+		{
+			gameLightDirectional::ptr dlit =
+				std::dynamic_pointer_cast<gameLightDirectional>(lit);
+
+			packLight(dlit,
+					  lightbuf.udirectional_lights + activeDirs,
+					  rctx, trans);
+			activeDirs++;
+		}
+	}
+
+	lightbuf.uactive_point_lights       = activePoints;
+	lightbuf.uactive_spot_lights        = activeSpots;
+	lightbuf.uactive_directional_lights = activeDirs;
+
+	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
+	rctx->lightTiles->update(&tilebuf, 0, sizeof(tilebuf));
+}
 
 static void syncUniformBuffer(Program::ptr program,
 	                          renderContext::ptr rctx,
@@ -598,12 +755,15 @@ static void syncUniformBuffer(Program::ptr program,
 	                          spotList& spots,
 	                          dirList& directionals)
 {
-	size_t pactive = min(MAX_LIGHTS, points.size());
-	size_t sactive = min(MAX_LIGHTS, spots.size());
-	size_t dactive = min(MAX_LIGHTS, directionals.size());
+	size_t pactive = min(MAX_POINT_LIGHT_OBJECTS,       points.size());
+	size_t sactive = min(MAX_SPOT_LIGHT_OBJECTS,        spots.size());
+	size_t dactive = min(MAX_DIRECTIONAL_LIGHT_OBJECTS, directionals.size());
 
 	// TODO: keep copy of lightbuf around...
+	//lights_std140&      lightbuf   = rctx->lightBufferCtx;
+	//light_tiles_std140& lighttiles = rctx->lightTilesCtx;
 	lights_std140 lightbuf;
+	light_tiles_std140 tilebuf;
 
 	lightbuf.uactive_point_lights       = pactive;
 	lightbuf.uactive_spot_lights        = sactive;
@@ -628,12 +788,47 @@ static void syncUniformBuffer(Program::ptr program,
 		packLight(light, lightbuf.udirectional_lights + i, rctx, directionals[i].first);
 	}
 
+	for (unsigned i = 0; i < 8*24*MAX_LIGHTS; i++) {
+		if (i % MAX_LIGHTS == 0) {
+			//tilebuf.point_tiles[3 - (i&3)] = float((i >> 3) & 3);
+			tilebuf.point_tiles[i] = 1 + ((i >> 3) % 3);
+
+		} else {
+			tilebuf.point_tiles[i] = float(i % 4);
+		}
+		tilebuf.spot_tiles[i]  = 0;
+		//std::cerr << "setting light " << i << std::endl;
+	}
+
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
+	rctx->lightTiles->update(&tilebuf, 0, sizeof(tilebuf));
 	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights_std140), &lightbuf);
 	//rctx->lightBuffer->unmap();
 }
 
+void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
+	auto refprobe = nearest_reflection_probe(cam->position());
+
+	// TODO: set the real transform
+	glm::mat4 xxx(1);
+	packRefprobe(refprobe, &rctx->lightBufferCtx, rctx, xxx);
+	//rctx->lightBuffer->update(&rctx->lightBufferCtx, 16, 528);
+	rctx->lightBuffer->update(&rctx->lightBufferCtx, 0, sizeof(rctx->lightBufferCtx));
+}
+
 void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
+
+#if GLSL_VERSION >= 140
+	program->setUniformBlock("lights", rctx->lightBuffer, 2);
+	program->setUniformBlock("light_tiles", rctx->lightTiles, 3);
+
+	/*
+	syncUniformBuffer(program, rctx, refprobe, point_lights,
+	                  spot_lights, directional_lights);
+					  */
+	DO_ERROR_CHECK();
+
+#else
 	pointList point_lights;
 	spotList  spot_lights;
 	dirList   directional_lights;
@@ -669,15 +864,6 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 		}
 	}
 
-	auto refprobe = nearest_reflection_probe(cam->position());
-
-#if GLSL_VERSION >= 140
-	program->setUniformBlock("lights", rctx->lightBuffer);
-	syncUniformBuffer(program, rctx, refprobe, point_lights,
-	                  spot_lights, directional_lights);
-	DO_ERROR_CHECK();
-
-#else
 	syncPlainUniforms(program, rctx, point_lights,
 	                  spot_lights, directional_lights);
 

@@ -165,20 +165,20 @@ void Program::set(std::string uniform, glm::mat4 m4) {
 	glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(m4));
 }
 
-void Program::setUniformBlock(std::string name, Buffer::ptr buf) {
+void Program::setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding) {
 	GLuint loc = lookupUniformBlock(name);
 	if (loc != GL_INVALID_INDEX) {
 		DO_ERROR_CHECK();
 		buf->unbind();
 		DO_ERROR_CHECK();
-		glUniformBlockBinding(obj, loc, 2);
+		glUniformBlockBinding(obj, loc, binding);
 		DO_ERROR_CHECK();
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, buf->obj);
+		glBindBufferBase(GL_UNIFORM_BUFFER, binding, buf->obj);
 		DO_ERROR_CHECK();
 	}
 }
 
-void Program::setStorageBlock(std::string name, Buffer::ptr buf) {
+void Program::setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding) {
 	GLuint loc = lookupStorageBlock(name);
 	DO_ERROR_CHECK();
 	// TODO:

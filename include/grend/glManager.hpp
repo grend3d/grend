@@ -234,8 +234,8 @@ class Program : public Obj {
 		void set(std::string uniform, glm::vec4 v4);
 		void set(std::string uniform, glm::mat3 m3);
 		void set(std::string uniform, glm::mat4 m4);
-		void setUniformBlock(std::string name, Buffer::ptr buf);
-		void setStorageBlock(std::string name, Buffer::ptr buf);
+		void setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding);
+		void setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding);
 
 		GLint  lookup(std::string uniform);
 		GLuint lookupUniformBlock(std::string name);

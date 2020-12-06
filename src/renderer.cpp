@@ -25,6 +25,15 @@ renderContext::renderContext(context& ctx) {
 	lightBuffer = genBuffer(GL_UNIFORM_BUFFER);
 	lightBuffer->bind();
 	lightBuffer->allocate(sizeof(lights_std140));
+
+	lightTiles = genBuffer(GL_UNIFORM_BUFFER);
+	lightTiles->bind();
+	lightTiles->allocate(sizeof(light_tiles_std140));
+
+	memset(&lightBufferCtx, 0, sizeof(lightBufferCtx));
+	memset(&lightTilesCtx,  0, sizeof(lightTilesCtx));
+	lightBuffer->update(&lightBufferCtx, 0, sizeof(lightBufferCtx));
+	lightTiles->update(&lightTilesCtx, 0, sizeof(lightTilesCtx));
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -421,7 +430,8 @@ void grendx::packRefprobe(gameReflectionProbe::ptr probe,
 	}
 
 	// TODO: translation
-	glm::vec3 rpos = applyTransform(trans);
+	//glm::vec3 rpos = applyTransform(trans);
+	glm::vec3 rpos = probe->transform.position;
 
 	// TODO: configurable number of mipmap levels
 	for (unsigned k = 0; k < 5; k++) {

@@ -25,20 +25,21 @@ void main(void) {
 
 	vec3 metal_roughness_idx =
 		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
-	vec3 albedo = texture2D(diffuse_map, f_texcoord).rgb;
+	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
+	vec3 albedo = anmaterial.diffuse.rgb * texcolor.rgb * anmaterial.diffuse.w;
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 	vec3 total_light = (anmaterial.emissive.rgb * emissive.rgb);
 
-	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+	for (uint i = 0u; i < ACTIVE_POINTS_RAW; i++) {
 		float atten = point_attenuation(i, cluster, vec3(f_position));
 		float shadow = point_shadow(i, cluster, vec3(f_position));
 
 		vec3 lum =
 			mix(vec3(0.0),
-				mrp_lighting(POINT_LIGHT(i, cluster).position,
-				             POINT_LIGHT(i, cluster).diffuse,
+				mrp_lighting(POINT_LIGHT_RAW(i).position,
+				             POINT_LIGHT_RAW(i).diffuse,
 				             vec3(f_position), view_dir,
 				             albedo, f_normal, metallic, roughness),
 				shadow*atten);
@@ -46,20 +47,20 @@ void main(void) {
 		total_light += lum;
 	}
 
-	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+	for (uint i = 0u; i < ACTIVE_SPOTS_RAW; i++) {
 		float atten = spot_attenuation(i, cluster, vec3(f_position));
-		vec3 lum = mrp_lighting(SPOT_LIGHT(i, cluster).position,
-		                        SPOT_LIGHT(i, cluster).diffuse, 
+		vec3 lum = mrp_lighting(SPOT_LIGHT_RAW(i).position,
+		                        SPOT_LIGHT_RAW(i).diffuse, 
 		                        vec3(f_position), view_dir,
 		                        albedo, f_normal, metallic, roughness);
 
 		total_light += lum*atten;
 	}
 
-	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL_RAW; i++) {
 		float atten = directional_attenuation(i, cluster, vec3(f_position));
-		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT(i, cluster).position,
-		                        DIRECTIONAL_LIGHT(i, cluster).diffuse, 
+		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT_RAW(i).position,
+		                        DIRECTIONAL_LIGHT_RAW(i).diffuse, 
 		                        vec3(f_position), view_dir,
 		                        albedo, f_normal, metallic, roughness);
 

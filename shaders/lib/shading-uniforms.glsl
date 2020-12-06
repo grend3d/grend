@@ -69,13 +69,22 @@ uniform mat4 v_inv;
 #define MAX_LIGHTS 8
 #endif
 
-#ifndef MAX_LIGHT_OBJECTS
-// for clustered, tiled, number of possible light objects available
-#define MAX_LIGHT_OBJECTS 1024
+// gles3, core430+ use SSBOs, clustered lights
+#if defined(CLUSTERED_LIGHTS) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
+
+// for clustered, tiled, number of possible light objects available (ie. in view)
+#ifndef MAX_POINT_LIGHT_OBJECTS
+#define MAX_POINT_LIGHT_OBJECTS 1024
 #endif
 
-// gles3, core430+ use SSBOs, clustered lights
-#if GLSL_VERSION == 300 || GLSL_VERSION >= 430
+#ifndef MAX_SPOT_LIGHT_OBJECTS
+#define MAX_SPOT_LIGHT_OBJECTS 1024
+#endif
+
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS 32
+#endif
+
 layout(std430, binding = 1) buffer plights {
 	uint active_point_lights;
 	uint active_spot_lights;
@@ -86,14 +95,14 @@ layout(std430, binding = 1) buffer plights {
 	vec3 refboxMax;
 	vec3 refprobePosition;
 
-	point_light point[1024];
-	uint point_clusters[16*16*16 * MAX_LIGHTS];
+	point_light point[MAX_POINT_LIGHT_OBJECTS];
+	spot_light spot[MAX_SPOT_LIGHT_OBJECTS];
+	directional_lights directional[MAX_DIRECTIONAL_LIGHT_OBJECTS];
 
-	spot_light spot[1024];
-	uint spot_clusters[16*16*16 * MAX_LIGHTS];
-
-	directional_lights directional[1024];
-	uint directional_clusters[16*16*16 * MAX_LIGHTS];
+	uint point_clusters[16*16*16 * MAX_POINT_LIGHT_OBJECTS];
+	uint spot_clusters[16*16*16 * MAX_SPOT_LIGHT_OBJECTS];
+	// no directional clusters
+	//uint directional_clusters[16*16*16 * MAX_DIRECTIONAL_LIGHT_OBJECTS];
 };
 
 #define CURRENT_CLUSTER()  (0u)
@@ -102,12 +111,27 @@ layout(std430, binding = 1) buffer plights {
 #define ACTIVE_SPOTS       (active_spot_lights)
 #define ACTIVE_DIRECTIONAL (active_directional_lights)
 
+// TODO: adjust bitmasks for defined sizes
 #define POINT_LIGHT(P, CLUSTER)       point[point_clusters[CLUSTER+P] & 0x3ff]
 #define SPOT_LIGHT(P, CLUSTER)        spot[spot_clusters[CLUSTER+P] & 0x3ff]
 #define DIRECTIONAL_LIGHT(P, CLUSTER) \
-	directional[directional_clusters[CLUSTER+P] & 0x3ff]
+	directional[directional_clusters[CLUSTER+P] & 0x1f]
 
 #elif GLSL_VERSION >= 140 /* opengl 3.1+, use uniform buffers */
+
+// for clustered, tiled, number of possible light objects available (ie. in view)
+#ifndef MAX_POINT_LIGHT_OBJECTS
+#define MAX_POINT_LIGHT_OBJECTS 64
+#endif
+
+#ifndef MAX_SPOT_LIGHT_OBJECTS
+#define MAX_SPOT_LIGHT_OBJECTS 32
+#endif
+
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#endif
+
 layout (std140) uniform lights {
 	uint uactive_point_lights;
 	uint uactive_spot_lights;
@@ -122,20 +146,57 @@ layout (std140) uniform lights {
 	vec3 refboxMax;
 	vec3 refprobePosition;
 
-	point_light       upoint_lights[MAX_LIGHTS];
-	spot_light        uspot_lights[MAX_LIGHTS];
-	directional_light udirectional_lights[MAX_LIGHTS];
+	point_light       upoint_lights[MAX_POINT_LIGHT_OBJECTS];
+	spot_light        uspot_lights[MAX_SPOT_LIGHT_OBJECTS];
+	directional_light udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS];
 };
 
-#define CURRENT_CLUSTER()  (0u) 
+layout (std140) uniform light_tiles {
+	// 8x24 grid, vec4 because array elements in std140 must be aligned to
+	// 16 byte boundaries, would be very wasteful to have a uint array here...
+	// first entry of each cluster is the number of active lights, hence +1
+	vec4 point_tiles[8*6*(MAX_LIGHTS)];
+	vec4 spot_tiles[8*6*(MAX_LIGHTS)];
+	// TODO: irradiance probe, although that probably only makes sense for
+	//       3D clusters...
+};
 
-#define ACTIVE_POINTS      (uactive_point_lights)
-#define ACTIVE_SPOTS       (uactive_spot_lights)
-#define ACTIVE_DIRECTIONAL (uactive_directional_lights)
+#define CURRENT_CLUSTER() \
+	(uint(2) * \
+		(uint(floor((gl_FragCoord.y / 720.0)*8.0)*24.0) \
+		  + uint(floor((gl_FragCoord.x / 1280.0)*24.0))))
 
-#define POINT_LIGHT(P, CLUSTER)       upoint_lights[P]
-#define SPOT_LIGHT(P, CLUSTER)        uspot_lights[P]
-#define DIRECTIONAL_LIGHT(P, CLUSTER) udirectional_lights[P]
+#define ACTIVE_POINTS(CLUSTER) \
+	(uint(point_tiles[CLUSTER][0]))
+#define ACTIVE_SPOTS(CLUSTER) \
+	(uint(spot_tiles[CLUSTER][0]))
+#define ACTIVE_DIRECTIONAL(CLUSTER) \
+	(uactive_directional_lights)
+
+/*
+#define POINT_LIGHT(P, CLUSTER) \
+	(upoint_lights[P])
+#define SPOT_LIGHT(P, CLUSTER) \
+	(uspot_lights[P])
+#define DIRECTIONAL_LIGHT(P, CLUSTER) \
+	udirectional_lights[P]
+*/
+
+#define POINT_LIGHT(P, CLUSTER) \
+	(upoint_lights[uint(point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])])
+#define SPOT_LIGHT(P, CLUSTER) \
+	(uspot_lights[uint(spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])])
+#define DIRECTIONAL_LIGHT(P, CLUSTER) \
+	udirectional_lights[P]
+
+#define POINT_LIGHT_RAW(P)       (upoint_lights[P])
+#define SPOT_LIGHT_RAW(P)        (uspot_lights[P])
+#define DIRECTIONAL_LIGHT_RAW(P) (udirectional_lights[P])
+
+#define ACTIVE_POINTS_RAW      (uactive_point_lights)
+#define ACTIVE_SPOTS_RAW       (uactive_spot_lights)
+#define ACTIVE_DIRECTIONAL_RAW (uactive_directional_lights)
+
 
 // otherwise fallback to regular old uniforms
 #else
