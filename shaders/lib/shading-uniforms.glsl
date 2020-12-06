@@ -155,16 +155,16 @@ layout (std140) uniform light_tiles {
 	// 8x24 grid, vec4 because array elements in std140 must be aligned to
 	// 16 byte boundaries, would be very wasteful to have a uint array here...
 	// first entry of each cluster is the number of active lights, hence +1
-	vec4 point_tiles[8*6*(MAX_LIGHTS)];
-	vec4 spot_tiles[8*6*(MAX_LIGHTS)];
+	vec4 point_tiles[9*4*(MAX_LIGHTS)];
+	vec4 spot_tiles[9*4*(MAX_LIGHTS)];
 	// TODO: irradiance probe, although that probably only makes sense for
 	//       3D clusters...
 };
 
 #define CURRENT_CLUSTER() \
-	(uint(2) * \
-		(uint(floor((gl_FragCoord.y / 720.0)*8.0)*24.0) \
-		  + uint(floor((gl_FragCoord.x / 1280.0)*24.0))))
+	(uint(MAX_LIGHTS/4) * \
+		(uint(floor((gl_FragCoord.y / 720.0)*9.0)*16.0) \
+		  + uint(floor((gl_FragCoord.x / 1280.0)*16.0))))
 
 #define ACTIVE_POINTS(CLUSTER) \
 	(uint(point_tiles[CLUSTER][0]))

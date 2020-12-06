@@ -102,8 +102,8 @@ struct lights_std140 {
 } __attribute__((packed));
 
 struct light_tiles_std140 {
-	GLfloat point_tiles[8*24*MAX_LIGHTS];
-	GLfloat spot_tiles[8*24*MAX_LIGHTS];
+	GLfloat point_tiles[9*16*MAX_LIGHTS];
+	GLfloat spot_tiles[9*16*MAX_LIGHTS];
 } __attribute__((packed));
 
 class skybox {
@@ -186,6 +186,7 @@ class renderContext {
 		Buffer::ptr lightBuffer;
 		Buffer::ptr lightTiles;
 
+		float lightThreshold = 0.05;
 		lights_std140      lightBufferCtx;
 		light_tiles_std140 lightTilesCtx;
 
@@ -234,7 +235,7 @@ class renderQueue {
 		void updateReflections(Program::ptr program, renderContext::ptr rctx);
 		void updateReflectionProbe(renderContext::ptr rctx);
 		void sort(void);
-		void cull(unsigned width, unsigned height);
+		void cull(unsigned width, unsigned height, float lightext);
 		unsigned flush(renderFramebuffer::ptr fb, renderContext::ptr rctx);
 		unsigned flush(unsigned width, unsigned height, renderContext::ptr rctx);
 		void shaderSync(Program::ptr program, renderContext::ptr rctx);

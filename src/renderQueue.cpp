@@ -218,7 +218,7 @@ void renderQueue::sort(void) {
 	meshes.insert(meshes.end(), transparent.begin(), transparent.end());
 }
 
-void renderQueue::cull(unsigned width, unsigned height) {
+void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	glm::mat4 view = cam->viewTransform();
 
 	// XXX: need vector for sorting, deleting elements from vector for culling
@@ -258,7 +258,7 @@ void renderQueue::cull(unsigned width, unsigned height) {
 
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
-		if (cam->sphereInFrustum(applyTransform(trans), lit->extent())) {
+		if (cam->sphereInFrustum(applyTransform(trans), lit->extent(lightext))) {
 			tempLights.push_back(*it);
 		}
 	}
@@ -610,6 +610,10 @@ typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
 typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
 typedef std::tuple<pointList, spotList, dirList> lightLists;
 
+static inline float rectScale(float R, float d) {
+	return 1.f / cos(d/R);
+}
+
 // TODO: possibly move this to it's own file
 #include <grend/plane.hpp>
 void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
@@ -630,74 +634,85 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	memset(&lightbuf.udirectional_lights, 0, sizeof(lightbuf.udirectional_lights));
 	memset(&tilebuf,  0, sizeof(tilebuf));
 
+	plane planes[16*9*6];
+	glm::vec3 nearpos = cam->position() + cam->direction()*cam->near();
+	glm::vec3 cpos = cam->position();
+
+	unsigned x = 0;
+	for (float tx = rx/2.0; x < 16; tx -= rx/16.0, x++) {
+		unsigned y = 0;
+		for (float ty = ry/2.0; y < 9; ty -= ry/9.0, y++) {
+			unsigned cluster = x + y*16;
+			plane *p = planes + cluster*6;
+
+			// left
+			float txp = tx - rx/16.f;
+			p[0].n = glm::rotate(cam->right(), txp/rectScale(rx, txp), cam->up());
+			p[0].d = -glm::dot(p[0].n, cpos);
+
+			// right
+			p[1].n = -glm::rotate(cam->right(), tx/rectScale(rx, tx), cam->up());
+			p[1].d = -glm::dot(p[1].n, cpos);
+
+			// bottom
+			p[2].n = glm::rotate(cam->up(), ty/rectScale(ry, ty), cam->right());
+			p[2].d = -glm::dot(p[2].n, cpos);
+
+			// top
+			float typ = ty - ry/9.f;
+			p[3].n = -glm::rotate(cam->up(), typ/rectScale(ry, typ), cam->right());
+			p[3].d = -glm::dot(p[3].n, cpos);
+
+			// near
+			p[4].n = cam->direction();
+			p[4].d = -glm::dot(p[4].n, nearpos);
+
+			// far
+			p[5].n = -cam->direction();
+			p[5].d = -glm::dot(p[5].n, cam->position() + cam->direction()*cam->far());
+		}
+	}
+
 	// TODO: parallelism
 	auto buildTiles = [&] (gameLight::ptr lit, glm::mat4& trans, unsigned idx) {
-		plane planes[6];
-		glm::vec3 dirs[6];
-		glm::vec3 nearpos = cam->position() + cam->direction()*cam->near();
+		glm::vec3 lightpos = applyTransform(trans);
+		float ext = lit->extent(rctx->lightThreshold);
 
-		unsigned y = 0;
-		for (float ty = ry/2.0; ty > -ry/2.0; ty -= ry/8.0, y++) {
-			unsigned x = 0;
-			for (float tx = rx/2.0; tx > -rx/2.0; tx -= rx/24.0, x++) {
-				unsigned cluster = MAX_LIGHTS * (x + y*24);
-				// TODO: rectlinear project doesn't map world angles to screen
-				//       space uniformly, need to adjust world angles for uniform
-				//       screen angles
-				// left
-				planes[0].n = glm::rotate(cam->right(), tx, cam->up());
-				planes[0].d = -glm::dot(planes[0].n, nearpos);
+		for (unsigned cluster = 0; cluster < 16*9; cluster++) {
+			unsigned in = 0;
+			plane *p = planes + cluster*6;
 
-				// right
-				planes[1].n = -glm::rotate(cam->right(), tx - rx/24.f, cam->up());
-				planes[1].d = -glm::dot(planes[1].n, nearpos);
+			for (unsigned i = 0; i < 6; i++) {
+				//in += planes[i].inPlane(applyTransform(trans), lit->extent(0.1));
+				//in += planes[i].inPlane(applyTransform(trans), lit->extent());
+				in += p[i].inPlane(lightpos, ext);
+			}
 
-				// bottom
-				planes[2].n = glm::rotate(cam->up(), ty, cam->right());
-				planes[2].d = -glm::dot(planes[2].n, nearpos);
+			if (in == 6) {
+				unsigned clusidx = MAX_LIGHTS * cluster;
 
-				// top
-				planes[3].n = -glm::rotate(cam->up(), ty - ry/8.f, cam->right());
-				planes[3].d = -glm::dot(planes[3].n, nearpos);
+				if (lit->lightType == gameLight::lightTypes::Point) {
+					gameLightPoint::ptr plit =
+						std::dynamic_pointer_cast<gameLightPoint>(lit);
 
-				// near
-				planes[4].n = cam->direction();
-				planes[4].d = -glm::dot(planes[4].n, nearpos);
+					unsigned cur  = tilebuf.point_tiles[clusidx];
+					unsigned next = cur + 1;
 
-				// far
-				planes[5].n = -cam->direction();
-				planes[5].d = -glm::dot(planes[5].n, cam->position() + cam->direction()*cam->far());
+					if (next < MAX_LIGHTS) {
+						tilebuf.point_tiles[clusidx]        = next;
+						tilebuf.point_tiles[clusidx + next] = idx;
+					}
 
-				unsigned in = 0;
-				for (unsigned i = 0; i < 6; i++) {
-					///in += planes[i].inPlane(applyTransform(trans), lit->extent(0.1));
-					in += planes[i].inPlane(applyTransform(trans), lit->extent());
-				}
+				} else if (lit->lightType == gameLight::lightTypes::Spot) {
+					gameLightSpot::ptr plit =
+						std::dynamic_pointer_cast<gameLightSpot>(lit);
 
-				if (in == 6) {
-					if (lit->lightType == gameLight::lightTypes::Point) {
-						gameLightPoint::ptr plit =
-							std::dynamic_pointer_cast<gameLightPoint>(lit);
+					unsigned cur  = tilebuf.spot_tiles[MAX_LIGHTS*cluster];
+					unsigned next = cur + 1;
 
-						unsigned cur  = tilebuf.point_tiles[cluster];
-						unsigned next = cur + 1;
-
-						if (next < MAX_LIGHTS) {
-							tilebuf.point_tiles[cluster]        = next;
-							tilebuf.point_tiles[cluster + next] = idx;
-						}
-
-					} else if (lit->lightType == gameLight::lightTypes::Spot) {
-						gameLightSpot::ptr plit =
-							std::dynamic_pointer_cast<gameLightSpot>(lit);
-
-						unsigned cur  = tilebuf.spot_tiles[cluster];
-						unsigned next = cur + 1;
-
-						if (next < MAX_LIGHTS) {
-							tilebuf.spot_tiles[cluster]        = next;
-							tilebuf.spot_tiles[cluster + next] = idx;
-						}
+					if (next < MAX_LIGHTS) {
+						tilebuf.spot_tiles[clusidx]        = next;
+						tilebuf.spot_tiles[clusidx + next] = idx;
 					}
 				}
 			}

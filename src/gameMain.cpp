@@ -113,7 +113,9 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 
-		que.cull(game->rend->framebuffer->width, game->rend->framebuffer->height);
+		que.cull(game->rend->framebuffer->width,
+		         game->rend->framebuffer->height,
+		         game->rend->lightThreshold);
 		que.sort();
 		buildTilemap(que, game->rend);
 		que.updateReflectionProbe(game->rend);
