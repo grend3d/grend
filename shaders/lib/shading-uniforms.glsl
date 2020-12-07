@@ -155,8 +155,8 @@ layout (std140) uniform light_tiles {
 	// 8x24 grid, vec4 because array elements in std140 must be aligned to
 	// 16 byte boundaries, would be very wasteful to have a uint array here...
 	// first entry of each cluster is the number of active lights, hence +1
-	vec4 point_tiles[9*4*(MAX_LIGHTS)];
-	vec4 spot_tiles[9*4*(MAX_LIGHTS)];
+	uvec4 point_tiles[9*4*(MAX_LIGHTS)];
+	uvec4 spot_tiles[9*4*(MAX_LIGHTS)];
 	// TODO: irradiance probe, although that probably only makes sense for
 	//       3D clusters...
 };
@@ -167,25 +167,16 @@ layout (std140) uniform light_tiles {
 		  + uint(floor((gl_FragCoord.x / 1280.0)*16.0))))
 
 #define ACTIVE_POINTS(CLUSTER) \
-	(uint(point_tiles[CLUSTER][0]))
+	(point_tiles[CLUSTER][0])
 #define ACTIVE_SPOTS(CLUSTER) \
-	(uint(spot_tiles[CLUSTER][0]))
+	(spot_tiles[CLUSTER][0])
 #define ACTIVE_DIRECTIONAL(CLUSTER) \
 	(uactive_directional_lights)
 
-/*
 #define POINT_LIGHT(P, CLUSTER) \
-	(upoint_lights[P])
+	(upoint_lights[point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u]])
 #define SPOT_LIGHT(P, CLUSTER) \
-	(uspot_lights[P])
-#define DIRECTIONAL_LIGHT(P, CLUSTER) \
-	udirectional_lights[P]
-*/
-
-#define POINT_LIGHT(P, CLUSTER) \
-	(upoint_lights[uint(point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])])
-#define SPOT_LIGHT(P, CLUSTER) \
-	(uspot_lights[uint(spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])])
+	(uspot_lights[spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u]])
 #define DIRECTIONAL_LIGHT(P, CLUSTER) \
 	udirectional_lights[P]
 
@@ -196,7 +187,6 @@ layout (std140) uniform light_tiles {
 #define ACTIVE_POINTS_RAW      (uactive_point_lights)
 #define ACTIVE_SPOTS_RAW       (uactive_spot_lights)
 #define ACTIVE_DIRECTIONAL_RAW (uactive_directional_lights)
-
 
 // otherwise fallback to regular old uniforms
 #else

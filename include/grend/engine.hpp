@@ -102,8 +102,8 @@ struct lights_std140 {
 } __attribute__((packed));
 
 struct light_tiles_std140 {
-	GLfloat point_tiles[9*16*MAX_LIGHTS];
-	GLfloat spot_tiles[9*16*MAX_LIGHTS];
+	GLuint point_tiles[9*16*MAX_LIGHTS];
+	GLuint spot_tiles[9*16*MAX_LIGHTS];
 } __attribute__((packed));
 
 class skybox {
