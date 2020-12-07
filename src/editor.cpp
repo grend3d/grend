@@ -230,13 +230,17 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto unshadedFlags = flags;
 		unshadedFlags.mainShader = unshadedFlags.skinnedShader
 			= game->rend->shaders["unshaded"];
-
 		game->rend->setFlags(unshadedFlags);
+
 		for (auto& [trans, __, light] : tempque.lights) {
-			probeObj->transform.position = applyTransform(trans);
-			probeObj->transform.scale = glm::vec3(0.5);
-			que.add(probeObj);
-			que.flush(game->rend->framebuffer, game->rend);
+			glm::vec3 pos = applyTransform(trans);
+
+			if (cam->sphereInFrustum(pos, 0.5)) {
+				probeObj->transform.position = applyTransform(trans);
+				probeObj->transform.scale = glm::vec3(0.5);
+				que.add(probeObj);
+				que.flush(game->rend->framebuffer, game->rend);
+			}
 		}
 	}
 }
