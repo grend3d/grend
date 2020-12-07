@@ -193,8 +193,8 @@ void renderQueue::sort(void) {
 			auto& [a_trans, _,  a_mesh] = a;
 			auto& [b_trans, __, b_mesh] = b;
 
-			glm::vec3 va = applyTransform(a_trans);
-			glm::vec3 vb = applyTransform(b_trans);
+			glm::vec3 va = applyTransform(a_trans, boxCenter(a_mesh->boundingBox));
+			glm::vec3 vb = applyTransform(b_trans, boxCenter(b_mesh->boundingBox));
 
 			return glm::distance(cam->position(), va)
 				< glm::distance(cam->position(), vb);
