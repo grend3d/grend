@@ -123,6 +123,7 @@ void gameEditor::menubar(gameMain *game) {
 		if (ImGui::BeginMenu("Options")) {
 			int proj = (int)cam->project();
 			float scale = cam->scale();
+			bool checkGL = GL_ERROR_CHECK_ENABLED();
 
 			ImGui::SliderFloat("Snap increment", &fidelity,
 			                  0.5f, 50.f, "%.1f");
@@ -134,6 +135,7 @@ void gameEditor::menubar(gameMain *game) {
 
 			ImGui::Combo("Projection", &proj, "Perspective\0Orthographic\0");
 			ImGui::SliderFloat("Projection scale", &scale, 0.001, 0.2f);
+			ImGui::Checkbox("Check GL errors", &checkGL);
 
 			ImGui::Checkbox("Show environment probes", &showProbes);
 			ImGui::Checkbox("Show lights", &showLights);
@@ -142,6 +144,7 @@ void gameEditor::menubar(gameMain *game) {
 
 			cam->setProjection((enum camera::projection)proj);
 			cam->setScale(scale);
+			ENABLE_GL_ERROR_CHECK(checkGL);
 		}
 
 		if (ImGui::BeginMenu("Objects")) {

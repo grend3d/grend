@@ -35,11 +35,21 @@ namespace grendx {
 void check_errors(int line, const char *filename, const char *func);
 
 #if GREND_ERROR_CHECK
+inline bool checkGLerrors = true;
+
 #define DO_ERROR_CHECK() \
-	{ check_errors(__LINE__, __FILE__, __func__); }
+	{ if (checkGLerrors) { check_errors(__LINE__, __FILE__, __func__); }}
+
+#define ENABLE_GL_ERROR_CHECK(STATE) \
+	{ checkGLerrors = (STATE); }
+
+#define GL_ERROR_CHECK_ENABLED() \
+	(checkGLerrors)
 
 #else
 #define DO_ERROR_CHECK() /* asdf */
+#define ENABLE_GL_ERROR_CHECK(STATE) /* blarg */
+#define GL_ERROR_CHECK_ENABLED() (0)
 #endif
 
 enum {

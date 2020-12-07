@@ -33,6 +33,15 @@ void gameEditor::metricsWindow(gameMain *game) {
 	std::string textures = "Textures: " + std::to_string(texmb) + "MiB";
 	std::string total = "Total: " + std::to_string(totalmb) + "MiB";
 
+#if GREND_ERROR_CHECK
+	std::string devbuild = "Debug build";
+	if (GL_ERROR_CHECK_ENABLED()) {
+		devbuild += " (debugging checks enabled)";
+	}
+
+	ImGui::TextColored(ImVec4(0.3f, 0.8f, 0.2f, 1.f), devbuild.c_str());
+#endif
+
 	ImGui::Text(fpsStr.c_str());
 	ImGui::Text(meshes.c_str());
 	ImGui::Text(buffered.c_str());
