@@ -380,8 +380,8 @@ Vao::ptr bindVao(Vao::ptr vao);
 void setFaceOrder(GLenum face_order);
 void setDefaultGlFlags(void);
 
-void enable(GLenum feature);
-void disable(GLenum feature);
+void enable(GLenum feature, bool ignoreCache = false);
+void disable(GLenum feature, bool ignoreCache = false);
 
 void preloadScreenquad(void);
 void drawScreenquad(void);

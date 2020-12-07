@@ -608,7 +608,6 @@ void setFaceOrder(GLenum face_order) {
 void setDefaultGlFlags(void) {
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
-	disable(GL_CULL_FACE);
 	glStencilMask(~0);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glFrontFace(GL_CCW);
@@ -616,10 +615,12 @@ void setDefaultGlFlags(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glStencilFunc(GL_ALWAYS, 0, ~0);
 
-	disable(GL_SCISSOR_TEST);
-	enable(GL_BLEND);
-	enable(GL_DEPTH_TEST);
-	enable(GL_CULL_FACE);;
+	disable(GL_CULL_FACE, true);
+	disable(GL_SCISSOR_TEST, true);
+	disable(GL_STENCIL_TEST, true);
+	enable(GL_BLEND, true);
+	enable(GL_DEPTH_TEST, true);
+	enable(GL_CULL_FACE, true);;
 	// TODO: other flags
 
 	glActiveTexture(GL_TEXTURE0);
@@ -627,19 +628,23 @@ void setDefaultGlFlags(void) {
 	glBindVertexArray(0);
 }
 
-void enable(GLenum feature) {
-	if (featureCache.find(feature) == featureCache.end()) {
+void enable(GLenum feature, bool ignoreCache) {
+	if (ignoreCache || featureCache.find(feature) == featureCache.end()) {
 		glEnable(feature);
 		featureCache.insert(feature);
 	}
 }
 
-void disable(GLenum feature) {
+void disable(GLenum feature, bool ignoreCache) {
 	auto it = featureCache.find(feature);
+	bool active = it != featureCache.end();
 
-	if (it != featureCache.end()) {
+	if (ignoreCache || active) {
 		glDisable(feature);
-		featureCache.erase(it);
+
+		if (active) {
+			featureCache.erase(it);
+		}
 	}
 }
 

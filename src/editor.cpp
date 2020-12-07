@@ -376,9 +376,8 @@ void gameEditor::logic(gameMain *game, float delta) {
 			bbox->visible = false;
 		}
 
+		handleMoveRotate(game);
 	}
-
-	handleMoveRotate(game);
 
 	switch (mode) {
 		case mode::AddObject:
