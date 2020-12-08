@@ -54,7 +54,11 @@ uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;
 uniform sampler2D irradiance_atlas;
 
-uniform vec3 cameraPosition;
+uniform vec3  cameraPosition;
+uniform float renderWidth;
+uniform float renderHeight;
+uniform float lightThreshold;
+
 uniform vec3 irradiance_probe[6];
 uniform vec3 radboxMin;
 uniform vec3 radboxMax;
@@ -163,8 +167,8 @@ layout (std140) uniform light_tiles {
 
 #define CURRENT_CLUSTER() \
 	(uint(MAX_LIGHTS/4) * \
-		(uint(floor((gl_FragCoord.y / 720.0)*9.0)*16.0) \
-		  + uint(floor((gl_FragCoord.x / 1280.0)*16.0))))
+		(uint(floor((gl_FragCoord.y / renderHeight)*9.0)*16.0) \
+		  + uint(floor((gl_FragCoord.x / renderWidth)*16.0))))
 
 #define ACTIVE_POINTS(CLUSTER) \
 	(point_tiles[CLUSTER][0])

@@ -879,6 +879,10 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	DO_ERROR_CHECK();
 #endif
 
+	program->set("renderWidth",  (float)rctx->framebuffer->width);
+	program->set("renderHeight", (float)rctx->framebuffer->height);
+	program->set("lightThreshold", rctx->lightThreshold);
+
 	glActiveTexture(GL_TEXTURE6);
 	rctx->atlases.reflections->color_tex->bind();
 	program->set("reflection_atlas", 6);
