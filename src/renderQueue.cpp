@@ -340,38 +340,28 @@ unsigned renderQueue::flush(unsigned width,
 	flags.skinnedShader->set("cameraPosition", cam->position());
 
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
-		float offset = -1.0;
-
 		for (auto& [transform, inverted, mesh] : drawinfo) {
-			// TODO: have time offset field for animated meshes
-			if (offset != 0.0) {
-				for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
-					float tim = SDL_GetTicks()/1000.f;
-					gameObject::ptr temp = skin->joints[i];
-					glm::mat4 accum = glm::mat4(1);
+			for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
+				float tim = SDL_GetTicks()/1000.f;
+				gameObject::ptr temp = skin->joints[i];
+				glm::mat4 accum = glm::mat4(1);
 
-					for (; temp != skin && temp; temp = temp->parent.lock()) {
-						accum = temp->getTransform(tim)*accum;
-					}
-
-					std::string sloc = "joints["+std::to_string(i)+"]";
-					auto mat = accum*skin->inverseBind[i];
-					flags.skinnedShader->set(sloc, mat);
+				for (; temp != skin && temp; temp = temp->parent.lock()) {
+					accum = temp->getTransform(tim)*accum;
 				}
+				auto mat = accum*skin->inverseBind[i];
 
-				// TODO: s/0.0/current offset
-				offset = 0.0;
+				std::string sloc = "joints["+std::to_string(i)+"]";
+				if (!flags.skinnedShader->set(sloc, mat)) {
+					std::cerr <<
+						"NOTE: couldn't set joint matrix " << i
+						<< ", too many joints/wrong shader?" << std::endl;
+					break;
+				}
 			}
 
-			glm::vec4 apos = transform * glm::vec4(1);
-			/*
-			set_reflection_probe(
-				nearest_reflection_probe(glm::vec3(apos)/apos.w),
-				flags.skinnedShader,
-				rctx->atlases);
-				*/
 			set_irradiance_probe(
-				nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+				nearest_irradiance_probe(applyTransform(transform)),
 				flags.skinnedShader,
 				rctx->atlases);
 			drawMesh(flags, nullptr, flags.skinnedShader,
@@ -389,16 +379,9 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("cameraPosition", cam->position());
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		glm::vec4 apos = transform * glm::vec4(1);
-		/*
-		set_reflection_probe(
-			nearest_reflection_probe(glm::vec3(apos)/apos.w),
-			flags.mainShader, rctx->atlases);
-			*/
 		set_irradiance_probe(
-			nearest_irradiance_probe(glm::vec3(apos)/apos.w),
+			nearest_irradiance_probe(applyTransform(transform)),
 			flags.mainShader, rctx->atlases);
-
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -473,9 +456,15 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 						accum = temp->getTransform(tim)*accum;
 					}
 
-					std::string sloc = "joints["+std::to_string(i)+"]";
 					auto mat = accum*skin->inverseBind[i];
-					flags.skinnedShader->set(sloc, mat);
+					std::string sloc = "joints["+std::to_string(i)+"]";
+
+					if (!flags.skinnedShader->set(sloc, mat)) {
+						std::cerr <<
+							"NOTE: couldn't set joint matrix " << i
+							<< ", too many joints/wrong shader?" << std::endl;
+						break;
+					}
 				}
 
 				// TODO: s/0.0/current offset

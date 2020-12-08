@@ -128,45 +128,53 @@ void Program::attribute(std::string attr, GLuint location) {
 
 #define LOOKUP(U) \
 	GLint u = lookup(uniform); \
-	if (u < 0) return;
+	if (u < 0) return false;
 
-void Program::set(std::string uniform, GLint i) {
+bool Program::set(std::string uniform, GLint i) {
 	LOOKUP(uniform);
 	glUniform1i(u, i);
+	return true;
 }
 
-void Program::set(std::string uniform, GLfloat f) {
+bool Program::set(std::string uniform, GLfloat f) {
 	LOOKUP(uniform);
 	glUniform1f(u, f);
+	return true;
 }
 
-void Program::set(std::string uniform, glm::vec2 v2) {
+bool Program::set(std::string uniform, glm::vec2 v2) {
 	LOOKUP(uniform);
 	glUniform2fv(u, 1, glm::value_ptr(v2));
+	return true;
 }
 
-void Program::set(std::string uniform, glm::vec3 v3) {
+bool Program::set(std::string uniform, glm::vec3 v3) {
 	LOOKUP(uniform);
 	glUniform3fv(u, 1, glm::value_ptr(v3));
+	return true;
 }
 
-void Program::set(std::string uniform, glm::vec4 v4) {
+bool Program::set(std::string uniform, glm::vec4 v4) {
 	LOOKUP(uniform);
 	glUniform4fv(u, 1, glm::value_ptr(v4));
+	return true;
 }
 
-void Program::set(std::string uniform, glm::mat3 m3) {
+bool Program::set(std::string uniform, glm::mat3 m3) {
 	LOOKUP(uniform);
 	glUniformMatrix3fv(u, 1, GL_FALSE, glm::value_ptr(m3));
+	return true;
 }
 
-void Program::set(std::string uniform, glm::mat4 m4) {
+bool Program::set(std::string uniform, glm::mat4 m4) {
 	LOOKUP(uniform);
 	glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(m4));
+	return true;
 }
 
-void Program::setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding) {
+bool Program::setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding) {
 	GLuint loc = lookupUniformBlock(name);
+
 	if (loc != GL_INVALID_INDEX) {
 		DO_ERROR_CHECK();
 		buf->unbind();
@@ -175,14 +183,19 @@ void Program::setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding)
 		DO_ERROR_CHECK();
 		glBindBufferBase(GL_UNIFORM_BUFFER, binding, buf->obj);
 		DO_ERROR_CHECK();
+		return true;
+
+	} else {
+		return false;
 	}
 }
 
-void Program::setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding) {
+bool Program::setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding) {
 	GLuint loc = lookupStorageBlock(name);
 	DO_ERROR_CHECK();
 	// TODO:
 	//glUniformBlockBinding(obj, loc, buf->obj);
+	return false;
 }
 
 GLint Program::lookup(std::string uniform) {

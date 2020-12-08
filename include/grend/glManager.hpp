@@ -237,15 +237,15 @@ class Program : public Obj {
 		}
 
 		void attribute(std::string attr, GLuint location);
-		void set(std::string uniform, GLint i);
-		void set(std::string uniform, GLfloat f);
-		void set(std::string uniform, glm::vec2 v2);
-		void set(std::string uniform, glm::vec3 v3);
-		void set(std::string uniform, glm::vec4 v4);
-		void set(std::string uniform, glm::mat3 m3);
-		void set(std::string uniform, glm::mat4 m4);
-		void setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding);
-		void setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding);
+		bool set(std::string uniform, GLint i);
+		bool set(std::string uniform, GLfloat f);
+		bool set(std::string uniform, glm::vec2 v2);
+		bool set(std::string uniform, glm::vec3 v3);
+		bool set(std::string uniform, glm::vec4 v4);
+		bool set(std::string uniform, glm::mat3 m3);
+		bool set(std::string uniform, glm::mat4 m4);
+		bool setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding);
+		bool setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding);
 
 		GLint  lookup(std::string uniform);
 		GLuint lookupUniformBlock(std::string name);
