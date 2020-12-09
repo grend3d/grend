@@ -5,29 +5,28 @@
 #include <lighting/lambert-diffuse.glsl>
 
 vec3 blinn_phong_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
-                          vec3 albedo, vec3 normal, float metallic)
+                          vec3 albedo, vec3 normal, float metallic, float shininess)
 {
-	vec3 light_dir;
-	float dist = distance(light_pos, pos);
-	light_dir = normalize(light_pos - pos);
+	vec3 adjAlbedo = mix(albedo, vec3(0.04), metallic);
+	float adjShiny = clamp(shininess, 0.25, 1.0);
+	vec3 light_dir = normalize(light_pos - pos);
+	float factor = lambert_diffuse(0.5, light_dir, normal, view);
 
-	vec3 diffuse_reflection = vec3(0.0);
-	vec3 specular_reflection = vec3(0);
-	// TODO: once we have light probes and stuff
-	vec3 env_light = vec3(0);
-	float metal = metallic*anmaterial.metalness;
+	vec3 diffuse = light_color.rgb * adjAlbedo.rgb * INV_PI * factor;
 
-	diffuse_reflection =
-		vec3(light_color) * vec3(albedo)
-			* INV_PI*lambert_diffuse(0.5, light_dir, normal, view);
+#ifdef PHONG_USE_BLINN_PHONG
+	float angle = mindot(normalize(light_dir + view), normal);
+	vec3 specular =
+		albedo.rgb * light_color.rgb * light_color.w
+		* pow(angle, adjShiny*8.0);
 
-	if (metal > 0.1 && dot(normal, light_dir) >= 0.0) {
-		specular_reflection = anmaterial.specular.w
-			* vec3(anmaterial.specular)
-			// TODO: modular specular too
-			* pow(max(0.0, dot(reflect(-light_dir, normal), view)), metal);
-	}
+#else
+	float angle = mindot(reflect(-light_dir, normal), view);
+	vec3 specular =
+		albedo.rgb * light_color.rgb * light_color.w
+		* pow(angle, adjShiny*4.0);
+#endif
 
-	return diffuse_reflection + specular_reflection;
+	return diffuse + specular;
 }
 

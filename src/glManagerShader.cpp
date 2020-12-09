@@ -114,6 +114,10 @@ bool Program::reload(void) {
 				glBindAttribLocation(obj, location, attr.c_str());
 			}
 
+			uniforms.clear();
+			uniformBlocks.clear();
+			storageBlocks.clear();
+
 			return link();
 		}
 	}

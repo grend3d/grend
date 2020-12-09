@@ -19,6 +19,9 @@ vec3 get_position(mat4 m, vec4 coord) {
 }
 
 void main(void) {
+	// TODO: clusters sort of don't make sense for vertex shading, since a vertex
+	//       could lie outside of a a cluster but have fragments that lie inside...
+	//       Possibly just iterate over all lights?
 	uint cluster = CURRENT_CLUSTER();
 	vec3 position = get_position(m, vec4(in_Position, 1.0));
 
@@ -32,42 +35,40 @@ void main(void) {
 	                        anmaterial.diffuse.y * ambient_light.y,
 	                        anmaterial.diffuse.z * ambient_light.z);
 	vec3 normal_dir = normalize(m_3x3_inv_transp * v_normal);
+	float shininess = 1.0 - anmaterial.roughness * anmaterial.roughness;
 
-	for (uint i = 0u; i < ACTIVE_POINTS; i++) {
+	for (uint i = 0u; i < ACTIVE_POINTS(cluster); i++) {
 		float atten = point_attenuation(i, cluster, position);
 
 		vec3 lum =
-			blinn_phong_lighting(
-				POINT_LIGHT(i, cluster).position,
-				POINT_LIGHT(i, cluster).diffuse,
-				position, view_dir, anmaterial.diffuse.xyz,
-				normal_dir, anmaterial.metalness);
+			blinn_phong_lighting(POINT_LIGHT(i, cluster).position,
+			                     POINT_LIGHT(i, cluster).diffuse,
+			                     position, view_dir, anmaterial.diffuse.xyz,
+			                     normal_dir, anmaterial.metalness, shininess);
 
 		total_light += lum*atten;
 	}
 
-	for (uint i = 0u; i < ACTIVE_SPOTS; i++) {
+	for (uint i = 0u; i < ACTIVE_SPOTS(cluster); i++) {
 		float atten = spot_attenuation(i, cluster, position);
 
 		vec3 lum =
-			blinn_phong_lighting(
-				SPOT_LIGHT(i, cluster).position,
-				SPOT_LIGHT(i, cluster).diffuse,
-				position, view_dir, anmaterial.diffuse.xyz,
-				normal_dir, anmaterial.metalness);
+			blinn_phong_lighting(SPOT_LIGHT(i, cluster).position,
+			                     SPOT_LIGHT(i, cluster).diffuse,
+			                     position, view_dir, anmaterial.diffuse.xyz,
+			                     normal_dir, anmaterial.metalness, shininess);
 
 		total_light += lum*atten;
 	}
 
-	for (uint i = 0u; i < ACTIVE_DIRECTIONAL; i++) {
+	for (uint i = 0u; i < ACTIVE_DIRECTIONAL(cluster); i++) {
 		float atten = directional_attenuation(i, cluster, position);
 
 		vec3 lum =
-			blinn_phong_lighting(
-				DIRECTIONAL_LIGHT(i, cluster).position,
-				DIRECTIONAL_LIGHT(i, cluster).diffuse,
-				position, view_dir, anmaterial.diffuse.xyz,
-				normal_dir, anmaterial.metalness);
+			blinn_phong_lighting(DIRECTIONAL_LIGHT(i, cluster).position,
+			                     DIRECTIONAL_LIGHT(i, cluster).diffuse,
+			                     position, view_dir, anmaterial.diffuse.xyz,
+			                     normal_dir, anmaterial.metalness, shininess);
 
 		total_light += lum*atten;
 	}

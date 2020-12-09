@@ -165,10 +165,30 @@ layout (std140) uniform light_tiles {
 	//       3D clusters...
 };
 
-#define CURRENT_CLUSTER() \
+#define SCREEN_TO_CLUSTER(X, Y) \
 	(uint(MAX_LIGHTS/4) * \
-		(uint(floor((gl_FragCoord.y / renderHeight)*9.0)*16.0) \
-		  + uint(floor((gl_FragCoord.x / renderWidth)*16.0))))
+		(uint(floor(((Y))*9.0)*16.0) \
+		  + uint(floor(((X))*16.0))))
+
+#if defined(FRAGMENT_SHADER)
+#define CURRENT_CLUSTER() \
+	(SCREEN_TO_CLUSTER(gl_FragCoord.x/renderWidth, gl_FragCoord.y/renderHeight))
+
+#elif defined(VERTEX_SHADER)
+#include <lib/shading-varying.glsl>
+uint vertexShaderCluster() {
+	vec4 clip = (p*v*m) * vec4(in_Position, 1.0);
+
+	clip.xy /= clip.w;
+	clip.xy  = clip.xy*vec2(0.5) + vec2(0.5);
+
+	return SCREEN_TO_CLUSTER(clip.x, clip.y);
+}
+#define CURRENT_CLUSTER() (vertexShaderCluster())
+
+#else
+#error "No implementation of CURRENT_CLUSTER() for this shader type (did you define VERTEX_SHADER/FRAGMENT_SHADER?)"
+#endif
 
 #define ACTIVE_POINTS(CLUSTER) \
 	(point_tiles[CLUSTER][0])
