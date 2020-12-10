@@ -340,6 +340,7 @@ class landscapeGenView : public playerView {
 		};
 
 		virtual void logic(gameMain *game, float delta);
+		virtual void render(gameMain *game);
 		gameObject::ptr getEnemies(void) { return enemyNodes; };
 
 		std::vector<gameObject::ptr> enemies;
@@ -371,6 +372,94 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
 
 	landscape.setPosition(game, cameraObj->transform.position);
+}
+
+void landscapeGenView::render(gameMain *game) {
+	int winsize_x, winsize_y;
+	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+
+	if (input.mode == modes::MainMenu) {
+		renderWorld(game, cam);
+
+		// TODO: need to set post size on resize event..
+		//post->setSize(winsize_x, winsize_y);
+		post->draw(game->rend->framebuffer);
+		input.setMode(modes::Move);
+
+		// TODO: function to do this
+		//drawMainMenu(winsize_x, winsize_y);
+
+	} else {
+		renderWorld(game, cam);
+		post->draw(game->rend->framebuffer);
+
+		Framebuffer().bind();
+		setDefaultGlFlags();
+
+		disable(GL_DEPTH_TEST);
+		disable(GL_SCISSOR_TEST);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+		nvgBeginFrame(vgui.nvg, game->rend->screen_x, game->rend->screen_y, 1.0);
+		nvgSave(vgui.nvg);
+
+		for (unsigned i = 0; i < enemies.size(); i++) {
+			auto& ptr = enemies[i];
+			float ticks = SDL_GetTicks() / 1000.f;
+			glm::vec4 pos = cam->worldToScreenPosition(ptr->transform.position + glm::vec3(0, 10, 0));
+
+			if (cam->onScreen(pos)) {
+				// TODO: some sort of grid editor wouldn't be too hard,
+				//       probably worthwhile for quick UIs
+				float depth = 16*max(0.f, pos.w);
+				float pad = depth*16.f;
+
+				float width  = 8*pad;
+				float height = 6*pad;
+
+				pos.y  = 1.0 - pos.y;
+				pos.x *= game->rend->screen_x;
+				pos.y *= game->rend->screen_y;
+
+				glm::vec2 outer    = glm::vec2(pos) - glm::vec2(width, height)*0.5f;
+				glm::vec2 innermin = outer + pad;
+				glm::vec2 innermax = outer + glm::vec2(width, height) - 2*pad;
+
+				nvgFontSize(vgui.nvg, pad);
+				nvgFontFace(vgui.nvg, "sans-bold");
+				nvgFontBlur(vgui.nvg, 0);
+				nvgTextAlign(vgui.nvg, NVG_ALIGN_LEFT);
+
+				nvgBeginPath(vgui.nvg);
+				nvgRect(vgui.nvg, outer.x, outer.y, width, height);
+				nvgFillColor(vgui.nvg, nvgRGBA(28, 30, 34, 192));
+				nvgFill(vgui.nvg);
+
+				float amount = sin(i*ticks)*0.5 + 0.5;
+				nvgBeginPath(vgui.nvg);
+				nvgRect(vgui.nvg, innermin.x, innermin.y, amount*(width - 2*pad), pad);
+				nvgFillColor(vgui.nvg, nvgRGBA(0, 192, 0, 192));
+				nvgFill(vgui.nvg);
+
+				nvgBeginPath(vgui.nvg);
+				nvgRect(vgui.nvg, innermin.x + amount*(width - 2*pad),
+				        innermin.y, (1.f - amount)*(width - 2*pad), pad);
+				nvgFillColor(vgui.nvg, nvgRGBA(192, 0, 0, 192));
+				nvgFill(vgui.nvg);
+
+				nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
+				//nvgText(vgui.nvg, innermax.x, innermin.y + 1*pad, "❎", NULL);
+
+				nvgFillColor(vgui.nvg, nvgRGBA(220, 220, 220, 160));
+				nvgText(vgui.nvg, innermin.x, innermin.y + 2*pad, "💚 Enemy", NULL);
+				nvgText(vgui.nvg, innermin.x, innermin.y + 3*pad, "❎ Some stats", NULL);
+				nvgText(vgui.nvg, innermin.x, innermin.y + 4*pad, "❎ 123/456", NULL);
+			}
+		}
+
+		nvgRestore(vgui.nvg);
+		nvgEndFrame(vgui.nvg);
+	}
 }
 
 int main(int argc, char *argv[]) {
