@@ -7,7 +7,6 @@
 
 using namespace grendx;
 
-static renderPostChain::ptr post = nullptr;
 static gameObject::ptr testweapon = nullptr;
 
 static channelBuffers_ptr weaponSound =
@@ -187,8 +186,8 @@ static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	nvgRect(vg, 93, 47, 128 + 120*sin(ticks), 20);
 	nvgFillColor(vg, nvgRGBA(192, 32, 32, 127));
 	nvgFill(vg);
-
 	nvgRotate(vg, -0.1*cos(ticks));
+
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, wx - 250, 50, 200, 100, 10);
 	nvgFillColor(vg, nvgRGBA(28, 30, 34, 192));

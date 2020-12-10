@@ -47,6 +47,9 @@ class camera {
 		glm::mat4 projectionTransform(void);
 		glm::mat4 viewTransform(void);
 		glm::mat4 viewProjTransform(void);
+		glm::vec4 worldToScreenPosition(glm::vec3 pos);
+		bool onScreen(glm::vec4 pos);
+
 		bool sphereInFrustum(const glm::vec3& pos, float r);
 		bool boxInFrustum(const struct AABB& box);
 		bool boxInFrustum(const struct OBB& box);

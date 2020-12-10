@@ -27,6 +27,7 @@ class playerView : public gameView {
 
 		gameObject::ptr cameraObj = std::make_shared<gameObject>();
 		physicsObject::ptr cameraPhys;
+		renderPostChain::ptr post = nullptr;
 		modalSDLInput input;
 
 		vecGUI vgui;

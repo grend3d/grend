@@ -151,6 +151,28 @@ glm::mat4 camera::viewProjTransform(void) {
 	return projectionTransform() * viewTransform();
 }
 
+// functions similarly to gl_FragCoord, but returning [0, 1] as screen coordinates
+glm::vec4 camera::worldToScreenPosition(glm::vec3 pos) {
+	// TODO: cache view/projection transforms, maybe
+	glm::vec4 clip = viewProjTransform() * glm::vec4(pos, 1.0);
+
+	clip.x /= clip.w;
+	clip.y /= clip.w;
+	clip.z /= clip.w;
+	clip.w  = 1.0 / clip.w;
+
+	clip.x = clip.x*0.5 + 0.5;
+	clip.y = clip.y*0.5 + 0.5;
+
+	return clip;
+}
+
+bool camera::onScreen(glm::vec4 pos) {
+	return pos.x >= 0.f && pos.x <= 1.f
+	    && pos.y >= 0.f && pos.y <= 1.f
+	    && pos.z >= -1 && pos.z <= 1;
+}
+
 bool camera::sphereInFrustum(const glm::vec3& v, float r) {
 	recalculatePlanes();
 
