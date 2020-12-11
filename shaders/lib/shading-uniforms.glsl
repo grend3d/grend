@@ -197,16 +197,16 @@ uint vertexShaderCluster() {
 #define ACTIVE_DIRECTIONAL(CLUSTER) \
 	(uactive_directional_lights)
 
-#define POINT_LIGHT(P, CLUSTER) \
-	(upoint_lights[point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u]])
-#define SPOT_LIGHT(P, CLUSTER) \
-	(uspot_lights[spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u]])
-#define DIRECTIONAL_LIGHT(P, CLUSTER) \
-	udirectional_lights[P]
+#define POINT_LIGHT_IDX(P, CLUSTER) \
+	(point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])
+#define SPOT_LIGHT_IDX(P, CLUSTER) \
+	(spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])
+#define DIRECTIONAL_LIGHT_IDX(P, CLUSTER) \
+	(P)
 
-#define POINT_LIGHT_RAW(P)       (upoint_lights[P])
-#define SPOT_LIGHT_RAW(P)        (uspot_lights[P])
-#define DIRECTIONAL_LIGHT_RAW(P) (udirectional_lights[P])
+#define POINT_LIGHT(P)       (upoint_lights[P])
+#define SPOT_LIGHT(P)        (uspot_lights[P])
+#define DIRECTIONAL_LIGHT(P) (udirectional_lights[P])
 
 #define ACTIVE_POINTS_RAW      (uactive_point_lights)
 #define ACTIVE_SPOTS_RAW       (uactive_spot_lights)

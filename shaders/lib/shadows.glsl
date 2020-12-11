@@ -80,13 +80,13 @@ PCF_FILTER(shadow_pcf, SHADOW_PCF_RANGE, SHADOW_PCF_STEP, SHADOW_PCF_SAMPLER)
 // // 64 samples
 // PCF_FILTER(shadow_pcf64,       1.75, 0.5, shadow_sample);
 
-float point_shadow(uint i, uint cluster, vec3 pos) {
+float point_shadow(uint idx, vec3 pos) {
 	// TODO: can branching be avoided without the texture sample?
-	if (!POINT_LIGHT(i, cluster).casts_shadows) {
+	if (!POINT_LIGHT(idx).casts_shadows) {
 		return 1.0;
 	}
 
-	vec3 light_vertex = POINT_LIGHT(i, cluster).position - pos;
+	vec3 light_vertex = POINT_LIGHT(idx).position - pos;
 	vec3 light_dir = normalize(light_vertex);
 
 	vec3 dat = textureCubeAtlasUV(-light_dir);
@@ -94,32 +94,30 @@ float point_shadow(uint i, uint cluster, vec3 pos) {
 	int  face = int(dat.z);
 
 	return SHADOW_FILTER(shadowmap_atlas,
-	                     POINT_LIGHT(i, cluster).shadowmap[face],
+	                     POINT_LIGHT(idx).shadowmap[face],
 	                     light_vertex,
 	                     uv);
 }
 
-float spot_shadow(uint i, uint cluster, vec3 pos) {
-	if (!SPOT_LIGHT(i, cluster).casts_shadows) {
+float spot_shadow(uint idx, vec3 pos) {
+	if (!SPOT_LIGHT(idx).casts_shadows) {
 		return 1.0;
 	}
 
-	vec3 light_vertex = SPOT_LIGHT(i, cluster).position - pos;
+	vec3 light_vertex = SPOT_LIGHT(idx).position - pos;
 	vec3 light_dir = normalize(light_vertex);
 
-	if (dot(light_dir, SPOT_LIGHT(i, cluster).direction) > SPOT_LIGHT(i, cluster).angle) {
+	if (dot(light_dir, SPOT_LIGHT(idx).direction) > SPOT_LIGHT(idx).angle) {
 		// XXX: maybe pass this in a uniform, or use quarternion for rotation
 		//      and extract an SO(3) out of that
-		vec3 adjdir = normalize(-SPOT_LIGHT(i, cluster).direction);
+		vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction);
 		vec3 right = normalize(cross(vec3(0, 0, 1), adjdir));
 		vec3 up = normalize(cross(right, adjdir));
 
-		float p = 1.0 - SPOT_LIGHT(i, cluster).angle;
-		//vec2 uv = (vec2(light_dir.x, -light_dir.z) + 1.0) / 2.0;
+		float p = 1.0 - SPOT_LIGHT(idx).angle;
 		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
-		//vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
 		vec4 depth = texture2DAtlas(shadowmap_atlas,
-		                            SPOT_LIGHT(i, cluster).shadowmap, uv);
+		                            SPOT_LIGHT(idx).shadowmap, uv);
 
 		return ((depth.r + 0.001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
 	}
@@ -127,8 +125,8 @@ float spot_shadow(uint i, uint cluster, vec3 pos) {
 	return 0.0;
 }
 
-float directional_shadow(uint i, uint cluster, vec3 pos) {
-	if (!DIRECTIONAL_LIGHT(i, cluster).casts_shadows) {
+float directional_shadow(uint idx, vec3 pos) {
+	if (!DIRECTIONAL_LIGHT(idx).casts_shadows) {
 		return 1.0;
 	}
 

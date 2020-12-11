@@ -4,15 +4,13 @@ precision highp float;
 precision mediump sampler2D;
 precision mediump samplerCube;
 
-#define ENABLE_DIFFUSION 1
-#define ENABLE_SPECULAR_HIGHLIGHTS 1
-#define ENABLE_SKYBOX 1
-#define ENABLE_REFRACTION 1
-
 // TODO: maybe make this a uniform (probably not though)
 #define NORMAL_WEIGHT 0.85
 //#define MRP_USE_SCHLICK_GGX
 //#define MRP_USE_LAMBERT_DIFFUSE
+//#define DEBUG_CLUSTERS
+
+#define LIGHT_FUNCTION mrp_lighting
 
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
@@ -25,6 +23,7 @@ precision mediump samplerCube;
 // TODO: actually, rename this to parallax-correct, or probe-parallax-correct?
 #include <lib/parallax-cube.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
+#include <lighting/lightingLoop.glsl>
 #include <lib/reflectionMipmap.glsl>
 
 void main(void) {
@@ -57,46 +56,8 @@ void main(void) {
 		(radmap.rgb * anmaterial.diffuse.rgb * albedo * Fdiff * aoidx)
 		+ (anmaterial.emissive.rgb * emissive.rgb);
 
-	for (uint i = 0u; i < ACTIVE_POINTS(cluster); i++) {
-		float atten = point_attenuation(i, cluster, vec3(f_position));
-		float shadow = point_shadow(i, cluster, vec3(f_position));
-
-		vec3 lum =
-			mix(vec3(0.0),
-			    mrp_lighting(POINT_LIGHT(i, cluster).position,
-				             POINT_LIGHT(i, cluster).diffuse, 
-		                     vec3(f_position), view_dir,
-		                     albedo, normal_dir, metallic, roughness),
-				shadow);
-
-		total_light += lum*atten*aoidx;
-	}
-
-	for (uint i = 0u; i < ACTIVE_SPOTS(cluster); i++) {
-		float atten = spot_attenuation(i, cluster, vec3(f_position));
-		float shadow = spot_shadow(i, cluster, vec3(f_position));
-		vec3 lum =
-			mix(vec3(0.0),
-			    mrp_lighting(SPOT_LIGHT(i, cluster).position,
-				             SPOT_LIGHT(i, cluster).diffuse,
-			                 vec3(f_position), view_dir,
-			                 albedo, normal_dir, metallic, roughness),
-			shadow
-		);
-
-		total_light += lum*atten*aoidx;
-	}
-
-	for (uint i = 0u; i < ACTIVE_DIRECTIONAL(cluster); i++) {
-		float atten = directional_attenuation(i, cluster, vec3(f_position));
-		vec3 lum = mrp_lighting(
-			vec3(f_position) - DIRECTIONAL_LIGHT(i, cluster).direction,
-			DIRECTIONAL_LIGHT(i, cluster).diffuse,
-			vec3(f_position), view_dir,
-			albedo, normal_dir, metallic, roughness);
-
-		total_light += lum*atten*aoidx;
-	}
+	LIGHT_LOOP(cluster, f_position.xyz, view_dir, albedo,
+	           normal_dir, metallic, roughness, aoidx);
 
 	float a = alpha(roughness);
 	vec3 posws = f_position.xyz;
@@ -115,12 +76,10 @@ void main(void) {
 	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
 	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
-
-	//total_light *= 0.001;
 	total_light += 0.5 * (1.0 - a) * env * Fb;
-//	total_light += env;
 
-#if ENABLE_REFRACTION
+/*
+	// TODO: leave refraction in? might be better as a seperate shader
 	vec3 ref_light = vec3(0);
 
 	if (anmaterial.opacity < 1.0) {
@@ -131,11 +90,12 @@ void main(void) {
 	}
 
 	total_light += ref_light;
-#endif
+*/
 
 	// apply tonemapping here if there's no postprocessing step afterwards
 	total_light = EARLY_TONEMAP(total_light, 1.0);
-#if 0
+
+#ifdef DEBUG_CLUSTERS
 	FRAG_COLOR = vec4(total_light +
 		vec3(0.01*pow(float((cluster / 2u)), 1.0/2.2), pow(0.05*float(ACTIVE_POINTS(cluster)), 1.0/2.2), 0), opacity);
 #else
