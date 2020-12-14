@@ -8,7 +8,7 @@ struct TRS {
 	glm::quat rotation = glm::quat(1, 0, 0, 0);
 	glm::vec3 scale    = glm::vec3(1, 1, 1);
 
-	glm::mat4 getTransform(void) {
+	glm::mat4 getTransform(void) const {
 		return glm::translate(position)
 			* glm::mat4_cast(rotation)
 			* glm::scale(scale);
@@ -18,7 +18,7 @@ struct TRS {
 static inline struct TRS addTRS(const struct TRS& a, const struct TRS& b) {
 	return (TRS) {
 		.position = a.position + b.position, // TODO: scale?
-		.rotation = b.rotation, // TODO
+		.rotation = a.rotation * b.rotation,
 		.scale    = a.scale * b.scale,
 	};
 }

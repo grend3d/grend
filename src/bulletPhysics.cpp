@@ -208,6 +208,12 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 {
 	std::lock_guard<std::mutex> lock(bulletMutex);
 
+	if (mesh->faces.size() / 3 == 0) {
+		std::cerr << "WARNING: bulletPhysics::addStaticMesh(): "
+			<< "can't add mesh with no elements" << std::endl;
+		return nullptr;
+	}
+
 	btTriangleIndexVertexArray* indexArray =
 		new btTriangleIndexVertexArray(mesh->faces.size() / 3,
 		                               (int*)mesh->faces.data(),
@@ -221,12 +227,10 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 	ret->mass = 0.f;
 	ret->obj = obj;
 	ret->shape = new btBvhTriangleMeshShape(indexArray, true /* useQuantizedAabbCompression */ );
-	//ret->shape->setMargin(0.05);
 
 	btVector3 scale(transform.scale.x, transform.scale.y, transform.scale.z);
 	ret->shape->setLocalScaling(scale);
 
-	//bool isDynamic = mass != 0.f;
 	btVector3 localInertia(0, 0, 0);
 	btTransform trans;
 
@@ -236,12 +240,6 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 	trans.setIdentity();
 	trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
 	trans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
-
-	/*
-	if (isDynamic) {
-		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
-	}
-	*/
 
 	// TODO: apparently motion state is optional? what does it provide?
 	ret->motionState = new btDefaultMotionState(trans);
