@@ -140,6 +140,7 @@ class renderAtlases {
 struct renderFlags {
 	Program::ptr mainShader;
 	Program::ptr skinnedShader;
+	Program::ptr instancedShader;
 
 	bool cull_faces = true;
 	bool sort       = true;
@@ -231,6 +232,10 @@ class renderQueue {
 		                float animTime = 0.0,
 		                glm::mat4 trans = glm::mat4(1),
 		                bool inverted = false);
+		void addInstanced(gameObject::ptr obj,
+		                  gameParticles::ptr particles,
+		                  glm::mat4 trans = glm::mat4(1),
+		                  bool inverted = false);
 		void updateLights(Program::ptr program, renderContext::ptr rctx);
 		void updateReflections(Program::ptr program, renderContext::ptr rctx);
 		void updateReflectionProbe(renderContext::ptr rctx);
@@ -250,6 +255,9 @@ class renderQueue {
 		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
 		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
 		std::vector<std::tuple<glm::mat4, bool, gameIrradianceProbe::ptr>> irradProbes;
+		// TODO: hmm, having types that line wrap might be a code smell...
+		std::vector<std::tuple<glm::mat4, bool, gameParticles::ptr,
+		                       gameMesh::ptr>> instancedMeshes;
 
 	private:
 		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);

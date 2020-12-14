@@ -148,7 +148,7 @@ void gameEditor::render(gameMain *game) {
 	// TODO: skinned unshaded shader
 	auto unshadedFlags = flags;
 	unshadedFlags.mainShader = unshadedFlags.skinnedShader
-		= game->rend->shaders["unshaded"];
+		= unshadedFlags.instancedShader = game->rend->shaders["unshaded"];
 	unshadedFlags.depth = false;
 	game->rend->setFlags(unshadedFlags);
 	que.add(UIObjects);
@@ -172,6 +172,7 @@ void gameEditor::render(gameMain *game) {
 }
 
 void gameEditor::renderWorldObjects(gameMain *game) {
+	DO_ERROR_CHECK();
 	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
@@ -187,7 +188,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto& refShader = game->rend->shaders["refprobe_debug"];
 		auto& irradShader = game->rend->shaders["irradprobe_debug"];
 
-		probeFlags.mainShader = probeFlags.skinnedShader = refShader;
+		probeFlags.mainShader = probeFlags.skinnedShader =
+			probeFlags.instancedShader = refShader;
 		game->rend->setFlags(probeFlags);
 		refShader->bind();
 
@@ -200,13 +202,16 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 				glm::vec3 facevec =
 					game->rend->atlases.reflections->tex_vector(probe->faces[0][i]);
 				refShader->set(loc, facevec);
+				DO_ERROR_CHECK();
 			}
 
 			que.add(probeObj);
+			DO_ERROR_CHECK();
 			que.flush(game->rend->framebuffer, game->rend);
 		}
 
-		probeFlags.mainShader = probeFlags.skinnedShader = irradShader;
+		probeFlags.mainShader = probeFlags.skinnedShader =
+			probeFlags.instancedShader = irradShader;
 		game->rend->setFlags(probeFlags);
 		irradShader->bind();
 
@@ -228,8 +233,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 	if (showLights) {
 		auto unshadedFlags = flags;
-		unshadedFlags.mainShader = unshadedFlags.skinnedShader
-			= game->rend->shaders["unshaded"];
+		unshadedFlags.mainShader = unshadedFlags.skinnedShader =
+			unshadedFlags.instancedShader = game->rend->shaders["unshaded"];
 		game->rend->setFlags(unshadedFlags);
 
 		for (auto& [trans, __, light] : tempque.lights) {

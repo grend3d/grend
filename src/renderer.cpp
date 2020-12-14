@@ -109,6 +109,12 @@ void renderContext::loadShaders(void) {
 		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
 	);
 
+	shaders["main-instanced"] = loadProgram(
+		GR_PREFIX "shaders/out/pixel-shading-instanced.vert",
+		//GR_PREFIX "shaders/out/pixel-shading.frag"
+		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
+	);
+
 	shaders["refprobe"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe.frag"
@@ -116,6 +122,11 @@ void renderContext::loadShaders(void) {
 
 	// TODO: skinned vertex shader
 	shaders["refprobe-skinned"] = loadProgram(
+		GR_PREFIX "shaders/out/ref_probe.vert",
+		GR_PREFIX "shaders/out/ref_probe.frag"
+	);
+
+	shaders["refprobe-instanced"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe.frag"
 	);
@@ -135,8 +146,13 @@ void renderContext::loadShaders(void) {
 		GR_PREFIX "shaders/out/unshaded.frag"
 	);
 
+	for (auto& name : {"main", "main-instanced", "refprobe",
+	                   "refprobe-instanced", "refprobe_debug",
+	                   "irradprobe_debug", "unshaded"})
+		/*
 	for (auto& name : {"main", "refprobe", "refprobe_debug",
 	                   "irradprobe_debug", "unshaded"})
+					   */
 	{
 		Program::ptr s = shaders[name];
 
@@ -180,6 +196,14 @@ void renderContext::loadShaders(void) {
 	);
 	shaders["shadow-skinned"]->attribute("v_position", VAO_VERTICES);
 	shaders["shadow-skinned"]->link();
+
+	// TODO: instanced vertex shader
+	shaders["shadow-instanced"] = loadProgram(
+		GR_PREFIX "shaders/out/depth.vert",
+		GR_PREFIX "shaders/out/depth.frag"
+	);
+	shaders["shadow-instanced"]->attribute("v_position", VAO_VERTICES);
+	shaders["shadow-instanced"]->link();
 
 	shaders["tonemap"] = loadProgram(
 		GR_PREFIX "shaders/out/postprocess.vert",
@@ -228,6 +252,7 @@ void renderContext::loadShaders(void) {
 	shaders["quadtest"]->link();
 
 	shaders["main"]->bind();
+	DO_ERROR_CHECK();
 }
 
 void renderContext::setFlags(const renderFlags& newflags) {
@@ -240,8 +265,9 @@ struct renderFlags renderContext::getDefaultFlags(std::string name) {
 		//       so that fragment shaders can be automatically paired with
 		//       compatible vertex shaders
 		//       maybe just do a (c++) class-based thing?
-		.mainShader    = shaders[name],
-		.skinnedShader = shaders[name+"-skinned"],
+		.mainShader      = shaders[name],
+		.skinnedShader   = shaders[name+"-skinned"],
+		.instancedShader = shaders[name+"-instanced"],
 	};
 }
 

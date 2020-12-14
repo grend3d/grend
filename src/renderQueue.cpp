@@ -54,6 +54,10 @@ void renderQueue::add(gameObject::ptr obj,
 		auto s = std::dynamic_pointer_cast<gameSkin>(obj->getNode("skin"));
 		addSkinned(obj->getNode("mesh"), s, animTime, adjTrans, inverted);
 
+	} else if (obj->type == gameObject::objType::Particles) {
+		auto p = std::dynamic_pointer_cast<gameParticles>(obj);
+		addInstanced(obj, p, adjTrans, inverted);
+
 	} else {
 		for (auto& [name, ptr] : obj->nodes) {
 			//std::cerr << "add(): subnode " << name << std::endl;
@@ -81,6 +85,34 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 
 	for (auto& [name, ptr] : obj->nodes) {
 		addSkinned(ptr, skin, animTime, trans, inverted);
+	}
+}
+
+void renderQueue::addInstanced(gameObject::ptr obj,
+                               gameParticles::ptr particles,
+                               glm::mat4 trans,
+                               bool inverted)
+{
+	if (obj == nullptr || !obj->visible) {
+		return;
+	}
+
+	glm::mat4 adjTrans = trans*obj->getTransform(0);
+
+	unsigned invcount = 0;
+	for (unsigned i = 0; i < 3; i++)
+		invcount += obj->transform.scale[i] < 0;
+
+	// only want to invert face order if flipped an odd number of times
+	inverted ^= invcount & 1;
+
+	if (obj->type == gameObject::objType::Mesh) {
+		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		instancedMeshes.push_back({adjTrans, inverted, particles, m});
+	}
+
+	for (auto& [name, ptr] : obj->nodes) {
+		addInstanced(ptr, particles, adjTrans, inverted);
 	}
 }
 
@@ -262,8 +294,18 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 			tempLights.push_back(*it);
 		}
 	}
-
 	lights = tempLights;
+
+	std::vector<std::tuple<glm::mat4, bool, gameParticles::ptr,
+						   gameMesh::ptr>> tempInstanced;
+	for (auto it = instancedMeshes.begin(); it != instancedMeshes.end(); it++) {
+		auto& [trans, _, particles, __] = *it;
+
+		if (cam->sphereInFrustum(applyTransform(trans), particles->radius)) {
+			tempInstanced.push_back(*it);
+		}
+	}
+	instancedMeshes = tempInstanced;
 }
 
 static void drawMesh(renderFlags& flags,
@@ -316,6 +358,67 @@ static void drawMesh(renderFlags& flags,
 	               GL_UNSIGNED_INT,
 	               (void*)mesh->comped_mesh->elements->offset);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+static void drawMeshInstanced(renderFlags& flags,
+                              renderFramebuffer::ptr fb,
+                              Program::ptr program,
+                              glm::mat4& transform,
+                              bool inverted,
+                              gameParticles::ptr particles,
+                              gameMesh::ptr mesh)
+{
+	// TODO:
+	if (fb != nullptr && flags.stencil) {
+		if (fb->drawn_meshes.size() < 0xff) {
+			fb->drawn_meshes.push_back(mesh);
+			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
+
+		} else {
+			glStencilFunc(GL_ALWAYS, 0, ~0);
+		}
+	}
+
+	glm::mat3 m_3x3_inv_transp =
+		glm::transpose(glm::inverse(model_to_world(transform)));
+
+	program->set("m", transform);
+	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
+
+	set_material(program, mesh->comped_mesh);
+
+	// enable()/disable() cache state, no need to worry about toggling
+	// too much state if queue is sorted
+	if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+		// TODO: handle mask blends
+		enable(GL_BLEND);
+	} else {
+		disable(GL_BLEND);
+	}
+
+	// TODO: need to keep track of the model face order
+	if (flags.cull_faces) {
+		setFaceOrder(inverted? GL_CW : GL_CCW);
+	}
+
+	bindVao(mesh->comped_mesh->vao);
+
+#if GLSL_VERSION >= 140
+	particles->syncBuffer();
+	program->setUniformBlock("instanceTransforms", particles->ubuffer,
+	                         UBO_INSTANCE_TRANSFORMS);
+	glDrawElementsInstanced(
+		GL_TRIANGLES,
+		mesh->comped_mesh->elements->size / sizeof(GLuint),
+		GL_UNSIGNED_INT,
+		(void*)mesh->comped_mesh->elements->offset,
+		particles->activeInstances);
+
+#else
+	for (unsigned i = 0; i < particles->activeInstances; i++) {
+		// TODO: fallback
+	}
+#endif
 }
 
 unsigned renderQueue::flush(unsigned width,
@@ -391,11 +494,13 @@ unsigned renderQueue::flush(unsigned width,
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
+	instancedMeshes.clear();
 
 	return drawnMeshes;
 }
 
 unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) {
+	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
 	renderFlags flags = rctx->getFlags();
 
@@ -421,6 +526,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 		glDepthMask(GL_FALSE);
 	}
 
+	DO_ERROR_CHECK();
 	assert(fb != nullptr);
 	fb->framebuffer->bind();
 
@@ -498,11 +604,28 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) 
 		drawnMeshes++;
 	}
 
+	flags.instancedShader->bind();
+	flags.instancedShader->set("v", view);
+	flags.instancedShader->set("p", projection);
+	flags.instancedShader->set("v_inv", v_inv);
+	flags.instancedShader->set("cameraPosition", cam->position());
+	shaderSync(flags.instancedShader, rctx);
+
+	for (auto& [transform, inverted, particleSystem, mesh] : instancedMeshes) {
+		set_irradiance_probe(
+			nearest_irradiance_probe(applyTransform(transform)),
+			flags.mainShader, rctx->atlases);
+		drawMeshInstanced(flags, fb, flags.instancedShader,
+		                  transform, inverted, particleSystem, mesh);
+		drawnMeshes += particleSystem->activeInstances;
+	}
+
 	// TODO: clear()
 	meshes.clear();
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
+	instancedMeshes.clear();
 
 	return drawnMeshes;
 }
@@ -827,8 +950,8 @@ void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
 void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 
 #if GLSL_VERSION >= 140
-	program->setUniformBlock("lights", rctx->lightBuffer, 2);
-	program->setUniformBlock("light_tiles", rctx->lightTiles, 3);
+	program->setUniformBlock("lights",      rctx->lightBuffer, UBO_LIGHT_INFO);
+	program->setUniformBlock("light_tiles", rctx->lightTiles,  UBO_LIGHT_TILES);
 
 	/*
 	syncUniformBuffer(program, rctx, refprobe, point_lights,

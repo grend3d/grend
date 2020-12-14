@@ -1,4 +1,5 @@
 #pragma once
+
 #include <grend/glmIncludes.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/sdlContext.hpp>
@@ -155,6 +156,35 @@ class gameSkin : public gameObject {
 		std::vector<gameObject::ptr> joints;
 };
 
+// forward declaration defined in glManager.hpp
+// ugh, this is becoming a maze of forward declarations...
+class Buffer;
+
+class gameParticles : public gameObject {
+	public:
+		typedef std::shared_ptr<gameParticles> ptr;
+		typedef std::weak_ptr<gameParticles>   weakptr;
+
+		gameParticles(unsigned _maxInstances = 256);
+
+		virtual std::string typeString(void) {
+			return "Particle system";
+		}
+
+		void update(void);
+		void syncBuffer(void);
+
+		std::vector<glm::mat4> positions;
+		// approximate bounding sphere for instances in this object,
+		// used for culling
+		float radius;
+		bool synced = false;
+		unsigned activeInstances;
+		unsigned maxInstances;
+
+		std::shared_ptr<Buffer> ubuffer = nullptr;
+};
+
 class gameLight : public gameObject {
 	public:
 		typedef std::shared_ptr<gameLight> ptr;
@@ -298,4 +328,4 @@ class gameIrradianceProbe : public gameObject {
 }
 
 #include <grend/physics.hpp>
-
+#include <grend/glManager.hpp>
