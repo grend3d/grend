@@ -209,23 +209,27 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					int randtrees = (posgrad.x + 1.0)*0.5 * 5 * (1.0 - baseElevation/50.0);
 
 					game->phys->addStaticModels(foo, TRS());
+					gameParticles::ptr parts = std::make_shared<gameParticles>(32);
+					parts->activeInstances = randtrees;
+					parts->radius = cellsize / 2.f * 1.415;
 
-					for (int i = 0; i < randtrees; i++) {
-						gameObject::ptr ntree = std::make_shared<gameObject>();
+					for (int i = 0; i < parts->activeInstances; i++) {
+						TRS transform;
 						glm::vec2 pos = randomGradient(glm::vec2(coord.x + i, coord.z + i));
 
 						float tx = ((pos.x + 1)*0.5) * cellsize;
 						float ty = ((pos.y + 1)*0.5) * cellsize;
 
-						ntree->transform.position = glm::vec3(
+						transform.position = glm::vec3(
 							tx, landscapeThing(coord.x + tx, coord.z + ty) - 0.1, ty
 						);
-						ntree->transform.scale = glm::vec3((posgrad.y + 1.0)*0.5*3.0+0.5);
-
-						std::string name = "tree["+std::to_string(i)+"]";
-						setNode("tree", ntree, treeNode);
-						setNode(name, ptr, ntree);
+						transform.scale = glm::vec3((posgrad.y + 1.0)*0.5*3.0+0.5);
+						parts->positions[i] = transform.getTransform();
 					}
+
+					parts->update();
+					setNode("tree", parts, treeNode);
+					setNode("parts", ptr, parts);
 
 					int randlight = (posgrad.y + 1.0)*0.5 * 7 * (1.0 - baseElevation/50.0);
 
