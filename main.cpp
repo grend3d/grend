@@ -13,6 +13,11 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <map>
+#include <vector>
+#include <set>
+
+#include <initializer_list>
 
 // XXX:  toggle using textures/models I have locally, don't want to
 //       bloat the assets folder again
@@ -41,31 +46,39 @@ animationCollection::ptr findAnimations(gameObject::ptr obj) {
 	return nullptr;
 }
 
-// TODO: library functions to handle most of this
-void addCameraWeapon(gameView::ptr view) {
-	playerView::ptr player = std::dynamic_pointer_cast<playerView>(view);
-	gameObject::ptr testweapon = std::make_shared<gameObject>();
+class animatedCharacter {
+	public:
+		typedef std::shared_ptr<animatedCharacter> ptr;
+		typedef std::weak_ptr<animatedCharacter>   weakptr;
 
-	auto [objs, models] =
-		load_gltf_scene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
-		//load_gltf_scene(GR_PREFIX "assets/obj/Mossberg-lowres/shotgun.gltf");
+		animatedCharacter(gameObject::ptr objs);
+		void setAnimation(std::string animation, float weight = 1.0);
+		gameObject::ptr getObject(void);
 
-	// leaving old stuff here for debugging
-	objs->transform.scale = glm::vec3(0.1f);
-	objs->transform.position = glm::vec3(0, -1, 0);
-	//objs->transform.scale = glm::vec3(2.f);
-	//objs->transform.position = glm::vec3(-0.3, 1.1, 1.25);
-	//objs->transform.rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
+	private:
+		animationCollection::ptr animations;
+		std::string currentAnimation;
+		gameObject::ptr objects;
+};
 
-	compileModels(models);
-	bindCookedMeshes();
-	setNode("weapon", player->cameraObj, objs);
+animatedCharacter::animatedCharacter(gameObject::ptr objs) {
+	if ((animations = findAnimations(objs)) == nullptr) {
+		// TODO: proper error
+		throw "asdf";
+	}
 
-	// TODO: need better way to do this
-	if (auto animations = findAnimations(objs)) {
+	objects = objs;
+}
+
+gameObject::ptr animatedCharacter::getObject(void) {
+	return objects;
+}
+
+void animatedCharacter::setAnimation(std::string animation, float weight) {
+	if (animations) {
 		for (auto& [name, ptr] : animations->groups) {
 			if (auto group = ptr.lock()) {
-				group->weight = (name == "walking")? 1.0 : 0.0;
+				group->weight = (name == animation)? weight : 0.0;
 			}
 		}
 	}
@@ -208,12 +221,12 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					float baseElevation = landscapeThing(coord.x, coord.z);
 					int randtrees = (posgrad.x + 1.0)*0.5 * 5 * (1.0 - baseElevation/50.0);
 
-					game->phys->addStaticModels(foo, TRS());
+					game->phys->addStaticModels(nullptr, foo, TRS());
 					gameParticles::ptr parts = std::make_shared<gameParticles>(32);
 					parts->activeInstances = randtrees;
 					parts->radius = cellsize / 2.f * 1.415;
 
-					for (int i = 0; i < parts->activeInstances; i++) {
+					for (unsigned i = 0; i < parts->activeInstances; i++) {
 						TRS transform;
 						glm::vec2 pos = randomGradient(glm::vec2(coord.x + i, coord.z + i));
 
@@ -309,47 +322,464 @@ void landscapeGenerator::setPosition(gameMain *game, glm::vec3 position) {
 	}
 }
 
+struct inputEvent {
+	enum eventType {
+		moveForward,
+		moveLeft,
+		moveBack,
+		moveRight,
+		moveUp,
+		moveDown,
+		jump,
+		crouch,
+		fire,
+	} type;
+
+	float amount;
+};
+
+typedef std::shared_ptr<std::vector<inputEvent>> inputQueue;
+
+class entitySystem;
+class component;
+class entity;
+
+bool intersects(std::map<std::string, component*>& entdata,
+                std::initializer_list<std::string> test)
+{
+	for (auto& s : test) {
+		if (!entdata.count(s)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+class entityManager {
+	public:
+		typedef std::shared_ptr<entityManager> ptr;
+		typedef std::weak_ptr<entityManager>   weakptr;
+
+		entityManager(gameMain *_engine) : engine(_engine) {};
+
+		std::map<std::string, std::shared_ptr<entitySystem>> systems;
+		std::map<std::string, std::list<component*>> components;
+		std::map<entity*, std::map<std::string, component*>> entityComponents;
+		std::map<component*, entity*> componentEntities;
+		std::set<entity*> entities;
+
+		void update(float delta);
+		void registerComponent(entity *ent, std::string name, component *ptr);
+
+		void add(entity *ent);
+		void remove(entity *ent);
+		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
+
+		std::list<component*>& getComponents(std::string name);
+		std::map<std::string, component*>& getEntityComponents(entity *ent);
+
+		gameObject::ptr root = std::make_shared<gameObject>();
+		std::shared_ptr<std::vector<collision>> collisions
+			= std::make_shared<std::vector<collision>>();
+
+		// XXX
+		gameMain *engine;
+};
+
+class component {
+	public:
+		// null base class
+		component(entityManager *manager, entity *ent) {
+			//manager->registerComponent(ent, "component", this);
+		}
+};
+
+class entity : public component {
+	public:
+		typedef std::shared_ptr<entity> ptr;
+		typedef std::weak_ptr<entity>   weakptr;
+
+		entity(entityManager *manager)
+			: component(manager, this)
+		{
+			manager->registerComponent(this, "entity", this);
+		}
+
+		virtual void update(entityManager *manager, float delta) = 0;
+		virtual gameObject::ptr getNode(void) { return node; };
+
+		gameObject::ptr node = std::make_shared<gameObject>();
+};
+
+class controllable : public component {
+	public: 
+		controllable(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "controllable", this);
+		}
+
+		void handleInput(inputEvent& ev);
+};
+
+// XXX: having basically tag components, waste of space?
+class isControlled : public component {
+	public: 
+		isControlled(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "isControlled", this);
+		}
+};
+
+class rigidBody : public component {
+	public:
+		rigidBody(entityManager *manager, entity *ent, float _mass)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "rigidBody", this);
+			mass = _mass;
+		}
+
+		void registerCollisionQueue(std::shared_ptr<std::vector<collision>> queue) {
+			if (phys) {
+				phys->collisionQueue = queue;
+			}
+			// TODO: should show warning if there's no physics object
+		}
+
+		void syncPhysics(entity *ent) {
+			if (ent && ent->node && phys) {
+				ent->node->transform = phys->getTransform();
+			}
+		}
+
+		physicsObject::ptr phys = nullptr;
+		float mass;
+};
+
+class rigidBodySphere : public rigidBody {
+	public:
+		rigidBodySphere(entityManager *manager,
+		                entity *ent,
+		                glm::vec3 position,
+		                float mass,
+		                float radius)
+			: rigidBody(manager, ent, mass)
+		{
+			manager->registerComponent(ent, "rigidBodySphere", this);
+			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
+		}
+};
+
+class rigidBodyBox : public rigidBody {
+	public:
+		rigidBodyBox(entityManager *manager,
+		             entity *ent,
+		             glm::vec3 position,
+		             float mass,
+		             AABBExtent& box)
+			: rigidBody(manager, ent, mass)
+		{
+			manager->registerComponent(ent, "rigidBodyBox", this);
+			phys = manager->engine->phys->addBox(ent, position, mass, box);
+		}
+};
+
+class entitySystem {
+	public:
+		typedef std::shared_ptr<entitySystem> ptr;
+		typedef std::weak_ptr<entitySystem>   weakptr;
+
+		virtual void update(entityManager *manager, float delta) {}
+};
+
+class entitySystemEnemyCollision : public entitySystem {
+	public:
+		typedef std::shared_ptr<entitySystem> ptr;
+		typedef std::weak_ptr<entitySystem>   weakptr;
+
+		virtual void update(entityManager *manager, float delta);
+};
+
+void entitySystemEnemyCollision::update(entityManager *manager, float delta) {
+	for (auto& col : *manager->collisions) {
+		if (col.adata && col.bdata) {
+			entity *a = static_cast<entity*>(col.adata);
+			entity *b = static_cast<entity*>(col.bdata);
+
+			if (manager->hasComponents(a, {"player", "entity"})
+			    && manager->hasComponents(b, {"enemy", "entity"}))
+			{
+				std::cerr << "Woot! have player-enemy collision" << std::endl;
+			}
+		}
+	}
+}
+
+void entityManager::update(float delta) {
+	for (auto& [name, system] : systems) {
+		if (system) {
+			system->update(this, delta);
+		}
+	}
+
+	for (auto& ent : entities) {
+		ent->update(this, delta);
+	}
+
+	collisions->clear();
+}
+
+void entityManager::add(entity *ent) {
+	setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
+	entities.insert(ent);
+}
+
+void entityManager::remove(entity *ent) {
+	root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
+	//delete ent; // TODO: don't leak memory ok
+	entities.erase(ent);
+}
+
+bool entityManager::hasComponents(entity *ent,
+                                  std::initializer_list<std::string> tags)
+{
+	auto& compmap = entityComponents[ent];
+	return intersects(compmap, tags);
+}
+
+entity *findNearest(entityManager *manager,
+                    glm::vec3 position,
+                    std::initializer_list<std::string> tags)
+{
+	float curmin = HUGE_VALF;
+	entity *ret = nullptr;
+
+	for (auto& ent : manager->entities) {
+		if (manager->hasComponents(ent, tags)) {
+			gameObject::ptr node = ent->getNode();
+			float dist = glm::distance(position, node->transform.position);
+
+			curmin = min(curmin, dist);
+			ret = ent;
+		}
+	}
+
+	return ret;
+}
+
+entity *findFirst(entityManager *manager,
+                  std::initializer_list<std::string> tags)
+{
+	for (auto& ent : manager->entities) {
+		if (manager->hasComponents(ent, tags)) {
+			return ent;
+		}
+	}
+
+	return nullptr;
+}
+
+std::list<component*>& entityManager::getComponents(std::string name) {
+	// XXX: avoid creating component names if nothing registered them
+	static std::list<component*> nullret;
+	//std::cerr << "looking up components for " << name << std::endl;
+
+	return (components.count(name))? components[name] : nullret;
+}
+
+std::map<std::string, component*>& entityManager::getEntityComponents(entity *ent) {
+	// XXX: similarly, something which isn't registered here has 
+	//      no components (at least, in this system) so return empty set
+	static std::map<std::string, component*> nullret;
+
+	return (entityComponents.count(ent))? entityComponents[ent] : nullret;
+}
+
+void entityManager::registerComponent(entity *ent,
+                                      std::string name,
+                                      component *ptr)
+{
+	// TODO: need a proper logger
+	//std::cerr << "registering component '" << name << "' for " << ptr << std::endl;
+	components[name].push_back(ptr);
+	entityComponents[ent].insert({name, ptr});
+	componentEntities.insert({ptr, ent});
+}
+
+class enemy : public entity {
+	public:
+		enemy(entityManager *manager, gameMain *game, glm::vec3 position);
+		virtual void update(entityManager *manager, float delta);
+		virtual gameObject::ptr getNode(void) { return node; };
+
+		std::shared_ptr<std::vector<collision>> collisions
+			= std::make_shared<std::vector<collision>>();
+
+		float health;
+		rigidBody *body;
+};
+
+class player : public entity {
+	public:
+		player(entityManager *manager, gameMain *game, glm::vec3 position);
+		virtual void update(entityManager *manager, float delta);
+		virtual gameObject::ptr getNode(void) { return node; };
+
+		std::shared_ptr<std::vector<collision>> collisions
+			= std::make_shared<std::vector<collision>>();
+		float health;
+
+		animatedCharacter::ptr character;
+		rigidBody *body;
+};
+
+enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
+	: entity(manager),
+	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
+{
+	static gameObject::ptr enemyModel = nullptr;
+
+	manager->registerComponent(this, "enemy", this);
+
+	// TODO:
+	if (!enemyModel) {
+#if LOCAL_BUILD
+		enemyModel = loadScene("test-assets/obj/test-enemy.glb");
+#else
+		gameModel::ptr mod = generate_cuboid(1.0, 2.0, 0.5);
+		enemyModel = std::make_shared<gameObject>();
+		compileModel("emeny", mod);
+		setNode("model", enemyModel, mod);
+#endif
+	}
+
+	node->transform.position = position;
+	setNode("model", node, enemyModel);
+	body->registerCollisionQueue(manager->collisions);
+	body->phys->setAngularFactor(0.0);
+}
+
+void enemy::update(entityManager *manager, float delta) {
+	glm::vec3 playerPos;
+
+	entity *playerEnt =
+		findNearest(manager, node->transform.position, {"player", "entity"});
+
+	if (playerEnt) {
+		playerPos = playerEnt->getNode()->transform.position;
+	}
+
+	glm::vec3 diff = playerPos - node->transform.position;
+	glm::vec3 vel =  glm::normalize(glm::vec3(diff.x, 0, diff.z));
+	body->phys->setAcceleration(10.f*vel);
+	body->syncPhysics(this);
+
+	collisions->clear();
+}
+
+player::player(entityManager *manager, gameMain *game, glm::vec3 position)
+	: entity(manager),
+	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
+{
+	static gameObject::ptr playerModel = nullptr;
+
+	manager->registerComponent(this, "player", this);
+
+	if (!playerModel) {
+		// TODO: resource cache
+		playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
+		playerModel->transform.scale = glm::vec3(0.1f);
+		playerModel->transform.position = glm::vec3(0, -1, 0);
+		bindCookedMeshes();
+	}
+
+	node->transform.position = position;
+	setNode("model", node, playerModel);
+	character = std::make_shared<animatedCharacter>(playerModel);
+	character->setAnimation("idle");
+
+	body->registerCollisionQueue(manager->collisions);
+}
+
+void player::update(entityManager *manager, float delta) {
+	TRS physTransform = body->phys->getTransform();
+	node->transform.position = physTransform.position;
+	glm::vec3 vel = body->phys->getVelocity();
+	node->transform.rotation =
+		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
+
+	if (glm::length(vel) < 2.0) {
+		character->setAnimation("idle");
+	} else {
+		character->setAnimation("walking");
+	}
+
+	collisions->clear();
+}
+
+/*
+unsigned playerSystem::add(entityManager *manager, gameMain *game,
+                           glm::vec3 position)
+{
+	players.push_back(new player(manager, game, position));
+
+	std::string name = "player["+std::to_string(++entCounter)+"]";
+	setNode(name, root, players.back()->getNode());
+
+	return entCounter - 1;
+}
+
+void playerSystem::remove(unsigned id) {
+	// TODO
+}
+
+entity *playerSystem::getEntity(unsigned index) {
+	return (index < players.size())? players[index] : nullptr;
+}
+
+unsigned playerSystem::numEntities(void) {
+	return players.size();
+}
+*/
+
 class landscapeGenView : public playerView {
 	public:
 		typedef std::shared_ptr<landscapeGenView> ptr;
 		typedef std::weak_ptr<landscapeGenView>   weakptr;
 
 		landscapeGenView(gameMain *game) : playerView(game) {
-#if LOCAL_BUILD
-			enemyModel = loadScene("test-assets/obj/test-enemy.glb");
-#else
-			gameModel::ptr mod = generate_cuboid(1.0, 2.0, 0.5);
-			enemyModel = std::make_shared<gameObject>();
-			compileModel("emeny", mod);
-			setNode("model", enemyModel, mod);
-#endif
+			manager = std::make_shared<entityManager>(game);
+
+			manager->systems["thing"] =
+				std::make_shared<entitySystemEnemyCollision>();
+			//manager->systems["players"]->add(manager.get(), game, glm::vec3(-15, 50, 0));
+			player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
+			manager->add(playerEnt);
+
+			cameraObj  = playerEnt->getNode();
+			cameraPhys = playerEnt->body->phys;
 
 			for (unsigned i = 0; i < 15; i++) {
-				gameObject::ptr temp = std::make_shared<gameObject>();
-
-				temp->transform.position = glm::vec3(
+				glm::vec3 position = glm::vec3(
 					float(rand()) / RAND_MAX * 100.0 - 50,
 					50.0,
 					float(rand()) / RAND_MAX * 100.0 - 50
 				);
 
-				std::string name = "enemy["+std::to_string(i)+"]";
-				game->phys->addSphere(temp, temp->transform.position, 1.0, 1.0);
-				temp->physObj->setAngularFactor(0.0);
-				enemies.push_back(temp);
-
-				setNode("model", temp, enemyModel);
-				setNode(name, enemyNodes, temp);
+				manager->add(new enemy(manager.get(), game, position));
 			}
+
+			bindCookedMeshes();
 		};
 
 		virtual void logic(gameMain *game, float delta);
 		virtual void render(gameMain *game);
-		gameObject::ptr getEnemies(void) { return enemyNodes; };
+		//void loadPlayer(void);
 
-		std::vector<gameObject::ptr> enemies;
-		gameObject::ptr enemyNodes = std::make_shared<gameObject>();
-		gameObject::ptr enemyModel;
+		entityManager::ptr manager;
 		landscapeGenerator landscape;
 };
 
@@ -363,17 +793,11 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	}
 
 	game->phys->stepSimulation(1.f/game->frame_timer.last());
+	game->phys->filterCollisions();;
 	cam->setPosition(cameraObj->transform.position - 5.f*cam->direction());
 
-	for (auto& it : enemies) {
-		glm::vec3 diff = cameraObj->transform.position - it->transform.position;
-		glm::vec3 vel =  glm::normalize(glm::vec3(diff.x, 0, diff.z));
-		it->physObj->setAcceleration(10.f*vel);
-	}
+	manager->update(1.f / game->frame_timer.last());
 
-	glm::vec3 vel = cameraPhys->getVelocity();
-	cameraObj->transform.rotation =
-		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
 
 	landscape.setPosition(game, cameraObj->transform.position);
 }
@@ -407,6 +831,7 @@ void landscapeGenView::render(gameMain *game) {
 		nvgBeginFrame(vgui.nvg, game->rend->screen_x, game->rend->screen_y, 1.0);
 		nvgSave(vgui.nvg);
 
+		/*
 		for (unsigned i = 0; i < enemies.size(); i++) {
 			auto& ptr = enemies[i];
 			float ticks = SDL_GetTicks() / 1000.f;
@@ -460,6 +885,7 @@ void landscapeGenView::render(gameMain *game) {
 				nvgText(vgui.nvg, innermin.x, innermin.y + 4*pad, "❎ 123/456", NULL);
 			}
 		}
+		*/
 
 		nvgRestore(vgui.nvg);
 		nvgEndFrame(vgui.nvg);
@@ -532,15 +958,15 @@ int main(int argc, char *argv[]) {
 	});
 
 	game->state->rootnode = loadMap(game);
-	game->phys->addStaticModels(game->state->rootnode, staticPosition);
+	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
 
 	landscapeGenView::ptr player = std::make_shared<landscapeGenView>(game);
 	player->landscape.setPosition(game, glm::vec3(1));
 	player->cam->setFar(1000.0);
 	game->setView(player);
-	setNode("enemies", game->state->rootnode, player->getEnemies());
+
+	setNode("entities", game->state->rootnode, player->manager->root);
 	setNode("landscape", game->state->rootnode, player->landscape.getNode());
-	addCameraWeapon(player);
 
 	game->run();
 	return 0;
