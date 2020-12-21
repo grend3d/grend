@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	});
 
 	game->state->rootnode = loadMap(game, argv[1]);
-	game->phys->addStaticModels(game->state->rootnode, staticPosition);
+	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
 	gameView::ptr player = std::make_shared<playerView>(game);
 	game->setView(player);
 	addCameraWeapon(player);

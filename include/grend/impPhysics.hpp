@@ -54,7 +54,7 @@ class impObject : public physicsObject {
 		virtual void removeSelf(void) {};
 
 	protected:
-		gameObject::ptr obj;
+		void *data;
 		//std::string model_name;
 		glm::vec3 position = {0, 0, 0};
 		glm::vec3 velocity = {0, 0, 0};
@@ -74,22 +74,23 @@ class impPhysics : public physics {
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
 		virtual physicsObject::ptr
-			addStaticModels(gameObject::ptr obj,
+			addStaticModels(void *data,
+		                    gameObject::ptr obj,
 		                    glm::mat4 transform = glm::mat4(1));
 
 		// dynamic geometry, collisions with AABB tree
 		virtual physicsObject::ptr
-			addSphere(gameObject::ptr obj, glm::vec3 pos,
+			addSphere(void *data, glm::vec3 pos,
 		              float mass, float r);
 
 		virtual physicsObject::ptr
-			addBox(gameObject::ptr obj,
+			addBox(void *data,
 			       glm::vec3 position,
 			       float mass,
 				   AABBExtent& box);
 
 		virtual physicsObject::ptr
-			addMesh(gameObject::ptr obj,
+			addMesh(void *data,
 			        glm::vec3 position,
 			        float mass,
 			        gameModel::ptr model,
@@ -103,8 +104,10 @@ class impPhysics : public physics {
 		virtual void clear(void);
 
 		virtual size_t numObjects(void);
-		virtual std::list<collision> findCollisions(float delta);
+		virtual void filterCollisions(void);
 		virtual void stepSimulation(float delta);
+
+		std::list<collision> findCollisions(float delta);
 
 		std::set<physicsObject::ptr> objects;
 		octree static_geom;

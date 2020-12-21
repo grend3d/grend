@@ -98,7 +98,8 @@ glm::vec3 bulletObject::getAcceleration(void) {
 // each return physics object ID
 // non-moveable geometry, collisions with octree
 physicsObject::ptr
-bulletPhysics::addStaticModels(gameObject::ptr obj,
+bulletPhysics::addStaticModels(void *data,
+                               gameObject::ptr obj,
                                const TRS& transform)
 {
 	// XXX: for now, don't allocate an object for static meshes,
@@ -111,23 +112,24 @@ bulletPhysics::addStaticModels(gameObject::ptr obj,
 			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
 
 			if (mesh && model) {
-				addStaticMesh(obj, transform, model, mesh);
+				// XXX: physObj here to prevent losing the reference to
+				//      the returned physicsObject
+				mesh->physObj = addStaticMesh(data, transform, model, mesh);
 			}
 		}
 	}
 
 	for (auto& [name, node] : obj->nodes) {
 		TRS adjTrans = addTRS(transform, node->transform);
-		addStaticModels(node, adjTrans);
+		addStaticModels(data, node, adjTrans);
 	}
 
 	return ret;
-
 }
 
 // dynamic geometry, collisions with AABB tree
 physicsObject::ptr
-bulletPhysics::addSphere(gameObject::ptr obj, glm::vec3 pos,
+bulletPhysics::addSphere(void *data, glm::vec3 pos,
                          float mass, float r)
 {
 	std::lock_guard<std::mutex> lock(bulletMutex);
@@ -135,7 +137,7 @@ bulletPhysics::addSphere(gameObject::ptr obj, glm::vec3 pos,
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
 	ret->runtime = this;
 	ret->mass = mass;
-	ret->obj = obj;
+	ret->data = data;
 	ret->shape = new btSphereShape(btScalar(r));
 
 	bool isDynamic = mass != 0.f;
@@ -153,16 +155,16 @@ bulletPhysics::addSphere(gameObject::ptr obj, glm::vec3 pos,
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
+	ret->body->setUserPointer(ret.get());
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
-	obj->physObj = p;
-	objects.insert(p);
+	objects.insert({ret.get(), p});
 	return p;
 }
 
 physicsObject::ptr
-bulletPhysics::addBox(gameObject::ptr obj,
+bulletPhysics::addBox(void *data,
                       glm::vec3 position,
                       float mass,
                       AABBExtent& box)
@@ -172,7 +174,7 @@ bulletPhysics::addBox(gameObject::ptr obj,
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
 	ret->runtime = this;
 	ret->mass = mass;
-	ret->obj = obj;
+	ret->data = data;
 	ret->shape = new btBoxShape(btVector3(box.extent.x, box.extent.y, box.extent.z));
 
 	bool isDynamic = mass != 0.f;
@@ -192,16 +194,17 @@ bulletPhysics::addBox(gameObject::ptr obj,
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
 	ret->body->setAngularFactor(btScalar(1));
+	ret->body->setUserPointer(ret.get());
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
-	obj->physObj = p;
-	objects.insert(p);
+	//obj->physObj = p;
+	objects.insert({ret.get(), p});
 	return p;
 }
 
 physicsObject::ptr
-bulletPhysics::addStaticMesh(gameObject::ptr obj,
+bulletPhysics::addStaticMesh(void *data,
                              const TRS& transform,
                              gameModel::ptr model,
                              gameMesh::ptr mesh)
@@ -225,7 +228,7 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
 	ret->runtime = this;
 	ret->mass = 0.f;
-	ret->obj = obj;
+	ret->data = data;
 	ret->shape = new btBvhTriangleMeshShape(indexArray, true /* useQuantizedAabbCompression */ );
 
 	btVector3 scale(transform.scale.x, transform.scale.y, transform.scale.z);
@@ -246,11 +249,11 @@ bulletPhysics::addStaticMesh(gameObject::ptr obj,
 	ret->body = new btRigidBody(btScalar(0.f), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
 	ret->body->setAngularFactor(btScalar(1));
+	ret->body->setUserPointer(ret.get());
 	world->addRigidBody(ret->body);
 
 	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
-	obj->physObj = p;
-	objects.insert(p);
+	objects.insert({ret.get(), p});
 	return p;
 }
 
@@ -262,27 +265,26 @@ bulletPhysics::addModelMeshBoxes(gameModel::ptr mod) {
 }
 
 void bulletPhysics::remove(physicsObject::ptr obj) {
-	//std::lock_guard<std::mutex> lock(bulletMutex);
+	std::lock_guard<std::mutex> lock(bulletMutex);
+
 	bulletObject::ptr bobj = std::dynamic_pointer_cast<bulletObject>(obj);
 	std::cerr << "remove(): got here, removing an object" << std::endl;
 
 	if (bobj) {
 		std::cerr << "remove(): really removing" << std::endl;
-		objects.erase(obj);
-		world->removeRigidBody(bobj->body);
+		remove(bobj.get());
 	}
 }
 
 void bulletPhysics::remove(bulletObject *ptr) {
 	std::lock_guard<std::mutex> lock(bulletMutex);
+
+	auto it = objects.find(ptr);
+
 	// XXX: linear search here is terrible, need more efficient solution
-	if (ptr) {
-		for (auto it = objects.begin(); it != objects.end(); it++) {
-			if (it->get() == ptr) {
-				remove(*it);
-				break;
-			}
-		}
+	if (it != objects.end()) {
+		world->removeRigidBody(ptr->body);
+		objects.erase(it);
 	}
 }
 
@@ -293,16 +295,75 @@ size_t bulletPhysics::numObjects(void) {
 	return objects.size();
 }
 
-std::list<physics::collision> bulletPhysics::findCollisions(float delta) {
-	return {};
+void bulletPhysics::filterCollisions(void) {
+	int manifolds = world->getDispatcher()->getNumManifolds();
+
+	for (int i = 0; i < manifolds; i++) {
+		btPersistentManifold *contact =
+			world->getDispatcher()->getManifoldByIndexInternal(i);
+		const btCollisionObject *a = contact->getBody0();
+		const btCollisionObject *b = contact->getBody1();
+
+		bulletObject *aptr = static_cast<bulletObject*>(a->getUserPointer());
+		bulletObject *bptr = static_cast<bulletObject*>(b->getUserPointer());
+
+		if (!objects.count(aptr) || !objects.count(bptr)) {
+			// one of the objects isn't valid, this shouldn't happen
+			continue;
+		}
+
+		int numContacts = contact->getNumContacts();
+		for (int k = 0; k < numContacts; k++) {
+			btManifoldPoint& pt = contact->getContactPoint(k);
+			float depth = pt.getDistance();
+
+			if (depth < 0.f) {
+				physicsObject::ptr physA = objects[aptr];
+				physicsObject::ptr physB = objects[bptr];
+
+				const btVector3& ptA = pt.getPositionWorldOnA();
+				const btVector3& ptB = pt.getPositionWorldOnB();
+				const btVector3& normalB =  pt.m_normalWorldOnB;
+				const btVector3& normalA = -pt.m_normalWorldOnB;
+
+				if (physA->collisionQueue) {
+					collision colA = {
+						.a = physA,
+						.b = physB,
+						.adata = aptr->data,
+						.bdata = bptr->data,
+						.position = glm::vec3(ptA.getX(), ptA.getY(), ptA.getZ()),
+						.normal = glm::vec3(normalA.getX(), normalA.getY(), normalA.getZ()),
+						.depth = depth,
+					};
+
+					physA->collisionQueue->push_back(colA);
+				}
+
+				if (physB->collisionQueue) {
+					collision colB = {
+						.a = physB,
+						.b = physA,
+						.adata = bptr->data,
+						.bdata = aptr->data,
+						.position = glm::vec3(ptB.getX(), ptB.getY(), ptB.getZ()),
+						.normal = glm::vec3(normalB.getX(), normalB.getY(), normalB.getZ()),
+						.depth = depth,
+					};
+
+					physB->collisionQueue->push_back(colB);
+				}
+			}
+		}
+	}
 }
 
 void bulletPhysics::stepSimulation(float delta) {
 	std::lock_guard<std::mutex> lock(bulletMutex);
-	world->stepSimulation(1.f/ 60.f, 10);
+	world->stepSimulation(delta, 10);
 
-	for (auto& k : objects) {
-		bulletObject::ptr ptr = std::dynamic_pointer_cast<bulletObject>(k);
+	for (auto& [rawptr, physptr] : objects) {
+		bulletObject::ptr ptr = std::dynamic_pointer_cast<bulletObject>(physptr);
 		btTransform trans;
 
 		if (ptr && ptr->body && ptr->body->getMotionState()) {

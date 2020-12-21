@@ -27,7 +27,7 @@ playerView::playerView(gameMain *game) : gameView() {
 		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
-	cameraPhys = game->phys->addSphere(cameraObj, glm::vec3(0, 10, 0), 1.0, 1.0);
+	cameraPhys = game->phys->addSphere(nullptr, glm::vec3(0, 10, 0), 1.0, 1.0);
 	setNode("player camera", game->state->physObjects, cameraObj);
 
 	input.bind(MODAL_ALL_MODES,
@@ -108,8 +108,10 @@ playerView::playerView(gameMain *game) : gameView() {
 				box->transform.position = pos;
 				setNode("model", box, cuboid);
 				AABBExtent ext = { glm::vec3(0.f), glm::vec3(0.5f) };
-				physicsObject::ptr boxObj = game->phys->addBox(box, pos, 1.f, ext);
-				boxObj->setVelocity(5.f*cam->direction());
+
+				// XXX: this doesn't work anymore
+				box->physObj = game->phys->addBox(nullptr, pos, 1.f, ext);
+				box->physObj->setVelocity(5.f*cam->direction());
 
 				// XXX: need better way to attach arbitrary objects
 				//      could have physObjects just be a list, and handle that

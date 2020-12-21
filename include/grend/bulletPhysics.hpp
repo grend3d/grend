@@ -45,6 +45,7 @@ class bulletObject : public physicsObject {
 		btCollisionShape *shape;
 		btDefaultMotionState *motionState;
 		float mass;
+		void *data;
 };
 
 class bulletPhysics : public physics {
@@ -58,19 +59,19 @@ class bulletPhysics : public physics {
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
 		virtual physicsObject::ptr
-			addStaticModels(gameObject::ptr obj, const TRS& transform);
+			addStaticModels(void *data, gameObject::ptr obj, const TRS& transform);
 
 		// dynamic geometry, collisions with AABB tree
 		virtual physicsObject::ptr
-			addSphere(gameObject::ptr obj, glm::vec3 pos,
+			addSphere(void *data, glm::vec3 pos,
 		              float mass, float r);
 		virtual physicsObject::ptr
-			addBox(gameObject::ptr obj,
+			addBox(void *data,
 			       glm::vec3 position,
 			       float mass,
 				   AABBExtent& box);
 		virtual physicsObject::ptr
-			addStaticMesh(gameObject::ptr obj,
+			addStaticMesh(void *data,
 			              const TRS& transform,
 			              gameModel::ptr model,
 			              gameMesh::ptr mesh);
@@ -84,7 +85,7 @@ class bulletPhysics : public physics {
 		virtual void clear(void);
 
 		virtual size_t numObjects(void);
-		virtual std::list<collision> findCollisions(float delta);
+		virtual void filterCollisions(void);
 		virtual void stepSimulation(float delta);
 
 	private:
@@ -94,7 +95,7 @@ class bulletPhysics : public physics {
 		btSequentialImpulseConstraintSolver *solver;
 		btDiscreteDynamicsWorld *world;
 
-		std::set<physicsObject::ptr> objects;
+		std::map<bulletObject *, physicsObject::ptr> objects;
 		std::mutex bulletMutex;
 };
 

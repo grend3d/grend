@@ -11,12 +11,23 @@
 #include <list>
 #include <memory>
 #include <iostream>
+#include <functional>
 
 namespace grendx {
 
 // forward declaration, gameModel.hpp at end
 class gameModel;
 class gameMesh;
+
+class physicsObject;
+
+struct collision {
+	std::shared_ptr<physicsObject> a, b;
+	void *adata, *bdata;
+	glm::vec3 position;
+	glm::vec3 normal;
+	float depth;
+};
 
 class physicsObject {
 	public:
@@ -37,6 +48,8 @@ class physicsObject {
 		virtual glm::vec3 getVelocity(void) = 0;
 		virtual glm::vec3 getAcceleration(void) = 0;
 		virtual void removeSelf(void) { std::cerr << "AAAAAAAAAAAAAAAAAAAAAAA\n"; }; 
+
+		std::shared_ptr<std::vector<collision>> collisionQueue = nullptr;
 };
 
 class physics {
@@ -44,34 +57,27 @@ class physics {
 		typedef std::shared_ptr<physics> ptr;
 		typedef std::weak_ptr<physics>   weakptr;
 
-		struct collision {
-			physicsObject::ptr a, b;
-			glm::vec3 position;
-			glm::vec3 normal;
-			float depth;
-		};
-
 		virtual size_t numObjects(void) = 0;
 
 		// add non-moveable geometry
 		virtual physicsObject::ptr
-		    addStaticModels(gameObject::ptr obj, const TRS& transform) = 0;
+		    addStaticModels(void *data, gameObject::ptr obj,
+			                const TRS& transform) = 0;
 
 		// add dynamic rigid bodies
 		virtual physicsObject::ptr
-			addSphere(gameObject::ptr obj, glm::vec3 pos,
+			addSphere(void *data, glm::vec3 pos,
 		              float mass, float r) = 0;
 		virtual physicsObject::ptr
-			addBox(gameObject::ptr obj,
+			addBox(void *data,
 			       glm::vec3 position,
 			       float mass,
 				   AABBExtent& box) = 0;
 		virtual physicsObject::ptr
-			addStaticMesh(gameObject::ptr obj,
+			addStaticMesh(void *data,
 			              const TRS& transform,
 			              std::shared_ptr<gameModel> model,
 			              std::shared_ptr<gameMesh>  mesh) = 0;
-
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
@@ -80,7 +86,7 @@ class physics {
 		virtual void remove(physicsObject::ptr obj) = 0;
 		virtual void clear(void) = 0;
 
-		virtual std::list<collision> findCollisions(float delta) = 0;
+		virtual void filterCollisions(void) = 0;
 		virtual void stepSimulation(float delta) = 0;
 };
 

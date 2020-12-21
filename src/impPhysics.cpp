@@ -42,7 +42,8 @@ glm::vec3 impObject::getAcceleration(void) {
 }
 
 physicsObject::ptr
-impPhysics::addStaticModels(gameObject::ptr obj,
+impPhysics::addStaticModels(void *data,
+                            gameObject::ptr obj,
                             glm::mat4 transform)
 {
 	glm::mat4 adjTrans = transform*obj->getTransform(0);
@@ -57,21 +58,21 @@ impPhysics::addStaticModels(gameObject::ptr obj,
 	}
 
 	for (auto& [name, node] : obj->nodes) {
-		addStaticModels(node, adjTrans);
+		addStaticModels(data, node, adjTrans);
 	}
 
 	return ret;
 }
 
 physicsObject::ptr
-impPhysics::addSphere(gameObject::ptr obj,
+impPhysics::addSphere(void *data,
                       glm::vec3 pos,
                       float mass,
                       float r)
 {
 	impObject::ptr impobj = std::make_shared<impObject>();
 
-	impobj->obj = obj;
+	impobj->data = data;
 	impobj->type = impObject::type::Sphere;
 	impobj->usphere.radius = r;
 	impobj->position = pos;
@@ -84,7 +85,7 @@ impPhysics::addSphere(gameObject::ptr obj,
 }
 
 physicsObject::ptr
-impPhysics::addBox(gameObject::ptr obj,
+impPhysics::addBox(void *data,
                    glm::vec3 position,
                    float mass,
                    AABBExtent& box)
@@ -113,8 +114,34 @@ size_t impPhysics::numObjects(void) {
 	return objects.size();
 }
 
-std::list<physics::collision> impPhysics::findCollisions(float delta) {
-	std::list<physics::collision> ret;
+void impPhysics::filterCollisions(void) {
+	for (auto& pobj : objects) {
+		impObject::ptr obj = std::dynamic_pointer_cast<impObject>(pobj);
+
+		glm::vec3 end =
+			obj->position
+			+ obj->velocity
+			// XXX: radius for sphere collisions only
+			+ glm::normalize(obj->velocity)*obj->usphere.radius*2.f;
+
+		auto [depth, normal] = static_geom.collides(obj->position, end);
+
+		if (depth > 0) {
+			// TODO: call collision handler
+			/*
+			({
+				obj, nullptr,
+				obj->position,
+				normal,
+				depth,
+			});
+			*/
+		}
+	}
+}
+
+std::list<collision> impPhysics::findCollisions(float delta) {
+	std::list<collision> ret;
 
 	for (auto& pobj : objects) {
 		impObject::ptr obj = std::dynamic_pointer_cast<impObject>(pobj);
@@ -128,12 +155,15 @@ std::list<physics::collision> impPhysics::findCollisions(float delta) {
 		auto [depth, normal] = static_geom.collides(obj->position, end);
 
 		if (depth > 0) {
+			// TODO:
+			/*
 			ret.push_back({
 				obj, nullptr,
 				obj->position,
 				normal,
 				depth,
 			});
+			*/
 		}
 	}
 
@@ -173,6 +203,6 @@ void impPhysics::stepSimulation(float delta) {
 			obj->position.y = 10;
 		}
 
-		obj->obj->transform.position = obj->position;
+		///obj->obj->transform.position = obj->position;
 	}
 }

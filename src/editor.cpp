@@ -43,12 +43,14 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
 	compileModel("testphys", physmodel);
 
+	/*
 	setNode("lmao", moda, physmodel);
 	setNode("lmao", modb, physmodel);
 	setNode("fooa", game->state->physObjects, moda);
 	setNode("foob", game->state->physObjects, modb);
-	game->phys->addSphere(moda, glm::vec3(0, 10, 0), 1.0, 1.0);
-	game->phys->addSphere(modb, glm::vec3(-10, 10, 0), 1.0, 1.0);
+	game->phys->addSphere(nullptr, glm::vec3(0, 10, 0), 1.0, 1.0);
+	game->phys->addSphere(nullptr, glm::vec3(-10, 10, 0), 1.0, 1.0);
+	*/
 
 	bindCookedMeshes();
 	loadInputBindings(game);
