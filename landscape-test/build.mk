@@ -7,18 +7,22 @@ DEMO_TARGETS += $(BUILD)/landscape-test
 DEMO_CLEAN += clean-landscape-test-thing
 endif
 
-$(BUILD)/landscape-test: demos/landscape-test/main.o
-	$(CXX) $< $(DEMO_CXXFLAGS) -o $@
+LANDSCAPE_DEMO_SRC     = $(wildcard demos/landscape-test/*.cpp)
+LANDSCAPE_DEMO_OBJ     = $(LANDSCAPE_DEMO_SRC:.cpp=.o)
+LANDSCAPE_DEMO_INCLUDE = -I./demos/landscape-test/
 
-$(BUILD)/landscape-test.html: demos/landscape-test/main.o
+$(BUILD)/landscape-test: $(LANDSCAPE_DEMO_OBJ)
+	$(CXX) $(LANDSCAPE_DEMO_OBJ) $(DEMO_CXXFLAGS) $(LANDSCAPE_DEMO_INCLUDE) -o $@
+
+$(BUILD)/landscape-test.html: $(LANDSCAPE_DEMO_OBJ)
 	$(CXX) $< $(DEMO_CXXFLAGS) $(EM_PRELOAD_FLAGS) -o $@
 
 .PHONY: clean-landscape-test-thing
 clean-landscape-test-thing:
-	-rm -f demos/landscape-test/main.o
+	-rm -f $(LANDSCAPE_DEMO_OBJ)
 	-rm -f $(BUILD)/landscape-test
 
 .PHONY: clean-landscape-test-thing-html
 clean-landscape-test-thing-html:
-	-rm -f demos/landscape-test/main.o
+	-rm -f $(LANDSCAPE_DEMO_OBJ)
 	-rm -f $(BUILD)/landscape-test.html
