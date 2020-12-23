@@ -21,7 +21,7 @@
 
 // XXX:  toggle using textures/models I have locally, don't want to
 //       bloat the assets folder again
-#define LOCAL_BUILD 1
+#define LOCAL_BUILD 0
 
 using namespace grendx;
 
@@ -323,19 +323,18 @@ void landscapeGenerator::setPosition(gameMain *game, glm::vec3 position) {
 }
 
 struct inputEvent {
-	enum eventType {
-		moveForward,
-		moveLeft,
-		moveBack,
-		moveRight,
-		moveUp,
-		moveDown,
-		jump,
+	enum types {
+		move,
+		look,
 		crouch,
-		fire,
+		// left, right, middle click
+		primaryAction,
+		secondaryAction,
+		tertiaryAction,
 	} type;
 
-	float amount;
+	glm::vec3 data;
+	bool active;
 };
 
 typedef std::shared_ptr<std::vector<inputEvent>> inputQueue;
@@ -344,11 +343,26 @@ class entitySystem;
 class component;
 class entity;
 
-bool intersects(std::map<std::string, component*>& entdata,
+// TODO: any way to make the tags generalized for any iterable container type?
+bool intersects(std::multimap<std::string, component*>& entdata,
                 std::initializer_list<std::string> test)
 {
 	for (auto& s : test) {
-		if (!entdata.count(s)) {
+		auto it = entdata.find(s);
+		if (it == entdata.end()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool intersects(std::multimap<std::string, component*>& entdata,
+                std::vector<std::string>& test)
+{
+	for (auto& s : test) {
+		auto it = entdata.find(s);
+		if (it == entdata.end()) {
 			return false;
 		}
 	}
@@ -364,8 +378,8 @@ class entityManager {
 		entityManager(gameMain *_engine) : engine(_engine) {};
 
 		std::map<std::string, std::shared_ptr<entitySystem>> systems;
-		std::map<std::string, std::list<component*>> components;
-		std::map<entity*, std::map<std::string, component*>> entityComponents;
+		std::map<std::string, std::set<component*>> components;
+		std::map<entity*, std::multimap<std::string, component*>> entityComponents;
 		std::map<component*, entity*> componentEntities;
 		std::set<entity*> entities;
 
@@ -375,11 +389,16 @@ class entityManager {
 		void add(entity *ent);
 		void remove(entity *ent);
 		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
+		bool hasComponents(entity *ent, std::vector<std::string> tags);
 
-		std::list<component*>& getComponents(std::string name);
-		std::map<std::string, component*>& getEntityComponents(entity *ent);
+		std::set<component*>& getComponents(std::string name);
+		std::multimap<std::string, component*>& getEntityComponents(entity *ent);
+		entity *getEntity(component *com); 
 
 		gameObject::ptr root = std::make_shared<gameObject>();
+
+		// TODO: should this be similar to inputHandlerSystem, with
+		//       onCollision components?
 		std::shared_ptr<std::vector<collision>> collisions
 			= std::make_shared<std::vector<collision>>();
 
@@ -389,10 +408,14 @@ class entityManager {
 
 class component {
 	public:
-		// null base class
 		component(entityManager *manager, entity *ent) {
 			//manager->registerComponent(ent, "component", this);
 		}
+
+		// draw the imgui widgets for this component, TODO
+		// also, this class needs a polymorphic member in order to upcast,
+		// so this fills that role.
+		virtual void drawEditorWidgets(void) { };
 };
 
 class entity : public component {
@@ -487,6 +510,105 @@ class rigidBodyBox : public rigidBody {
 		}
 };
 
+class collisionHandler : public component {
+	public:
+		collisionHandler(entityManager *manager, entity *ent,
+		                 std::vector<std::string> _tags)
+			: component(manager, ent),
+			  tags(_tags)
+		{
+			manager->registerComponent(ent, "collisionHandler", this);
+		}
+
+		virtual void
+		onCollision(entityManager *manager, entity *ent, collision& col) = 0;
+
+		std::vector<std::string> tags;
+};
+
+class projectileCollision : public collisionHandler {
+	public:
+		projectileCollision(entityManager *manager, entity *ent)
+			: collisionHandler(manager, ent, {"projectile"})
+		{
+			manager->registerComponent(ent, "projectileCollision", this);
+		}
+
+		virtual void
+		onCollision(entityManager *manager, entity *ent, collision& col) {
+			std::cerr << "projectile collision!" << std::endl;
+			if (false /* check health or something */) {
+				manager->remove(ent);
+			}
+		};
+};
+
+class projectileDestruct : public collisionHandler {
+	public:
+		projectileDestruct(entityManager *manager, entity *ent)
+			: collisionHandler(manager, ent, {"projectileCollision"})
+		{
+			manager->registerComponent(ent, "projectileDestruct", this);
+		}
+
+		virtual void
+		onCollision(entityManager *manager, entity *ent, collision& col) {
+			std::cerr << "projectile destruct!" << std::endl;
+			manager->remove(ent);
+		};
+};
+
+class inputHandler : public component {
+	public:
+		inputHandler(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "inputHandler", this);
+		}
+
+		virtual void
+		handleInput(entityManager *manager, entity *ent, inputEvent& ev) {
+			std::cerr << "handleInput(): got here" << std::endl;
+		}
+};
+
+template <class T>
+T castEntityComponent(entityManager *m, entity *e, std::string name) {
+	auto &comps = m->getEntityComponents(e);
+	auto comp = comps.find(name);
+
+	if (comp == comps.end()) {
+		// TODO: error?
+		return nullptr;
+	}
+
+	return dynamic_cast<T>(comp->second);
+}
+
+class movementHandler : public inputHandler {
+	public:
+		movementHandler(entityManager *manager, entity *ent)
+			: inputHandler(manager, ent)
+		{
+			manager->registerComponent(ent, "movementHandler", this);
+		}
+
+		virtual void
+		handleInput(entityManager *manager, entity *ent, inputEvent& ev) {
+			if (ev.active && ev.type == inputEvent::types::move) {
+				rigidBody *body =
+					castEntityComponent<rigidBody*>(manager, ent, "rigidBody");
+
+				if (body && ev.data != lastvel) {
+					body->phys->setVelocity(ev.data);
+					lastvel = ev.data;
+				}
+			}
+		}
+
+		glm::vec3 lastvel;
+};
+
 class entitySystem {
 	public:
 		typedef std::shared_ptr<entitySystem> ptr;
@@ -495,7 +617,7 @@ class entitySystem {
 		virtual void update(entityManager *manager, float delta) {}
 };
 
-class entitySystemEnemyCollision : public entitySystem {
+class entitySystemCollision : public entitySystem {
 	public:
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
@@ -503,19 +625,70 @@ class entitySystemEnemyCollision : public entitySystem {
 		virtual void update(entityManager *manager, float delta);
 };
 
-void entitySystemEnemyCollision::update(entityManager *manager, float delta) {
+class inputHandlerSystem : public entitySystem {
+	public:
+		typedef std::shared_ptr<entitySystem> ptr;
+		typedef std::weak_ptr<entitySystem>   weakptr;
+
+		virtual void update(entityManager *manager, float delta);
+
+		inputQueue inputs = std::make_shared<std::vector<inputEvent>>();
+};
+
+void entitySystemCollision::update(entityManager *manager, float delta) {
 	for (auto& col : *manager->collisions) {
 		if (col.adata && col.bdata) {
-			entity *a = static_cast<entity*>(col.adata);
-			entity *b = static_cast<entity*>(col.bdata);
+			entity *ents[2] = {
+				static_cast<entity*>(col.adata),
+				static_cast<entity*>(col.bdata),
+			};
 
-			if (manager->hasComponents(a, {"player", "entity"})
-			    && manager->hasComponents(b, {"enemy", "entity"}))
-			{
-				std::cerr << "Woot! have player-enemy collision" << std::endl;
+			for (unsigned i = 0; i < 2; i++) {
+				entity *self  = ents[i];
+				entity *other = ents[!i];
+
+				if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
+					collisionHandler *collider =
+						castEntityComponent<collisionHandler*>(manager, self, "collisionHandler");
+
+					/*
+					auto& comps = manager->getEntityComponents(other);
+					std::cerr << "components: ";
+					for (auto& [name, comp] : comps) {
+						std::cerr << name << "(" << comp << ")" << ", ";
+					}
+					std::cerr << std::endl;
+					*/
+
+					if (!collider) {
+						// no collision component...?
+						continue;
+					}
+
+					if (manager->hasComponents(other, collider->tags)) {
+						collider->onCollision(manager, self, col);
+					}
+				}
 			}
 		}
 	}
+}
+
+void inputHandlerSystem::update(entityManager *manager, float delta) {
+	auto handlers = manager->getComponents("inputHandler");
+
+	for (auto& ev : *inputs) {
+		for (auto& it : handlers) {
+			inputHandler *handler = dynamic_cast<inputHandler*>(it);
+			entity *ent = manager->getEntity(handler);
+
+			if (handler && ent) {
+				handler->handleInput(manager, ent, ev);
+			}
+		}
+	}
+
+	inputs->clear();
 }
 
 void entityManager::update(float delta) {
@@ -538,13 +711,35 @@ void entityManager::add(entity *ent) {
 }
 
 void entityManager::remove(entity *ent) {
+	if (!entities.count(ent)) {
+		// not a valid entity
+		return;
+	}
+
 	root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
+
 	//delete ent; // TODO: don't leak memory ok
+	auto comps = entityComponents[ent];
+
+	for (auto& [name, comp] : comps) {
+		componentEntities.erase(comp);
+		components[name].erase(comp);
+	}
+
+	entityComponents.erase(ent);
 	entities.erase(ent);
 }
 
+// TODO: specialization or w/e
 bool entityManager::hasComponents(entity *ent,
                                   std::initializer_list<std::string> tags)
+{
+	auto& compmap = entityComponents[ent];
+	return intersects(compmap, tags);
+}
+
+bool entityManager::hasComponents(entity *ent,
+                                  std::vector<std::string> tags)
 {
 	auto& compmap = entityComponents[ent];
 	return intersects(compmap, tags);
@@ -562,8 +757,10 @@ entity *findNearest(entityManager *manager,
 			gameObject::ptr node = ent->getNode();
 			float dist = glm::distance(position, node->transform.position);
 
-			curmin = min(curmin, dist);
-			ret = ent;
+			if (dist < curmin) {
+				curmin = dist;
+				ret = ent;
+			}
 		}
 	}
 
@@ -582,20 +779,48 @@ entity *findFirst(entityManager *manager,
 	return nullptr;
 }
 
-std::list<component*>& entityManager::getComponents(std::string name) {
+std::set<component*> queryEntities(entityManager *manager,
+                                   std::initializer_list<std::string> tags)
+{
+	std::set<component*> ret;
+
+	// TODO: would be better to filter entities by the given tags,
+	//       have component name -> entity map so it'd be much more efficient
+	//       for lots of entities
+	for (auto& ent : manager->entities) {
+		if (manager->hasComponents(ent, tags)) {
+			ret.insert(ent);
+		}
+	}
+
+	return ret;
+}
+
+std::set<component*>& entityManager::getComponents(std::string name) {
 	// XXX: avoid creating component names if nothing registered them
-	static std::list<component*> nullret;
+	static std::set<component*> nullret;
 	//std::cerr << "looking up components for " << name << std::endl;
 
 	return (components.count(name))? components[name] : nullret;
 }
 
-std::map<std::string, component*>& entityManager::getEntityComponents(entity *ent) {
+std::multimap<std::string, component*>&
+entityManager::getEntityComponents(entity *ent) {
 	// XXX: similarly, something which isn't registered here has 
 	//      no components (at least, in this system) so return empty set
-	static std::map<std::string, component*> nullret;
+	static std::multimap<std::string, component*> nullret;
 
 	return (entityComponents.count(ent))? entityComponents[ent] : nullret;
+}
+
+entity *entityManager::getEntity(component *com) {
+	auto it = componentEntities.find(com);
+	if (it != componentEntities.end()) {
+		return it->second;
+
+	} else {
+		return nullptr;
+	}
 }
 
 void entityManager::registerComponent(entity *ent,
@@ -603,11 +828,57 @@ void entityManager::registerComponent(entity *ent,
                                       component *ptr)
 {
 	// TODO: need a proper logger
-	//std::cerr << "registering component '" << name << "' for " << ptr << std::endl;
-	components[name].push_back(ptr);
+	std::cerr << "registering component '" << name << "' for " << ptr << std::endl;
+	components[name].insert(ptr);
 	entityComponents[ent].insert({name, ptr});
 	componentEntities.insert({ptr, ent});
 }
+
+class projectile : public entity {
+	public:
+		projectile(entityManager *manager, gameMain *game, glm::vec3 position);
+		virtual void update(entityManager *manager, float delta);
+};
+
+void projectile::update(entityManager *manager, float delta) {
+	rigidBody *body =
+		castEntityComponent<rigidBody*>(manager, this, "rigidBody");
+
+	if (body) {
+		body->syncPhysics(this);
+	}
+}
+
+class boxBullet : public projectile {
+	public:
+		boxBullet(entityManager *manager, gameMain *game, glm::vec3 position);
+};
+
+class boxSpawner : public inputHandler {
+	public:
+		boxSpawner(entityManager *manager, entity *ent)
+			: inputHandler(manager, ent)
+		{
+			manager->registerComponent(ent, "boxSpawner", this);
+		}
+
+		virtual void
+		handleInput(entityManager *manager, entity *ent, inputEvent& ev) {
+			if (ev.active && ev.type == inputEvent::types::primaryAction) {
+				std::cerr << "boxSpawner::handleInput(): got here" << std::endl;
+
+				auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 3.f*ev.data);
+
+				rigidBody *body =
+					castEntityComponent<rigidBody*>(manager, box, "rigidBody");
+
+				if (body) {
+					body->phys->setVelocity(40.f * ev.data);
+					manager->add(box);
+				}
+			}
+		}
+};
 
 class enemy : public entity {
 	public:
@@ -636,18 +907,53 @@ class player : public entity {
 		rigidBody *body;
 };
 
+projectile::projectile(entityManager *manager, gameMain *game, glm::vec3 position)
+	: entity(manager)
+{
+	manager->registerComponent(this, "projectile", this);
+
+	// TODO: configurable projectile attributes
+	new rigidBodySphere(manager, this, position, 1.0, 0.15);
+	new projectileDestruct(manager, this);
+	node->transform.position = position;
+}
+
+boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
+	: projectile(manager, game, position)
+{
+	static gameObject::ptr model = nullptr;
+
+	manager->registerComponent(this, "boxBullet", this);
+
+	if (!model) {
+#if LOCAL_BUILD
+		model = loadScene("test-assets/obj/smoothcube.glb");
+#else
+		gameModel::ptr mod = generate_cuboid(0.3, 0.3, 0.3);
+		model = std::make_shared<gameObject>();
+		compileModel("boxProjectile", mod);
+		setNode("model", model, mod);
+#endif
+		bindCookedMeshes();
+	}
+
+	setNode("model", node, model);
+}
+
 enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
 	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
 {
 	static gameObject::ptr enemyModel = nullptr;
 
+	new projectileCollision(manager, this);
 	manager->registerComponent(this, "enemy", this);
 
 	// TODO:
 	if (!enemyModel) {
 #if LOCAL_BUILD
 		enemyModel = loadScene("test-assets/obj/test-enemy.glb");
+		enemyModel->transform.scale = glm::vec3(0.3);
 #else
 		gameModel::ptr mod = generate_cuboid(1.0, 2.0, 0.5);
 		enemyModel = std::make_shared<gameObject>();
@@ -686,6 +992,10 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 {
 	static gameObject::ptr playerModel = nullptr;
 
+	new boxSpawner(manager, this);
+	new movementHandler(manager, this);
+	new projectileCollision(manager, this);
+
 	manager->registerComponent(this, "player", this);
 
 	if (!playerModel) {
@@ -720,30 +1030,63 @@ void player::update(entityManager *manager, float delta) {
 	collisions->clear();
 }
 
-/*
-unsigned playerSystem::add(entityManager *manager, gameMain *game,
-                           glm::vec3 position)
-{
-	players.push_back(new player(manager, game, position));
+bindFunc inputMapper(inputQueue q, camera::ptr cam) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_w:
+				case SDLK_s:
+				case SDLK_a:
+				case SDLK_d:
+				case SDLK_q:
+				case SDLK_e:
+				case SDLK_SPACE:
+					// XXX: just sync movement with camera, will want
+					//      to change this
+					q->push_back({
+						.type = inputEvent::types::move,
+						.data = cam->velocity(),
+						.active = ev.type == SDL_KEYDOWN,
+					});
+					break;
+			}
+		}
 
-	std::string name = "player["+std::to_string(++entCounter)+"]";
-	setNode(name, root, players.back()->getNode());
+		if (ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP) {
+			// down = active (clicked), up = inactive
+			bool active = ev.type == SDL_MOUSEBUTTONDOWN;
 
-	return entCounter - 1;
+			switch (ev.button.button) {
+				case SDL_BUTTON_LEFT:
+					q->push_back({
+						.type = inputEvent::types::primaryAction,
+						.data = cam->direction(),
+						.active = active,
+					});
+					break;
+
+				case SDL_BUTTON_RIGHT:
+					q->push_back({
+						.type = inputEvent::types::secondaryAction,
+						.data = cam->direction(),
+						.active = active,
+					});
+					break;
+
+				case SDL_BUTTON_MIDDLE:
+					q->push_back({
+						.type = inputEvent::types::tertiaryAction,
+						.data = cam->direction(),
+						.active = active,
+					});
+					break;
+			}
+		}
+
+		return MODAL_NO_CHANGE;
+	};
 }
 
-void playerSystem::remove(unsigned id) {
-	// TODO
-}
-
-entity *playerSystem::getEntity(unsigned index) {
-	return (index < players.size())? players[index] : nullptr;
-}
-
-unsigned playerSystem::numEntities(void) {
-	return players.size();
-}
-*/
 
 class landscapeGenView : public playerView {
 	public:
@@ -753,14 +1096,17 @@ class landscapeGenView : public playerView {
 		landscapeGenView(gameMain *game) : playerView(game) {
 			manager = std::make_shared<entityManager>(game);
 
-			manager->systems["thing"] =
-				std::make_shared<entitySystemEnemyCollision>();
-			//manager->systems["players"]->add(manager.get(), game, glm::vec3(-15, 50, 0));
+			// TODO: names are kinda pointless here
+			manager->systems["collision"] =
+				std::make_shared<entitySystemCollision>();
+
+			auto inputSys = std::make_shared<inputHandlerSystem>();
+			manager->systems["input"] = inputSys;
+			input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
+
+			manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
 			player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
 			manager->add(playerEnt);
-
-			cameraObj  = playerEnt->getNode();
-			cameraPhys = playerEnt->body->phys;
 
 			for (unsigned i = 0; i < 15; i++) {
 				glm::vec3 position = glm::vec3(
@@ -788,18 +1134,21 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	static gameObject::ptr retval;
 
 	if (cam->velocity() != lastvel) {
-		cameraPhys->setVelocity(cam->velocity());
 		lastvel = cam->velocity();
 	}
 
 	game->phys->stepSimulation(1.f/game->frame_timer.last());
 	game->phys->filterCollisions();;
-	cam->setPosition(cameraObj->transform.position - 5.f*cam->direction());
+	
+	entity *playerEnt = findFirst(manager.get(), {"player", "entity"});
+
+	if (playerEnt) {
+		TRS& transform = playerEnt->getNode()->transform;
+		cam->setPosition(transform.position - 5.f*cam->direction());
+		landscape.setPosition(game, transform.position);
+	}
 
 	manager->update(1.f / game->frame_timer.last());
-
-
-	landscape.setPosition(game, cameraObj->transform.position);
 }
 
 void landscapeGenView::render(gameMain *game) {

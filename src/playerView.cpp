@@ -27,9 +27,6 @@ playerView::playerView(gameMain *game) : gameView() {
 		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
-	cameraPhys = game->phys->addSphere(nullptr, glm::vec3(0, 10, 0), 1.0, 1.0);
-	setNode("player camera", game->state->physObjects, cameraObj);
-
 	input.bind(MODAL_ALL_MODES,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_WINDOWEVENT
@@ -90,41 +87,6 @@ playerView::playerView(gameMain *game) : gameView() {
 			return MODAL_NO_CHANGE;
 		});
 
-	// TODO: this could be a function generator
-	input.bind(modes::Move,
-		[&, game] (SDL_Event& ev, unsigned flags) {
-			if (ev.type == SDL_MOUSEBUTTONDOWN
-			    && ev.button.button == SDL_BUTTON_LEFT)
-			{
-				auto sound = openAudio(GR_PREFIX "assets/sfx/impact.ogg");
-				auto ptr = std::make_shared<stereoAudioChannel>(sound);
-				game->audio->add(ptr);
-
-				std::cerr << "Added a box physics object" << std::endl;
-				gameObject::ptr box = std::make_shared<gameObject>();
-				glm::vec3 pos =
-					cameraObj->transform.position + 2.f*cam->direction()
-					+ glm::vec3(0, 2, 0);
-				box->transform.position = pos;
-				setNode("model", box, cuboid);
-				AABBExtent ext = { glm::vec3(0.f), glm::vec3(0.5f) };
-
-				// XXX: this doesn't work anymore
-				box->physObj = game->phys->addBox(nullptr, pos, 1.f, ext);
-				box->physObj->setVelocity(5.f*cam->direction());
-
-				// XXX: need better way to attach arbitrary objects
-				//      could have physObjects just be a list, and handle that
-				//      on it's own?
-				//      (like add(...) with list override)
-				static unsigned counter = 0;
-				std::string name = "testing this" + std::to_string(counter++);
-				setNode(name, game->state->physObjects, box);
-			}
-
-			return MODAL_NO_CHANGE;
-		});
-
 	input.setMode(modes::MainMenu);
 }
 
@@ -135,28 +97,8 @@ void playerView::handleInput(gameMain *game, SDL_Event& ev) {
 static glm::vec3 lastvel = glm::vec3(0);
 
 void playerView::logic(gameMain *game, float delta) {
-	if (cam->velocity() != lastvel) {
-		cameraPhys->setVelocity(cam->velocity());
-		lastvel = cam->velocity();
-	}
-
 	game->phys->stepSimulation(1.f/game->frame_timer.last());
-	cam->setPosition(cameraObj->transform.position - 5.f*cam->direction());
-
-	glm::vec3 vel = cameraPhys->getVelocity();
-	cameraObj->transform.rotation =
-		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
-
-	/*
-	//cam->setPosition(cameraObj->transform.position + glm::vec3(0, 1.5, 0));
-
-	cameraObj->transform.rotation = glm::quat(glm::vec3(
-		// pitch, yaw, roll
-		cam->direction().y*-0.5f,
-		atan2(cam->direction().x, cam->direction().z),
-		0));
-		*/
-
+	cam->updatePosition(delta);
 }
 
 static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
@@ -261,18 +203,12 @@ void playerView::render(gameMain *game) {
 	if (input.mode == modes::MainMenu) {
 		renderWorld(game, cam);
 
-		// TODO: need to set post size on resize event..
-		//post->setSize(winsize_x, winsize_y);
 		post->draw(game->rend->framebuffer);
-
-		// TODO: function to do this
 		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam);
 		post->draw(game->rend->framebuffer);
-
-		// TODO: function to do this
 		drawUIStuff(vgui.nvg, winsize_x, winsize_y);
 	}
 }

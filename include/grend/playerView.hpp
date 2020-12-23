@@ -25,8 +25,6 @@ class playerView : public gameView {
 		virtual void render(gameMain *game);
 		virtual void logic(gameMain *game, float delta);
 
-		gameObject::ptr cameraObj = std::make_shared<gameObject>();
-		physicsObject::ptr cameraPhys;
 		renderPostChain::ptr post = nullptr;
 		modalSDLInput input;
 

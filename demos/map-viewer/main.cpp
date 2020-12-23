@@ -41,18 +41,13 @@ void addCameraWeapon(gameView::ptr view) {
 
 	auto [objs, models] =
 		load_gltf_scene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
-		//load_gltf_scene(GR_PREFIX "assets/obj/Mossberg-lowres/shotgun.gltf");
 
 	// leaving old stuff here for debugging
 	objs->transform.scale = glm::vec3(0.1f);
 	objs->transform.position = glm::vec3(0, -1, 0);
-	//objs->transform.scale = glm::vec3(2.f);
-	//objs->transform.position = glm::vec3(-0.3, 1.1, 1.25);
-	//objs->transform.rotation = glm::quat(glm::vec3(0, 3.f*M_PI/2.f, 0));
 
 	compileModels(models);
 	bindCookedMeshes();
-	setNode("weapon", player->cameraObj, objs);
 
 	// TODO: need better way to do this
 	if (auto animations = findAnimations(objs)) {
