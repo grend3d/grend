@@ -718,7 +718,6 @@ void entityManager::remove(entity *ent) {
 
 	root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
 
-	//delete ent; // TODO: don't leak memory ok
 	auto comps = entityComponents[ent];
 
 	for (auto& [name, comp] : comps) {
@@ -728,6 +727,7 @@ void entityManager::remove(entity *ent) {
 
 	entityComponents.erase(ent);
 	entities.erase(ent);
+	//delete ent; // TODO: don't leak memory ok
 }
 
 // TODO: specialization or w/e
@@ -745,6 +745,75 @@ bool entityManager::hasComponents(entity *ent,
 	return intersects(compmap, tags);
 }
 
+std::set<entity*> searchEntities(entityManager *manager,
+                                 std::initializer_list<std::string> tags)
+{
+	std::set<entity*> ret;
+	std::vector<std::set<entity*>> candidates;
+
+	/*
+	// left here for debugging, just in case
+	for (auto& ent : manager->entities) {
+		if (manager->hasComponents(ent, tags)) {
+			ret.insert(ent);
+		}
+	}
+	*/
+
+	if (tags.size() == 0) {
+		// lol
+		return {};
+
+	} else if (tags.size() == 1) {
+		auto& comps = manager->getComponents(*tags.begin());
+
+		for (auto& comp : comps) {
+			ret.insert(manager->getEntity(comp));
+		}
+
+	} else {
+		// TODO: could this be done without generating the sets of entities...?
+		//       would need a map of component names -> entities, which would be
+		//       messy since an entity can have more than one of any component...
+		//       this is probably good enough, just don't search for "entity" :P
+		for (auto& tag : tags) {
+			auto& comps = manager->getComponents(tag);
+			candidates.push_back({});
+
+			for (auto& comp : comps) {
+				candidates.back().insert(manager->getEntity(comp));
+			}
+		}
+
+		// find smallest (most exclusive) set of candidates
+		auto smallest = candidates.begin();
+		for (auto it = candidates.begin(); it != candidates.end(); it++) {
+			if (it->size() < smallest->size()) {
+				smallest = it;
+			}
+		}
+
+		for (auto ent : *smallest) {
+			bool inAll = true;
+
+			for (auto it = candidates.begin(); it != candidates.end(); it++) {
+				if (it == smallest)  continue;
+
+				if (!it->count(ent)) {
+					inAll = false;
+					break;
+				}
+			}
+
+			if (inAll) {
+				ret.insert(ent);
+			}
+		}
+	}
+
+	return ret;
+}
+
 entity *findNearest(entityManager *manager,
                     glm::vec3 position,
                     std::initializer_list<std::string> tags)
@@ -752,15 +821,14 @@ entity *findNearest(entityManager *manager,
 	float curmin = HUGE_VALF;
 	entity *ret = nullptr;
 
-	for (auto& ent : manager->entities) {
-		if (manager->hasComponents(ent, tags)) {
-			gameObject::ptr node = ent->getNode();
-			float dist = glm::distance(position, node->transform.position);
+	auto ents = searchEntities(manager, tags);
+	for (auto& ent : ents) {
+		gameObject::ptr node = ent->getNode();
+		float dist = glm::distance(position, node->transform.position);
 
-			if (dist < curmin) {
-				curmin = dist;
-				ret = ent;
-			}
+		if (dist < curmin) {
+			curmin = dist;
+			ret = ent;
 		}
 	}
 
@@ -770,6 +838,7 @@ entity *findNearest(entityManager *manager,
 entity *findFirst(entityManager *manager,
                   std::initializer_list<std::string> tags)
 {
+	// TODO: search by component names
 	for (auto& ent : manager->entities) {
 		if (manager->hasComponents(ent, tags)) {
 			return ent;
@@ -779,22 +848,6 @@ entity *findFirst(entityManager *manager,
 	return nullptr;
 }
 
-std::set<component*> queryEntities(entityManager *manager,
-                                   std::initializer_list<std::string> tags)
-{
-	std::set<component*> ret;
-
-	// TODO: would be better to filter entities by the given tags,
-	//       have component name -> entity map so it'd be much more efficient
-	//       for lots of entities
-	for (auto& ent : manager->entities) {
-		if (manager->hasComponents(ent, tags)) {
-			ret.insert(ent);
-		}
-	}
-
-	return ret;
-}
 
 std::set<component*>& entityManager::getComponents(std::string name) {
 	// XXX: avoid creating component names if nothing registered them
@@ -972,7 +1025,7 @@ void enemy::update(entityManager *manager, float delta) {
 	glm::vec3 playerPos;
 
 	entity *playerEnt =
-		findNearest(manager, node->transform.position, {"player", "entity"});
+		findNearest(manager, node->transform.position, {"player"});
 
 	if (playerEnt) {
 		playerPos = playerEnt->getNode()->transform.position;
