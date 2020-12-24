@@ -25,19 +25,5 @@ class boxSpawner : public inputHandler {
 		}
 
 		virtual void
-		handleInput(entityManager *manager, entity *ent, inputEvent& ev) {
-			if (ev.active && ev.type == inputEvent::types::primaryAction) {
-				std::cerr << "boxSpawner::handleInput(): got here" << std::endl;
-
-				auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 3.f*ev.data);
-
-				rigidBody *body =
-					castEntityComponent<rigidBody*>(manager, box, "rigidBody");
-
-				if (body) {
-					body->phys->setVelocity(40.f * ev.data);
-					manager->add(box);
-				}
-			}
-		}
+		handleInput(entityManager *manager, entity *ent, inputEvent& ev);
 };
