@@ -4,6 +4,7 @@
 #include <grend/animation.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/collision.hpp>
+#include "health.hpp"
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -12,6 +13,9 @@ class projectile : public entity {
 	public:
 		projectile(entityManager *manager, gameMain *game, glm::vec3 position);
 		virtual void update(entityManager *manager, float delta);
+
+		// TODO:
+		float impactDamage = 25.f;
 };
 
 class projectileCollision : public collisionHandler {
@@ -23,10 +27,22 @@ class projectileCollision : public collisionHandler {
 		}
 
 		virtual void
-		onCollision(entityManager *manager, entity *ent, collision& col) {
+		onCollision(entityManager *manager, entity *ent,
+		            entity *other, collision& col)
+		{
 			std::cerr << "projectile collision!" << std::endl;
-			if (false /* check health or something */) {
-				manager->remove(ent);
+			health *entHealth =
+				castEntityComponent<health*>(manager, ent, "health");
+			projectile *proj =
+				castEntityComponent<projectile*>(manager, other, "projectile");
+
+			if (entHealth && proj) {
+				float x = entHealth->damage(proj->impactDamage);
+				std::cerr << "current health: " << x << std::endl;
+
+				if (x == 0.f) {
+					manager->remove(ent);
+				}
 			}
 		};
 };
@@ -40,7 +56,8 @@ class projectileDestruct : public collisionHandler {
 		}
 
 		virtual void
-		onCollision(entityManager *manager, entity *ent, collision& col) {
+		onCollision(entityManager *manager, entity *ent,
+		            entity *other, collision& col) {
 			std::cerr << "projectile destruct!" << std::endl;
 			manager->remove(ent);
 		};

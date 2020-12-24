@@ -16,6 +16,7 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 				entity *other = ents[!i];
 
 				if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
+					// TODO: handle multiple collisionHandler components
 					collisionHandler *collider =
 						castEntityComponent<collisionHandler*>(manager, self, "collisionHandler");
 
@@ -25,7 +26,7 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 					}
 
 					if (manager->hasComponents(other, collider->tags)) {
-						collider->onCollision(manager, self, col);
+						collider->onCollision(manager, self, other, col);
 					}
 				}
 			}

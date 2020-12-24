@@ -20,7 +20,6 @@ class enemy : public entity {
 		std::shared_ptr<std::vector<collision>> collisions
 			= std::make_shared<std::vector<collision>>();
 
-		float health;
 		rigidBody *body;
 };
 

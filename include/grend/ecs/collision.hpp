@@ -15,7 +15,8 @@ class collisionHandler : public component {
 		}
 
 		virtual void
-		onCollision(entityManager *manager, entity *ent, collision& col) = 0;
+		onCollision(entityManager *manager, entity *ent,
+		            entity *other, collision& col) = 0;
 
 		std::vector<std::string> tags;
 };
