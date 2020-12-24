@@ -25,7 +25,7 @@
 
 // XXX:  toggle using textures/models I have locally, don't want to
 //       bloat the assets folder again
-#define LOCAL_BUILD 0
+#define LOCAL_BUILD 1
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -35,6 +35,8 @@ using namespace grendx::ecs;
 #include "inputHandler.hpp"
 #include "landscapeGenerator.hpp"
 #include "projectile.hpp"
+#include "health.hpp"
+#include "healthbar.hpp"
 
 class landscapeGenView : public playerView {
 	public:
@@ -99,6 +101,22 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	manager->update(1.f / game->frame_timer.last());
 }
 
+static void renderHealthbars(entityManager *manager,
+                             vecGUI& vgui,
+                             camera::ptr cam)
+{
+	std::set<entity*> ents = searchEntities(manager, {"health", "healthbar"});
+
+	for (auto& ent : ents) {
+		healthbar *bar =
+			castEntityComponent<healthbar*>(manager, ent, "healthbar");
+
+		if (bar) {
+			bar->draw(manager, ent, vgui, cam);
+		}
+	}
+}
+
 void landscapeGenView::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
@@ -128,61 +146,7 @@ void landscapeGenView::render(gameMain *game) {
 		nvgBeginFrame(vgui.nvg, game->rend->screen_x, game->rend->screen_y, 1.0);
 		nvgSave(vgui.nvg);
 
-		/*
-		for (unsigned i = 0; i < enemies.size(); i++) {
-			auto& ptr = enemies[i];
-			float ticks = SDL_GetTicks() / 1000.f;
-			glm::vec4 pos = cam->worldToScreenPosition(ptr->transform.position + glm::vec3(0, 10, 0));
-
-			if (cam->onScreen(pos)) {
-				// TODO: some sort of grid editor wouldn't be too hard,
-				//       probably worthwhile for quick UIs
-				float depth = 16*max(0.f, pos.w);
-				float pad = depth*16.f;
-
-				float width  = 8*pad;
-				float height = 6*pad;
-
-				pos.y  = 1.0 - pos.y;
-				pos.x *= game->rend->screen_x;
-				pos.y *= game->rend->screen_y;
-
-				glm::vec2 outer    = glm::vec2(pos) - glm::vec2(width, height)*0.5f;
-				glm::vec2 innermin = outer + pad;
-				glm::vec2 innermax = outer + glm::vec2(width, height) - 2*pad;
-
-				nvgFontSize(vgui.nvg, pad);
-				nvgFontFace(vgui.nvg, "sans-bold");
-				nvgFontBlur(vgui.nvg, 0);
-				nvgTextAlign(vgui.nvg, NVG_ALIGN_LEFT);
-
-				nvgBeginPath(vgui.nvg);
-				nvgRect(vgui.nvg, outer.x, outer.y, width, height);
-				nvgFillColor(vgui.nvg, nvgRGBA(28, 30, 34, 192));
-				nvgFill(vgui.nvg);
-
-				float amount = sin(i*ticks)*0.5 + 0.5;
-				nvgBeginPath(vgui.nvg);
-				nvgRect(vgui.nvg, innermin.x, innermin.y, amount*(width - 2*pad), pad);
-				nvgFillColor(vgui.nvg, nvgRGBA(0, 192, 0, 192));
-				nvgFill(vgui.nvg);
-
-				nvgBeginPath(vgui.nvg);
-				nvgRect(vgui.nvg, innermin.x + amount*(width - 2*pad),
-				        innermin.y, (1.f - amount)*(width - 2*pad), pad);
-				nvgFillColor(vgui.nvg, nvgRGBA(192, 0, 0, 192));
-				nvgFill(vgui.nvg);
-
-				nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
-				//nvgText(vgui.nvg, innermax.x, innermin.y + 1*pad, "❎", NULL);
-
-				nvgFillColor(vgui.nvg, nvgRGBA(220, 220, 220, 160));
-				nvgText(vgui.nvg, innermin.x, innermin.y + 2*pad, "💚 Enemy", NULL);
-				nvgText(vgui.nvg, innermin.x, innermin.y + 3*pad, "❎ Some stats", NULL);
-				nvgText(vgui.nvg, innermin.x, innermin.y + 4*pad, "❎ 123/456", NULL);
-			}
-		}
-		*/
+		renderHealthbars(manager.get(), vgui, cam);
 
 		nvgRestore(vgui.nvg);
 		nvgEndFrame(vgui.nvg);

@@ -2,6 +2,8 @@
 
 #include "projectile.hpp"
 #include "enemy.hpp"
+#include "health.hpp"
+#include "healthbar.hpp"
 
 enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
@@ -9,7 +11,10 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 {
 	static gameObject::ptr enemyModel = nullptr;
 
+	new health(manager, this);
+	new worldHealthbar(manager, this);
 	new projectileCollision(manager, this);
+
 	manager->registerComponent(this, "enemy", this);
 
 	// TODO:
