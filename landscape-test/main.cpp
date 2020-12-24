@@ -90,7 +90,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	game->phys->stepSimulation(1.f/game->frame_timer.last());
 	game->phys->filterCollisions();;
 	
-	entity *playerEnt = findFirst(manager.get(), {"player", "entity"});
+	entity *playerEnt = findFirst(manager.get(), {"player"});
 
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
@@ -108,8 +108,8 @@ static void renderHealthbars(entityManager *manager,
 	std::set<entity*> ents = searchEntities(manager, {"health", "healthbar"});
 
 	for (auto& ent : ents) {
-		healthbar *bar =
-			castEntityComponent<healthbar*>(manager, ent, "healthbar");
+		healthbar *bar;
+		castEntityComponent(bar, manager, ent, "healthbar");
 
 		if (bar) {
 			bar->draw(manager, ent, vgui, cam);

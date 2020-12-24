@@ -13,8 +13,8 @@ projectile::projectile(entityManager *manager, gameMain *game, glm::vec3 positio
 }
 
 void projectile::update(entityManager *manager, float delta) {
-	rigidBody *body =
-		castEntityComponent<rigidBody*>(manager, this, "rigidBody");
+	rigidBody *body;
+	castEntityComponent(body, manager, this, "rigidBody");
 
 	if (body) {
 		body->syncPhysics(this);

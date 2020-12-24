@@ -23,3 +23,19 @@ boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
 	setNode("model", node, model);
 }
 
+void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev)
+{
+	if (ev.active && ev.type == inputEvent::types::primaryAction) {
+		std::cerr << "boxSpawner::handleInput(): got here" << std::endl;
+
+		auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 3.f*ev.data);
+
+		rigidBody *body;
+		castEntityComponent(body, manager, box, "rigidBody");
+
+		if (body) {
+			body->phys->setVelocity(40.f * ev.data);
+			manager->add(box);
+		}
+	}
+}

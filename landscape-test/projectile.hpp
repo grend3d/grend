@@ -31,10 +31,11 @@ class projectileCollision : public collisionHandler {
 		            entity *other, collision& col)
 		{
 			std::cerr << "projectile collision!" << std::endl;
-			health *entHealth =
-				castEntityComponent<health*>(manager, ent, "health");
-			projectile *proj =
-				castEntityComponent<projectile*>(manager, other, "projectile");
+			health *entHealth;
+			projectile *proj;
+
+			castEntityComponent(entHealth, manager, ent, "health");
+			castEntityComponent(proj, manager, other, "projectile");
 
 			if (entHealth && proj) {
 				float x = entHealth->damage(proj->impactDamage);
