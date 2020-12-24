@@ -83,8 +83,8 @@ class movementHandler : public inputHandler {
 		virtual void
 		handleInput(entityManager *manager, entity *ent, inputEvent& ev) {
 			if (ev.active && ev.type == inputEvent::types::move) {
-				rigidBody *body =
-					castEntityComponent<rigidBody*>(manager, ent, "rigidBody");
+				rigidBody *body;
+				castEntityComponent(body, manager, ent, "rigidBody");
 
 				if (body && ev.data != lastvel) {
 					body->phys->setVelocity(ev.data);

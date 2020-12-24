@@ -113,6 +113,12 @@ T castEntityComponent(entityManager *m, entity *e, std::string name) {
 	return dynamic_cast<T>(comp->second);
 }
 
+template <class T>
+T castEntityComponent(T& val, entityManager *m, entity *e, std::string name) {
+	val = castEntityComponent<T>(m, e, name);
+	return val;
+}
+
 // TODO: generalized for any iterable container type
 bool intersects(std::multimap<std::string, component*>& entdata,
                 std::initializer_list<std::string> test);

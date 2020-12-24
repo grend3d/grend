@@ -17,8 +17,8 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 
 				if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
 					// TODO: handle multiple collisionHandler components
-					collisionHandler *collider =
-						castEntityComponent<collisionHandler*>(manager, self, "collisionHandler");
+					collisionHandler *collider;
+					castEntityComponent(collider, manager, self, "collisionHandler");
 
 					if (!collider) {
 						// no collision component...?
