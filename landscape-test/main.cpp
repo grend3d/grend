@@ -120,9 +120,10 @@ static void renderHealthbars(entityManager *manager,
 void landscapeGenView::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+	renderFlags flags = game->rend->getLightingFlags();
 
 	if (input.mode == modes::MainMenu) {
-		renderWorld(game, cam);
+		renderWorld(game, cam, flags);
 
 		// TODO: need to set post size on resize event..
 		//post->setSize(winsize_x, winsize_y);
@@ -133,7 +134,7 @@ void landscapeGenView::render(gameMain *game) {
 		//drawMainMenu(winsize_x, winsize_y);
 
 	} else {
-		renderWorld(game, cam);
+		renderWorld(game, cam, flags);
 		post->draw(game->rend->framebuffer);
 
 		Framebuffer().bind();
