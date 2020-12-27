@@ -50,6 +50,9 @@ class landscapeGenView : public playerView {
 			manager->systems["collision"] =
 				std::make_shared<entitySystemCollision>();
 
+			manager->systems["syncPhysics"] =
+				std::make_shared<syncRigidBodySystem>();
+
 			auto inputSys = std::make_shared<inputHandlerSystem>();
 			manager->systems["input"] = inputSys;
 			input.bind(modes::Move, inputMapper(inputSys->inputs, cam));

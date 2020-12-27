@@ -59,5 +59,46 @@ class rigidBodyBox : public rigidBody {
 		}
 };
 
+class syncRigidBody : public component {
+	public:
+		syncRigidBody(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "syncRigidBody", this);
+		}
+
+		virtual void sync(entityManager *manager, entity *ent) = 0;
+};
+
+class syncRigidBodyTransform : public syncRigidBody {
+	public:
+		syncRigidBodyTransform(entityManager *manager, entity *ent)
+			: syncRigidBody(manager, ent)
+		{
+			manager->registerComponent(ent, "syncRigidBodyTransform", this);
+		}
+
+		virtual void sync(entityManager *manager, entity *ent);
+};
+
+class syncRigidBodyXZVelocity : public syncRigidBody {
+	public:
+		syncRigidBodyXZVelocity(entityManager *manager, entity *ent)
+			: syncRigidBody(manager, ent)
+		{
+			manager->registerComponent(ent, "syncRigidBodyXZVelocity", this);
+		}
+
+		virtual void sync(entityManager *manager, entity *ent);
+};
+
+class syncRigidBodySystem : public entitySystem {
+	public:
+		typedef std::shared_ptr<entitySystem> ptr;
+		typedef std::weak_ptr<entitySystem>   weakptr;
+
+		virtual void update(entityManager *manager, float delta);
+};
+
 // namespace grendx::ecs
 };
