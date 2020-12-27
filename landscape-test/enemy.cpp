@@ -7,6 +7,7 @@
 
 enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
+	// TODO: shouldn't keep strong reference to body
 	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
 {
 	static gameObject::ptr enemyModel = nullptr;
@@ -14,6 +15,7 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	new health(manager, this);
 	new worldHealthbar(manager, this);
 	new projectileCollision(manager, this);
+	new syncRigidBodyXZVelocity(manager, this);
 
 	manager->registerComponent(this, "enemy", this);
 
@@ -46,10 +48,14 @@ void enemy::update(entityManager *manager, float delta) {
 		playerPos = playerEnt->getNode()->transform.position;
 	}
 
+	// TODO: should this be a component, a generic chase implementation?
 	glm::vec3 diff = playerPos - node->transform.position;
 	glm::vec3 vel =  glm::normalize(glm::vec3(diff.x, 0, diff.z));
 	body->phys->setAcceleration(10.f*vel);
+
+	/*
 	body->syncPhysics(this);
+	*/
 
 	collisions->clear();
 }

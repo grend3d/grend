@@ -47,6 +47,7 @@ gameObject::ptr animatedCharacter::getObject(void) {
 
 player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
+	// TODO: don't keep strong reference to body
 	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
 {
 	static gameObject::ptr playerModel = nullptr;
@@ -54,6 +55,7 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	new boxSpawner(manager, this);
 	new movementHandler(manager, this);
 	new projectileCollision(manager, this);
+	new syncRigidBodyXZVelocity(manager, this);
 
 	manager->registerComponent(this, "player", this);
 
@@ -74,11 +76,14 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 }
 
 void player::update(entityManager *manager, float delta) {
+	glm::vec3 vel = body->phys->getVelocity();
+
+	/*
 	TRS physTransform = body->phys->getTransform();
 	node->transform.position = physTransform.position;
-	glm::vec3 vel = body->phys->getVelocity();
 	node->transform.rotation =
 		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
+		*/
 
 	if (glm::length(vel) < 2.0) {
 		character->setAnimation("idle");
