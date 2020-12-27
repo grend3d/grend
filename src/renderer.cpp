@@ -88,73 +88,104 @@ renderContext::renderContext(context& ctx) {
 	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
 }
 
+renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
+                                      std::string mainVertex,
+                                      std::string skinnedVertex,
+                                      std::string instancedVertex)
+{
+	renderFlags ret;
+
+	ret.mainShader = loadProgram(mainVertex, fragmentPath);
+	ret.skinnedShader = loadProgram(skinnedVertex, fragmentPath);
+	ret.instancedShader = loadProgram(instancedVertex, fragmentPath);
+
+	for (Program::ptr prog : {ret.mainShader,
+	                          ret.skinnedShader,
+	                          ret.instancedShader})
+	{
+		prog->attribute("in_Position", VAO_VERTICES);
+		prog->attribute("v_normal",    VAO_NORMALS);
+		prog->attribute("v_tangent",   VAO_TANGENTS);
+		prog->attribute("v_bitangent", VAO_BITANGENTS);
+		prog->attribute("texcoord",    VAO_TEXCOORDS);
+	}
+
+	// skinned shader also has some joint attributes
+	ret.skinnedShader->attribute("a_joints",  VAO_JOINTS);
+	ret.skinnedShader->attribute("a_weights", VAO_JOINT_WEIGHTS);
+
+	for (Program::ptr prog : {ret.mainShader,
+	                          ret.skinnedShader,
+	                          ret.instancedShader})
+	{
+		prog->link();
+		DO_ERROR_CHECK();
+	}
+
+	return ret;
+}
+
+renderFlags grendx::loadLightingShader(std::string fragmentPath) {
+	return loadShaderToFlags(fragmentPath,
+		GR_PREFIX "shaders/out/pixel-shading.vert",
+		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
+		GR_PREFIX "shaders/out/pixel-shading-instanced.vert");
+}
+
+renderFlags grendx::loadProbeShader(std::string fragmentPath) {
+	return loadShaderToFlags(fragmentPath,
+		// TODO: rename
+		GR_PREFIX "shaders/out/ref_probe.vert",
+		GR_PREFIX "shaders/out/ref_probe-skinned.vert",
+		GR_PREFIX "shaders/out/ref_probe-instanced.vert");
+}
+
+Program::ptr grendx::loadPostShader(std::string fragmentPath) {
+	Program::ptr ret = loadProgram(
+		GR_PREFIX "shaders/out/postprocess.vert",
+		fragmentPath
+	);
+
+	ret->attribute("v_position", VAO_QUAD_VERTICES);
+	ret->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
+	ret->link();
+
+	return ret;
+}
+
 void renderContext::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
-	/*
-	shaders["main"] = loadProgram(
-		GR_PREFIX "shaders/out/vertex-shading.vert",
-		GR_PREFIX "shaders/out/vertex-shading.frag"
-	);
-	*/
 
-	shaders["main"] = loadProgram(
-		GR_PREFIX "shaders/out/pixel-shading.vert",
-		//GR_PREFIX "shaders/out/pixel-shading.frag"
-		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
-	);
+	lightingShaders["main"] =
+		loadLightingShader(GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag");
+	lightingShaders["unshaded"] = 
+		loadLightingShader(GR_PREFIX "shaders/out/unshaded.frag");
 
-	shaders["main-skinned"] = loadProgram(
-		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
-		//GR_PREFIX "shaders/out/pixel-shading.frag"
-		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
-	);
+	probeShaders["refprobe"] =
+		loadProbeShader(GR_PREFIX "shaders/out/ref_probe.frag");
 
-	shaders["main-instanced"] = loadProgram(
-		GR_PREFIX "shaders/out/pixel-shading-instanced.vert",
-		//GR_PREFIX "shaders/out/pixel-shading.frag"
-		GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag"
-	);
+	probeShaders["shadow"] =
+		loadProbeShader(GR_PREFIX "shaders/out/depth.frag");
 
-	shaders["refprobe"] = loadProgram(
-		GR_PREFIX "shaders/out/ref_probe.vert",
-		GR_PREFIX "shaders/out/ref_probe.frag"
-	);
+	for (auto& name : {"tonemap", "psaa", "irradiance-convolve",
+	                    "specular-convolve", "quadtest"})
+	{
+		postShaders[name] =
+			loadPostShader(GR_PREFIX "shaders/out/" + std::string(name) + ".frag");
+	}
 
-	// TODO: skinned vertex shader
-	shaders["refprobe-skinned"] = loadProgram(
-		GR_PREFIX "shaders/out/ref_probe.vert",
-		GR_PREFIX "shaders/out/ref_probe.frag"
-	);
-
-	shaders["refprobe-instanced"] = loadProgram(
-		GR_PREFIX "shaders/out/ref_probe.vert",
-		GR_PREFIX "shaders/out/ref_probe.frag"
-	);
-
-	shaders["refprobe_debug"] = loadProgram(
+	internalShaders["refprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
 		GR_PREFIX "shaders/out/ref_probe_debug.frag"
 	);
 
-	shaders["irradprobe_debug"] = loadProgram(
+	internalShaders["irradprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
 		GR_PREFIX "shaders/out/irrad_probe_debug.frag"
 	);
 
-	shaders["unshaded"] = loadProgram(
-		GR_PREFIX "shaders/out/pixel-shading.vert",
-		GR_PREFIX "shaders/out/unshaded.frag"
-	);
-
-	for (auto& name : {"main", "main-instanced", "refprobe",
-	                   "refprobe-instanced", "refprobe_debug",
-	                   "irradprobe_debug", "unshaded"})
-		/*
-	for (auto& name : {"main", "refprobe", "refprobe_debug",
-	                   "irradprobe_debug", "unshaded"})
-					   */
-	{
-		Program::ptr s = shaders[name];
+	for (auto& name : {"refprobe_debug", "irradprobe_debug"}) {
+		Program::ptr s = internalShaders[name];
 
 		s->attribute("in_Position", VAO_VERTICES);
 		s->attribute("v_normal",    VAO_NORMALS);
@@ -164,115 +195,12 @@ void renderContext::loadShaders(void) {
 		s->link();
 	}
 
-	shaders["main-skinned"]->attribute("in_Position", VAO_VERTICES);
-	shaders["main-skinned"]->attribute("v_normal",    VAO_NORMALS);
-	shaders["main-skinned"]->attribute("v_tangent",   VAO_TANGENTS);
-	shaders["main-skinned"]->attribute("v_bitangent", VAO_BITANGENTS);
-	shaders["main-skinned"]->attribute("texcoord",    VAO_TEXCOORDS);
-	shaders["main-skinned"]->attribute("a_joints",    VAO_JOINTS);
-	shaders["main-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
-	shaders["main-skinned"]->link();
-
-	shaders["refprobe-skinned"]->attribute("in_Position", VAO_VERTICES);
-	shaders["refprobe-skinned"]->attribute("v_normal",    VAO_NORMALS);
-	shaders["refprobe-skinned"]->attribute("v_tangent",   VAO_TANGENTS);
-	shaders["refprobe-skinned"]->attribute("v_bitangent", VAO_BITANGENTS);
-	shaders["refprobe-skinned"]->attribute("texcoord",    VAO_TEXCOORDS);
-	shaders["refprobe-skinned"]->attribute("a_joints",    VAO_JOINTS);
-	shaders["refprobe-skinned"]->attribute("a_weights",   VAO_JOINT_WEIGHTS);
-	shaders["refprobe-skinned"]->link();
-
-	shaders["shadow"] = loadProgram(
-		GR_PREFIX "shaders/out/depth.vert",
-		GR_PREFIX "shaders/out/depth.frag"
-	);
-	shaders["shadow"]->attribute("v_position", VAO_VERTICES);
-	shaders["shadow"]->link();
-
-	// TODO: skinned vertex shader
-	shaders["shadow-skinned"] = loadProgram(
-		GR_PREFIX "shaders/out/depth.vert",
-		GR_PREFIX "shaders/out/depth.frag"
-	);
-	shaders["shadow-skinned"]->attribute("v_position", VAO_VERTICES);
-	shaders["shadow-skinned"]->link();
-
-	// TODO: instanced vertex shader
-	shaders["shadow-instanced"] = loadProgram(
-		GR_PREFIX "shaders/out/depth.vert",
-		GR_PREFIX "shaders/out/depth.frag"
-	);
-	shaders["shadow-instanced"]->attribute("v_position", VAO_VERTICES);
-	shaders["shadow-instanced"]->link();
-
-	shaders["tonemap"] = loadProgram(
-		GR_PREFIX "shaders/out/postprocess.vert",
-		GR_PREFIX "shaders/out/tonemap.frag"
-	);
-
-	// NOTE: post
-	shaders["tonemap"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["tonemap"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["tonemap"]->link();
-
-	shaders["psaa"] = loadProgram(
-		GR_PREFIX "shaders/out/postprocess.vert",
-		GR_PREFIX "shaders/out/psaa.frag"
-	);
-
-	// NOTE: post
-	shaders["psaa"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["psaa"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["psaa"]->link();
-
-	shaders["irradiance-convolve"] = loadProgram(
-		GR_PREFIX "shaders/out/postprocess.vert",
-		GR_PREFIX "shaders/out/irradiance-convolve.frag"
-	);
-
-	// NOTE: post
-	shaders["irradiance-convolve"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["irradiance-convolve"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["irradiance-convolve"]->link();
-
-	shaders["specular-convolve"] = loadProgram(
-		GR_PREFIX "shaders/out/postprocess.vert",
-		GR_PREFIX "shaders/out/specular-convolve.frag"
-	);
-	shaders["specular-convolve"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["specular-convolve"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["specular-convolve"]->link();
-
-	shaders["quadtest"] = loadProgram(
-		GR_PREFIX "shaders/out/quadtest.vert",
-		GR_PREFIX "shaders/out/quadtest.frag"
-	);
-	shaders["quadtest"]->attribute("v_position", VAO_QUAD_VERTICES);
-	shaders["quadtest"]->attribute("v_texcoord", VAO_QUAD_TEXCOORDS);
-	shaders["quadtest"]->link();
-
-	shaders["main"]->bind();
 	DO_ERROR_CHECK();
 }
 
-void renderContext::setFlags(const renderFlags& newflags) {
-	flags = newflags;
-}
-
-struct renderFlags renderContext::getDefaultFlags(std::string name) {
-	return (struct renderFlags) {
-		// TODO: some sort of shader class/interface/whatever system
-		//       so that fragment shaders can be automatically paired with
-		//       compatible vertex shaders
-		//       maybe just do a (c++) class-based thing?
-		.mainShader      = shaders[name],
-		.skinnedShader   = shaders[name+"-skinned"],
-		.instancedShader = shaders[name+"-instanced"],
-	};
-}
-
-const renderFlags& renderContext::getFlags(void) {
-	return flags;
+struct renderFlags renderContext::getLightingFlags(std::string name) {
+	// TODO: handle name not being in lightingShaders
+	return lightingShaders[name];
 }
 
 void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {

@@ -33,7 +33,6 @@ int gameMain::step(void) {
 			running = false;
 		}
 
-		//step_physics();
 		view->logic(this, fticks);
 		if (jobs != nullptr) {
 			jobs->runDeferred();
@@ -89,7 +88,7 @@ void gameMain::setView(std::shared_ptr<gameView> nview) {
 	}
 }
 
-void grendx::renderWorld(gameMain *game, camera::ptr cam) {
+void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 	assert(game->rend && game->rend->framebuffer);
 
 	int winsize_x, winsize_y;
@@ -101,16 +100,16 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 
 		que.add(game->state->rootnode, fticks);
 		que.add(game->state->physObjects);
-		que.updateLights(game->rend->shaders["shadow"], game->rend);
-		que.updateReflections(game->rend->shaders["refprobe"], game->rend);
+		que.updateLights(game->rend);
+		que.updateReflections(game->rend);
 		DO_ERROR_CHECK();
 
 		game->rend->framebuffer->framebuffer->bind();
 		DO_ERROR_CHECK();
 
 		// TODO: constants for texture bindings, no magic numbers floating around
-		game->rend->shaders["main"]->bind();
-		game->rend->shaders["main"]->set("time_ms", SDL_GetTicks() * 1.f);
+		flags.mainShader->bind();
+		flags.mainShader->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 
 		que.cull(game->rend->framebuffer->width,
@@ -119,9 +118,8 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam) {
 		que.sort();
 		buildTilemap(que, game->rend);
 		que.updateReflectionProbe(game->rend);
-		//buildTilemap(que, game->rend);
-		game->rend->setFlags(game->rend->getDefaultFlags());
-		game->metrics.drawnMeshes += que.flush(game->rend->framebuffer, game->rend);
+		game->metrics.drawnMeshes +=
+			que.flush(game->rend->framebuffer, game->rend, flags);
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 	}
 }

@@ -55,16 +55,18 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	glDepthFunc(GL_LESS);
 
 	camera::ptr cam = camera::ptr(new camera());
-	Program::ptr shadowShader = rctx->shaders["shadow"];
-
-	shadowShader->bind();
-	queue.shaderSync(shadowShader, rctx);
 	cam->setPosition(light->transform.position);
 	cam->setFovx(90);
 
-	// TODO: skinned shadow shader
-	renderFlags flags = rctx->getDefaultFlags("shadow");
-	rctx->setFlags(flags);
+	renderFlags flags = rctx->probeShaders["shadow"];
+
+	for (Program::ptr prog : {flags.mainShader,
+	                          flags.skinnedShader,
+	                          flags.instancedShader})
+	{
+		prog->bind();
+		queue.shaderSync(prog, rctx);
+	}
 
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
@@ -84,8 +86,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		cam->setViewport(info.size, info.size);
 
 		porque.setCamera(cam);
-		// TODO: skinned shadow shader
-		porque.flush(info.size, info.size, rctx);
+		porque.flush(info.size, info.size, rctx, flags);
 	}
 
 	light->have_map = true;
@@ -95,7 +96,7 @@ static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
                                          renderContext::ptr rctx,
                                          unsigned level)
 {
-	Program::ptr convolve = rctx->shaders["specular-convolve"];
+	Program::ptr convolve = rctx->postShaders["specular-convolve"];
 	convolve->bind();
 
 	std::cout << "convolve level " << level << std::endl;
@@ -131,7 +132,6 @@ static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
 		}
 
 		bindVao(getScreenquadVao());
-		//glViewport(0, 0, info.size, info.size);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDepthMask(GL_FALSE);
@@ -173,24 +173,26 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	camera::ptr cam = camera::ptr(new camera());
-	Program::ptr refShader = rctx->shaders["refprobe"];
 	cam->setPosition(probe->transform.position);
 	cam->setFovx(90);
 
-	refShader->bind();
+	renderFlags flags = rctx->probeShaders["refprobe"];
 	glActiveTexture(GL_TEXTURE7);
 	rctx->atlases.shadows->depth_tex->bind();
-	refShader->set("shadowmap_atlas", 7);
 
-	queue.shaderSync(refShader, rctx);
+	for (Program::ptr prog : {flags.mainShader,
+	                          flags.skinnedShader,
+	                          flags.instancedShader})
+	{
+		prog->bind();
+		queue.shaderSync(prog, rctx);
+		prog->set("shadowmap_atlas", 7);
+
+	}
+
 	DO_ERROR_CHECK();
 
-	// TODO: skinned reflection shader
-	renderFlags flags = rctx->getDefaultFlags("refprobe");
-	rctx->setFlags(flags);
-
 	for (unsigned i = 0; i < 6; i++) {
-		refShader->bind();
 		if (!rctx->atlases.reflections->bind_atlas_fb(probe->faces[0][i])) {
 			std::cerr
 				<< "drawReflectionProbe(): couldn't bind probe framebuffer"
@@ -208,8 +210,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		DO_ERROR_CHECK();
 
 		porque.setCamera(cam);
-		// TODO: skinned reflection shader
-		porque.flush(info.size, info.size, rctx);
+		porque.flush(info.size, info.size, rctx, flags);
 		DO_ERROR_CHECK();
 
 		rctx->defaultSkybox.draw(cam, info.size, info.size);
@@ -248,8 +249,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 	}
 
 	// TODO: check for updates inside some radius, return if none
-	// TODO: skinned reflection shader
-	Program::ptr convolve = rctx->shaders["irradiance-convolve"];
+	Program::ptr convolve = rctx->postShaders["irradiance-convolve"];
 	convolve->bind();
 
 	glActiveTexture(GL_TEXTURE6);

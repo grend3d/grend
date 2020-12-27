@@ -116,7 +116,7 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 	}
 }
 
-void renderQueue::updateLights(Program::ptr program, renderContext::ptr rctx) {
+void renderQueue::updateLights(renderContext::ptr rctx) {
 	// TODO: should probably apply the transform to light position
 	for (auto& [_, __, light] : lights) {
 		if (!light->casts_shadows) {
@@ -149,7 +149,7 @@ void renderQueue::updateLights(Program::ptr program, renderContext::ptr rctx) {
 }
 
 void
-renderQueue::updateReflections(Program::ptr program, renderContext::ptr rctx) {
+renderQueue::updateReflections(renderContext::ptr rctx) {
 	for (auto& [_, __, probe] : probes) {
 		auto& reftree = rctx->atlases.reflections->tree;
 		auto& radtree = rctx->atlases.irradiance->tree;
@@ -368,7 +368,6 @@ static void drawMeshInstanced(renderFlags& flags,
                               gameParticles::ptr particles,
                               gameMesh::ptr mesh)
 {
-	// TODO:
 	if (fb != nullptr && flags.stencil) {
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);
@@ -423,9 +422,9 @@ static void drawMeshInstanced(renderFlags& flags,
 
 unsigned renderQueue::flush(unsigned width,
                             unsigned height,
-                            renderContext::ptr rctx)
+                            renderContext::ptr rctx,
+                            renderFlags& flags)
 {
-	renderFlags flags = rctx->getFlags();
 	unsigned drawnMeshes = 0;
 
 	if (flags.sort)       { sort(); }
@@ -499,10 +498,12 @@ unsigned renderQueue::flush(unsigned width,
 	return drawnMeshes;
 }
 
-unsigned renderQueue::flush(renderFramebuffer::ptr fb, renderContext::ptr rctx) {
+unsigned renderQueue::flush(renderFramebuffer::ptr fb,
+                            renderContext::ptr rctx,
+                            renderFlags& flags)
+{
 	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
-	renderFlags flags = rctx->getFlags();
 
 	if (flags.sort) { sort(); }
 
@@ -795,8 +796,6 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 			plane *p = planes + cluster*6;
 
 			for (unsigned i = 0; i < 6; i++) {
-				//in += planes[i].inPlane(applyTransform(trans), lit->extent(0.1));
-				//in += planes[i].inPlane(applyTransform(trans), lit->extent());
 				in += p[i].inPlane(lightpos, ext);
 			}
 
@@ -921,20 +920,17 @@ static void syncUniformBuffer(Program::ptr program,
 
 	for (unsigned i = 0; i < 8*24*MAX_LIGHTS; i++) {
 		if (i % MAX_LIGHTS == 0) {
-			//tilebuf.point_tiles[3 - (i&3)] = float((i >> 3) & 3);
 			tilebuf.point_tiles[i] = 1 + ((i >> 3) % 3);
 
 		} else {
 			tilebuf.point_tiles[i] = float(i % 4);
 		}
 		tilebuf.spot_tiles[i]  = 0;
-		//std::cerr << "setting light " << i << std::endl;
 	}
 
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
 	rctx->lightTiles->update(&tilebuf, 0, sizeof(tilebuf));
 	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights_std140), &lightbuf);
-	//rctx->lightBuffer->unmap();
 }
 
 void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
@@ -953,10 +949,6 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	program->setUniformBlock("lights",      rctx->lightBuffer, UBO_LIGHT_INFO);
 	program->setUniformBlock("light_tiles", rctx->lightTiles,  UBO_LIGHT_TILES);
 
-	/*
-	syncUniformBuffer(program, rctx, refprobe, point_lights,
-	                  spot_lights, directional_lights);
-					  */
 	DO_ERROR_CHECK();
 
 #else

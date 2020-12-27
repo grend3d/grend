@@ -24,7 +24,7 @@ playerView::playerView(gameMain *game) : gameView() {
 	bindCookedMeshes();
 
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
+		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	input.bind(MODAL_ALL_MODES,
@@ -199,15 +199,16 @@ void playerView::drawMainMenu(int wx, int wy) {
 void playerView::render(gameMain *game) {
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+	renderFlags flags = game->rend->getLightingFlags();
 
 	if (input.mode == modes::MainMenu) {
-		renderWorld(game, cam);
+		renderWorld(game, cam, flags);
 
 		post->draw(game->rend->framebuffer);
 		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
-		renderWorld(game, cam);
+		renderWorld(game, cam, flags);
 		post->draw(game->rend->framebuffer);
 		drawUIStuff(vgui.nvg, winsize_x, winsize_y);
 	}

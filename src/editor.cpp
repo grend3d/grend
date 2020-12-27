@@ -20,7 +20,7 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 										  */
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->shaders["tonemap"], game->rend->shaders["psaa"]},
+		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	loading_thing = makePostprocessor<rOutput>(
@@ -136,10 +136,9 @@ void gameEditor::loadUIModels(void) {
 
 void gameEditor::render(gameMain *game) {
 	renderQueue que(cam);
-	auto flags = game->rend->getFlags();
+	auto flags = game->rend->getLightingFlags();
 
-	game->rend->setFlags(game->rend->getDefaultFlags());
-	renderWorld(game, cam);
+	renderWorld(game, cam, flags);
 	renderWorldObjects(game);
 
 	// TODO: this results in cursor not being clickable if the render
@@ -148,13 +147,11 @@ void gameEditor::render(gameMain *game) {
 	//       need an overall better solution for clickable things
 	// TODO: maybe attach shaders to gameObjects
 	// TODO: skinned unshaded shader
-	auto unshadedFlags = flags;
-	unshadedFlags.mainShader = unshadedFlags.skinnedShader
-		= unshadedFlags.instancedShader = game->rend->shaders["unshaded"];
+	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 	unshadedFlags.depth = false;
-	game->rend->setFlags(unshadedFlags);
+
 	que.add(UIObjects);
-	que.flush(game->rend->framebuffer, game->rend);
+	que.flush(game->rend->framebuffer, game->rend, unshadedFlags);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
@@ -175,7 +172,6 @@ void gameEditor::render(gameMain *game) {
 
 void gameEditor::renderWorldObjects(gameMain *game) {
 	DO_ERROR_CHECK();
-	auto flags = game->rend->getFlags();
 
 	// XXX: wasteful, a bit wrong
 	static gameObject::ptr probeObj = std::make_shared<gameObject>();
@@ -186,13 +182,13 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	tempque.add(game->state->rootnode);
 
 	if (showProbes) {
-		auto  probeFlags = flags;
-		auto& refShader = game->rend->shaders["refprobe_debug"];
-		auto& irradShader = game->rend->shaders["irradprobe_debug"];
+		renderFlags probeFlags;
+		auto& refShader = game->rend->internalShaders["refprobe_debug"];
+		auto& irradShader = game->rend->internalShaders["irradprobe_debug"];
 
 		probeFlags.mainShader = probeFlags.skinnedShader =
 			probeFlags.instancedShader = refShader;
-		game->rend->setFlags(probeFlags);
+
 		refShader->bind();
 
 		for (auto& [trans, __, probe] : tempque.probes) {
@@ -209,12 +205,11 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			que.flush(game->rend->framebuffer, game->rend);
+			que.flush(game->rend->framebuffer, game->rend, probeFlags);
 		}
 
 		probeFlags.mainShader = probeFlags.skinnedShader =
 			probeFlags.instancedShader = irradShader;
-		game->rend->setFlags(probeFlags);
 		irradShader->bind();
 
 		for (auto& [trans, __, probe] : tempque.irradProbes) {
@@ -229,15 +224,12 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			}
 
 			que.add(probeObj);
-			que.flush(game->rend->framebuffer, game->rend);
+			que.flush(game->rend->framebuffer, game->rend, probeFlags);
 		}
 	}
 
 	if (showLights) {
-		auto unshadedFlags = flags;
-		unshadedFlags.mainShader = unshadedFlags.skinnedShader =
-			unshadedFlags.instancedShader = game->rend->shaders["unshaded"];
-		game->rend->setFlags(unshadedFlags);
+		renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 
 		for (auto& [trans, __, light] : tempque.lights) {
 			glm::vec3 pos = applyTransform(trans);
@@ -246,7 +238,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 				probeObj->transform.position = applyTransform(trans);
 				probeObj->transform.scale = glm::vec3(0.5);
 				que.add(probeObj);
-				que.flush(game->rend->framebuffer, game->rend);
+				que.flush(game->rend->framebuffer, game->rend, unshadedFlags);
 			}
 		}
 	}
@@ -311,11 +303,14 @@ gameImport::ptr grendx::loadScene(std::string path) {
 }
 
 void gameEditor::reloadShaders(gameMain *game) {
+	/*
+	// TODO: reimplement
 	for (auto& [name, shader] : game->rend->shaders) {
 		if (!shader->reload()) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
 		}
 	}
+	*/
 }
 
 void gameEditor::setMode(enum mode newmode) {

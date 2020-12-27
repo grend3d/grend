@@ -150,8 +150,6 @@ struct renderFlags {
 };
 
 class renderContext {
-	struct renderFlags flags;
-
 	public:
 		typedef std::shared_ptr<renderContext> ptr;
 		typedef std::weak_ptr<renderContext> weakptr;
@@ -167,9 +165,7 @@ class renderContext {
 		gameMesh::ptr index(unsigned idx);
 
 		// XXX
-		void setFlags(const renderFlags& newflags);
-		struct renderFlags getDefaultFlags(std::string name="main");
-		const renderFlags& getFlags(void);
+		struct renderFlags getLightingFlags(std::string name="main");
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -182,8 +178,13 @@ class renderContext {
 		skybox defaultSkybox;
 		renderAtlases atlases;
 
+		// maps 
 		// XXX: loaded shaders, here so they can be accessed from the editor
-		std::map<std::string, Program::ptr> shaders;
+		std::map<std::string, renderFlags> lightingShaders;
+		std::map<std::string, renderFlags> probeShaders;
+		std::map<std::string, Program::ptr> postShaders;
+		std::map<std::string, Program::ptr> internalShaders;
+
 		Buffer::ptr lightBuffer;
 		Buffer::ptr lightTiles;
 
@@ -236,13 +237,17 @@ class renderQueue {
 		                  gameParticles::ptr particles,
 		                  glm::mat4 trans = glm::mat4(1),
 		                  bool inverted = false);
-		void updateLights(Program::ptr program, renderContext::ptr rctx);
-		void updateReflections(Program::ptr program, renderContext::ptr rctx);
+		void updateLights(renderContext::ptr rctx);
+		void updateReflections(renderContext::ptr rctx);
 		void updateReflectionProbe(renderContext::ptr rctx);
 		void sort(void);
 		void cull(unsigned width, unsigned height, float lightext);
-		unsigned flush(renderFramebuffer::ptr fb, renderContext::ptr rctx);
-		unsigned flush(unsigned width, unsigned height, renderContext::ptr rctx);
+		unsigned flush(renderFramebuffer::ptr fb,
+		               renderContext::ptr rctx,
+		               renderFlags& flags);
+		unsigned flush(unsigned width, unsigned height,
+		               renderContext::ptr rctx,
+		               renderFlags& flags);
 		void shaderSync(Program::ptr program, renderContext::ptr rctx);
 		void setCamera(camera::ptr newcam) { cam = newcam; };
 
@@ -269,6 +274,14 @@ class renderQueue {
 		                          Program::ptr program,
 		                          renderAtlases& atlases);
 };
+
+renderFlags loadLightingShader(std::string fragmentPath);
+renderFlags loadProbeShader(std::string fragmentPath);
+Program::ptr loadPostShader(std::string fragmentPath);
+renderFlags loadShaderToFlags(std::string fragmentPath,
+                              std::string mainVertex,
+                              std::string skinnedVertex,
+                              std::string instancedVertex);
 
 void drawShadowCubeMap(renderQueue& queue,
                        gameLightPoint::ptr light,
