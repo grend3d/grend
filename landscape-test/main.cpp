@@ -72,6 +72,7 @@ class landscapeGenView : public playerView {
 			}
 
 			bindCookedMeshes();
+			input.setMode(modes::Move);
 		};
 
 		virtual void logic(gameMain *game, float delta);
@@ -90,7 +91,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 		lastvel = cam->velocity();
 	}
 
-	game->phys->stepSimulation(1.f/game->frame_timer.last());
+	game->phys->stepSimulation(delta);
 	game->phys->filterCollisions();;
 	
 	entity *playerEnt = findFirst(manager.get(), {"player"});
@@ -101,7 +102,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 		landscape.setPosition(game, transform.position);
 	}
 
-	manager->update(1.f / game->frame_timer.last());
+	manager->update(delta);
 }
 
 static void renderHealthbars(entityManager *manager,
@@ -164,6 +165,7 @@ int main(int argc, char *argv[]) {
 
 	TRS staticPosition; // default
 	gameMain *game = new gameMainDevWindow();
+	//gameMain *game = new gameMain();
 
 // XXX:  toggle using textures I have locally, don't want to bloat the assets
 //       folder again
