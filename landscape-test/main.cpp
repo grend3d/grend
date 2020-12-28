@@ -1,9 +1,10 @@
 #include <grend/gameMain.hpp>
 #include <grend/gameMainDevWindow.hpp>
 #include <grend/gameObject.hpp>
-#include <grend/playerView.hpp>
+//#include <grend/playerView.hpp>
 #include <grend/geometryGeneration.hpp>
 #include <grend/gameEditor.hpp>
+#include <grend/controllers.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
@@ -38,49 +39,67 @@ using namespace grendx::ecs;
 #include "health.hpp"
 #include "healthbar.hpp"
 
-class landscapeGenView : public playerView {
+class landscapeGenView : public gameView {
 	public:
 		typedef std::shared_ptr<landscapeGenView> ptr;
 		typedef std::weak_ptr<landscapeGenView>   weakptr;
 
-		landscapeGenView(gameMain *game) : playerView(game) {
-			manager = std::make_shared<entityManager>(game);
-
-			// TODO: names are kinda pointless here
-			manager->systems["collision"] =
-				std::make_shared<entitySystemCollision>();
-
-			manager->systems["syncPhysics"] =
-				std::make_shared<syncRigidBodySystem>();
-
-			auto inputSys = std::make_shared<inputHandlerSystem>();
-			manager->systems["input"] = inputSys;
-			input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
-
-			manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
-			player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
-			manager->add(playerEnt);
-
-			for (unsigned i = 0; i < 15; i++) {
-				glm::vec3 position = glm::vec3(
-					float(rand()) / RAND_MAX * 100.0 - 50,
-					50.0,
-					float(rand()) / RAND_MAX * 100.0 - 50
-				);
-
-				manager->add(new enemy(manager.get(), game, position));
-			}
-
-			bindCookedMeshes();
-			input.setMode(modes::Move);
-		};
-
+		landscapeGenView(gameMain *game);
 		virtual void logic(gameMain *game, float delta);
 		virtual void render(gameMain *game);
 		//void loadPlayer(void);
 
+		enum modes {
+			MainMenu,
+			Move,
+			Pause,
+		};
+
+		renderPostChain::ptr post = nullptr;
+		//modalSDLInput input;
+		vecGUI vgui;
+		int menuSelect = 0;
+
 		entityManager::ptr manager;
 		landscapeGenerator landscape;
+};
+
+landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
+	post = renderPostChain::ptr(new renderPostChain(
+				{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+				SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	manager = std::make_shared<entityManager>(game);
+
+	// TODO: names are kinda pointless here
+	manager->systems["collision"] =
+		std::make_shared<entitySystemCollision>();
+
+	manager->systems["syncPhysics"] =
+		std::make_shared<syncRigidBodySystem>();
+
+	auto inputSys = std::make_shared<inputHandlerSystem>();
+	manager->systems["input"] = inputSys;
+
+	manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
+	player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
+	manager->add(playerEnt);
+
+	for (unsigned i = 0; i < 15; i++) {
+		glm::vec3 position = glm::vec3(
+			float(rand()) / RAND_MAX * 100.0 - 50,
+			50.0,
+			float(rand()) / RAND_MAX * 100.0 - 50
+		);
+
+		manager->add(new enemy(manager.get(), game, position));
+	}
+
+	bindCookedMeshes();
+	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
+	input.bind(modes::Move, controller::camMovement(cam, 10.f));
+	input.bind(modes::Move, controller::camFPS(cam, game));
+	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
+	input.setMode(modes::Move);
 };
 
 void landscapeGenView::logic(gameMain *game, float delta) {
