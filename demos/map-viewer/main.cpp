@@ -1,5 +1,5 @@
+#include <grend/gameMain.hpp>
 #include <grend/gameMainDevWindow.hpp>
-#include <grend/gameMainWindow.hpp>
 #include <grend/gameObject.hpp>
 #include <grend/playerView.hpp>
 
