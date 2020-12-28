@@ -1,4 +1,5 @@
 #include <grend/gameEditor.hpp>
+#include <grend/controllers.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/examples/imgui_impl_sdl.h>
@@ -84,19 +85,7 @@ static bindFunc makeClicker(gameEditor *editor,
 }
 
 void gameEditor::loadInputBindings(gameMain *game) {
-	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
-			if (ev.type == SDL_WINDOWEVENT
-			    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
-			{
-				auto width = ev.window.data1;
-				auto height = ev.window.data2;
-
-				game->rend->framebuffer->setSize(width, height);
-				post->setSize(width, height);
-			}
-			return MODAL_NO_CHANGE;
-		});
+	inputBinds.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
 
 	// camera movement (on key press)
 	inputBinds.bind(MODAL_ALL_MODES,

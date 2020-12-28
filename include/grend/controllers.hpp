@@ -16,5 +16,11 @@ bindFunc camFocus(camera::ptr cam, gameObject::ptr focus);
 
 // namespace controller
 }
+
+// XXX: don't know where to put this, input handlers for
+//      resizing the framebuffer on window resize, etc.
+// TODO: maybe dedicated header
+bindFunc resizeInputHandler(gameMain *game, renderPostChain::ptr post);
+
 // namespace grendx
 }

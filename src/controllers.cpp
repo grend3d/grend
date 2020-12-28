@@ -68,3 +68,27 @@ bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 		return MODAL_NO_CHANGE;
 	};
 }
+
+
+
+// XXX: don't know where to put this, input handlers for
+//      resizing the framebuffer on window resize, etc.
+// TODO: maybe dedicated header
+bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_WINDOWEVENT
+		    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
+		{
+			auto width = ev.window.data1;
+			auto height = ev.window.data2;
+
+			game->rend->framebuffer->setSize(width, height);
+
+			if (post != nullptr) {
+				post->setSize(width, height);
+			}
+		}
+
+		return MODAL_NO_CHANGE;
+	};
+}

@@ -19,6 +19,7 @@ struct nvg_data {
 };
 
 playerView::playerView(gameMain *game) : gameView() {
+	/*
 	static const float speed = 15.f;
 	compileModel("physcuboid", cuboid);
 	bindCookedMeshes();
@@ -26,21 +27,6 @@ playerView::playerView(gameMain *game) : gameView() {
 	post = renderPostChain::ptr(new renderPostChain(
 		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
-
-	input.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
-			if (ev.type == SDL_WINDOWEVENT
-			    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
-			{
-				auto width = ev.window.data1;
-				auto height = ev.window.data2;
-
-				game->rend->framebuffer->setSize(width, height);
-				post->setSize(width, height);
-			}
-			return MODAL_NO_CHANGE;
-		});
-
 
 	input.bind(modes::MainMenu,
 		[&] (SDL_Event& ev, unsigned flags) {
@@ -71,9 +57,6 @@ playerView::playerView(gameMain *game) : gameView() {
 			return MODAL_NO_CHANGE;
 		});
 
-	input.bind(modes::Move, controller::camMovement(cam, 10.f));
-	input.bind(modes::Move, controller::camFPS(cam, game));
-
 	// switch modes (TODO: add pause)
 	input.bind(modes::Move,
 		[&] (SDL_Event& ev, unsigned flags) {
@@ -88,10 +71,7 @@ playerView::playerView(gameMain *game) : gameView() {
 		});
 
 	input.setMode(modes::MainMenu);
-}
-
-void playerView::handleInput(gameMain *game, SDL_Event& ev) {
-	input.dispatch(ev);
+		*/
 }
 
 static glm::vec3 lastvel = glm::vec3(0);
@@ -101,6 +81,7 @@ void playerView::logic(gameMain *game, float delta) {
 	cam->updatePosition(delta);
 }
 
+/*
 static void drawUIStuff(NVGcontext *vg, int wx, int wy) {
 	Framebuffer().bind();
 	setDefaultGlFlags();
@@ -195,21 +176,27 @@ void playerView::drawMainMenu(int wx, int wy) {
 	vgui.menuEnd();
 	vgui.endFrame();
 }
+*/
 
 void playerView::render(gameMain *game) {
+	/*
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 	renderFlags flags = game->rend->getLightingFlags();
+
+	renderWorld(game, cam, flags);
+	post->draw(game->rend->framebuffer);
 
 	if (input.mode == modes::MainMenu) {
 		renderWorld(game, cam, flags);
 
 		post->draw(game->rend->framebuffer);
-		drawMainMenu(winsize_x, winsize_y);
+		//drawMainMenu(winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam, flags);
 		post->draw(game->rend->framebuffer);
 		drawUIStuff(vgui.nvg, winsize_x, winsize_y);
 	}
+	*/
 }
