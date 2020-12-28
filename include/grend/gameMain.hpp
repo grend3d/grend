@@ -19,17 +19,13 @@ class gameView;
 // abstract class, should be derived from
 class gameMain {
 	public:
-		gameMain(std::string name="grendx") : ctx(name.c_str()) {
-			initializeOpengl();
-		}
+		gameMain(std::string name="grendx");
 
 		virtual int step(void);
 		virtual int run(void);
-		virtual void step_physics(void);
-		virtual void logic(void);
 
 		virtual void setView(std::shared_ptr<gameView> nview);
-		virtual void handleInput(void) = 0;
+		virtual void handleInput(void);
 		virtual void clearMetrics(void);
 
 		bool running = false;

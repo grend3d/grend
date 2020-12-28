@@ -6,7 +6,32 @@
 #include <emscripten/html5.h>
 #endif
 
+#if defined(PHYSICS_BULLET)
+#include <grend/bulletPhysics.hpp>
+#elif defined(PHYSICS_IMP)
+#include <grend/impPhysics.hpp>
+#endif
+
 using namespace grendx;
+
+gameMain::gameMain(std::string name)
+	: ctx(name.c_str())
+{
+	initializeOpengl();
+
+#if defined(PHYSICS_BULLET)
+	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
+#elif defined(PHYSICS_IMP)
+	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
+#else
+#error "No physics implementation defined!"
+#endif
+
+	state  = gameState::ptr(new gameState());
+	rend   = renderContext::ptr(new renderContext(ctx));
+	audio  = audioMixer::ptr(new audioMixer(ctx));
+	jobs   = jobQueue::ptr(new jobQueue());
+}
 
 void gameMain::clearMetrics(void) {
 	metrics.drawnMeshes = 0;
@@ -71,20 +96,26 @@ int gameMain::run(void) {
 	return false;
 }
 
-void gameMain::step_physics(void) {
-	float dt = 1.0/frame_timer.last();
-	phys->stepSimulation(dt);
-}
-
-void gameMain::logic(void) {
-
-}
-
 void gameMain::setView(std::shared_ptr<gameView> nview) {
 	view = nview;
 
 	if (audio != nullptr && view != nullptr && view->cam != nullptr) {
 		audio->setCamera(view->cam);
+	}
+}
+
+void gameMain::handleInput(void) {
+	SDL_Event ev;
+
+	while (SDL_PollEvent(&ev)) {
+		if (ev.type == SDL_QUIT) {
+			running = false;
+			return;
+		}
+
+		if (view != nullptr) {
+			view->handleInput(this, ev);
+		}
 	}
 }
 

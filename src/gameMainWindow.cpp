@@ -11,17 +11,7 @@ using namespace grendx;
 
 
 gameMainWindow::gameMainWindow() : gameMain("grend") {
-#if defined(PHYSICS_BULLET)
-	phys = physics::ptr(new bulletPhysics());
-#elif defined(PHYSICS_IMP)
-	phys = physics::ptr(new impPhysics());
-#else
-#error "No physics implementation defined!"
-#endif
 
-	state  = gameState::ptr(new gameState());
-	rend   = renderContext::ptr(new renderContext(ctx));
-	audio  = audioMixer::ptr(new audioMixer(ctx));
 }
 
 void gameMainWindow::handleInput(void) {

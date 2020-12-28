@@ -10,19 +10,7 @@
 using namespace grendx;
 
 gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
-#if defined(PHYSICS_BULLET)
-	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
-#elif defined(PHYSICS_IMP)
-	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
-#else
-#error "No physics implementation defined!"
-#endif
-
-	state  = gameState::ptr(new gameState());
-	rend   = renderContext::ptr(new renderContext(ctx));
-	audio  = audioMixer::ptr(new audioMixer(ctx));
 	editor = gameView::ptr(new gameEditor(this));
-	jobs   = jobQueue::ptr(new jobQueue());
 	view   = editor;
 
 	jobs->addAsync([](){
