@@ -1,5 +1,6 @@
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
+#include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
@@ -18,6 +19,11 @@
 // TODO: still need to clean this code up a bit
 
 using namespace grendx;
+
+namespace grendx {
+// XXX: ...
+modelMap load_gltf_models(tinygltf::Model& tgltf_model);
+}
 
 template <typename T>
 static inline bool check_index(std::vector<T> container, size_t idx) {
@@ -646,6 +652,66 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	ptr->transform.scale = scale;
 }
 
+static void load_gltf_node_light(tinygltf::Model& gmod,
+                                 tinygltf::Node& node,
+                                 gameObject::ptr obj)
+{
+	auto it = node.extensions.find("KHR_lights_punctual");
+	if (it != node.extensions.end()) {
+		std::cerr << " GLTF > have punctual light!" << std::endl;
+
+		if (!it->second.IsObject() || !it->second.Has("light")) {
+			std::cerr << " GLTF > don't have light object" << std::endl;
+			return;
+		}
+
+		auto val = it->second.Get("light");
+		if (!val.IsInt()) {
+			std::cerr << " GLTF > invalid light object index type" << std::endl;
+			return;
+		}
+
+		int idx = val.GetNumberAsInt();
+
+		if (idx >= gmod.lights.size()) {
+			std::cerr << " GLTF > invalid light object index" << std::endl;
+			return;
+		}
+
+		auto& light = gmod.lights[idx];
+		std::cerr << " GLTF > node light! " << light.name << ": " << light.type << std::endl;
+
+		if (light.type == "point") {
+			gameLightPoint::ptr point = std::make_shared<gameLightPoint>();
+			point->intensity = light.intensity;
+			point->casts_shadows = true;
+			// XXX: 0.25 seems to be the blender default, and the punctual lights
+			//      gltf extension doesn't store this info...
+			point->radius = 0.25;
+			point->diffuse =
+				glm::vec4(light.color[0], light.color[1], light.color[2], 1.0);
+
+			setNode(light.name, obj, point);
+
+		} else if (light.type == "spot") {
+			gameLightSpot::ptr spot = std::make_shared<gameLightSpot>();
+			spot->intensity = light.intensity;
+			spot->casts_shadows = true;
+			spot->radius = 0.25;
+			spot->diffuse =
+				glm::vec4(light.color[0], light.color[1], light.color[2], 1.0);
+			// TODO: inner cone angle, blend(?)
+			spot->angle = light.spot.outerConeAngle;
+
+			setNode(light.name, obj, spot);
+
+		} else {
+			std::cerr << " GLTF > don't know how to handle node light of type "
+				<< light.type << std::endl;
+		}
+	}
+}
+
 static gameObject::ptr
 load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
                           modelMap& models,
@@ -656,6 +722,7 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 	auto& node = gmod.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 	set_object_gltf_transform(ret, node);
+	load_gltf_node_light(gmod, node, ret);
 
 	auto it = anims.find(nodeidx); if (it != anims.end()) {
 		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
@@ -811,6 +878,10 @@ load_gltf_scene_nodes(std::string filename,
 			setNode(id, ret,
 				load_gltf_scene_nodes_rec(gmod, models, anims, nodeidx));
 		}
+	}
+
+	for (auto& lit : gmod.lights) {
+		std::cerr << " GLTF > have light: " << lit.name << ": " << lit.type << std::endl;
 	}
 
 	return ret;

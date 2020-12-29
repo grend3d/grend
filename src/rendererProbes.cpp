@@ -32,6 +32,7 @@ static const glm::vec3 cube_up[] = {
 // TODO: minimize duplicated code with drawReflectionProbe
 void grendx::drawShadowCubeMap(renderQueue& queue,
                                gameLightPoint::ptr light,
+                               glm::mat4& transform,
                                renderContext::ptr rctx)
 {
 	if (!light->casts_shadows) {
@@ -55,7 +56,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	glDepthFunc(GL_LESS);
 
 	camera::ptr cam = camera::ptr(new camera());
-	cam->setPosition(light->transform.position);
+	cam->setPosition(applyTransform(transform));
 	cam->setFovx(90);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
@@ -151,6 +152,7 @@ static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
 
 void grendx::drawReflectionProbe(renderQueue& queue,
                                  gameReflectionProbe::ptr probe,
+                                 glm::mat4& transform,
                                  renderContext::ptr rctx)
 {
 	// refresh top level reflection probe to keep/reallocate it
@@ -173,7 +175,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	camera::ptr cam = camera::ptr(new camera());
-	cam->setPosition(probe->transform.position);
+	cam->setPosition(applyTransform(transform));
 	cam->setFovx(90);
 
 	renderFlags flags = rctx->probeShaders["refprobe"];
@@ -228,6 +230,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 
 void grendx::drawIrradianceProbe(renderQueue& queue,
                                  gameIrradianceProbe::ptr probe,
+                                 glm::mat4& transform,
                                  renderContext::ptr rctx)
 {
 	// XXX
@@ -235,7 +238,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 	probe->source->is_static = probe->is_static;
 	probe->source->have_map  = probe->have_map;
 	probe->source->changed   = probe->changed;
-	drawReflectionProbe(queue, probe->source, rctx);
+	drawReflectionProbe(queue, probe->source, transform, rctx);
 
 	if (probe->is_static && probe->have_map) {
 		// static probe already rendered, nothing to do

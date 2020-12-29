@@ -283,14 +283,19 @@ renderFlags loadShaderToFlags(std::string fragmentPath,
                               std::string skinnedVertex,
                               std::string instancedVertex);
 
+// TODO: should this pass transform or position?
+//       sticking with transform for now
 void drawShadowCubeMap(renderQueue& queue,
                        gameLightPoint::ptr light,
+                       glm::mat4& transform,
 					   renderContext::ptr rctx);
 void drawReflectionProbe(renderQueue& queue,
                          gameReflectionProbe::ptr probe,
+                         glm::mat4& transform,
                          renderContext::ptr rctx);
 void drawIrradianceProbe(renderQueue& queue,
                          gameIrradianceProbe::ptr probe,
+                         glm::mat4& transform,
                          renderContext::ptr rctx);
 
 void buildTilemap(renderQueue& queue, renderContext::ptr rctx);

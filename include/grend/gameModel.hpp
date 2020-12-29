@@ -9,7 +9,6 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <tinygltf/tiny_gltf.h>
 
 #include <stdint.h>
 
@@ -98,7 +97,6 @@ std::map<std::string, material::ptr>
   load_materials(gameModel::ptr model, std::string filename);
 
 modelMap load_gltf_models(std::string filename);
-modelMap load_gltf_models(tinygltf::Model& tgltf_model);
 std::pair<gameImport::ptr, modelMap> load_gltf_scene(std::string filename);
 // TODO: load scene
 

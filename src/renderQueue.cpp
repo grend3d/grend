@@ -118,7 +118,7 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 
 void renderQueue::updateLights(renderContext::ptr rctx) {
 	// TODO: should probably apply the transform to light position
-	for (auto& [_, __, light] : lights) {
+	for (auto& [trans, __, light] : lights) {
 		if (!light->casts_shadows) {
 			continue;
 		}
@@ -137,7 +137,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 				}
 			}
 
-			drawShadowCubeMap(*this, plit, rctx);
+			drawShadowCubeMap(*this, plit, trans, rctx);
 
 		} else if (light->lightType == gameLight::lightTypes::Spot) {
 			// TODO: shadow map
@@ -150,7 +150,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 
 void
 renderQueue::updateReflections(renderContext::ptr rctx) {
-	for (auto& [_, __, probe] : probes) {
+	for (auto& [trans, __, probe] : probes) {
 		auto& reftree = rctx->atlases.reflections->tree;
 		auto& radtree = rctx->atlases.irradiance->tree;
 
@@ -173,10 +173,10 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		}
 
 		probe->have_convolved = true;
-		drawReflectionProbe(*this, probe, rctx);
+		drawReflectionProbe(*this, probe, trans, rctx);
 	}
 
-	for (auto& [_, __, radprobe] : irradProbes) {
+	for (auto& [trans, __, radprobe] : irradProbes) {
 		auto& radtree = rctx->atlases.irradiance->tree;
 		auto& reftree = rctx->atlases.reflections->tree;
 
@@ -194,7 +194,7 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		}
 
 		radprobe->source->have_convolved = false;
-		drawIrradianceProbe(*this, radprobe, rctx);
+		drawIrradianceProbe(*this, radprobe, trans, rctx);
 	}
 }
 
