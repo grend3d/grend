@@ -59,6 +59,7 @@ class landscapeGenView : public gameView {
 		//modalSDLInput input;
 		vecGUI vgui;
 		int menuSelect = 0;
+		float zoom = -5.f;
 
 		entityManager::ptr manager;
 		landscapeGenerator landscape;
@@ -97,7 +98,9 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	bindCookedMeshes();
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
 	input.bind(modes::Move, controller::camMovement(cam, 10.f));
-	input.bind(modes::Move, controller::camFPS(cam, game));
+	//input.bind(modes::Move, controller::camFPS(cam, game));
+	input.bind(modes::Move, controller::camAngled2D(cam, game, -M_PI/4.f));
+	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
 	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
 	input.setMode(modes::Move);
 };
@@ -117,7 +120,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
-		cam->setPosition(transform.position - 5.f*cam->direction());
+		cam->setPosition(transform.position - zoom*cam->direction());
 		landscape.setPosition(game, transform.position);
 	}
 

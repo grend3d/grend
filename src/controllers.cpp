@@ -62,6 +62,36 @@ bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 	};
 }
 
+bindFunc
+grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		int x, y;
+		int win_x, win_y;
+		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
+		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+		x = (x > 0)? x : win_x/2;
+		y = (x > 0)? y : win_y/2;
+
+		float center_x = (float)win_x / 2;
+		//float center_y = (float)win_y / 2;
+
+		float rel_x = ((float)x - center_x) / center_x;
+		//float rel_y = ((float)y - center_y) / center_y;
+
+		// TODO: another function that allows you to pan up and down some amount,
+		//       also one that doesn't rotate (fixed orientation)
+		cam->setDirection(glm::vec3(
+			sin(rel_x*2*M_PI),
+			//sin(-rel_y*M_PI/2.f),
+			sin(angle),
+			-cos(rel_x*2*M_PI)
+		));
+
+		return MODAL_NO_CHANGE;
+	};
+}
+
 bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		// TODO: camFocus()
@@ -69,7 +99,15 @@ bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 	};
 }
 
+bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_MOUSEWHEEL) {
+			*zoom -= ev.wheel.y;
+		}
 
+		return MODAL_NO_CHANGE;
+	};
+}
 
 // XXX: don't know where to put this, input handlers for
 //      resizing the framebuffer on window resize, etc.
