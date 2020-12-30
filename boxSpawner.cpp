@@ -27,14 +27,17 @@ void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev
 {
 	if (ev.active && ev.type == inputEvent::types::primaryAction) {
 		std::cerr << "boxSpawner::handleInput(): got here" << std::endl;
+		glm::mat3 noderot = glm::mat3_cast(ent->node->transform.rotation);
+		glm::vec3 playerrot = noderot*glm::vec3(0, 0, 1);
 
-		auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 3.f*ev.data);
+		//auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 3.f*ev.data);
+		auto box = new boxBullet(manager, manager->engine, ent->node->transform.position + 2.f*playerrot);
 
 		rigidBody *body;
 		castEntityComponent(body, manager, box, "rigidBody");
 
 		if (body) {
-			body->phys->setVelocity(40.f * ev.data);
+			body->phys->setVelocity(40.f * playerrot);
 			manager->add(box);
 		}
 	}
