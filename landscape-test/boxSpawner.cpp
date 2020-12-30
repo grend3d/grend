@@ -5,6 +5,7 @@ boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
 	: projectile(manager, game, position)
 {
 	static gameObject::ptr model = nullptr;
+	static gameLightPoint::ptr lit = std::make_shared<gameLightPoint>();
 
 	manager->registerComponent(this, "boxBullet", this);
 
@@ -21,6 +22,7 @@ boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
 	}
 
 	setNode("model", node, model);
+	setNode("light", node, lit);
 }
 
 void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev)

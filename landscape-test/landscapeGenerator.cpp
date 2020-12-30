@@ -1,6 +1,7 @@
 #include <grend/geometryGeneration.hpp>
 #include <math.h>
 #include "landscapeGenerator.hpp"
+#include <grend/gameEditor.hpp>
 
 static float thing(float x, float y) {
 	return sin(x) + sin(y);
@@ -70,6 +71,19 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 {
 	static gameModel::ptr models[gridsize][gridsize];
 	static gameModel::ptr temp[gridsize][gridsize];
+	static gameModel::ptr grassmod;
+
+#if LOCAL_BUILD
+	if (grassmod == nullptr) {
+		//grassmod = loadScene("./test-assets/obj/crapgrass.glb");
+		//grassmod = loadScene("./test-assets/obj/smoothcube.glb");
+		grassmod = load_object("assets-old/obj/Modular Terrain Hilly/Prop_Grass_Clump_2.obj");
+		compileModel("grassclump", grassmod);
+	}
+
+#else
+	grassmod = std::make_shared<gameModel>();
+#endif
 
 	gameObject::ptr ret = std::make_shared<gameObject>();
 	std::list<std::future<bool>> futures;
@@ -115,6 +129,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					int randtrees = (posgrad.x + 1.0)*0.5 * 5 * (1.0 - baseElevation/50.0);
 
 					game->phys->addStaticModels(nullptr, foo, TRS());
+
 					gameParticles::ptr parts = std::make_shared<gameParticles>(32);
 					parts->activeInstances = randtrees;
 					parts->radius = cellsize / 2.f * 1.415;
@@ -136,6 +151,36 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					parts->update();
 					setNode("tree", parts, treeNode);
 					setNode("parts", ptr, parts);
+
+					int randgrass = (posgrad.y*0.5 + 0.5) * 256 * (1.0 - baseElevation/50.0);
+					gameParticles::ptr grass = std::make_shared<gameParticles>(256);
+					grass->activeInstances = randgrass;
+					grass->radius = cellsize * 1.415;
+
+					for (unsigned i = 0; i < grass->activeInstances; i++) {
+						TRS transform;
+						/*
+						glm::vec2 pos = randomGradient(glm::vec2(coord.x + i, coord.z + i));
+
+						float tx = ((pos.x + 1)*0.5) * cellsize;
+						float ty = ((pos.y + 1)*0.5) * cellsize;
+						*/
+						auto fract = [](float n){ return n - floor(n); };
+						glm::vec2 pos(fract(sin(1234567.89*(coord.x + i))), fract(sin(123456789.10*(coord.y + i))));
+
+						float tx = pos.x * cellsize;
+						float ty = pos.y * cellsize;
+
+						transform.position = glm::vec3(
+							tx, landscapeThing(coord.x + tx, coord.z + ty), ty
+						);
+						//transform.scale = glm::vec3((posgrad.y + 1.0)*0.5*3.0+0.5);
+						grass->positions[i] = transform.getTransform();
+					}
+
+					grass->update();
+					setNode("grass", grass, grassmod);
+					setNode("grassparts", ptr, grass);
 
 					int randlight = (posgrad.y + 1.0)*0.5 * 7 * (1.0 - baseElevation/50.0);
 
