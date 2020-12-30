@@ -15,6 +15,18 @@ void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	ent->node->transform = body->phys->getTransform();
 }
 
+void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
+	rigidBody *body;
+	castEntityComponent(body, manager, ent, "rigidBody");
+
+	if (!body) {
+		// no attached physics body
+		return;
+	}
+
+	ent->node->transform.position = body->phys->getTransform().position;
+}
+
 void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");

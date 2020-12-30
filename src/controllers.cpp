@@ -92,6 +92,27 @@ grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 	};
 }
 
+bindFunc
+grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angle) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		int x, y;
+		int win_x, win_y;
+		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
+		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+		x = (x > 0)? x : win_x/2;
+		y = (x > 0)? y : win_y/2;
+
+		// TODO: keybinds to rotate, pan up/down
+		float center_x = (float)win_x / 2;
+		float rel_x = ((float)x - center_x) / center_x;
+
+		cam->setDirection(glm::vec3(0, sin(angle), -cos(angle)));
+
+		return MODAL_NO_CHANGE;
+	};
+}
+
 bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		// TODO: camFocus()

@@ -41,6 +41,17 @@ class inputHandler : public component {
 		}
 };
 
+class inputPoller : public component {
+	public:
+		inputPoller(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "inputPoller", this);
+		}
+
+		virtual void update(entityManager *manager, entity *ent) = 0;
+};
+
 class inputHandlerSystem : public entitySystem {
 	public:
 		typedef std::shared_ptr<entitySystem> ptr;
@@ -94,6 +105,17 @@ class movementHandler : public inputHandler {
 		}
 
 		glm::vec3 lastvel;
+};
+
+class mouseRotationPoller : public inputPoller {
+	public:
+		mouseRotationPoller(entityManager *manager, entity *ent)
+			: inputPoller(manager, ent)
+		{
+			manager->registerComponent(ent, "mouseRotationPoller", this);
+		}
+
+		virtual void update(entityManager *manager, entity *ent);
 };
 
 bindFunc inputMapper(inputQueue q, camera::ptr cam);

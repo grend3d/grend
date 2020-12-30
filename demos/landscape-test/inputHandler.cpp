@@ -2,6 +2,8 @@
 
 void inputHandlerSystem::update(entityManager *manager, float delta) {
 	auto handlers = manager->getComponents("inputHandler");
+	// TODO: maybe have seperate system for pollers
+	auto pollers  = manager->getComponents("inputPoller");
 
 	for (auto& ev : *inputs) {
 		for (auto& it : handlers) {
@@ -14,7 +16,32 @@ void inputHandlerSystem::update(entityManager *manager, float delta) {
 		}
 	}
 
+	for (auto& it : pollers) {
+		inputPoller *poller = dynamic_cast<inputPoller*>(it);
+		entity *ent = manager->getEntity(poller);
+
+		if (poller && ent) {
+			poller->update(manager, ent);
+		}
+	}
+
 	inputs->clear();
+}
+
+void mouseRotationPoller::update(entityManager *manager, entity *ent) {
+	int x, y, win_x, win_y;
+
+	// TODO: this could be passed as a parameter to avoid calling SDL_*
+	//       functions redundantly, don't think it'll be a problem though
+	SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(manager->engine->ctx.window, &win_x, &win_y);
+
+	glm::vec2 pos(x * 1.f/win_x, y * 1.f/win_y);
+	glm::vec2 center(0.5);
+	glm::vec2 diff = pos - center;
+	glm::quat rot(glm::vec3(0, atan2(diff.x, diff.y), 0));
+
+	ent->node->transform.rotation = rot;
 }
 
 bindFunc inputMapper(inputQueue q, camera::ptr cam) {

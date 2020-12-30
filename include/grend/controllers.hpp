@@ -13,6 +13,7 @@ namespace controller {
 bindFunc camMovement(camera::ptr cam, float accel);
 bindFunc camFPS(camera::ptr cam, gameMain *game);
 bindFunc camAngled2D(camera::ptr cam, gameMain *game, float angle);
+bindFunc camAngled2DFixed(camera::ptr cam, gameMain *game, float angle);
 bindFunc camFocus(camera::ptr cam, gameObject::ptr focus);
 bindFunc camScrollZoom(camera::ptr cam, float *zoom);
 

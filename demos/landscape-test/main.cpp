@@ -99,7 +99,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
 	input.bind(modes::Move, controller::camMovement(cam, 10.f));
 	//input.bind(modes::Move, controller::camFPS(cam, game));
-	input.bind(modes::Move, controller::camAngled2D(cam, game, -M_PI/4.f));
+	input.bind(modes::Move, controller::camAngled2DFixed(cam, game, -M_PI/4.f));
 	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
 	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
 	input.setMode(modes::Move);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
 	landscapeMaterial->factors.specular = {1, 1, 1, 1};
 	landscapeMaterial->factors.emissive = {1, 1, 1, 1};
 	landscapeMaterial->factors.roughness = 1.f;
-	landscapeMaterial->factors.metalness = 0.f;
+	landscapeMaterial->factors.metalness = 1.f;
 	landscapeMaterial->factors.opacity = 1;
 	landscapeMaterial->factors.refract_idx = 1.5;
 

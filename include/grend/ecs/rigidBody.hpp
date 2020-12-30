@@ -81,6 +81,17 @@ class syncRigidBodyTransform : public syncRigidBody {
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
+class syncRigidBodyPosition : public syncRigidBody {
+	public:
+		syncRigidBodyPosition(entityManager *manager, entity *ent)
+			: syncRigidBody(manager, ent)
+		{
+			manager->registerComponent(ent, "syncRigidBodyPosition", this);
+		}
+
+		virtual void sync(entityManager *manager, entity *ent);
+};
+
 class syncRigidBodyXZVelocity : public syncRigidBody {
 	public:
 		syncRigidBodyXZVelocity(entityManager *manager, entity *ent)

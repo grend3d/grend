@@ -55,7 +55,8 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	new boxSpawner(manager, this);
 	new movementHandler(manager, this);
 	new projectileCollision(manager, this);
-	new syncRigidBodyXZVelocity(manager, this);
+	new syncRigidBodyPosition(manager, this);
+	new mouseRotationPoller(manager, this);
 
 	manager->registerComponent(this, "player", this);
 
