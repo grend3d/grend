@@ -3,6 +3,19 @@
 #include "landscapeGenerator.hpp"
 #include <grend/gameEditor.hpp>
 
+void worldGenerator::setEventQueue(generatorEventQueue q) {
+	eventQueue = q;
+}
+
+void worldGenerator::emit(generatorEvent ev) {
+	if (!eventQueue) {
+		// no queue set, nothing to emit to
+		return;
+	}
+
+	eventQueue->push_back(ev);
+}
+
 static float thing(float x, float y) {
 	return sin(x) + sin(y);
 }
@@ -73,6 +86,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	static gameModel::ptr temp[gridsize][gridsize];
 	static gameModel::ptr grassmod;
 
+#define LOCAL_BUILD 1
 #if LOCAL_BUILD
 	if (grassmod == nullptr) {
 		//grassmod = loadScene("./test-assets/obj/crapgrass.glb");
@@ -89,6 +103,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	std::list<std::future<bool>> futures;
 
 	glm::vec3 diff = curpos - lastpos;
+	float off = cellsize * (gridsize / 2);
 	std::cerr << "curpos != genpos, diff: "
 		<< "(" << diff.z << "," << diff.y << "," << diff.z << ")"
 		<< std::endl;
@@ -102,9 +117,34 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 			    || ax >= gridsize || ax < 0
 			    || ay >= gridsize || ay < 0)
 			{
+				glm::vec3 coord =
+					(curpos * cellsize)
+					- glm::vec3(off, 0, off)
+					+ glm::vec3(x*cellsize, 0, y*cellsize);
+
+				glm::vec3 prev =
+					(lastpos * cellsize)
+					- glm::vec3(off, 0, off)
+					+ glm::vec3(x*cellsize, 0, y*cellsize);
+
+				if (models[x][y]) {
+					// don't emit delete if there's no model there
+					// (ie. on startup)
+					emit((generatorEvent) {
+							.type = generatorEvent::types::deleted,
+							.position = prev + glm::vec3(cellsize*0.5, 0, cellsize*0.5),
+							.extent = glm::vec3(cellsize * 0.5f, HUGE_VALF, cellsize*0.5f),
+							});
+				}
+
+				emit((generatorEvent) {
+					.type = generatorEvent::types::generatorStarted,
+					.position = coord + glm::vec3(cellsize*0.5, 0, cellsize*0.5),
+					.extent = glm::vec3(cellsize * 0.5f, HUGE_VALF, cellsize*0.5f),
+				});
+
+				// TODO: reaaaaallly need to split this up
 				futures.push_back(game->jobs->addAsync([=] {
-					float off = cellsize * (gridsize / 2);
-					glm::vec3 coord = (curpos * cellsize) - glm::vec3(off, 0, off) + glm::vec3(x*cellsize, 0, y*cellsize);
 					auto ptr = generateHeightmap(cellsize, cellsize, 1.0, coord.x, coord.z, landscapeThing);
 					//auto ptr = generateHeightmap(24, 24, 0.5, coord.x, coord.z, thing);
 					ptr->transform.position = glm::vec3(coord.x, 0, coord.z);
@@ -205,6 +245,12 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					fut.wait();
 					return true;
 				}));
+
+				emit((generatorEvent) {
+					.type = generatorEvent::types::generated,
+					.position = coord + glm::vec3(cellsize*0.5, 0, cellsize*0.5),
+					.extent = glm::vec3(cellsize*0.5f, HUGE_VALF, cellsize*0.5f),
+				});
 
 			} else {
 				temp[x][y] = models[ax][ay];

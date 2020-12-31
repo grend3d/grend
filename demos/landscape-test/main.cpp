@@ -39,6 +39,137 @@ using namespace grendx::ecs;
 #include "health.hpp"
 #include "healthbar.hpp"
 
+class landscapeEventSystem : public entitySystem {
+	public:
+		virtual void update(entityManager *manager, float delta);
+
+		generatorEventQueue queue
+			= std::make_shared<std::vector<generatorEvent>>();
+};
+
+class generatorEventHandler : public component {
+	public:
+		generatorEventHandler(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, "generatorEventHandler", this);
+		}
+
+		virtual void
+		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
+			std::cerr << "handleEvent(): got here, " << "("
+				<< ev.position.x << "[+/-" << ev.extent.x << "], "
+				<< ev.position.y << "[+/-" << ev.extent.y << "], "
+				<< ev.position.z << "[+/-" << ev.extent.z << "]"
+				<< ") was ";
+
+			switch (ev.type) {
+				case generatorEvent::types::generatorStarted:
+					std::cerr << "started";
+					break;
+
+				case generatorEvent::types::generated:
+					std::cerr << "generated";
+					break;
+
+				case generatorEvent::types::deleted:
+					std::cerr << "deleted";
+					break;
+
+				default:
+					std::cerr << "<unknown>";
+					break;
+			}
+
+			std::cerr << std::endl;
+		}
+};
+
+class generatorEventActivator : public generatorEventHandler {
+	public:
+		generatorEventActivator(entityManager *manager, entity *ent)
+			: generatorEventHandler(manager, ent)
+		{
+			manager->registerComponent(ent, "generatorEventActivator", this);
+		}
+
+		virtual void
+		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
+			std::cerr << "TODO: activate/deactivate stuff here" << std::endl;
+		}
+};
+
+void landscapeEventSystem::update(entityManager *manager, float delta) {
+	auto handlers = manager->getComponents("generatorEventHandler");
+
+	for (auto& ev : *queue) {
+		for (auto& it : handlers) {
+			generatorEventHandler *handler = dynamic_cast<generatorEventHandler*>(it);
+			entity *ent = manager->getEntity(handler);
+
+			if (handler && ent) {
+				handler->handleEvent(manager, ent, ev);
+			}
+		}
+	}
+
+	queue->clear();
+}
+
+// XXX: this sort of makes sense but not really... game entity with no renderable
+//      objects, functioning as basically a subsystem? 
+//      abstraction here doesn't make sense, needs to be redone
+class worldEntityGenerator : public generatorEventHandler {
+	public:
+		worldEntityGenerator(entityManager *manager, entity *ent)
+			: generatorEventHandler(manager, ent)
+		{
+			manager->registerComponent(ent, "generatorEventHandler", this);
+		}
+
+		virtual void
+		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
+			switch (ev.type) {
+				case generatorEvent::types::generated:
+					{
+						// XXX
+						std::tuple<float, float, float> foo =
+							{ ev.position.x, ev.position.y, ev.position.z };
+
+						if (positions.count(foo) == 0) {
+							positions.insert(foo);
+							std::cerr
+								<< "worldEntityGenerator(): generating some things"
+								<< std::endl;
+
+							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
+						}
+					}
+					break;
+
+				case generatorEvent::types::deleted:
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		std::set<std::tuple<float, float, float>> positions;
+};
+
+class worldEntitySpawner : public entity {
+	public:
+		worldEntitySpawner(entityManager *manager)
+			: entity (manager)
+		{
+			manager->registerComponent(this, "worldEntitySpawner", this);
+			new worldEntityGenerator(manager, this);
+		}
+
+		virtual void update(entityManager *manager, float delta) { /* nop */ };
+};
+
 class landscapeGenView : public gameView {
 	public:
 		typedef std::shared_ptr<landscapeGenView> ptr;
@@ -81,9 +212,16 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	auto inputSys = std::make_shared<inputHandlerSystem>();
 	manager->systems["input"] = inputSys;
 
-	manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
+	auto generatorSys = std::make_shared<landscapeEventSystem>();
+	manager->systems["landscapeEvents"] = generatorSys;
+	landscape.setEventQueue(generatorSys->queue);
+
+	//manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
 	player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
 	manager->add(playerEnt);
+	new generatorEventHandler(manager.get(), playerEnt);
+
+	manager->add(new worldEntitySpawner(manager.get()));
 
 	for (unsigned i = 0; i < 15; i++) {
 		glm::vec3 position = glm::vec3(
