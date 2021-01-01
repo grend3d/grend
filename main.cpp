@@ -38,6 +38,9 @@ using namespace grendx::ecs;
 #include "projectile.hpp"
 #include "health.hpp"
 #include "healthbar.hpp"
+#include "enemyCollision.hpp"
+#include "healthPickup.hpp"
+#include "timedLifetime.hpp"
 
 class landscapeEventSystem : public entitySystem {
 	public:
@@ -143,6 +146,10 @@ class worldEntityGenerator : public generatorEventHandler {
 								<< std::endl;
 
 							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
+
+							// TODO: need a way to know what the general shape of
+							//       the generated thing is...
+							manager->add(new healthPickup(manager, ev.position + glm::vec3(0, 10.f, 0)));
 						}
 					}
 					break;
@@ -190,7 +197,7 @@ class landscapeGenView : public gameView {
 		//modalSDLInput input;
 		vecGUI vgui;
 		int menuSelect = 0;
-		float zoom = -5.f;
+		float zoom = 5.f;
 
 		entityManager::ptr manager;
 		landscapeGenerator landscape;
@@ -201,6 +208,9 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 				{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 				SCREEN_SIZE_X, SCREEN_SIZE_Y));
 	manager = std::make_shared<entityManager>(game);
+
+	manager->systems["lifetime"] =
+		std::make_shared<lifetimeSystem>();
 
 	// TODO: names are kinda pointless here
 	manager->systems["collision"] =
@@ -220,6 +230,9 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
 	manager->add(playerEnt);
 	new generatorEventHandler(manager.get(), playerEnt);
+	new health(manager.get(), playerEnt);
+	new enemyCollision(manager.get(), playerEnt);
+	new healthPickupCollision(manager.get(), playerEnt);
 
 	manager->add(new worldEntitySpawner(manager.get()));
 
@@ -256,6 +269,15 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	
 	entity *playerEnt = findFirst(manager.get(), {"player"});
 
+	while (!playerEnt) {
+		playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
+		manager->add(playerEnt);
+		new generatorEventHandler(manager.get(), playerEnt);
+		new health(manager.get(), playerEnt);
+		new enemyCollision(manager.get(), playerEnt);
+		new healthPickupCollision(manager.get(), playerEnt);
+	}
+
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
 		cam->setPosition(transform.position - zoom*cam->direction());
@@ -265,11 +287,54 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	manager->update(delta);
 }
 
+static void drawPlayerHealthbar(entityManager *manager,
+                                vecGUI&vgui,
+                                health *playerHealth)
+{
+	int wx = manager->engine->rend->screen_x;
+	int wy = manager->engine->rend->screen_y;
+
+	nvgBeginPath(vgui.nvg);
+	nvgRoundedRect(vgui.nvg, 48, 35, 16, 42, 3);
+	nvgRoundedRect(vgui.nvg, 35, 48, 42, 16, 3);
+	nvgFillColor(vgui.nvg, nvgRGBA(172, 16, 16, 192));
+	nvgFill(vgui.nvg);
+
+	//nvgRotate(vgui.nvg, 0.1*cos(ticks));
+	nvgBeginPath(vgui.nvg);
+	nvgRect(vgui.nvg, 90, 44, 256, 24);
+	nvgFillColor(vgui.nvg, nvgRGBA(30, 30, 30, 127));
+	nvgFill(vgui.nvg);
+
+	nvgBeginPath(vgui.nvg);
+	nvgRect(vgui.nvg, 93, 47, 252*playerHealth->amount, 20);
+	nvgFillColor(vgui.nvg, nvgRGBA(192, 32, 32, 127));
+	nvgFill(vgui.nvg);
+	//nvgRotate(vgui.nvg, -0.1*cos(ticks));
+
+	nvgBeginPath(vgui.nvg);
+	nvgRoundedRect(vgui.nvg, wx - 250, 50, 200, 100, 10);
+	nvgFillColor(vgui.nvg, nvgRGBA(28, 30, 34, 192));
+	nvgFill(vgui.nvg);
+
+	nvgFontSize(vgui.nvg, 16.f);
+	nvgFontFace(vgui.nvg, "sans-bold");
+	nvgFontBlur(vgui.nvg, 0);
+	nvgTextAlign(vgui.nvg, NVG_ALIGN_LEFT);
+	nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
+	nvgText(vgui.nvg, wx - 82, 80, "❎", NULL);
+	nvgFillColor(vgui.nvg, nvgRGBA(220, 220, 220, 160));
+	nvgText(vgui.nvg, wx - 235, 80, "💚 Testing this", NULL);
+	nvgText(vgui.nvg, wx - 235, 80 + 16, "Go forward ➡", NULL);
+	nvgText(vgui.nvg, wx - 235, 80 + 32, "⬅ Go back", NULL);
+}
+
 static void renderHealthbars(entityManager *manager,
                              vecGUI& vgui,
                              camera::ptr cam)
 {
 	std::set<entity*> ents = searchEntities(manager, {"health", "healthbar"});
+	std::set<entity*> players = searchEntities(manager, {"player", "health"});
 
 	for (auto& ent : ents) {
 		healthbar *bar;
@@ -277,6 +342,17 @@ static void renderHealthbars(entityManager *manager,
 
 		if (bar) {
 			bar->draw(manager, ent, vgui, cam);
+		}
+	}
+
+	if (players.size() > 0) {
+		entity *ent = *players.begin();
+		health *playerHealth;
+
+		castEntityComponent(playerHealth, manager, ent, "health");
+
+		if (playerHealth) {
+			drawPlayerHealthbar(manager, vgui, playerHealth);
 		}
 	}
 }
