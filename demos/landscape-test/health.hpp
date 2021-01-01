@@ -26,6 +26,16 @@ class health : public component {
 			return amount;
 		}
 
+		virtual float heal(float points) {
+			amount = min(1.0, amount + points/hp);
+			return amount*hp;
+		}
+
+		virtual float increment(float inc) {
+			amount = min(1.0, amount + inc);
+			return amount;
+		}
+
 		float amount;
 		float hp;
 };

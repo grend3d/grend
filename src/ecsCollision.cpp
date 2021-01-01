@@ -17,16 +17,24 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 
 				if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
 					// TODO: handle multiple collisionHandler components
-					collisionHandler *collider;
-					castEntityComponent(collider, manager, self, "collisionHandler");
+					auto entcomps = manager->getEntityComponents(self);
+					auto range = entcomps.equal_range("collisionHandler");
 
-					if (!collider) {
-						// no collision component...?
-						continue;
-					}
+					for (auto it = range.first; it != range.second; it++) {
+						auto& [name, comp] = *it;
 
-					if (manager->hasComponents(other, collider->tags)) {
-						collider->onCollision(manager, self, other, col);
+						collisionHandler *collider
+							= dynamic_cast<collisionHandler*>(comp);
+						//castEntityComponent(collider, manager, self, "collisionHandler");
+
+						if (!collider) {
+							// no collision component...?
+							continue;
+						}
+
+						if (manager->hasComponents(other, collider->tags)) {
+							collider->onCollision(manager, self, other, col);
+						}
 					}
 				}
 			}
