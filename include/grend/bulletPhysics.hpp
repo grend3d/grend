@@ -26,6 +26,11 @@ class bulletObject : public physicsObject {
 		typedef std::shared_ptr<bulletObject> ptr;
 		typedef std::weak_ptr<bulletObject>   weakptr;
 
+		virtual ~bulletObject() {
+			std::cerr << "AAAAAAA : removing bullet object!!!!!! " << std::endl;
+			this->removeSelf();
+		}
+
 		virtual void setTransform(TRS& transform);
 		virtual TRS  getTransform(void);
 
@@ -95,7 +100,7 @@ class bulletPhysics : public physics {
 		btSequentialImpulseConstraintSolver *solver;
 		btDiscreteDynamicsWorld *world;
 
-		std::map<bulletObject *, physicsObject::ptr> objects;
+		std::map<bulletObject *, physicsObject::weakptr> objects;
 		std::mutex bulletMutex;
 };
 

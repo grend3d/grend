@@ -34,9 +34,9 @@ class physicsObject {
 		typedef std::shared_ptr<physicsObject> ptr;
 		typedef std::weak_ptr<physicsObject>   weakptr;
 
-		~physicsObject() {
-			this->removeSelf();
-		}
+		virtual ~physicsObject() {
+			// implementation-specific removal stuff in derived destructors
+		};
 
 		virtual void setTransform(TRS& transform) = 0;
 		virtual TRS  getTransform(void) = 0;
@@ -47,7 +47,7 @@ class physicsObject {
 		virtual void setAngularFactor(float amount) = 0;
 		virtual glm::vec3 getVelocity(void) = 0;
 		virtual glm::vec3 getAcceleration(void) = 0;
-		virtual void removeSelf(void) { std::cerr << "AAAAAAAAAAAAAAAAAAAAAAA\n"; }; 
+		virtual void removeSelf(void) = 0;
 
 		std::shared_ptr<std::vector<collision>> collisionQueue = nullptr;
 };

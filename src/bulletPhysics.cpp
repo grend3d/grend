@@ -318,8 +318,17 @@ void bulletPhysics::filterCollisions(void) {
 			float depth = pt.getDistance();
 
 			if (depth < 0.f) {
-				physicsObject::ptr physA = objects[aptr];
-				physicsObject::ptr physB = objects[bptr];
+				physicsObject::weakptr wphysA = objects[aptr];
+				physicsObject::weakptr wphysB = objects[bptr];
+
+				physicsObject::ptr physA = wphysA.lock();
+				physicsObject::ptr physB = wphysB.lock();
+
+				if (!physA || !physB) {
+					// pointer to expired object, which is somehow still in the
+					// world, shouldn't reach here but have to handle this anyway
+					continue;
+				}
 
 				const btVector3& ptA = pt.getPositionWorldOnA();
 				const btVector3& ptB = pt.getPositionWorldOnB();
@@ -362,7 +371,13 @@ void bulletPhysics::stepSimulation(float delta) {
 	std::lock_guard<std::mutex> lock(bulletMutex);
 	world->stepSimulation(delta, 10);
 
-	for (auto& [rawptr, physptr] : objects) {
+	for (auto& [rawptr, wphysptr] : objects) {
+		physicsObject::ptr physptr = wphysptr.lock();
+
+		if (!physptr) {
+			continue;
+		}
+
 		bulletObject::ptr ptr = std::dynamic_pointer_cast<bulletObject>(physptr);
 		btTransform trans;
 

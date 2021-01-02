@@ -14,6 +14,7 @@ void entityManager::update(float delta) {
 	}
 
 	collisions->clear();
+	clearFreedEntities();
 }
 
 void entityManager::add(entity *ent) {
@@ -22,6 +23,26 @@ void entityManager::add(entity *ent) {
 }
 
 void entityManager::remove(entity *ent) {
+	condemned.insert(ent);
+}
+
+entityManager::~entityManager() {
+	for (auto& it : entities) {
+		remove(it);
+	}
+
+	clearFreedEntities();
+}
+
+void entityManager::clearFreedEntities(void) {
+	for (auto& ent : condemned) {
+		freeEntity(ent);
+	}
+
+	condemned.clear();
+}
+
+void entityManager::freeEntity(entity *ent) {
 	if (!entities.count(ent)) {
 		// not a valid entity
 		return;
@@ -29,16 +50,39 @@ void entityManager::remove(entity *ent) {
 
 	root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
 
+	// first free component objects
 	auto comps = entityComponents[ent];
+	auto uniqueComponents = comps.equal_range("component");
 
+	for (auto it = uniqueComponents.first; it != uniqueComponents.second; it++) {
+		auto& [name, comp] = *it;
+		auto subent = entities.find((entity*)comp);
+
+		if (subent != entities.end()) {
+			entity *sub = dynamic_cast<entity*>(comp);
+
+			// entities get a self-referential entity and base component,
+			// need to check for that
+			if (sub && sub != ent) {
+				std::cerr << "entity has subentity, deleting that too" << std::endl;
+				remove(sub);
+			}
+		}
+
+		// also, since entities have a self-referential component this deletes
+		// the entity object as well
+		delete comp;
+	}
+
+	// then remove pointers from indexes
 	for (auto& [name, comp] : comps) {
+		std::cerr << "removing component " << name << " from entity" << std::endl;
 		componentEntities.erase(comp);
 		components[name].erase(comp);
 	}
 
 	entityComponents.erase(ent);
 	entities.erase(ent);
-	//delete ent; // TODO: don't leak memory ok
 }
 
 // TODO: specialization or w/e

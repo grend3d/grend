@@ -16,14 +16,14 @@ void worldHealthbar::draw(entityManager *manager, entity *ent,
 	glm::vec3 entpos = ent->getNode()->transform.position + glm::vec3(0, 3, 0);
 	glm::vec4 screenpos = cam->worldToScreenPosition(entpos);
 
-	if (cam->onScreen(screenpos)) {
+	if (entHealth->amount < 1.0 && cam->onScreen(screenpos)) {
 		// TODO: some sort of grid editor wouldn't be too hard,
 		//       probably worthwhile for quick UIs
-		float depth = 16*max(0.f, screenpos.w);
-		float pad = depth*16.f;
+		float depth = 8*max(0.f, screenpos.w);
+		float pad = depth*8.f;
 
 		float width  = 8*pad;
-		float height = 6*pad;
+		float height = 3*pad;
 
 		screenpos.y  = 1.0 - screenpos.y;
 		screenpos.x *= manager->engine->rend->screen_x;
@@ -58,6 +58,7 @@ void worldHealthbar::draw(entityManager *manager, entity *ent,
 
 		nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
 
+		/*
 		std::string cur  = std::to_string(int(entHealth->amount * entHealth->hp));
 		std::string maxh = std::to_string(int(entHealth->hp));
 		std::string curstr = "❎ " + cur + "/" + maxh;
@@ -66,5 +67,6 @@ void worldHealthbar::draw(entityManager *manager, entity *ent,
 		nvgText(vgui.nvg, innermin.x, innermin.y + 2*pad, "💚 Enemy", NULL);
 		nvgText(vgui.nvg, innermin.x, innermin.y + 3*pad, "❎ Some stats", NULL);
 		nvgText(vgui.nvg, innermin.x, innermin.y + 4*pad, curstr.c_str(), NULL);
+		*/
 	}
 }

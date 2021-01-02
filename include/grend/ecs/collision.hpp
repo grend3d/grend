@@ -14,6 +14,8 @@ class collisionHandler : public component {
 			manager->registerComponent(ent, "collisionHandler", this);
 		}
 
+		virtual ~collisionHandler() {};
+
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
 		            entity *other, collision& col) = 0;

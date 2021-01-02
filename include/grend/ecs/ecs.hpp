@@ -23,12 +23,14 @@ class entityManager {
 		typedef std::weak_ptr<entityManager>   weakptr;
 
 		entityManager(gameMain *_engine) : engine(_engine) {};
+		~entityManager();
 
 		std::map<std::string, std::shared_ptr<entitySystem>> systems;
 		std::map<std::string, std::set<component*>> components;
 		std::map<entity*, std::multimap<std::string, component*>> entityComponents;
 		std::map<component*, entity*> componentEntities;
 		std::set<entity*> entities;
+		std::set<entity*> condemned;
 
 		void update(float delta);
 		void registerComponent(entity *ent, std::string name, component *ptr);
@@ -37,6 +39,12 @@ class entityManager {
 		void remove(entity *ent);
 		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
 		bool hasComponents(entity *ent, std::vector<std::string> tags);
+
+		// remove() doesn't immediately free, just adds the entity
+		// to a queue of the condemned, clearFreedEntities() banishes the
+		// condemned from memory
+		void freeEntity(entity *ent);
+		void clearFreedEntities(void);
 
 		std::set<component*>& getComponents(std::string name);
 		std::multimap<std::string, component*>& getEntityComponents(entity *ent);
@@ -56,8 +64,12 @@ class entityManager {
 class component {
 	public:
 		component(entityManager *manager, entity *ent) {
-			//manager->registerComponent(ent, "component", this);
+			manager->registerComponent(ent, "component", this);
 		}
+
+		virtual ~component() {
+			std::cerr << "got to ~component()" << std::endl;
+		};
 
 		// draw the imgui widgets for this component, TODO
 		// also, this class needs a polymorphic member in order to upcast,
@@ -87,6 +99,7 @@ class entitySystem {
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
 
+		virtual ~entitySystem() {};
 		virtual void update(entityManager *manager, float delta) {}
 };
 
