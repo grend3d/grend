@@ -19,7 +19,11 @@ boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
 		setNode("model", model, mod);
 #endif
 		bindCookedMeshes();
+
+		lit->radius = 0.15;
+		lit->intensity = 500;
 	}
+
 
 	setNode("model", node, model);
 	setNode("light", node, lit);

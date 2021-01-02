@@ -12,6 +12,8 @@ using namespace grendx::ecs;
 class projectile : public entity {
 	public:
 		projectile(entityManager *manager, gameMain *game, glm::vec3 position);
+
+		virtual ~projectile() {};
 		virtual void update(entityManager *manager, float delta);
 
 		// TODO:
@@ -25,6 +27,8 @@ class projectileCollision : public collisionHandler {
 		{
 			manager->registerComponent(ent, "projectileCollision", this);
 		}
+
+		virtual ~projectileCollision() {};
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
@@ -55,6 +59,8 @@ class projectileDestruct : public collisionHandler {
 		{
 			manager->registerComponent(ent, "projectileDestruct", this);
 		}
+
+		virtual ~projectileDestruct() {};
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
