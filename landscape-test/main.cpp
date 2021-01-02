@@ -236,6 +236,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 
 	manager->add(new worldEntitySpawner(manager.get()));
 
+	/*
 	for (unsigned i = 0; i < 15; i++) {
 		glm::vec3 position = glm::vec3(
 			float(rand()) / RAND_MAX * 100.0 - 50,
@@ -245,6 +246,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 
 		manager->add(new enemy(manager.get(), game, position));
 	}
+	*/
 
 	bindCookedMeshes();
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));

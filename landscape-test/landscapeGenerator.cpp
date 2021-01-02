@@ -231,8 +231,18 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 						float tx = ((pos.x + 1)*0.5) * cellsize;
 						float ty = ((pos.y + 1)*0.5) * cellsize;
 
-						nlit->radius = 0.15;
+						glm::vec3 colors[6] = {
+							{1.0, 0.5, 0.2},
+							{1.0, 0.2, 0.5},
+							{0.5, 1.0, 0.2},
+							{0.5, 0.2, 1.0},
+							{0.2, 1.0, 0.5},
+							{0.2, 0.5, 1.0},
+						};
+
+						nlit->radius = 0.30;
 						nlit->intensity = 500.0;
+						nlit->diffuse = glm::vec4(colors[rand() % 6], 1.0);
 						nlit->transform.position = glm::vec3(
 							tx, landscapeThing(coord.x + tx, coord.z + ty) + 1.5, ty
 						);

@@ -11,16 +11,12 @@ projectile::projectile(entityManager *manager, gameMain *game, glm::vec3 positio
 	new rigidBodySphere(manager, this, position, 1.0, 0.15);
 	new projectileDestruct(manager, this);
 	new timedLifetime(manager, this);
+	new syncRigidBodyTransform(manager, this);
 
 	node->transform.position = position;
 }
 
 void projectile::update(entityManager *manager, float delta) {
-	rigidBody *body;
-	castEntityComponent(body, manager, this, "rigidBody");
-
-	if (body) {
-		body->syncPhysics(this);
-	}
+	// TODO:
 }
 
