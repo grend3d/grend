@@ -67,8 +67,11 @@ class component {
 			manager->registerComponent(ent, "component", this);
 		}
 
+		virtual const char* typeString(void) const { return "component"; };
 		virtual ~component() {
-			std::cerr << "got to ~component()" << std::endl;
+			std::cerr << "got to ~component() "
+				<< "[type: " << this->typeString() << "]"
+				<< std::endl;
 		};
 
 		// draw the imgui widgets for this component, TODO
@@ -87,6 +90,8 @@ class entity : public component {
 		{
 			manager->registerComponent(this, "entity", this);
 		}
+
+		virtual const char* typeString(void) const { return "entity"; };
 
 		virtual void update(entityManager *manager, float delta) = 0;
 		virtual gameObject::ptr getNode(void) { return node; };

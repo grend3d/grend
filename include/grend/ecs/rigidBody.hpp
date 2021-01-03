@@ -14,6 +14,7 @@ class rigidBody : public component {
 			mass = _mass;
 		}
 
+		virtual const char* typeString(void) const { return "rigidBody"; };
 		virtual ~rigidBody() {
 			std::cerr << "got to ~rigidBody()" << std::endl;
 			//phys = nullptr;
@@ -35,18 +36,35 @@ class rigidBodySphere : public rigidBody {
 	public:
 		rigidBodySphere(entityManager *manager,
 		                entity *ent,
-		                glm::vec3 position,
-		                float mass,
-		                float radius)
-			: rigidBody(manager, ent, mass)
+		                glm::vec3 _position,
+		                float _mass,
+		                float _radius)
+			: rigidBody(manager, ent, _mass),
+			  position(_position),
+			  mass(_mass),
+			  radius(_radius)
 		{
 			manager->registerComponent(ent, "rigidBodySphere", this);
+			//setRadius(radius);
 			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
 		}
 
+		virtual const char* typeString(void) const { return "rigidBodySphere"; };
 		virtual ~rigidBodySphere() {
 			std::cerr << "got to ~rigidBodySphere()" << std::endl;
 		};
+
+		virtual void setRadius(float r) {
+			// XXX: if the object has moved since it was added, this will reset
+			//      to position to where it was spawned...
+			// TODO: see if bullet can resize the body, or grab the position
+			//       from the old object if there was one
+			//phys = manager->engine->phys->addSphere(ent, position, mass, r);
+		}
+
+		glm::vec3 position;
+		float mass;
+		float radius;
 };
 
 class rigidBodyBox : public rigidBody {
@@ -62,6 +80,7 @@ class rigidBodyBox : public rigidBody {
 			phys = manager->engine->phys->addBox(ent, position, mass, box);
 		}
 
+		virtual const char* typeString(void) const { return "rigidBodyBox"; };
 		virtual ~rigidBodyBox() {};
 };
 
@@ -73,6 +92,7 @@ class syncRigidBody : public component {
 			manager->registerComponent(ent, "syncRigidBody", this);
 		}
 
+		virtual const char* typeString(void) const { return "syncRigidBody"; };
 		virtual ~syncRigidBody() {};
 		virtual void sync(entityManager *manager, entity *ent) = 0;
 };
@@ -85,6 +105,7 @@ class syncRigidBodyTransform : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyTransform", this);
 		}
 
+		virtual const char* typeString(void) const { return "syncRigidBodyTransform"; };
 		virtual ~syncRigidBodyTransform() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };
@@ -97,6 +118,7 @@ class syncRigidBodyPosition : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyPosition", this);
 		}
 
+		virtual const char* typeString(void) const { return "syncRigidBodyPosition"; };
 		virtual ~syncRigidBodyPosition() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };
@@ -109,6 +131,7 @@ class syncRigidBodyXZVelocity : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyXZVelocity", this);
 		}
 
+		virtual const char* typeString(void) const { return "syncRigidBodyXZVelocity"; };
 		virtual ~syncRigidBodyXZVelocity() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };

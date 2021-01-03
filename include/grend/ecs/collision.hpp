@@ -14,6 +14,7 @@ class collisionHandler : public component {
 			manager->registerComponent(ent, "collisionHandler", this);
 		}
 
+		virtual const char* typeString(void) const { return "collisionHandler"; };
 		virtual ~collisionHandler() {};
 
 		virtual void
