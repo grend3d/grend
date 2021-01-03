@@ -9,6 +9,8 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
 #include <grend/ecs/collision.hpp>
+#include <grend/ecs/serializer.hpp>
+#include <grend/ecs/rigidBodySerializer.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -200,6 +202,7 @@ class landscapeGenView : public gameView {
 		float zoom = 5.f;
 
 		entityManager::ptr manager;
+		serializerRegistry::ptr serializers;
 		landscapeGenerator landscape;
 };
 
@@ -208,6 +211,12 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 				{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 				SCREEN_SIZE_X, SCREEN_SIZE_Y));
 	manager = std::make_shared<entityManager>(game);
+
+	serializers = std::make_shared<serializerRegistry>();
+	serializers->add<rigidBodySphereSerializer>();
+	serializers->add<syncRigidBodyTransformSerializer>();
+	serializers->add<syncRigidBodyPositionSerializer>();
+	serializers->add<syncRigidBodyXZVelocitySerializer>();
 
 	manager->systems["lifetime"] =
 		std::make_shared<lifetimeSystem>();
@@ -255,6 +264,17 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	input.bind(modes::Move, controller::camAngled2DFixed(cam, game, -M_PI/4.f));
 	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
 	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
+	input.bind(MODAL_ALL_MODES,
+		[&, this] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
+				std::cerr << "Got here! serializing stuff" << std::endl;
+				std::cerr
+					<< serializers->serializeEntities((manager.get())).dump(4)
+					<< std::endl;
+			}
+
+			return MODAL_NO_CHANGE;
+		});
 	input.setMode(modes::Move);
 };
 
