@@ -201,8 +201,6 @@ class landscapeGenView : public gameView {
 		int menuSelect = 0;
 		float zoom = 5.f;
 
-		entityManager::ptr manager;
-		serializerRegistry::ptr serializers;
 		landscapeGenerator landscape;
 };
 
@@ -210,40 +208,36 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	post = renderPostChain::ptr(new renderPostChain(
 				{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 				SCREEN_SIZE_X, SCREEN_SIZE_Y));
-	manager = std::make_shared<entityManager>(game);
 
-	serializers = std::make_shared<serializerRegistry>();
-	serializers->add<rigidBodySphereSerializer>();
-	serializers->add<syncRigidBodyTransformSerializer>();
-	serializers->add<syncRigidBodyPositionSerializer>();
-	serializers->add<syncRigidBodyXZVelocitySerializer>();
-
-	manager->systems["lifetime"] =
-		std::make_shared<lifetimeSystem>();
+	game->serializers->add<rigidBodySphereSerializer>();
+	game->serializers->add<syncRigidBodyTransformSerializer>();
+	game->serializers->add<syncRigidBodyPositionSerializer>();
+	game->serializers->add<syncRigidBodyXZVelocitySerializer>();
 
 	// TODO: names are kinda pointless here
-	manager->systems["collision"] =
-		std::make_shared<entitySystemCollision>();
-
-	manager->systems["syncPhysics"] =
-		std::make_shared<syncRigidBodySystem>();
+	// TODO: should systems be a state object in gameMain as well?
+	//       they practically are since the entityManager here is, just one
+	//       level deep...
+	game->entities->systems["lifetime"] = std::make_shared<lifetimeSystem>();
+	game->entities->systems["collision"] = std::make_shared<entitySystemCollision>();
+	game->entities->systems["syncPhysics"] = std::make_shared<syncRigidBodySystem>();
 
 	auto inputSys = std::make_shared<inputHandlerSystem>();
-	manager->systems["input"] = inputSys;
+	game->entities->systems["input"] = inputSys;
 
 	auto generatorSys = std::make_shared<landscapeEventSystem>();
-	manager->systems["landscapeEvents"] = generatorSys;
+	game->entities->systems["landscapeEvents"] = generatorSys;
 	landscape.setEventQueue(generatorSys->queue);
 
 	//manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
-	player *playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
-	manager->add(playerEnt);
-	new generatorEventHandler(manager.get(), playerEnt);
-	new health(manager.get(), playerEnt);
-	new enemyCollision(manager.get(), playerEnt);
-	new healthPickupCollision(manager.get(), playerEnt);
+	player *playerEnt = new player(game->entities.get(), game, glm::vec3(0, 20, 0));
+	game->entities->add(playerEnt);
+	new generatorEventHandler(game->entities.get(), playerEnt);
+	new health(game->entities.get(), playerEnt);
+	new enemyCollision(game->entities.get(), playerEnt);
+	new healthPickupCollision(game->entities.get(), playerEnt);
 
-	manager->add(new worldEntitySpawner(manager.get()));
+	game->entities->add(new worldEntitySpawner(game->entities.get()));
 
 	/*
 	for (unsigned i = 0; i < 15; i++) {
@@ -269,7 +263,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
 				std::cerr << "Got here! serializing stuff" << std::endl;
 				std::cerr
-					<< serializers->serializeEntities((manager.get())).dump(4)
+					<< game->serializers->serializeEntities((game->entities.get())).dump(4)
 					<< std::endl;
 			}
 
@@ -289,15 +283,15 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	game->phys->stepSimulation(delta);
 	game->phys->filterCollisions();;
 	
-	entity *playerEnt = findFirst(manager.get(), {"player"});
+	entity *playerEnt = findFirst(game->entities.get(), {"player"});
 
 	while (!playerEnt) {
-		playerEnt = new player(manager.get(), game, glm::vec3(0, 20, 0));
-		manager->add(playerEnt);
-		new generatorEventHandler(manager.get(), playerEnt);
-		new health(manager.get(), playerEnt);
-		new enemyCollision(manager.get(), playerEnt);
-		new healthPickupCollision(manager.get(), playerEnt);
+		playerEnt = new player(game->entities.get(), game, glm::vec3(0, 20, 0));
+		game->entities->add(playerEnt);
+		new generatorEventHandler(game->entities.get(), playerEnt);
+		new health(game->entities.get(), playerEnt);
+		new enemyCollision(game->entities.get(), playerEnt);
+		new healthPickupCollision(game->entities.get(), playerEnt);
 	}
 
 	if (playerEnt) {
@@ -306,7 +300,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 		landscape.setPosition(game, transform.position);
 	}
 
-	manager->update(delta);
+	game->entities->update(delta);
 }
 
 static void drawPlayerHealthbar(entityManager *manager,
@@ -409,7 +403,7 @@ void landscapeGenView::render(gameMain *game) {
 		nvgBeginFrame(vgui.nvg, game->rend->screen_x, game->rend->screen_y, 1.0);
 		nvgSave(vgui.nvg);
 
-		renderHealthbars(manager.get(), vgui, cam);
+		renderHealthbars(game->entities.get(), vgui, cam);
 
 		nvgRestore(vgui.nvg);
 		nvgEndFrame(vgui.nvg);
@@ -490,7 +484,7 @@ int main(int argc, char *argv[]) {
 	player->cam->setFar(1000.0);
 	game->setView(player);
 
-	setNode("entities", game->state->rootnode, player->manager->root);
+	setNode("entities",  game->state->rootnode, game->entities->root);
 	setNode("landscape", game->state->rootnode, player->landscape.getNode());
 
 	game->run();
