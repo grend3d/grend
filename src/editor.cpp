@@ -467,4 +467,14 @@ void gameEditor::renderEditor(gameMain *game) {
 	if (selectedNode && showObjectEditorWindow) {
 		objectEditorWindow(game);
 	}
+
+	if (showEntitySelectWindow) {
+		entitySelectWindow(game);
+	}
+
+	if (showEntityEditorWindow) {
+		// TODO
+		//entityEditorWindow(game);
+	}
+
 }

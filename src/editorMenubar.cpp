@@ -150,10 +150,14 @@ void gameEditor::menubar(gameMain *game) {
 		if (ImGui::BeginMenu("Objects")) {
 			if (ImGui::MenuItem("Map editor", "o"))
 				showMapWindow = true;
-			if (ImGui::MenuItem("Object editor", "r"))
+			if (ImGui::MenuItem("Render object editor", "r"))
 				showObjectEditorWindow = true;
-			if (ImGui::MenuItem("Object selection"))
+			if (ImGui::MenuItem("Render object selection"))
 				showObjectSelectWindow = true;
+			if (ImGui::MenuItem("Entity editor"))
+				showEntityEditorWindow = true;
+			if (ImGui::MenuItem("Entity selection"))
+				showEntitySelectWindow = true;
 
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 

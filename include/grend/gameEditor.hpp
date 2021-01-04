@@ -102,6 +102,8 @@ class gameEditor : public gameView {
 		modelMap UIModels;
 
 		gameObject::ptr selectedNode = nullptr;
+		ecs::entity *selectedEntity = nullptr;
+
 		float movementSpeed = 10.f;
 		float fidelity = 10.f;
 		float exposure = 1.f;
@@ -118,8 +120,10 @@ class gameEditor : public gameView {
 		void menubar(gameMain *game);
 		void mapWindow(gameMain *game);
 		void objectEditorWindow(gameMain *game);
-		void metricsWindow(gameMain *game);
 		void objectSelectWindow(gameMain *game);
+		void entityEditorWindow(gameMain *game);
+		void entitySelectWindow(gameMain *game);
+		void metricsWindow(gameMain *game);
 
 		// populates map object tree
 		void addnodes(std::string name, gameObject::ptr obj);
@@ -142,6 +146,8 @@ class gameEditor : public gameView {
 		bool showMapWindow = false;
 		bool showObjectEditorWindow = false;
 		bool showObjectSelectWindow = false;
+		bool showEntityEditorWindow = false;
+		bool showEntitySelectWindow = false;
 		bool showMetricsWindow = true;
 		bool showProbes = true;
 		bool showLights = true;
