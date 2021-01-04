@@ -8,6 +8,10 @@
 #include <grend/timers.hpp>
 #include <grend/audioMixer.hpp>
 #include <grend/camera.hpp>
+
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
+
 #include <memory>
 #include <stdint.h>
 
@@ -30,12 +34,18 @@ class gameMain {
 
 		bool running = false;
 		context ctx;
+
+		// state objects
+		// TODO: these might as well be unique_ptrs
 		std::shared_ptr<gameState>     state = nullptr;
 		std::shared_ptr<gameView>      view  = nullptr;
 		std::shared_ptr<renderContext> rend  = nullptr;
 		std::shared_ptr<physics>       phys  = nullptr;
 		std::shared_ptr<audioMixer>    audio = nullptr;
 		std::shared_ptr<jobQueue>      jobs  = nullptr;
+		// ECS state
+		std::shared_ptr<ecs::entityManager>      entities    = nullptr;
+		std::shared_ptr<ecs::serializerRegistry> serializers = nullptr;
 
 		// FPS info
 		sma_counter frame_timer;

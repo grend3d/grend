@@ -1,7 +1,6 @@
 #pragma once
 
 #include <grend/gameObject.hpp>
-#include <grend/gameMain.hpp>
 
 #include <iostream>
 #include <map>
@@ -10,6 +9,11 @@
 #include <string>
 #include <memory>
 #include <initializer_list>
+
+// XXX: forward declaration for gameMain.hpp (at end)
+//      entityManager keeps a gameMain pointer, avoids pointlessly having to
+//      pass it as a function parameter all the time
+namespace grendx { class gameMain; }
 
 namespace grendx::ecs {
 
@@ -146,3 +150,5 @@ bool intersects(std::multimap<std::string, component*>& entdata,
 
 // namespace grendx::ecs
 };
+
+#include <grend/gameMain.hpp>

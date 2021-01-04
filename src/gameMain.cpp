@@ -27,10 +27,13 @@ gameMain::gameMain(std::string name)
 #error "No physics implementation defined!"
 #endif
 
-	state  = gameState::ptr(new gameState());
-	rend   = renderContext::ptr(new renderContext(ctx));
-	audio  = audioMixer::ptr(new audioMixer(ctx));
-	jobs   = jobQueue::ptr(new jobQueue());
+	state  = std::make_shared<gameState>();
+	rend   = std::make_shared<renderContext>(ctx);
+	audio  = std::make_shared<audioMixer>(ctx);
+	jobs   = std::make_shared<jobQueue>();
+
+	entities    = std::make_shared<ecs::entityManager>(this);
+	serializers = std::make_shared<ecs::serializerRegistry>();
 }
 
 void gameMain::clearMetrics(void) {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <grend/gameObject.hpp>
-#include <grend/gameMain.hpp>
 #include <grend/ecs/ecs.hpp>
 
 #include <iostream>
