@@ -74,10 +74,12 @@ enum {
 };
 
 enum {
-	UBO_LIGHT_INFO = 2,
-	UBO_LIGHT_TILES = 3,
-	UBO_JOINTS = 4,
-	UBO_INSTANCE_TRANSFORMS = 5,
+	UBO_LIGHT_INFO          = 2,
+	UBO_POINT_LIGHT_TILES   = 3,
+	UBO_SPOT_LIGHT_TILES    = 4,
+	UBO_JOINTS              = 5,
+	UBO_INSTANCE_TRANSFORMS = 6,
+	UBO_END_BINDINGS,
 };
 
 // XXX: metrics for debugging/optimization

@@ -70,7 +70,12 @@ uniform mat4 v_inv;
 
 // per cluster, tile, whatever, maximum lights that will be evaluated per fragment
 #ifndef MAX_LIGHTS
-#define MAX_LIGHTS 8
+// assume clustered
+#if GLSL_VERSION >= 140 /* opengl 3.1+, has uniform buffers, can transfer many more lights */
+#define MAX_LIGHTS 28
+#else
+#define MAX_LIGHTS 8 /* opengl 2.0, need to set each uniform, very limited number of uniforms */
+#endif
 #endif
 
 // gles3, core430+ use SSBOs, clustered lights
@@ -155,14 +160,17 @@ layout (std140) uniform lights {
 	directional_light udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS];
 };
 
-layout (std140) uniform light_tiles {
-	// 8x24 grid, vec4 because array elements in std140 must be aligned to
+layout (std140) uniform point_light_tiles {
+	// 9*16 grid, other factor of 4 is in uvec4
+	// TODO: configurable grid size
+	// uvec4 because array elements in std140 must be aligned to
 	// 16 byte boundaries, would be very wasteful to have a uint array here...
-	// first entry of each cluster is the number of active lights, hence +1
 	uvec4 point_tiles[9*4*(MAX_LIGHTS)];
+};
+
+layout (std140) uniform spot_light_tiles {
+	// 9*16 grid, other factor of 4 is in uvec4
 	uvec4 spot_tiles[9*4*(MAX_LIGHTS)];
-	// TODO: irradiance probe, although that probably only makes sense for
-	//       3D clusters...
 };
 
 #define SCREEN_TO_CLUSTER(X, Y) \
@@ -190,12 +198,23 @@ uint vertexShaderCluster() {
 #error "No implementation of CURRENT_CLUSTER() for this shader type (did you define VERTEX_SHADER/FRAGMENT_SHADER?)"
 #endif
 
+#if 1
+// XXX: debug macros, avoid locking up the GPU if the buffers aren't zeroed or something
+#define ACTIVE_POINTS(CLUSTER) \
+	(min(uint(MAX_LIGHTS), point_tiles[CLUSTER][0]))
+#define ACTIVE_SPOTS(CLUSTER) \
+	(min(uint(MAX_LIGHTS), spot_tiles[CLUSTER][0]))
+#define ACTIVE_DIRECTIONAL(CLUSTER) \
+	(uactive_directional_lights)
+
+#else
 #define ACTIVE_POINTS(CLUSTER) \
 	(point_tiles[CLUSTER][0])
 #define ACTIVE_SPOTS(CLUSTER) \
 	(spot_tiles[CLUSTER][0])
 #define ACTIVE_DIRECTIONAL(CLUSTER) \
 	(uactive_directional_lights)
+#endif
 
 #define POINT_LIGHT_IDX(P, CLUSTER) \
 	(point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])

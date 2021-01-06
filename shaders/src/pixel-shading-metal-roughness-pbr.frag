@@ -76,7 +76,7 @@ void main(void) {
 	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
 	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
-	total_light += 0.5 * (1.0 - a) * env * Fb;
+	total_light += 0.5 * (1.0 - max(0.0, a - 0.5)) * env * Fb;
 
 /*
 	// TODO: leave refraction in? might be better as a seperate shader
@@ -96,8 +96,11 @@ void main(void) {
 	total_light = EARLY_TONEMAP(total_light, 1.0);
 
 #ifdef DEBUG_CLUSTERS
+	float N = float(ACTIVE_POINTS(cluster) / float(MAX_LIGHTS));
+	const float thresh = 0.75;
+	const float invthresh = thresh / 1.0;
 	FRAG_COLOR = vec4(total_light +
-		vec3(0.01*pow(float((cluster / 2u)), 1.0/2.2), pow(0.05*float(ACTIVE_POINTS(cluster)), 1.0/2.2), 0), opacity);
+		vec3(invthresh * max(0.0, N - thresh), 1.0 - N, N), opacity);
 #else
 	FRAG_COLOR = vec4(total_light, opacity);
 #endif

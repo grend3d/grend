@@ -631,6 +631,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	return drawnMeshes;
 }
 
+#if GLSL_VERSION < 140 /* < opengl 3.1, use plain uniform indexes */
 static void syncPlainUniforms(Program::ptr program,
 	                          renderContext::ptr rctx,
 	                          std::vector<gameLightPoint::ptr>& points,
@@ -717,6 +718,7 @@ static void syncPlainUniforms(Program::ptr program,
 		}
 	}
 }
+#endif
 
 typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
 typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
@@ -731,7 +733,8 @@ static inline float rectScale(float R, float d) {
 #include <grend/plane.hpp>
 void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	lights_std140&      lightbuf = rctx->lightBufferCtx;
-	light_tiles_std140& tilebuf  = rctx->lightTilesCtx;
+	light_tiles_std140& pointbuf = rctx->pointTilesCtx;
+	light_tiles_std140& spotbuf  = rctx->spotTilesCtx;
 
 	camera::ptr cam = queue.cam;
 	float rx = glm::radians(cam->fovx());
@@ -745,7 +748,8 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	memset(&lightbuf.upoint_lights, 0, sizeof(lightbuf.upoint_lights));
 	memset(&lightbuf.uspot_lights, 0, sizeof(lightbuf.uspot_lights));
 	memset(&lightbuf.udirectional_lights, 0, sizeof(lightbuf.udirectional_lights));
-	memset(&tilebuf,  0, sizeof(tilebuf));
+	memset(&pointbuf, 0, sizeof(pointbuf));
+	memset(&spotbuf,  0, sizeof(spotbuf));
 
 	plane planes[16*9*6];
 	glm::vec3 nearpos = cam->position() + cam->direction()*cam->near();
@@ -803,27 +807,21 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 				unsigned clusidx = MAX_LIGHTS * cluster;
 
 				if (lit->lightType == gameLight::lightTypes::Point) {
-					gameLightPoint::ptr plit =
-						std::dynamic_pointer_cast<gameLightPoint>(lit);
-
-					unsigned cur  = tilebuf.point_tiles[clusidx];
+					unsigned cur  = pointbuf.indexes[clusidx];
 					unsigned next = cur + 1;
 
 					if (next < MAX_LIGHTS) {
-						tilebuf.point_tiles[clusidx]        = next;
-						tilebuf.point_tiles[clusidx + next] = idx;
+						pointbuf.indexes[clusidx]        = next;
+						pointbuf.indexes[clusidx + next] = idx;
 					}
 
 				} else if (lit->lightType == gameLight::lightTypes::Spot) {
-					gameLightSpot::ptr plit =
-						std::dynamic_pointer_cast<gameLightSpot>(lit);
-
-					unsigned cur  = tilebuf.spot_tiles[MAX_LIGHTS*cluster];
+					unsigned cur  = spotbuf.indexes[clusidx];
 					unsigned next = cur + 1;
 
 					if (next < MAX_LIGHTS) {
-						tilebuf.spot_tiles[clusidx]        = next;
-						tilebuf.spot_tiles[clusidx + next] = idx;
+						spotbuf.indexes[clusidx]        = next;
+						spotbuf.indexes[clusidx + next] = idx;
 					}
 				}
 			}
@@ -875,62 +873,8 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	lightbuf.uactive_directional_lights = activeDirs;
 
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
-	rctx->lightTiles->update(&tilebuf, 0, sizeof(tilebuf));
-}
-
-static void syncUniformBuffer(Program::ptr program,
-	                          renderContext::ptr rctx,
-	                          gameReflectionProbe::ptr refprobe,
-	                          pointList& points,
-	                          spotList& spots,
-	                          dirList& directionals)
-{
-	size_t pactive = min(MAX_POINT_LIGHT_OBJECTS,       points.size());
-	size_t sactive = min(MAX_SPOT_LIGHT_OBJECTS,        spots.size());
-	size_t dactive = min(MAX_DIRECTIONAL_LIGHT_OBJECTS, directionals.size());
-
-	// TODO: keep copy of lightbuf around...
-	//lights_std140&      lightbuf   = rctx->lightBufferCtx;
-	//light_tiles_std140& lighttiles = rctx->lightTilesCtx;
-	lights_std140 lightbuf;
-	light_tiles_std140 tilebuf;
-
-	lightbuf.uactive_point_lights       = pactive;
-	lightbuf.uactive_spot_lights        = sactive;
-	lightbuf.uactive_directional_lights = dactive;
-
-	glm::mat4 xxx(1);
-	packRefprobe(refprobe, &lightbuf, rctx, xxx);
-
-	// so much nicer
-	for (size_t i = 0; i < pactive; i++) {
-		gameLightPoint::ptr light = points[i].second;
-		packLight(light, lightbuf.upoint_lights + i, rctx, points[i].first);
-	}
-
-	for (size_t i = 0; i < sactive; i++) {
-		gameLightSpot::ptr light = spots[i].second;
-		packLight(light, lightbuf.uspot_lights + i, rctx, spots[i].first);
-	}
-
-	for (size_t i = 0; i < dactive; i++) {
-		gameLightDirectional::ptr light = directionals[i].second;
-		packLight(light, lightbuf.udirectional_lights + i, rctx, directionals[i].first);
-	}
-
-	for (unsigned i = 0; i < 8*24*MAX_LIGHTS; i++) {
-		if (i % MAX_LIGHTS == 0) {
-			tilebuf.point_tiles[i] = 1 + ((i >> 3) % 3);
-
-		} else {
-			tilebuf.point_tiles[i] = float(i % 4);
-		}
-		tilebuf.spot_tiles[i]  = 0;
-	}
-
-	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
-	rctx->lightTiles->update(&tilebuf, 0, sizeof(tilebuf));
-	//glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights_std140), &lightbuf);
+	rctx->pointTiles->update(&pointbuf,  0, sizeof(pointbuf));
+	rctx->spotTiles->update(&spotbuf,    0, sizeof(spotbuf));
 }
 
 void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
@@ -947,7 +891,10 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 
 #if GLSL_VERSION >= 140
 	program->setUniformBlock("lights",      rctx->lightBuffer, UBO_LIGHT_INFO);
-	program->setUniformBlock("light_tiles", rctx->lightTiles,  UBO_LIGHT_TILES);
+	program->setUniformBlock("point_light_tiles", rctx->pointTiles,
+	                         UBO_POINT_LIGHT_TILES);
+	program->setUniformBlock("spot_light_tiles", rctx->spotTiles,
+	                         UBO_SPOT_LIGHT_TILES);
 
 	DO_ERROR_CHECK();
 

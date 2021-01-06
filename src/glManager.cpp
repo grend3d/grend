@@ -51,8 +51,60 @@ compiledModel::~compiledModel() {
 }
 
 void initializeOpengl(void) {
-	std::cerr << " # Got here, " << __func__ << std::endl;
-	std::cerr << " # maximum combined texture units: " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS << std::endl;
+	int maxImageUnits = 0;
+	int maxCombined = 0;
+	int maxVertexUniforms = 0;
+	int maxFragmentUniforms = 0;
+	int maxTextureSize = 0;
+	int maxUBOBindings = 0;
+	int maxUBOSize = 0;
+
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,          &maxImageUnits);
+	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombined);
+	glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS,       &maxVertexUniforms);
+	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS,     &maxFragmentUniforms);
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE,                 &maxTextureSize);
+
+#if GLSL_VERSION >= 140 /* OpenGL 3.1+ */
+	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS,      &maxUBOBindings);
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,           &maxUBOSize);
+#endif
+
+	std::cerr << " OpenGL initializing... " << __func__ << std::endl;
+	std::cerr << " OpenGL " << glGetString(GL_VERSION) << std::endl;
+	std::cerr << " OpenGL vendor: " << glGetString(GL_VENDOR) << std::endl;
+	std::cerr << " OpenGL renderer: " << glGetString(GL_RENDERER) << std::endl;
+
+	std::cerr << " OpenGL GLSL target " << GLSL_VERSION << std::endl;
+	std::cerr << " OpenGL max fragment textures: " << maxImageUnits << std::endl;
+	std::cerr << " OpenGL max total textures: " << maxCombined << std::endl;
+	std::cerr << " OpenGL max texture size: " << maxTextureSize << std::endl;
+	std::cerr << " OpenGL max vertex vector uniforms: "
+		<< maxVertexUniforms << std::endl;
+	std::cerr << " OpenGL max fragment vector uniforms: "
+		<< maxFragmentUniforms << std::endl;
+	std::cerr << " OpenGL max uniform block bindings: "
+		<< maxUBOBindings << std::endl;
+	std::cerr << " OpenGL max uniform block size: "
+		<< maxUBOSize << std::endl;
+
+	if (maxImageUnits < 8) {
+		throw std::logic_error("This GPU doesn't allow enough texture bindings!");
+	}
+
+	if (maxTextureSize < 4096) {
+		// TODO: this doesn't need to be an error, but also pretty much everything
+		//       should support this
+		throw std::logic_error("This GPU doesn't support 4096+ textures!");
+	}
+
+	// TODO: check for some minimum number of available uniforms
+
+#if GLSL_VERSION >= 140
+	if (maxUBOBindings < UBO_END_BINDINGS) {
+		throw std::logic_error("This GPU doesn't allow enough uniform block bindings!");
+	}
+#endif
 
 	// make sure we start with a bound VAO
 	bindVao(genVao());

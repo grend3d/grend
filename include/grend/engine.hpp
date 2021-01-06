@@ -19,8 +19,14 @@
 
 namespace grendx {
 
+// per cluster, tile, whatever, maximum lights that will be evaluated per fragment
 #ifndef MAX_LIGHTS
-#define MAX_LIGHTS 8
+// assume clustered
+#if GLSL_VERSION >= 140 /* opengl 3.1+, has uniform buffers, can transfer many more lights */
+#define MAX_LIGHTS 28
+#else
+#define MAX_LIGHTS 8 /* opengl 2.0, need to set each uniform, very limited number of uniforms */
+#endif
 #endif
 
 // TODO: need some unified location to put this, there's a duplicated definition
@@ -102,8 +108,7 @@ struct lights_std140 {
 } __attribute__((packed));
 
 struct light_tiles_std140 {
-	GLuint point_tiles[9*16*MAX_LIGHTS];
-	GLuint spot_tiles[9*16*MAX_LIGHTS];
+	GLuint indexes[9*16*MAX_LIGHTS];
 } __attribute__((packed));
 
 class skybox {
@@ -186,11 +191,13 @@ class renderContext {
 		std::map<std::string, Program::ptr> internalShaders;
 
 		Buffer::ptr lightBuffer;
-		Buffer::ptr lightTiles;
+		Buffer::ptr pointTiles;
+		Buffer::ptr spotTiles;
 
 		float lightThreshold = 0.05;
 		lights_std140      lightBufferCtx;
-		light_tiles_std140 lightTilesCtx;
+		light_tiles_std140 pointTilesCtx;
+		light_tiles_std140 spotTilesCtx;
 
 	protected:
 		Program::ptr shader;

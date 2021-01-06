@@ -26,14 +26,29 @@ renderContext::renderContext(context& ctx) {
 	lightBuffer->bind();
 	lightBuffer->allocate(sizeof(lights_std140));
 
-	lightTiles = genBuffer(GL_UNIFORM_BUFFER);
-	lightTiles->bind();
-	lightTiles->allocate(sizeof(light_tiles_std140));
+	pointTiles = genBuffer(GL_UNIFORM_BUFFER);
+	pointTiles->bind();
+	pointTiles->allocate(sizeof(light_tiles_std140));
+
+	spotTiles  = genBuffer(GL_UNIFORM_BUFFER);
+	spotTiles->bind();
+	spotTiles->allocate(sizeof(light_tiles_std140));
+
+	/*
+	for (auto& buf : {pointTiles, spotTiles}) {
+		buf->bind();
+		buf->allocate(sizeof(light_tiles_std140));
+	}
+	*/
+
 
 	memset(&lightBufferCtx, 0, sizeof(lightBufferCtx));
-	memset(&lightTilesCtx,  0, sizeof(lightTilesCtx));
+	memset(&pointTilesCtx,  0, sizeof(pointTilesCtx));
+	memset(&spotTilesCtx,   0, sizeof(spotTilesCtx));
+
 	lightBuffer->update(&lightBufferCtx, 0, sizeof(lightBufferCtx));
-	lightTiles->update(&lightTilesCtx, 0, sizeof(lightTilesCtx));
+	pointTiles->update(&pointTilesCtx,   0, sizeof(pointTilesCtx));
+	spotTiles->update(&spotTilesCtx,     0, sizeof(spotTilesCtx));
 #endif
 
 #ifdef __EMSCRIPTEN__
