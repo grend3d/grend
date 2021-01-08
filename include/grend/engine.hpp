@@ -47,7 +47,7 @@ namespace grendx {
 
 #else // if < opengl 4.3
 #ifndef MAX_POINT_LIGHT_OBJECTS
-#define MAX_POINT_LIGHT_OBJECTS 64
+#define MAX_POINT_LIGHT_OBJECTS 90
 #endif
 
 #ifndef MAX_SPOT_LIGHT_OBJECTS
