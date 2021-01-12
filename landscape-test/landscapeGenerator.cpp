@@ -92,7 +92,11 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 		//grassmod = loadScene("./test-assets/obj/crapgrass.glb");
 		//grassmod = loadScene("./test-assets/obj/smoothcube.glb");
 		grassmod = load_object("assets-old/obj/Modular Terrain Hilly/Prop_Grass_Clump_2.obj");
-		compileModel("grassclump", grassmod);
+		game->jobs->addDeferred([=] {
+			compileModel("grassclump", grassmod);
+			bindModel(grassmod);
+			return true;
+		});
 	}
 
 #else
@@ -160,7 +164,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					auto fut = game->jobs->addDeferred([=]{
 							std::cerr << "generating new model" << std::endl;
 						compileModel(name, ptr);
-						//bindModel(ptr->comped_model);
+						bindModel(ptr);
 						return true;
 					});
 
@@ -287,7 +291,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	meh.wait();
 
 	auto fut = game->jobs->addDeferred([&] {
-		bindCookedMeshes();
+		//bindCookedMeshes();
 		return true;
 	});
 
