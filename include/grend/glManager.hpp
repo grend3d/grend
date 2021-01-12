@@ -319,7 +319,7 @@ class compiledMesh {
 		~compiledMesh();
 
 		Vao::ptr vao;
-		bufferNode *elements = nullptr;
+		Buffer::ptr elements;
 
 		material::materialFactors factors;
 		struct loadedTextures {
@@ -339,36 +339,12 @@ class compiledModel {
 
 		~compiledModel();
 
-		//rhandle vao;
 		Vao::ptr vao;
-		//GLint verticesSize;
-
 		std::vector<std::string> meshes;
-
-		//std::map<std::string, material> materials   = {};
-		/*
-		std::map<std::string, Texture::ptr> matTextures = {};
-		std::map<std::string, Texture::ptr> matSpecular = {};
-		std::map<std::string, Texture::ptr> matNormal   = {};
-		std::map<std::string, Texture::ptr> matAo       = {};
-		std::map<std::string, Texture::ptr> matEmissive = {};
-		*/
-
-		/*
-		void *verticesOffset;
-		void *normalsOffset;
-		void *texcoordsOffset;
-		void *tangentsOffset;
-		void *bitangentsOffset;
-		*/
-		bufferNode *vertices = nullptr;
+		Buffer::ptr vertices;
 
 		bool haveJoints = false;
-		bufferNode *joints = nullptr;
-		/*
-		void *jointsOffset;
-		void *weightsOffset;
-		*/
+		Buffer::ptr joints;
 };
 
 // TODO: weakptr, once model loading stuff is straightened out

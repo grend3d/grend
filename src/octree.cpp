@@ -140,7 +140,7 @@ void octree::add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]) {
 void octree::add_model(gameModel::ptr mod, glm::mat4 transform) {
 	// TODO: range check on vertices
 	auto& verts = mod->vertices;
-	auto& normals = mod->normals;
+	//auto& normals = mod->normals;
 
 	for (auto& [key, ptr] : mod->nodes) {
 		if (ptr->type != gameObject::objType::Mesh) {
@@ -152,29 +152,34 @@ void octree::add_model(gameModel::ptr mod, glm::mat4 transform) {
 		//       are loaded here? might account for the sporadic bugs this has...
 		//       should check for those here
 		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
-			glm::vec3 tri[3] = {
+
+			if (mesh->faces[i] > verts.size()
+			 || mesh->faces[i+1] > verts.size()
+			 || mesh->faces[i+2] > verts.size())
+			{
+				std::cerr << " > Invalid face index! (octree::add_model)"
+					<< std::endl;
+				break;
+			}
+
+			gameModel::vertex tri[3] = {
 				verts[mesh->faces[i]],
 				verts[mesh->faces[i+1]],
 				verts[mesh->faces[i+2]]
 			};
 
-			glm::vec3 norms[3] = {
-				normals[mesh->faces[i]],
-				normals[mesh->faces[i+1]],
-				normals[mesh->faces[i+2]]
-			};
+			glm::vec3 positions[3];
+			glm::vec3 normals[3];
 
-			for (auto& t : tri) {
-				glm::vec4 m = transform * glm::vec4(t, 1);
-				t = glm::vec3(m) / m.w;
+			for (unsigned i = 0; i < 3; i++) {
+				glm::vec4 m = transform * glm::vec4(tri[i].position, 1);
+
+				positions[i] = glm::vec3(m) / m.w;
+				normals[i]   = glm::mat3(transform) * tri[i].normal;
+				normals[i]   = glm::normalize(normals[i]);
 			}
 
-			for (auto& n : norms) {
-				glm::vec4 m = glm::mat4_cast(glm::quat_cast(transform)) * glm::vec4(n, 1);
-				n = glm::normalize(glm::vec3(m) / m.w);
-			}
-
-			add_tri(tri, norms);
+			add_tri(positions, normals);
 		}
 	}
 }

@@ -14,19 +14,8 @@ namespace grendx {
 static cookedMeshMap  cookedMeshes;
 static cookedModelMap cookedModels;
 
-static std::vector<GLfloat> cookedJoints;
-static std::vector<GLfloat> cookedVertprops;
-static std::vector<GLuint> cookedElements;
-
-static Buffer::ptr cookedVertprops_vbo;
-static Buffer::ptr cookedElementVbo;
-static Buffer::ptr cookedJoints_vbo;
 static Buffer::ptr screenquadVbo;
 static Vao::ptr screenquadVao;
-
-static bufferAllocator vertpropsAlloc;
-static bufferAllocator elementsAlloc;
-static bufferAllocator jointsAlloc;
 
 // cache of features currently enabled
 static std::set<GLenum> featureCache;
@@ -39,15 +28,10 @@ std::map<uint32_t, Texture::weakptr> textureCache;
 
 compiledMesh::~compiledMesh() {
 	std::cerr << "Freeing a compiledMesh" << std::endl;
-	elementsAlloc.free(elements);
 }
 
 compiledModel::~compiledModel() {
 	std::cerr << "Freeing a compiledModel" << std::endl;
-	vertpropsAlloc.free(vertices);
-	if (haveJoints) {
-		jointsAlloc.free(joints);
-	}
 }
 
 void initializeOpengl(void) {
@@ -111,13 +95,6 @@ void initializeOpengl(void) {
 
 	// initialize state for quad that fills the screen
 	preloadScreenquad();
-
-	cookedVertprops.clear();
-	cookedElements.clear();
-
-	cookedVertprops_vbo = genBuffer(GL_ARRAY_BUFFER);
-	cookedElementVbo = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	cookedJoints_vbo = genBuffer(GL_ARRAY_BUFFER);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -190,17 +167,10 @@ void compileMeshes(std::string objname, meshMap& meshies) {
 		mesh->comped_mesh = foo;
 		mesh->compiled = true;
 
-		foo->elements = elementsAlloc.allocate(mesh->faces.size() * sizeof(GLuint));
-		assert(foo->elements != nullptr);
-		cookedElements.reserve((foo->elements->size + foo->elements->offset) / sizeof(GLuint));
-		cookedElements.resize(cookedElements.capacity());
+		foo->elements = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
+		foo->elements->buffer(mesh->faces.data(),
+		                      mesh->faces.size() * sizeof(GLuint));
 
-		size_t bufoffset = foo->elements->offset / sizeof(GLuint);
-		for (size_t i = 0; i < mesh->faces.size(); i++) {
-			cookedElements[bufoffset + i] = mesh->faces[i];
-		}
-
-		//foo->material = mesh->material;
 		if (mesh->meshMaterial) {
 			foo->factors = mesh->meshMaterial->factors;
 			auto& maps = mesh->meshMaterial->maps;
@@ -227,90 +197,26 @@ void compileMeshes(std::string objname, meshMap& meshies) {
 		}
 
 		cookedMeshes[meshname] = foo;
-
-#if 0
-	// copy materials
-	for (const auto& [name, mat] : model->materials) {
-		//obj->materials[name] = mat;
-		obj->materials[name].copy_properties(mat);
-
-		if (mat.diffuseMap.loaded()) {
-			obj->matTextures[name] = texcache(mat.diffuseMap, true/*srgb*/);
-		}
-
-		if (mat.metalRoughnessMap.loaded()) {
-			obj->matSpecular[name] = texcache(mat.metalRoughnessMap);
-		}
-
-		if (mat.normalMap.loaded()) {
-			obj->matNormal[name]   = texcache(mat.normalMap);
-		}
-
-		if (mat.ambientOcclusionMap.loaded()) {
-			obj->matAo[name]       = texcache(mat.ambientOcclusionMap);
-		}
-
-		if (mat.emissiveMap.loaded()) {
-			// TODO: clearer sRGB flag
-			obj->matEmissive[name] = texcache(mat.emissiveMap, true /* srgb */);
-		}
 	}
-#endif
-	}
-	//fprintf(stderr, " > elements size %lu\n", cookedElements.size());
 }
-
-// TODO: move
-static const size_t VERTPROP_SIZE = (sizeof(glm::vec3[3]) + sizeof(glm::vec2));
-static const size_t JOINTPROP_SIZE = (sizeof(glm::vec4[2]));
 
 void compileModel(std::string name, gameModel::ptr model) {
 	std::cerr << " >>> compiling " << name << std::endl;
-
-	assert(model->vertices.size() == model->normals.size());
-	assert(model->vertices.size() == model->texcoords.size());
-	//assert(model->vertices.size() == model->tangents.size());
-	//assert(model->vertices.size() == model->bitangents.size());
 
 	// TODO: might be able to clear vertex info after compiling here
 	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
 	model->comped_model = obj;
 	model->compiled = true;
 
-	obj->vertices = vertpropsAlloc.allocate(model->vertices.size() * VERTPROP_SIZE);
-	cookedVertprops.reserve((obj->vertices->size + obj->vertices->offset) / sizeof(GLfloat));
-	cookedVertprops.resize(cookedVertprops.capacity());
-
-	// XXX: glm vectors don't have an iterator
-	auto set_vec = [&] (size_t *off, auto& props, const auto& vec) {
-		for (size_t k = 0; k < vec.length(); k++) {
-			props[*off + k] = vec[k];
-		}
-		(*off) += vec.length();
-	};
-
-	size_t offset = obj->vertices->offset / sizeof(GLfloat);
-	for (size_t i = 0; i < model->vertices.size(); i++) {
-		set_vec(&offset, cookedVertprops, model->vertices[i]);
-		set_vec(&offset, cookedVertprops, model->normals[i]);
-		set_vec(&offset, cookedVertprops, model->tangents[i]);
-		set_vec(&offset, cookedVertprops, model->texcoords[i]);
-	}
+	obj->vertices = genBuffer(GL_ARRAY_BUFFER);
+	obj->vertices->buffer(model->vertices.data(),
+	                      model->vertices.size() * sizeof(gameModel::vertex));
 
 	if (model->haveJoints) {
-		std::cerr << " > have joints, " << model->joints.size()
-			<< " of em" << std::endl;
-
 		obj->haveJoints = true;
-		obj->joints = jointsAlloc.allocate(model->joints.size() * JOINTPROP_SIZE);
-		cookedJoints.reserve((obj->joints->size + obj->joints->offset) / (sizeof(GLfloat)));
-		cookedJoints.resize(cookedJoints.capacity());
-
-		size_t offset = obj->joints->offset / sizeof(GLfloat);
-		for (unsigned i = 0; i < model->joints.size(); i++) {
-			set_vec(&offset, cookedJoints, model->joints[i]);
-			set_vec(&offset, cookedJoints, model->weights[i]);
-		}
+		obj->joints = genBuffer(GL_ARRAY_BUFFER);
+		obj->joints->buffer(model->joints.data(),
+		                    model->joints.size() * sizeof(gameModel::jointWeights));
 	}
 
 	// collect mesh subnodes from the model
@@ -320,7 +226,6 @@ void compileModel(std::string name, gameModel::ptr model) {
 			// TODO: mesh naming is kind of crap
 			std::string asdf = name + "." + meshname;
 			std::cerr << " > have cooked mesh " << asdf << std::endl;
-			//obj->meshes.push_back(asdf);
 			obj->meshes.push_back(asdf);
 			meshes[meshname] = std::dynamic_pointer_cast<gameMesh>(ptr);
 		}
@@ -328,6 +233,7 @@ void compileModel(std::string name, gameModel::ptr model) {
 
 	compileMeshes(name, meshes);
 	cookedModels[name] = obj;
+	DO_ERROR_CHECK();
 }
 
 void compileModels(modelMap& models) {
@@ -335,6 +241,22 @@ void compileModels(modelMap& models) {
 		compileModel(x.first, x.second);
 	}
 }
+
+#define STRUCT_OFFSET(TYPE, MEMBER) \
+	((void *)&(((TYPE*)NULL)->MEMBER))
+
+// constexpr, should be fine right?
+// otherwise can just assume 4 bytes, do sizeof()
+#define GLM_VEC_ENTRIES(TYPE, MEMBER) \
+	((((TYPE*)NULL)->MEMBER).length())
+
+#define SET_VERTEX_VAO(BINDING, TYPE, MEMBER) \
+	do { \
+	glVertexAttribPointer(BINDING, GLM_VEC_ENTRIES(TYPE, MEMBER), \
+	                      GL_FLOAT, GL_FALSE, sizeof(TYPE),       \
+	                      STRUCT_OFFSET(TYPE, MEMBER));           \
+	} while(0);
+
 
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	if (mesh == nullptr) {
@@ -345,69 +267,34 @@ Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	Vao::ptr orig_vao = currentVao;
 	Vao::ptr ret = bindVao(genVao());
 
-	//bind_vbo(cookedElementVbo, GL_ELEMENT_ARRAY_BUFFER);
-	cookedElementVbo->bind();
+	mesh->elements->bind();
 	glEnableVertexAttribArray(VAO_ELEMENTS);
-	glVertexAttribPointer(VAO_ELEMENTS, 3, GL_UNSIGNED_INT, GL_FALSE, 0,
-	                      (void*)(mesh->elements->offset));
+	glVertexAttribPointer(VAO_ELEMENTS, 3, GL_UNSIGNED_INT, GL_FALSE, 0, 0);
 
-	cookedVertprops_vbo->bind();
+	obj->vertices->bind();
 	glEnableVertexAttribArray(VAO_VERTICES);
-	glVertexAttribPointer(VAO_VERTICES, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      (void*)(obj->vertices->offset));
+	SET_VERTEX_VAO(VAO_VERTICES, gameModel::vertex, position);
 
 	glEnableVertexAttribArray(VAO_NORMALS);
-	glVertexAttribPointer(VAO_NORMALS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      (void*)(obj->vertices->offset + sizeof(glm::vec3[1])));
+	SET_VERTEX_VAO(VAO_NORMALS, gameModel::vertex, normal);
 
 	glEnableVertexAttribArray(VAO_TANGENTS);
-	glVertexAttribPointer(VAO_TANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      (void*)(obj->vertices->offset + sizeof(glm::vec3[2])));
+	SET_VERTEX_VAO(VAO_TANGENTS, gameModel::vertex, tangent);
 
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
-	glVertexAttribPointer(VAO_TEXCOORDS, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      (void*)(obj->vertices->offset + sizeof(glm::vec3[3])));
-
-	//bind_vbo(cookedVertprops_vbo, GL_ARRAY_BUFFER);
-	/*
-	glEnableVertexAttribArray(VAO_VERTICES);
-	glVertexAttribPointer(VAO_VERTICES, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->verticesOffset);
-
-	glEnableVertexAttribArray(VAO_NORMALS);
-	glVertexAttribPointer(VAO_NORMALS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->normalsOffset);
-
-	glEnableVertexAttribArray(VAO_TANGENTS);
-	glVertexAttribPointer(VAO_TANGENTS, 3, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->tangentsOffset);
-
-	glEnableVertexAttribArray(VAO_TEXCOORDS);
-	glVertexAttribPointer(VAO_TEXCOORDS, 2, GL_FLOAT, GL_FALSE, VERTPROP_SIZE,
-	                      obj->texcoordsOffset);
-						  */
+	SET_VERTEX_VAO(VAO_TEXCOORDS, gameModel::vertex, uv);
 
 	if (obj->haveJoints) {
-		cookedJoints_vbo->bind();
+		obj->joints->bind();
 		glEnableVertexAttribArray(VAO_JOINTS);
-		glVertexAttribPointer(VAO_JOINTS, 4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  (void*)(obj->joints->offset));
+		SET_VERTEX_VAO(VAO_JOINTS, gameModel::jointWeights, joints);
+
 		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
-		glVertexAttribPointer(VAO_JOINT_WEIGHTS,
-		                      4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  (void*)(obj->joints->offset + sizeof(glm::vec4)));
-		/*
-		glEnableVertexAttribArray(VAO_JOINTS);
-		glVertexAttribPointer(VAO_JOINTS, 4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  obj->jointsOffset);
-		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
-		glVertexAttribPointer(VAO_JOINT_WEIGHTS,
-		                      4, GL_FLOAT, GL_FALSE, JOINTPROP_SIZE,
-							  obj->weightsOffset);
-							  */
+		SET_VERTEX_VAO(VAO_JOINT_WEIGHTS, gameModel::jointWeights, weights);
 	}
 
 	bindVao(orig_vao);
+	DO_ERROR_CHECK();
 	return ret;
 }
 
@@ -424,58 +311,16 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 	return orig_vao;
 }
 
-void bindModel(compiledModel::ptr model) {
-	if (cookedVertprops.size() * sizeof(GLfloat)  > cookedVertprops_vbo->currentSize
-	    || cookedJoints.size() * sizeof(GLfloat)  > cookedJoints_vbo->currentSize
-	    || cookedElements.size() * sizeof(GLuint) > cookedElementVbo->currentSize)
-	{
-		// XXX: need to reallocate data store, which means copying in
-		//      all of the meshes again
-		std::cerr << " # fallback, bindModel() calling bindCookedMeshes()"
-			<< std::endl;
-		bindCookedMeshes();
-		return;
-	}
-
-	if (model->haveJoints) {
-		cookedJoints_vbo->update(cookedJoints.data(),
-								 model->joints->offset,
-								 model->joints->size);
-	}
-
-	cookedVertprops_vbo->update(cookedVertprops.data(),
-	                            model->vertices->offset,
-	                            model->vertices->size);
-
-	for (auto& name : model->meshes) {
-		// TODO: should just have pointers to the meshes directly...
-		if (auto mptr = cookedMeshes[name].lock()) {
-			cookedElementVbo->update(cookedElements.data(),
-			                         mptr->elements->offset,
-			                         mptr->elements->size);
-		}
+void bindModel(gameModel::ptr model) {
+	if (model->comped_model == nullptr) {
+		std::cerr << " # ERROR: trying to bind an uncompiled model" << std::endl;
 	}
 
 	std::cerr << " # binding a model" << std::endl;
-	model->vao = preloadModelVao(model);
+	model->comped_model->vao = preloadModelVao(model->comped_model);
 }
 
 void bindCookedMeshes(void) {
-	std::cerr << "bindCookedMeshes(): "
-		<< "vertprops: " << (cookedVertprops.size()*sizeof(GLfloat)/1024.f) << "kb, "
-		<< "elements: " << (cookedElements.size()*sizeof(GLuint)/1024.f) << "kb, "
-		<< "joints: " << (cookedJoints.size()*sizeof(GLuint)/1024.f) << "kb"
-		<< std::endl;
-	std::cerr << "bindCookedMeshes(): capacity: "
-		<< "vertprops: " << (cookedVertprops.capacity()*sizeof(GLfloat)/1024.f) << "kb, "
-		<< "elements: " << (cookedElements.capacity()*sizeof(GLuint)/1024.f) << "kb, "
-		<< "joints: " << (cookedJoints.capacity()*sizeof(GLuint)/1024.f) << "kb"
-		<< std::endl;
-
-	cookedJoints_vbo->buffer(cookedJoints);
-	cookedVertprops_vbo->buffer(cookedVertprops);
-	cookedElementVbo->buffer(cookedElements);
-
 	for (auto& [name, wptr] : cookedModels) {
 		if (auto ptr = wptr.lock()) {
 			std::cerr << " # binding " << name << std::endl;
@@ -545,7 +390,7 @@ void check_errors(int line, const char *filename, const char *func) {
 		}
 
 		std::cerr << std::endl;
-		*(int*)NULL = 1234;
+		//*(int*)NULL = 1234;
 	}
 }
 

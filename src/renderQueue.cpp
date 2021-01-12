@@ -348,15 +348,16 @@ static void drawMesh(renderFlags& flags,
 	}
 
 	bindVao(mesh->comped_mesh->vao);
+
 	/*
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(2.0);
 	enable(GL_LINE_SMOOTH);
 	*/
 	glDrawElements(GL_TRIANGLES,
-	               mesh->comped_mesh->elements->size / sizeof(GLuint),
-	               GL_UNSIGNED_INT,
-	               (void*)mesh->comped_mesh->elements->offset);
+	               mesh->comped_mesh->elements->currentSize,
+	               GL_UNSIGNED_INT, 0);
+	DO_ERROR_CHECK();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
@@ -408,10 +409,9 @@ static void drawMeshInstanced(renderFlags& flags,
 	                         UBO_INSTANCE_TRANSFORMS);
 	glDrawElementsInstanced(
 		GL_TRIANGLES,
-		mesh->comped_mesh->elements->size / sizeof(GLuint),
-		GL_UNSIGNED_INT,
-		(void*)mesh->comped_mesh->elements->offset,
-		particles->activeInstances);
+		mesh->comped_mesh->elements->currentSize,
+		GL_UNSIGNED_INT, 0, particles->activeInstances);
+	DO_ERROR_CHECK();
 
 #else
 	for (unsigned i = 0; i < particles->activeInstances; i++) {

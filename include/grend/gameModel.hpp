@@ -33,7 +33,6 @@ class gameMesh : public gameObject {
 		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
-		//std::string material = "(null)";
 		material::ptr meshMaterial;
 		std::vector<GLuint> faces;
 		struct AABB boundingBox;
@@ -67,19 +66,26 @@ class gameModel : public gameObject {
 
 		// TODO: allow attaching shaders to objects
 		//Program::ptr shader = nullptr;
-
+		//
 		// TODO: vertex data can be freed after compiling, can keep a
 		//       reference to the compiled model, which would also make it
 		//       much easier to free models from the GPU
-		std::vector<glm::vec3> vertices;
-		std::vector<glm::vec3> normals;
-		std::vector<glm::vec3> tangents;
-		std::vector<glm::vec2> texcoords;
-		std::vector<usvec4>    joints;
-		std::vector<glm::vec4> weights;
 
-		// TODO: maybe materials can be subnodes...
-		//std::map<std::string, material> materials;
+		struct vertex {
+			glm::vec3 position;
+			glm::vec3 normal;
+			glm::vec3 tangent;
+			glm::vec2 uv;
+		};
+
+		std::vector<vertex> vertices;
+
+		struct jointWeights {
+			glm::vec4 joints;  // joints that affect the vertex
+			glm::vec4 weights; // how much the joint affects the vertex
+		};
+
+		std::vector<jointWeights> joints;
 
 		// used to determine if normals, etc need to be generated
 		bool haveNormals = false;

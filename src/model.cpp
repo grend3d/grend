@@ -19,7 +19,6 @@ namespace grendx {
 
 void gameModel::genNormals(void) {
 	std::cerr << " > generating new normals... " << vertices.size() << std::endl;
-	normals.resize(vertices.size(), glm::vec3(0));
 
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != gameObject::objType::Mesh) {
@@ -35,19 +34,28 @@ void gameModel::genNormals(void) {
 				mesh->faces[i+2]
 			};
 
-			glm::vec3 normal = glm::normalize(
-					glm::cross(
-						vertices[elms[1]] - vertices[elms[0]],
-						vertices[elms[2]] - vertices[elms[0]]));
+			if (elms[0] >= vertices.size()
+			 || elms[1] >= vertices.size()
+			 || elms[2] >= vertices.size())
+			{
+				std::cerr << " > invalid face index! (genNormals())" << std::endl;
+				break;
+			}
 
-			normals[elms[0]] = normals[elms[1]] = normals[elms[2]] = normal;
+			glm::vec3 normal = glm::normalize(
+				glm::cross(
+					vertices[elms[1]].position - vertices[elms[0]].position,
+					vertices[elms[2]].position - vertices[elms[0]].position));
+
+			vertices[elms[0]].normal
+				= vertices[elms[1]].normal
+				= vertices[elms[2]].normal = normal;
 		}
 	}
 }
 
 void gameModel::genTexcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
-	texcoords.resize(vertices.size());
 
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != gameObject::objType::Mesh) {
@@ -59,8 +67,13 @@ void gameModel::genTexcoords(void) {
 			// TODO: bounds check
 			GLuint elm = mesh->faces[i];
 
-			glm::vec3& foo = vertices[elm];
-			texcoords[elm] = {foo.x, foo.y};
+			if (elm >= vertices.size()) {
+				std::cerr << " > invalid face index! (genTexcoords())" << std::endl;
+				continue;
+			}
+
+			glm::vec3& foo = vertices[elm].position;
+			vertices[elm].uv = {foo.x, foo.y};
 		}
 	}
 }
@@ -82,14 +95,18 @@ void gameModel::genAABBs(void) {
 		// set base value for min/max, needs to be something in the mesh
 		// so first element will do
 		mesh->boundingBox.min = mesh->boundingBox.max
-			= vertices[mesh->faces[0]];
+			= vertices[mesh->faces[0]].position;
 
 		for (unsigned i = 0; i < mesh->faces.size(); i++) {
 			// TODO: bounds check
 			GLuint elm = mesh->faces[i];
-			glm::vec3& foo = vertices[elm];
 
-			// TODO: check, think this is right
+			if (elm >= vertices.size()) {
+				std::cerr << " > invalid face index! (genAABBs())" << std::endl;
+				continue;
+			}
+
+			glm::vec3& foo = vertices[elm].position;
 			mesh->boundingBox.min = min(mesh->boundingBox.min, foo);
 			mesh->boundingBox.max = max(mesh->boundingBox.max, foo);
 		}
@@ -98,14 +115,7 @@ void gameModel::genAABBs(void) {
 
 void gameModel::genTangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
-	// allocate a little bit extra to make sure we don't overrun the buffer...
-	// XXX:
-	// TODO: just realized, this should be working with faces, not vertices
-	//       so fix this after gltf stuff is in a workable state
-	//unsigned mod = 3 - vertices.size()%3;
 	unsigned mod = 3;
-
-	tangents.resize(vertices.size(), glm::vec3(0));
 
 	// generate tangents for each triangle
 	for (auto& [name, ptr] : nodes) {
@@ -118,13 +128,21 @@ void gameModel::genTangents(void) {
 			// TODO: bounds check
 			GLuint elms[3] = {mesh->faces[i], mesh->faces[i+1], mesh->faces[i+2]};
 
-			glm::vec3& a = vertices[elms[0]];
-			glm::vec3& b = vertices[elms[1]];
-			glm::vec3& c = vertices[elms[2]];
+			if (elms[0] >= vertices.size()
+			 || elms[1] >= vertices.size()
+			 || elms[2] >= vertices.size())
+			{
+				std::cerr << " > invalid face index! (genTangents())" << std::endl;
+				break;
+			}
 
-			glm::vec2 auv = texcoords[elms[0]];
-			glm::vec2 buv = texcoords[elms[1]];
-			glm::vec2 cuv = texcoords[elms[2]];
+			glm::vec3& a = vertices[elms[0]].position;
+			glm::vec3& b = vertices[elms[1]].position;
+			glm::vec3& c = vertices[elms[2]].position;
+
+			glm::vec2 auv = vertices[elms[0]].uv;
+			glm::vec2 buv = vertices[elms[1]].uv;
+			glm::vec2 cuv = vertices[elms[2]].uv;
 
 			glm::vec3 e1 = b - a, e2 = c - a;
 			glm::vec2 duv1 = buv - auv, duv2 = cuv - auv;
@@ -136,8 +154,9 @@ void gameModel::genTangents(void) {
 			tangent.y = f * (duv2.y * e1.y + duv1.y * e2.y);
 			tangent.z = f * (duv2.y * e1.z + duv1.y * e2.z);
 
-			tangents[elms[0]] = tangents[elms[1]] = tangents[elms[2]]
-				= glm::normalize(tangent);
+			vertices[elms[0]].tangent
+				= vertices[elms[1]].tangent
+				= vertices[elms[2]].tangent = glm::normalize(tangent);
 		}
 	}
 }

@@ -95,22 +95,36 @@ gameModel::ptr load_object(std::string filename) {
 		else if (statement[0] == "f") {
 			std::size_t end = statement.size();
 
-			// XXX: we should be checking for buffer ranges here
+			// TODO: XXX: we should be checking for buffer ranges here
 			auto load_face_tri = [&] (std::string& statement) {
+				glm::vec3 position(0);
+				glm::vec3 normal(0);
+				glm::vec2 texcoord(0);
+
 				auto spec = split_string(statement, '/');
 				unsigned vert_index = std::stoi(spec[0]) - 1;
 
-				ret->vertices.push_back(vertbuf[vert_index]);
-				current_mesh->faces.push_back(ret->vertices.size() - 1);
+				position = vertbuf[vert_index];
+				//ret->vertices.push_back(vertbuf[vert_index]);
 
 				if (ret->haveTexcoords && spec.size() > 1 && !spec[1].empty()) {
 					unsigned buf_index = std::stoi(spec[1]) - 1;
-					ret->texcoords.push_back(texbuf[buf_index]);
+					//ret->texcoords.push_back(texbuf[buf_index]);
+					texcoord = texbuf[buf_index];
 				}
 
 				if (ret->haveNormals && spec.size() > 2 && !spec[2].empty()) {
-					ret->normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
+					//ret->normals.push_back(normbuf[std::stoi(spec[2]) - 1]);
+					normal = normbuf[std::stoi(spec[2]) - 1];
 				}
+
+				ret->vertices.push_back((gameModel::vertex) {
+					.position = position,
+					.normal   = normal,
+					.uv       = texcoord,
+				});
+
+				current_mesh->faces.push_back(ret->vertices.size() - 1);
 			};
 
 			for (std::size_t cur = 1; cur + 2 < end; cur++) {
@@ -153,29 +167,6 @@ gameModel::ptr load_object(std::string filename) {
 
 	ret->genTangents();
 	ret->genAABBs();
-
-	if (ret->normals.size() != ret->vertices.size()) {
-		std::cerr << " ? mismatched normals and vertices: "
-			<< ret->normals.size() << ", "
-			<< ret->vertices.size()
-			<< std::endl;
-		// TODO: should handle this
-	}
-
-	if (ret->texcoords.size() != ret->vertices.size()) {
-		std::cerr << " ? mismatched texcoords and vertices: "
-			<< ret->texcoords.size() << ", "
-			<< ret->vertices.size()
-			<< std::endl;
-		// TODO: should handle this
-	}
-
-	if (ret->tangents.size() != ret->vertices.size()) {
-		std::cerr << " ? mismatched tangents and vertices: "
-			<< ret->tangents.size() << ", "
-			<< ret->vertices.size()
-			<< std::endl;
-	}
 
 	return ret;
 }

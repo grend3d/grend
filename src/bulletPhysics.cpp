@@ -223,7 +223,7 @@ bulletPhysics::addStaticMesh(void *data,
 		                               sizeof(GLuint[3]),
 		                               model->vertices.size(),
 		                               (GLfloat*)model->vertices.data(),
-									   sizeof(GLfloat[3]));
+									   sizeof(gameModel::vertex));
 
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
 	ret->runtime = this;

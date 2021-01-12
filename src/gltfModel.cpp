@@ -25,6 +25,37 @@ namespace grendx {
 modelMap load_gltf_models(tinygltf::Model& tgltf_model);
 }
 
+template <class T>
+class accessorIterator {
+	public:
+		uint8_t *buffer;
+		size_t index = 0;
+		size_t end;
+		size_t elementSize;
+
+		accessorIterator()
+			: buffer(nullptr), end(0), elementSize(0) {};
+		accessorIterator(uint8_t *_buffer, size_t _end, size_t _emSize)
+			: buffer(_buffer), end(_end), elementSize(_emSize) {};
+
+		accessorIterator& operator++(int) {
+			if (index < end) {
+				index++;
+			}
+
+			return *this;
+		}
+
+		bool atEnd(void) {
+			return index >= end;
+		}
+
+		T& operator*() {
+			return *reinterpret_cast<T*>(buffer + index*elementSize);
+		}
+
+};
+
 template <typename T>
 static inline bool check_index(std::vector<T> container, size_t idx) {
 	if (idx >= container.size()) {
@@ -158,25 +189,21 @@ static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
 	}
 }
 
-static std::optional<grendx::AABB>
-gltf_accessor_aabb(tinygltf::Accessor& acc) {
-	bool have_aabb =
-		!acc.minValues.empty() && !acc.maxValues.empty()
-		&& acc.minValues.size() == 3
-		&& acc.maxValues.size() == 3;
+template<typename T>
+static accessorIterator<T>
+gltf_buffer_iterator(tinygltf::Model& gltf_model, int accessor) {
+	check_index(gltf_model.accessors, accessor);
+	auto& acc = gltf_model.accessors[accessor];
+	check_index(gltf_model.bufferViews, acc.bufferView);
+	auto& view = gltf_model.bufferViews[acc.bufferView];
 
-	if (have_aabb) {
-		auto& min = acc.minValues;
-		auto& max = acc.maxValues;
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	size_t emsz = view.byteStride
+		? view.byteStride
+		: gltf_buff_element_size(acc.componentType, acc.type);
 
-		return std::optional<grendx::AABB>({
-			glm::vec3(min[0], min[1], min[2]),
-			glm::vec3(max[0], max[1], max[2]),
-		});
 
-	} else {
-		return {};
-	}
+	return accessorIterator<T>(datas, acc.count, emsz);
 }
 
 static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
@@ -197,6 +224,27 @@ static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
 		//T *em = reinterpret_cast<T*>(datas + i*emsz);
 		GLushort *em = reinterpret_cast<GLushort*>(datas + i*emsz);
 		vec.push_back((GLuint)*em);
+	}
+}
+
+static std::optional<grendx::AABB>
+gltf_accessor_aabb(tinygltf::Accessor& acc) {
+	bool have_aabb =
+		!acc.minValues.empty() && !acc.maxValues.empty()
+		&& acc.minValues.size() == 3
+		&& acc.maxValues.size() == 3;
+
+	if (have_aabb) {
+		auto& min = acc.minValues;
+		auto& max = acc.maxValues;
+
+		return std::optional<grendx::AABB>({
+			glm::vec3(min[0], min[1], min[2]),
+			glm::vec3(max[0], max[1], max[2]),
+		});
+
+	} else {
+		return {};
 	}
 }
 
@@ -228,13 +276,6 @@ static grendx::material::ptr
 	grendx::material::ptr ret = std::make_shared<grendx::material>();
 	auto& mat = gltf_material(gltf_model, material_idx);
 
-	/*
-	assert(out_model->hasNode(temp_name));
-	grendx::gameMesh::ptr mesh
-		= std::dynamic_pointer_cast<grendx::gameMesh>(out_model->nodes[temp_name]);
-	std::string matidxname = mat.name + ":" + std::to_string(material_idx);
-	mesh->material = matidxname;
-	*/
 	std::string matidxname = ":" + std::to_string(material_idx);
 
 	auto& pbr = mat.pbrMetallicRoughness;
@@ -404,10 +445,16 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				}
 			}
 
+			accessorIterator<glm::vec3> positionIt;
+			accessorIterator<glm::vec3> normalIt;
+			accessorIterator<glm::vec3> tangentIt;
+			accessorIterator<glm::vec2> uvIt;
+
 			if (normals >= 0) {
 				check_index(tgltf_model.accessors, normals);
 
-				gltf_unpack_buffer(tgltf_model, normals, curModel->normals);
+				//gltf_unpack_buffer(tgltf_model, normals, curModel->normals);
+				normalIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, normals);
 				curModel->haveNormals = true;
 			}
 
@@ -415,7 +462,8 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				check_index(tgltf_model.accessors, tangents);
 				std::cerr << "        have tangents... " << tangents << std::endl;
 
-				gltf_unpack_buffer(tgltf_model, tangents, curModel->tangents);
+				//gltf_unpack_buffer(tgltf_model, tangents, curModel->tangents);
+				tangentIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, tangents);
 				curModel->haveTangents = true;
 			}
 
@@ -427,7 +475,8 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				assert_type(acc.componentType, 
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
+				//gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
+				positionIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, position);
 
 				if (auto box = gltf_accessor_aabb(acc)) {
 					curModel->haveAABB = true;
@@ -442,9 +491,24 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				gltf_unpack_buffer(tgltf_model, texcoord, curModel->texcoords);
+				//gltf_unpack_buffer(tgltf_model, texcoord, curModel->texcoords);
+				uvIt = gltf_buffer_iterator<glm::vec2>(tgltf_model, texcoord);
 				curModel->haveTexcoords = true;
 			}
+
+			for (; !positionIt.atEnd(); positionIt++) {
+				gameModel::vertex vert;
+
+				vert.position = *positionIt;
+				if (!normalIt.atEnd())  {vert.normal  = *normalIt; normalIt++;};
+				if (!tangentIt.atEnd()) {vert.tangent = *tangentIt; tangentIt++;};
+				if (!uvIt.atEnd())      {vert.uv      = *uvIt; uvIt++;};
+
+				curModel->vertices.push_back(vert);
+			}
+
+			accessorIterator<usvec4>    jointIt;
+			accessorIterator<glm::vec4> weightIt;
 
 			if (joints >= 0 && weights >= 0) {
 				check_index(tgltf_model.accessors, joints);
@@ -458,11 +522,26 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 				assert_type(wac.componentType,
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
-				gltf_unpack_buffer(tgltf_model, joints, curModel->joints);
-				gltf_unpack_buffer(tgltf_model, weights, curModel->weights);
+
+				jointIt = gltf_buffer_iterator<usvec4>(tgltf_model, joints);
+				weightIt = gltf_buffer_iterator<glm::vec4>(tgltf_model, weights);
+
 				curModel->haveJoints = true;
 				std::cerr << "        have joints: " << joints << std::endl;
 			}
+
+			for (; !jointIt.atEnd(); jointIt++) {
+				gameModel::jointWeights joint;
+
+				joint.joints = *jointIt;
+				if (!weightIt.atEnd()) {
+					joint.weights = *weightIt;
+					weightIt++;
+				}
+
+				curModel->joints.push_back(joint);
+			}
+
 		}
 
 		// generate anything not included

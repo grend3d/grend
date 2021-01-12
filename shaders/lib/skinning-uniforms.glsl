@@ -8,4 +8,4 @@
 uniform mat4 joints[MAX_JOINTS];
 // affecting joints and weights
 IN vec4 a_joints;
-IN vec4 a_weights;
+IN vec4  a_weights;

@@ -20,8 +20,10 @@ gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 			float vz = j * unitsPerVert;
 			float height = func(x + vx, y + vz);
 
-			ret->vertices.push_back(glm::vec3(vx, height, vz));
-			ret->texcoords.push_back({vx / 12.0, vz / 12.0});
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {vx, height, vz},
+				.uv       = {vx / 12.0, vz / 12.0},
+			});
 		}
 	}
 
@@ -66,35 +68,51 @@ gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 			float y2 = 0.2*sin((y + spacing)*0.3f);
 			float x1 = 0.2*sin((x)*0.2f);
 			float x2 = 0.2*sin((x + spacing)*0.2f);
-			//float foo = (x ^ y)*(1./ex);
-			//float foo = 0;
 
-			ret->vertices.push_back(glm::vec3(x - spacing, x1+y2, y));
-			ret->vertices.push_back(glm::vec3(x,           x2+y2, y));
-			ret->vertices.push_back(glm::vec3(x - spacing, x1+y1, y - spacing));
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x - spacing, x1+y2, y},
+				.normal   = {0, 1, 0},
+				.uv       = {0, 0},
+			});
 
-			ret->vertices.push_back(glm::vec3(x,           x2+y1, y - spacing));
-			ret->vertices.push_back(glm::vec3(x - spacing, x1+y1, y - spacing));
-			ret->vertices.push_back(glm::vec3(x,           x2+y2, y));
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x, x2+y2, y},
+				.normal   = {0, 1, 0},
+				.uv       = {1, 0},
+			});
 
-			ret->texcoords.push_back({0, 0});
-			ret->texcoords.push_back({1, 0});
-			ret->texcoords.push_back({0, 1});
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x - spacing, x1+y1, y - spacing},
+				.normal   = {0, 1, 0},
+				.uv       = {0, 1},
+			});
 
-			ret->texcoords.push_back({1, 1});
-			ret->texcoords.push_back({0, 1});
-			ret->texcoords.push_back({1, 0});
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x, x2+y1, y - spacing},
+				.normal   = {0, 1, 0},
+				.uv       = {1, 1},
+			});
+
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x - spacing, x1+y1, y - spacing},
+				.normal   = {0, 1, 0},
+				.uv       = {0, 1},
+			});
+
+			ret->vertices.push_back((gameModel::vertex) {
+				.position = {x, x2+y2, y},
+				.normal   = {0, 1, 0},
+				.uv       = {1, 0},
+			});
 
 			for (unsigned k = 0; k < 6; k++) {
 				mesh->faces.push_back(i++);
-				ret->normals.push_back(glm::vec3(0, 1, 0));
 			}
 		}
 	}
 
 	setNode("mesh", ret, mesh);
 
-	//ret->gen_normals();
 	ret->genTangents();
 
 	ret->haveNormals = true;
@@ -107,6 +125,13 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 	gameModel::ptr ret = gameModel::ptr(new gameModel());
 	gameMesh::ptr mesh = gameMesh::ptr(new gameMesh());
 
+	float ax = width/2;
+	float ay = height/2;
+	float az = depth/2;
+
+	// TODO: cube generation still borked after VBO refactor,
+	//       leaving this here for reference
+	/*
 	float ax = width/2;
 	float ay = height/2;
 	float az = depth/2;
@@ -146,8 +171,74 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 	ret->vertices.push_back(glm::vec3( ax, -ay, -az));
 	ret->vertices.push_back(glm::vec3( ax,  ay, -az));
 	ret->vertices.push_back(glm::vec3( ax,  ay,  az));
+	*/
+
+	/*
+	unsigned generated = 0;
+	for (unsigned i = 0; i < 8; i++) {
+		generated |= 1 << i;
+
+		for (unsigned k = 0; k < 3; k++) {
+			unsigned n1 = i ^ (1 << k);
+			unsigned n2 = i ^ (1 << ((k + 1) % 3));
+
+			if (!(generated & n1) && !(generated & n1)) {
+				glm::vec3 a = glm::vec3((i&1),  (i&2),  (i&4));
+				glm::vec3 b = glm::vec3((n1&1), (n1&2), (n1&4));
+				glm::vec3 c = glm::vec3((n2&1), (n2&2), (n2&4));
+
+				for (auto& p : {a, b, c, a}) {
+					ret->vertices.push_back((gameModel::vertex) {
+						.position = (p * dim) - dim/2.f,
+						.uv       = {int(p.x)&1, int(p.y)&2},
+					});
+				}
+			}
+		}
+	}
+	*/
+
+	/*
+		ret->texcoords.push_back({0, 0});
+		ret->texcoords.push_back({1, 0});
+		ret->texcoords.push_back({0, 1});
+		ret->texcoords.push_back({1, 0});
+	*/
+
+	glm::vec2 uvs[4] = {
+		{0, 0}, {1, 0},
+		{0, 1}, {1, 1},
+	};
+
+	glm::vec3 verts[24] = {
+		// front
+		{-ax, -ay,  az}, { ax, -ay,  az},
+		{ ax,  ay,  az}, {-ax,  ay,  az},
+		// top
+		{-ax,  ay,  az}, { ax,  ay,  az},
+		{ ax,  ay, -az}, {-ax,  ay, -az},
+		// back
+		{ ax, -ay, -az}, {-ax, -ay, -az},
+		{-ax,  ay, -az}, { ax,  ay, -az},
+		// bottom
+		{-ax, -ay, -az}, { ax, -ay, -az},
+		{ ax, -ay,  az}, {-ax, -ay,  az},
+		// left
+		{-ax, -ay, -az}, {-ax, -ay,  az},
+		{-ax,  ay,  az}, {-ax,  ay, -az},
+		// right
+		{ ax, -ay,  az}, { ax, -ay, -az},
+		{ ax,  ay, -az}, { ax,  ay,  az},
+	};
+
+	ret->vertices.resize(24);
 
 	for (unsigned i = 0; i < 24; i += 4) {
+		for (unsigned k = 0; k < 4; k++) {
+			ret->vertices[i+k].position = verts[i+k];
+			ret->vertices[i+k].uv       = uvs[i+k];
+		}
+
 		mesh->faces.push_back(i);
 		mesh->faces.push_back(i+1);
 		mesh->faces.push_back(i+2);
@@ -155,11 +246,6 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 		mesh->faces.push_back(i+2);
 		mesh->faces.push_back(i+3);
 		mesh->faces.push_back(i);
-
-		ret->texcoords.push_back({0, 0});
-		ret->texcoords.push_back({1, 0});
-		ret->texcoords.push_back({0, 1});
-		ret->texcoords.push_back({1, 0});
 	}
 
 	setNode("mesh", ret, mesh);
