@@ -6,6 +6,10 @@
 // main difference is that I'm using luminance rather than pure pixel difference,
 // similar to nvidia's FXAA.
 
+precision highp float;
+precision mediump sampler2D;
+precision mediump samplerCube;
+
 #include <lib/postprocessing-uniforms.glsl>
 #include <lib/compat.glsl>
 

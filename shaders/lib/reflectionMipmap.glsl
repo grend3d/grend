@@ -18,9 +18,15 @@ vec4 reflectionLinearMip(vec3 pos, vec3 cam, vec3 normal, float roughness) {
 		reflection_probe[6*lower + 5]
 	);
 
-	vec4 lowerSample =
-		textureCubeAtlas((lower == 0)? reflection_atlas : irradiance_atlas,
-		                 lowercube, dir);
+	vec4 lowerSample;
+	if (lower == 0) {
+		lowerSample =
+			textureCubeAtlas(reflection_atlas, lowercube, dir);
+
+	} else {
+		lowerSample =
+			textureCubeAtlas(irradiance_atlas, lowercube, dir);
+	}
 	
 	if (lower == upper) {
 		// return exact sample, no need to interpolate

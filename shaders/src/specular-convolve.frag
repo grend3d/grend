@@ -22,15 +22,15 @@ void main(void) {
 	float len = 1.0;
 	float factor = rend_x / screen_x;
 	float lim = factor * (len / size);
-	float div = pow(2.0*factor*len - 1, 2.0);
+	float div = pow(2.0*factor*len - 1.0, 2.0);
 	float asdf = 4.0;
 	
 	// TODO: proper GGX distribution sampling
 	for (float x = -asdf*lim; x < asdf*lim; x += asdf*inc) {
 		for (float y = -asdf*lim; y < asdf*lim; y += asdf*inc) {
 			vec3 adjdir = textureCubeAtlasAddUV(currentFace, curdir, vec2(x, y));
-			vec4 sample = textureCubeAtlas(reflection_atlas, cubeface, adjdir);
-			sum += sample;
+			vec4 samp = textureCubeAtlas(reflection_atlas, cubeface, adjdir);
+			sum += samp;
 		}
 	}
 

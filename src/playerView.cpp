@@ -8,10 +8,6 @@
 using namespace grendx;
 
 static gameObject::ptr testweapon = nullptr;
-
-static channelBuffers_ptr weaponSound =
-	openAudio(GR_PREFIX "assets/sfx/impact.ogg");
-
 static gameModel::ptr cuboid = generate_cuboid(1.0, 1.0, 1.0);
 
 struct nvg_data {

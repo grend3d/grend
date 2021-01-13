@@ -17,7 +17,7 @@ void main(void) {
 	vec4 sum = vec4(0);
 	vec3 curdir = textureCubeAtlasDir(currentFace, f_texcoord);
 	float size = float(textureSize(reflection_atlas, 0).x) * cubeface[0].z;
-	float div = size*size*3;
+	float div = size*size*3.0;
 	float inc = 1.0 / size;
 
 	for (int i = 0; i < 6; i++) {
@@ -25,10 +25,10 @@ void main(void) {
 			for (float y = 0.0; y < 1.0; y += inc) {
 				vec2 uv = vec2(x, y);
 				vec3 dir = textureCubeAtlasDir(i, uv);
-				vec4 sample = texture2DAtlas(reflection_atlas, cubeface[i], uv);
+				vec4 samp = texture2DAtlas(reflection_atlas, cubeface[i], uv);
 				float diffuse = lambert_diffuse(0.0, dir, curdir, -dir);
 
-				sum += sample*diffuse;
+				sum += samp*diffuse;
 			}
 		}
 	}
