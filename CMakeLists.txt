@@ -8,6 +8,7 @@ option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 set(GLSL_VERSION 330)
 
+add_subdirectory(libs/nanovg)
 find_package(SDL2 REQUIRED COMPONENTS SDL2::SDL2)
 find_package(Bullet REQUIRED)
 
@@ -16,6 +17,16 @@ pkg_check_modules(SDL2     REQUIRED IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_ttf REQUIRED IMPORTED_TARGET SDL2_ttf)
 pkg_check_modules(Bullet   REQUIRED IMPORTED_TARGET bullet)
 pkg_check_modules(Glew     REQUIRED IMPORTED_TARGET glew)
+pkg_check_modules(GLM      REQUIRED IMPORTED_TARGET glm)
+
+set(INCLUDES
+	include/grend
+	libs
+	libs/tinygltf
+	libs/nanovg/src
+	libs/imgui
+	libs/json/single_include
+	libs/stb)
 
 include_directories(include)
 include_directories(libs)
@@ -24,6 +35,7 @@ include_directories(libs/nanovg/src)
 include_directories(libs/imgui)
 include_directories(libs/json/single_include)
 include_directories(libs/stb)
+include_directories(PkgConfig::GLM)
 
 add_compile_definitions(
 	# GLSL version is also used to determine OpenGL API version
@@ -31,16 +43,23 @@ add_compile_definitions(
 	# GLSL_VERSION=300 # OpenGL ES 3.0
 	GLSL_VERSION=330 # OpenGL core 3.30
 	# GLSL_VERSION=430 # OpenGL core 4.30
-	PHYSICS_BULLET
+	IMGUI_IMPL_OPENGL_LOADER_GLEW
 	GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 )
+if (PHYSICS_BULLET)
+	add_compile_definitions(PHYSICS_BULLET)
+	set(PHYSICS_IMPLEMENTATION src/bulletPhysics.cpp)
+else()
+	add_compile_definitions(PHYSICS_IMP)
+	set(PHYSICS_IMPLEMENTATION src/impPhysics.cpp)
+endif()
 
 configure_file(config.h.in config.h)
 
-link_directories(${CMAKE_SOURCE_DIR}/libs/nanovg/build)
+#link_directories(${CMAKE_SOURCE_DIR}/libs/nanovg/build)
 add_library(Grend 
+	${PHYSICS_IMPLEMENTATION}
 	src/animation.cpp
-	src/bulletPhysics.cpp
 	src/controllers.cpp
 	src/gameObject.cpp
 	src/octree.cpp
@@ -61,7 +80,6 @@ add_library(Grend
 	src/glManagerBuffer.cpp
 	src/glManagerShader.cpp
 	src/glManagerTexture.cpp
-	#src/impPhysics.cpp
 	src/mainLogic.cpp
 	src/modalSDLInput.cpp
 	src/model.cpp
@@ -131,3 +149,17 @@ target_link_libraries(landscape-test Grend)
 include_directories(demos/map-viewer/)
 add_executable(map-viewer demos/map-viewer/main.cpp)
 target_link_libraries(map-viewer Grend)
+
+# TODO: need to have library includes under grend folder
+install(TARGETS Grend)
+install(TARGETS landscape-test)
+install(TARGETS map-viewer)
+install(DIRECTORY ${INCLUDES} TYPE INCLUDE)
+install(DIRECTORY shaders     TYPE DATA)
+install(DIRECTORY assets      TYPE DATA)
+
+include(InstallRequiredSystemLibraries)
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+set(CPACK_PACKAGE_VERSION_MAJOR "${Grend_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${Grend_VERSION_MINOR}")
+include(CPack)

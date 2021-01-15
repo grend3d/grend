@@ -12,4 +12,4 @@
 	url = https://github.com/nlohmann/json
 [submodule "libs/nanovg"]
 	path = libs/nanovg
-	url = https://github.com/memononen/nanovg
+	url = https://github.com/mushrom/nanovg
