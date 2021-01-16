@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
+option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
 set(GLSL_VERSION 330)
 
 add_subdirectory(libs/nanovg)
@@ -19,8 +20,8 @@ pkg_check_modules(Bullet   REQUIRED IMPORTED_TARGET bullet)
 pkg_check_modules(Glew     REQUIRED IMPORTED_TARGET glew)
 pkg_check_modules(GLM      REQUIRED IMPORTED_TARGET glm)
 
-set(INCLUDES
-	include/grend
+set(INCLUDES include/grend)
+set(LIBRARY_INCLUDES 
 	libs
 	libs/tinygltf
 	libs/nanovg/src
@@ -29,12 +30,7 @@ set(INCLUDES
 	libs/stb)
 
 include_directories(include)
-include_directories(libs)
-include_directories(libs/tinygltf)
-include_directories(libs/nanovg/src)
-include_directories(libs/imgui)
-include_directories(libs/json/single_include)
-include_directories(libs/stb)
+include_directories(${LIBRARY_INCLUDES})
 include_directories(PkgConfig::GLM)
 
 add_compile_definitions(
@@ -44,6 +40,7 @@ add_compile_definitions(
 	GLSL_VERSION=330 # OpenGL core 3.30
 	# GLSL_VERSION=430 # OpenGL core 4.30
 	IMGUI_IMPL_OPENGL_LOADER_GLEW
+	GREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 )
 if (PHYSICS_BULLET)
@@ -130,6 +127,7 @@ target_link_libraries(Grend
 	PkgConfig::Glew
 	nanovg
 )
+target_compile_options(Grend PUBLIC "-O2")
 
 include_directories(demos/landscape-test/)
 add_executable(landscape-test
@@ -154,9 +152,39 @@ target_link_libraries(map-viewer Grend)
 install(TARGETS Grend)
 install(TARGETS landscape-test)
 install(TARGETS map-viewer)
-install(DIRECTORY ${INCLUDES} TYPE INCLUDE)
-install(DIRECTORY shaders     TYPE DATA)
-install(DIRECTORY assets      TYPE DATA)
+install(TARGETS nanovg)
+install(DIRECTORY ${INCLUDES}         DESTINATION include)
+install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
+install(DIRECTORY shaders             TYPE DATA)
+install(DIRECTORY assets              TYPE DATA)
+install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
+if (PORTABLE_BUILD)
+	# TODO: should also output a launcher script
+	install(CODE
+	[[
+		#include(BundleUtilities)
+		#	fixup_bundle("landscape-test" "" "asdf")
+
+		file(GET_RUNTIME_DEPENDENCIES
+			RESOLVED_DEPENDENCIES_VAR   runtime_libs
+			UNRESOLVED_DEPENDENCIES_VAR unresolved_libs
+			EXECUTABLES landscape-test map-viewer
+			# have to bring your own libGL
+			POST_EXCLUDE_REGEXES ".*libGL.so"
+		)
+
+		message("RESOLVED:   ${runtime_libs}")
+		message("UNRESOLVED: ${unresolved_libs}")
+
+		foreach(_lib ${runtime_libs})
+			file(INSTALL
+				DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
+				TYPE SHARED_LIBRARY
+				#FOLLOW_SYMLINK_CHAIN
+				FILES "${_lib}")
+		endforeach()
+	]])
+endif()
 
 include(InstallRequiredSystemLibraries)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
