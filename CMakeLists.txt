@@ -126,6 +126,7 @@ target_link_libraries(Grend
 	PkgConfig::Bullet
 	PkgConfig::Glew
 	nanovg
+	pthread
 )
 target_compile_options(Grend PUBLIC "-O2")
 
@@ -149,14 +150,14 @@ add_executable(map-viewer demos/map-viewer/main.cpp)
 target_link_libraries(map-viewer Grend)
 
 # TODO: need to have library includes under grend folder
-install(TARGETS Grend)
-install(TARGETS landscape-test)
-install(TARGETS map-viewer)
-install(TARGETS nanovg)
+install(TARGETS Grend                 DESTINATION lib)
+install(TARGETS nanovg                DESTINATION lib)
+install(TARGETS landscape-test        DESTINATION bin)
+install(TARGETS map-viewer            DESTINATION bin)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
-install(DIRECTORY shaders             TYPE DATA)
-install(DIRECTORY assets              TYPE DATA)
+install(DIRECTORY shaders             DESTINATION share)
+install(DIRECTORY assets              DESTINATION share)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
 if (PORTABLE_BUILD)
 	# TODO: should also output a launcher script
