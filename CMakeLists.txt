@@ -7,7 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
-set(GLSL_VERSION 330)
+
+# GLSL version is also used to determine OpenGL API version
+#set(GLSL_VERSION 100) # OpenGL ES 2.0
+#set(GLSL_VERSION 300) # OpenGL ES 3.0
+set(GLSL_VERSION 330)  # OpenGL core 3.30
+#set(GLSL_VERSION 430) # OpenGL core 4.30
 
 add_subdirectory(libs/nanovg)
 find_package(SDL2 REQUIRED COMPONENTS SDL2::SDL2)
@@ -34,14 +39,12 @@ include_directories(${LIBRARY_INCLUDES})
 include_directories(PkgConfig::GLM)
 
 add_compile_definitions(
-	# GLSL version is also used to determine OpenGL API version
-	# GLSL_VERSION=100 # OpenGL ES 2.0
-	# GLSL_VERSION=300 # OpenGL ES 3.0
-	GLSL_VERSION=330 # OpenGL core 3.30
-	# GLSL_VERSION=430 # OpenGL core 4.30
+	GLSL_VERSION=${GLSL_VERSION}
 	IMGUI_IMPL_OPENGL_LOADER_GLEW
 	GREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
-	GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
+	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
+	# TODO: this obviously breaks portable installs
+	GR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
 )
 if (PHYSICS_BULLET)
 	add_compile_definitions(PHYSICS_BULLET)
@@ -52,6 +55,37 @@ else()
 endif()
 
 configure_file(config.h.in config.h)
+
+# XXX: compiling shaders, dependency for the library
+# TODO: explicit list of shaders
+# TODO: actually, if I recall correctly the only reason I'm preprocessing
+#       shaders in the first place was for the #include directive...
+#       ........could just implement my own micro-preprocessor for that easily
+#       enough, as a stand-in until I get around to writing/using a full
+#       generator
+file(GLOB SHADER_SRC
+	 LIST_DIRECTORIES false
+	 ${CMAKE_SOURCE_DIR}/shaders/src/*.vert
+	 ${CMAKE_SOURCE_DIR}/shaders/src/*.frag)
+
+set(SHADER_OUT)
+file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shader_out/")
+foreach(_shaderpath ${SHADER_SRC})
+	get_filename_component(_shadername ${_shaderpath} NAME)
+	set(_shaderout ${PROJECT_BINARY_DIR}/shader_out/${_shadername})
+	list(APPEND SHADER_OUT ${_shaderout})
+
+	add_custom_command(OUTPUT ${_shaderout}
+		COMMAND cpp
+			-DGLSL_VERSION=${GLSL_VERSION}
+			-I${PROJECT_SOURCE_DIR}/shaders
+			-I${PROJECT_BINARY_DIR}
+			-P ${_shaderpath} ${_shaderout}
+		DEPENDS ${_shaderpath}
+	)
+endforeach()
+
+add_custom_target(Shader_preprocess SOURCES ${SHADER_OUT})
 
 #link_directories(${CMAKE_SOURCE_DIR}/libs/nanovg/build)
 add_library(Grend 
@@ -119,6 +153,7 @@ add_library(Grend
 	libs/stb/stb_vorbis.c
 )
 
+add_dependencies(Grend Shader_preprocess)
 target_include_directories(Grend PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(Grend
 	PkgConfig::SDL2
@@ -156,9 +191,10 @@ install(TARGETS landscape-test        DESTINATION bin)
 install(TARGETS map-viewer            DESTINATION bin)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
-install(DIRECTORY shaders             DESTINATION share)
-install(DIRECTORY assets              DESTINATION share)
+install(FILES     ${SHADER_OUT}       DESTINATION share/grend/shaders/out)
+install(DIRECTORY assets              DESTINATION share/grend)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
+
 if (PORTABLE_BUILD)
 	# TODO: should also output a launcher script
 	install(CODE

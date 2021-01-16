@@ -32,7 +32,8 @@ bool Shader::load(std::string filename) {
 	std::cerr << __func__ << ": " << __LINE__ << ": loading "
 	          << filename << std::endl;
 
-	std::string source = load_file(filename);
+	std::string version = std::string("#version ") + GLSL_STRING + "\n";
+	std::string source = version + load_file(filename);
 	const char *temp = source.c_str();
 	int compiled;
 
