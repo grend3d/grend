@@ -106,13 +106,14 @@ renderContext::renderContext(context& ctx) {
 renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
                                       std::string mainVertex,
                                       std::string skinnedVertex,
-                                      std::string instancedVertex)
+                                      std::string instancedVertex,
+                                      shaderOptions& options)
 {
 	renderFlags ret;
 
-	ret.mainShader = loadProgram(mainVertex, fragmentPath);
-	ret.skinnedShader = loadProgram(skinnedVertex, fragmentPath);
-	ret.instancedShader = loadProgram(instancedVertex, fragmentPath);
+	ret.mainShader = loadProgram(mainVertex, fragmentPath, options);
+	ret.skinnedShader = loadProgram(skinnedVertex, fragmentPath, options);
+	ret.instancedShader = loadProgram(instancedVertex, fragmentPath, options);
 
 	for (Program::ptr prog : {ret.mainShader,
 	                          ret.skinnedShader,
@@ -140,25 +141,34 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
 	return ret;
 }
 
-renderFlags grendx::loadLightingShader(std::string fragmentPath) {
+renderFlags grendx::loadLightingShader(std::string fragmentPath,
+                                       shaderOptions& options)
+{
 	return loadShaderToFlags(fragmentPath,
 		GR_PREFIX "shaders/out/pixel-shading.vert",
 		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
-		GR_PREFIX "shaders/out/pixel-shading-instanced.vert");
+		GR_PREFIX "shaders/out/pixel-shading-instanced.vert",
+		options);
 }
 
-renderFlags grendx::loadProbeShader(std::string fragmentPath) {
+renderFlags grendx::loadProbeShader(std::string fragmentPath,
+                                    shaderOptions& options)
+{
 	return loadShaderToFlags(fragmentPath,
 		// TODO: rename
 		GR_PREFIX "shaders/out/ref_probe.vert",
 		GR_PREFIX "shaders/out/ref_probe-skinned.vert",
-		GR_PREFIX "shaders/out/ref_probe-instanced.vert");
+		GR_PREFIX "shaders/out/ref_probe-instanced.vert",
+		options);
 }
 
-Program::ptr grendx::loadPostShader(std::string fragmentPath) {
+Program::ptr grendx::loadPostShader(std::string fragmentPath,
+                                    shaderOptions& options)
+{
 	Program::ptr ret = loadProgram(
 		GR_PREFIX "shaders/out/postprocess.vert",
-		fragmentPath
+		fragmentPath,
+		options
 	);
 
 	ret->attribute("v_position", VAO_QUAD_VERTICES);
@@ -172,31 +182,44 @@ void renderContext::loadShaders(void) {
 	std::cerr << "loading shaders" << std::endl;
 
 	lightingShaders["main"] =
-		loadLightingShader(GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag");
+		loadLightingShader(
+			GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag",
+			globalShaderOptions);
+
 	lightingShaders["unshaded"] = 
-		loadLightingShader(GR_PREFIX "shaders/out/unshaded.frag");
+		loadLightingShader(
+			GR_PREFIX "shaders/out/unshaded.frag",
+			globalShaderOptions);
 
 	probeShaders["refprobe"] =
-		loadProbeShader(GR_PREFIX "shaders/out/ref_probe.frag");
+		loadProbeShader(
+			GR_PREFIX "shaders/out/ref_probe.frag",
+			globalShaderOptions);
 
 	probeShaders["shadow"] =
-		loadProbeShader(GR_PREFIX "shaders/out/depth.frag");
+		loadProbeShader(
+			GR_PREFIX "shaders/out/depth.frag",
+			globalShaderOptions);
 
 	for (auto& name : {"tonemap", "psaa", "irradiance-convolve",
 	                    "specular-convolve", "quadtest"})
 	{
 		postShaders[name] =
-			loadPostShader(GR_PREFIX "shaders/out/" + std::string(name) + ".frag");
+			loadPostShader(
+				GR_PREFIX "shaders/out/" + std::string(name) + ".frag",
+				globalShaderOptions);
 	}
 
 	internalShaders["refprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
-		GR_PREFIX "shaders/out/ref_probe_debug.frag"
+		GR_PREFIX "shaders/out/ref_probe_debug.frag",
+		globalShaderOptions
 	);
 
 	internalShaders["irradprobe_debug"] = loadProgram(
 		GR_PREFIX "shaders/out/ref_probe_debug.vert",
-		GR_PREFIX "shaders/out/irrad_probe_debug.frag"
+		GR_PREFIX "shaders/out/irrad_probe_debug.frag",
+		globalShaderOptions
 	);
 
 	for (auto& name : {"refprobe_debug", "irradprobe_debug"}) {

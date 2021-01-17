@@ -1,10 +1,12 @@
 #pragma once
 
+#include <grend/glVersion.hpp>
 #include <grend/material.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/bufferAllocator.hpp>
+#include <grend/shaderPreprocess.hpp>
 
 #include <vector>
 #include <map>
@@ -19,16 +21,6 @@
 // TODO: expose this config somehow
 #define ENABLE_MIPMAPS 1
 #define ENABLE_FACE_CULLING 1
-
-#if GLSL_VERSION == 100
-#define GLSL_STRING "100"
-#elif GLSL_VERSION == 300
-#define GLSL_STRING "300 es"
-#elif GLSL_VERSION == 330
-#define GLSL_STRING "330 core"
-#elif GLSL_VERSION == 430
-#define GLSL_STRING "430 core"
-#endif
 
 namespace grendx {
 
@@ -226,10 +218,11 @@ class Texture : public Obj {
 class Shader : public Obj {
 	public:
 		typedef std::shared_ptr<Shader> ptr;
-		Shader(GLuint o, std::string p = "");
-		bool load(std::string path);
+		Shader(GLuint o);
+		bool load(std::string path, shaderOptions& options);
 		bool reload(void);
-		std::string filepath;
+		std::string filepath = "";
+		shaderOptions compiledOptions;
 };
 
 class Program : public Obj {
@@ -392,7 +385,7 @@ Texture::ptr genTextureColor(unsigned width, unsigned height,
 Texture::ptr genTextureDepthStencil(unsigned width, unsigned height,
 									   GLenum format=GL_DEPTH24_STENCIL8);
 
-Program::ptr loadProgram(std::string vert, std::string frag);
+Program::ptr loadProgram(std::string vert, std::string frag, shaderOptions& opts);
 
 GLenum surfaceGlFormat(SDL_Surface *surf);
 GLenum surfaceGlFormat(int channels);

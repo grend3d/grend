@@ -11,9 +11,11 @@ skybox::skybox() {
 	bindModel(model);
 	//bindCookedMeshes();
 
+	shaderOptions nullopts; // XXX
 	program = loadProgram(
 		GR_PREFIX "shaders/out/skybox.vert",
-		GR_PREFIX "shaders/out/dynamic-skybox.frag"
+		GR_PREFIX "shaders/out/dynamic-skybox.frag",
+		nullopts
 	);
 
 	program->attribute("v_position", VAO_VERTICES);

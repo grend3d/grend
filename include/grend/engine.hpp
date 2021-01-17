@@ -10,6 +10,7 @@
 #include <grend/textureAtlas.hpp>
 #include <grend/quadtree.hpp>
 #include <grend/camera.hpp>
+#include <grend/shaderPreprocess.hpp>
 
 #include <list>
 #include <memory>
@@ -182,6 +183,7 @@ class renderContext {
 		// sky box
 		skybox defaultSkybox;
 		renderAtlases atlases;
+		shaderOptions globalShaderOptions;
 
 		// maps 
 		// XXX: loaded shaders, here so they can be accessed from the editor
@@ -282,13 +284,14 @@ class renderQueue {
 		                          renderAtlases& atlases);
 };
 
-renderFlags loadLightingShader(std::string fragmentPath);
-renderFlags loadProbeShader(std::string fragmentPath);
-Program::ptr loadPostShader(std::string fragmentPath);
+renderFlags loadLightingShader(std::string fragmentPath, shaderOptions& opts);
+renderFlags loadProbeShader(std::string fragmentPath, shaderOptions& opts);
+Program::ptr loadPostShader(std::string fragmentPath, shaderOptions& opts);
 renderFlags loadShaderToFlags(std::string fragmentPath,
                               std::string mainVertex,
                               std::string skinnedVertex,
-                              std::string instancedVertex);
+                              std::string instancedVertex,
+                              shaderOptions& opts);
 
 // TODO: should this pass transform or position?
 //       sticking with transform for now

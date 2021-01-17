@@ -111,6 +111,7 @@ add_library(Grend
 	src/glManagerBuffer.cpp
 	src/glManagerShader.cpp
 	src/glManagerTexture.cpp
+	src/shaderPreprocess.cpp
 	src/mainLogic.cpp
 	src/modalSDLInput.cpp
 	src/model.cpp

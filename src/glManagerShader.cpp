@@ -1,5 +1,6 @@
 #include <grend/glManager.hpp>
 #include <grend/glmIncludes.hpp>
+#include <grend/shaderPreprocess.hpp>
 
 #include <string>
 #include <vector>
@@ -11,13 +12,8 @@
 
 namespace grendx {
 
-Shader::Shader(GLuint o, std::string p)
-	: Obj(o, Obj::type::Shader), filepath(p)
-{
-	if (!p.empty()) {
-		load(p);
-	}
-}
+Shader::Shader(GLuint o)
+	: Obj(o, Obj::type::Shader) { }
 
 // TODO: header for general utility functions (see also split_string())
 static std::string load_file(const std::string filename) {
@@ -28,13 +24,17 @@ static std::string load_file(const std::string filename) {
 	return content;
 }
 
-bool Shader::load(std::string filename) {
+bool Shader::load(std::string filename, shaderOptions& options) {
 	std::cerr << __func__ << ": " << __LINE__ << ": loading "
 	          << filename << std::endl;
 
-	std::string version = std::string("#version ") + GLSL_STRING + "\n";
-	std::string source = version + load_file(filename);
-	const char *temp = source.c_str();
+	std::string source    = load_file(filename);
+	std::string processed = preprocessShader(source, options);
+
+	std::cerr << __func__ << " Have processed shader: " << std::endl
+		<< processed << std::endl;
+
+	const char *temp = processed.c_str();
 	int compiled;
 
 	glShaderSource(obj, 1, (const GLchar**)&temp, 0);
@@ -52,28 +52,33 @@ bool Shader::load(std::string filename) {
 
 		std::string err = (filename + ": " + shader_log);
 		std::cerr << err << std::endl;
+
+	} else {
+		// only store this if the shader is in a good state
+		filepath = filename;
+		compiledOptions = options;
 	}
 
-	filepath = filename;
 	return compiled;
 }
 
+// TODO: function that passes new options
 bool Shader::reload(void) {
 	if (!filepath.empty()) {
-		return load(filepath);
+		return load(filepath, compiledOptions);
 	}
 
 	return false;
 }
 
-Program::ptr loadProgram(std::string vert, std::string frag) {
+Program::ptr loadProgram(std::string vert, std::string frag, shaderOptions& opts) {
 	Program::ptr prog = genProgram();
 
 	prog->vertex = genShader(GL_VERTEX_SHADER);
 	prog->fragment = genShader(GL_FRAGMENT_SHADER);
 
-	prog->vertex->load(vert);
-	prog->fragment->load(frag);
+	prog->vertex->load(vert, opts);
+	prog->fragment->load(frag, opts);
 
 	glAttachShader(prog->obj, prog->vertex->obj);
 	glAttachShader(prog->obj, prog->fragment->obj);

@@ -29,9 +29,11 @@ text_renderer::text_renderer(renderContext::ptr eng,
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
 	                      (void*)(3 * sizeof(float)));
 
+	shaderOptions nullopts;
 	text_shader = loadProgram(
 		"shaders/out/UI.vert",
-		"shaders/out/UI.frag"
+		"shaders/out/UI.frag",
+		nullopts
 	);
 
 	text_shader->attribute("v_position", 0);
