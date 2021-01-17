@@ -145,9 +145,9 @@ renderFlags grendx::loadLightingShader(std::string fragmentPath,
                                        shaderOptions& options)
 {
 	return loadShaderToFlags(fragmentPath,
-		GR_PREFIX "shaders/out/pixel-shading.vert",
-		GR_PREFIX "shaders/out/pixel-shading-skinned.vert",
-		GR_PREFIX "shaders/out/pixel-shading-instanced.vert",
+		GR_PREFIX "shaders/src/pixel-shading.vert",
+		GR_PREFIX "shaders/src/pixel-shading-skinned.vert",
+		GR_PREFIX "shaders/src/pixel-shading-instanced.vert",
 		options);
 }
 
@@ -156,9 +156,9 @@ renderFlags grendx::loadProbeShader(std::string fragmentPath,
 {
 	return loadShaderToFlags(fragmentPath,
 		// TODO: rename
-		GR_PREFIX "shaders/out/ref_probe.vert",
-		GR_PREFIX "shaders/out/ref_probe-skinned.vert",
-		GR_PREFIX "shaders/out/ref_probe-instanced.vert",
+		GR_PREFIX "shaders/src/ref_probe.vert",
+		GR_PREFIX "shaders/src/ref_probe-skinned.vert",
+		GR_PREFIX "shaders/src/ref_probe-instanced.vert",
 		options);
 }
 
@@ -166,7 +166,7 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
                                     shaderOptions& options)
 {
 	Program::ptr ret = loadProgram(
-		GR_PREFIX "shaders/out/postprocess.vert",
+		GR_PREFIX "shaders/src/postprocess.vert",
 		fragmentPath,
 		options
 	);
@@ -183,22 +183,22 @@ void renderContext::loadShaders(void) {
 
 	lightingShaders["main"] =
 		loadLightingShader(
-			GR_PREFIX "shaders/out/pixel-shading-metal-roughness-pbr.frag",
+			GR_PREFIX "shaders/src/pixel-shading-metal-roughness-pbr.frag",
 			globalShaderOptions);
 
 	lightingShaders["unshaded"] = 
 		loadLightingShader(
-			GR_PREFIX "shaders/out/unshaded.frag",
+			GR_PREFIX "shaders/src/unshaded.frag",
 			globalShaderOptions);
 
 	probeShaders["refprobe"] =
 		loadProbeShader(
-			GR_PREFIX "shaders/out/ref_probe.frag",
+			GR_PREFIX "shaders/src/ref_probe.frag",
 			globalShaderOptions);
 
 	probeShaders["shadow"] =
 		loadProbeShader(
-			GR_PREFIX "shaders/out/depth.frag",
+			GR_PREFIX "shaders/src/depth.frag",
 			globalShaderOptions);
 
 	for (auto& name : {"tonemap", "psaa", "irradiance-convolve",
@@ -206,19 +206,19 @@ void renderContext::loadShaders(void) {
 	{
 		postShaders[name] =
 			loadPostShader(
-				GR_PREFIX "shaders/out/" + std::string(name) + ".frag",
+				GR_PREFIX "shaders/src/" + std::string(name) + ".frag",
 				globalShaderOptions);
 	}
 
 	internalShaders["refprobe_debug"] = loadProgram(
-		GR_PREFIX "shaders/out/ref_probe_debug.vert",
-		GR_PREFIX "shaders/out/ref_probe_debug.frag",
+		GR_PREFIX "shaders/src/ref_probe_debug.vert",
+		GR_PREFIX "shaders/src/ref_probe_debug.frag",
 		globalShaderOptions
 	);
 
 	internalShaders["irradprobe_debug"] = loadProgram(
-		GR_PREFIX "shaders/out/ref_probe_debug.vert",
-		GR_PREFIX "shaders/out/irrad_probe_debug.frag",
+		GR_PREFIX "shaders/src/ref_probe_debug.vert",
+		GR_PREFIX "shaders/src/irrad_probe_debug.frag",
 		globalShaderOptions
 	);
 

@@ -13,8 +13,8 @@ skybox::skybox() {
 
 	shaderOptions nullopts; // XXX
 	program = loadProgram(
-		GR_PREFIX "shaders/out/skybox.vert",
-		GR_PREFIX "shaders/out/dynamic-skybox.frag",
+		GR_PREFIX "shaders/src/skybox.vert",
+		GR_PREFIX "shaders/src/dynamic-skybox.frag",
 		nullopts
 	);
 

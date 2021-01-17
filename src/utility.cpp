@@ -1,4 +1,6 @@
 #include <grend/utility.hpp>
+#include <sstream>
+#include <fstream>
 
 namespace grendx {
 
@@ -14,6 +16,15 @@ std::vector<std::string> split_string(std::string s, char delim) {
 	ret.push_back(s.substr(last));
 	return ret;
 }
+
+std::string load_file(const std::string filename) {
+	std::ifstream ifs(filename);
+	std::string content((std::istreambuf_iterator<char>(ifs)),
+	                    (std::istreambuf_iterator<char>()));
+
+	return content;
+}
+
 
 // namespace grendx
 }

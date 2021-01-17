@@ -1,6 +1,7 @@
 #include <grend/glManager.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/shaderPreprocess.hpp>
+#include <grend/utility.hpp>
 
 #include <string>
 #include <vector>
@@ -15,15 +16,6 @@ namespace grendx {
 Shader::Shader(GLuint o)
 	: Obj(o, Obj::type::Shader) { }
 
-// TODO: header for general utility functions (see also split_string())
-static std::string load_file(const std::string filename) {
-	std::ifstream ifs(filename);
-	std::string content((std::istreambuf_iterator<char>(ifs)),
-	                    (std::istreambuf_iterator<char>()));
-
-	return content;
-}
-
 bool Shader::load(std::string filename, shaderOptions& options) {
 	std::cerr << __func__ << ": " << __LINE__ << ": loading "
 	          << filename << std::endl;
@@ -31,8 +23,10 @@ bool Shader::load(std::string filename, shaderOptions& options) {
 	std::string source    = load_file(filename);
 	std::string processed = preprocessShader(source, options);
 
+	/*
 	std::cerr << __func__ << " Have processed shader: " << std::endl
 		<< processed << std::endl;
+		*/
 
 	const char *temp = processed.c_str();
 	int compiled;
@@ -50,8 +44,11 @@ bool Shader::load(std::string filename, shaderOptions& options) {
 		shader_log = new char[max_length];
 		glGetShaderInfoLog(obj, max_length, &max_length, shader_log);
 
-		std::string err = (filename + ": " + shader_log);
-		std::cerr << err << std::endl;
+		std::cerr << "BIGERROR: compiliing the processed shader: " << std::endl;
+		std::cerr << "@ " << filename << std::endl;
+		std::cerr << shader_log << std::endl;
+		std::cerr << "SOURCE: ----------------------------------" << std::endl;
+		std::cerr << processed << std::endl;
 
 	} else {
 		// only store this if the shader is in a good state

@@ -24,8 +24,8 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	loading_thing = makePostprocessor<rOutput>(
-		loadProgram(GR_PREFIX "shaders/out/postprocess.vert",
-		            GR_PREFIX "shaders/out/texpresent.frag",
+		loadProgram(GR_PREFIX "shaders/src/postprocess.vert",
+		            GR_PREFIX "shaders/src/texpresent.frag",
 		            game->rend->globalShaderOptions),
 		SCREEN_SIZE_X,
 		SCREEN_SIZE_Y

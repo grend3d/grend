@@ -56,38 +56,6 @@ endif()
 
 configure_file(config.h.in config.h)
 
-# XXX: compiling shaders, dependency for the library
-# TODO: explicit list of shaders
-# TODO: actually, if I recall correctly the only reason I'm preprocessing
-#       shaders in the first place was for the #include directive...
-#       ........could just implement my own micro-preprocessor for that easily
-#       enough, as a stand-in until I get around to writing/using a full
-#       generator
-file(GLOB SHADER_SRC
-	 LIST_DIRECTORIES false
-	 ${CMAKE_SOURCE_DIR}/shaders/src/*.vert
-	 ${CMAKE_SOURCE_DIR}/shaders/src/*.frag)
-
-set(SHADER_OUT)
-file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shader_out/")
-foreach(_shaderpath ${SHADER_SRC})
-	get_filename_component(_shadername ${_shaderpath} NAME)
-	set(_shaderout ${PROJECT_BINARY_DIR}/shader_out/${_shadername})
-	list(APPEND SHADER_OUT ${_shaderout})
-
-	add_custom_command(OUTPUT ${_shaderout}
-		COMMAND cpp
-			-DGLSL_VERSION=${GLSL_VERSION}
-			-I${PROJECT_SOURCE_DIR}/shaders
-			-I${PROJECT_BINARY_DIR}
-			-P ${_shaderpath} ${_shaderout}
-		DEPENDS ${_shaderpath}
-	)
-endforeach()
-
-add_custom_target(Shader_preprocess SOURCES ${SHADER_OUT})
-
-#link_directories(${CMAKE_SOURCE_DIR}/libs/nanovg/build)
 add_library(Grend 
 	${PHYSICS_IMPLEMENTATION}
 	src/animation.cpp
@@ -154,7 +122,6 @@ add_library(Grend
 	libs/stb/stb_vorbis.c
 )
 
-add_dependencies(Grend Shader_preprocess)
 target_include_directories(Grend PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(Grend
 	PkgConfig::SDL2
@@ -192,7 +159,9 @@ install(TARGETS landscape-test        DESTINATION bin)
 install(TARGETS map-viewer            DESTINATION bin)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
-install(FILES     ${SHADER_OUT}       DESTINATION share/grend/shaders/out)
+install(DIRECTORY shaders/lib         DESTINATION share/grend/shaders)
+install(DIRECTORY shaders/lighting    DESTINATION share/grend/shaders)
+install(DIRECTORY shaders/src         DESTINATION share/grend/shaders)
 install(DIRECTORY assets              DESTINATION share/grend)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
 

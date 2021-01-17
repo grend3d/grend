@@ -1,5 +1,6 @@
 #pragma once
 #include <lib/compat.glsl>
+#include <lib/shading-varying.glsl>
 
 struct point_light {
 	vec3 position;
@@ -183,7 +184,6 @@ layout (std140) uniform spot_light_tiles {
 	(SCREEN_TO_CLUSTER(gl_FragCoord.x/renderWidth, gl_FragCoord.y/renderHeight))
 
 #elif defined(VERTEX_SHADER)
-#include <lib/shading-varying.glsl>
 uint vertexShaderCluster() {
 	vec4 clip = (p*v*m) * vec4(in_Position, 1.0);
 
