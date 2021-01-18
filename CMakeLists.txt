@@ -16,20 +16,63 @@ set(GLSL_VERSION 300) # OpenGL ES 3.0
 #set(GLSL_VERSION 430) # OpenGL core 4.30
 
 add_subdirectory(libs/nanovg)
-#find_package(SDL2 REQUIRED COMPONENTS SDL2::SDL2)
-find_library(GLESv3 GLESv3)
-find_library(SDL2 SDL2)
-find_library(BulletCollision Bullet3Collision)
-find_library(BulletDynamics  Bullet3Dynamics)
-find_library(BulletSoftBody  BulletSoftBody)
-find_library(LinearMath      LinearMath)
 
-#find_package(PkgConfig REQUIRED)
-#pkg_check_modules(SDL2     REQUIRED IMPORTED_TARGET sdl2)
-#pkg_check_modules(SDL2_ttf REQUIRED IMPORTED_TARGET SDL2_ttf)
-#pkg_check_modules(Bullet   REQUIRED IMPORTED_TARGET bullet)
-#pkg_check_modules(Glew     REQUIRED IMPORTED_TARGET glew)
-#pkg_check_modules(GLM      REQUIRED IMPORTED_TARGET glm)
+set(GREND_LINK_LIBS)
+if (ANDROID)
+	# TODO: ideally this could be deduplicated
+	if (GLSL_VERSION EQUAL 100)
+		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
+		find_library(GLESv2 GLESv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
+	elseif(GLSL_VERSION EQUAL 300)
+		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
+		find_library(GLESv3 GLESv3)
+		list(APPEND GREND_LINK_LIBS GLESv3)
+	else()
+		message(FATAL_ERROR "Invalid GLSL version for android")
+	endif()
+
+	find_library(SDL2 SDL2)
+	find_library(BulletCollision Bullet3Collision)
+	find_library(BulletDynamics  Bullet3Dynamics)
+	find_library(BulletSoftBody  BulletSoftBody)
+	find_library(LinearMath      LinearMath)
+
+	list(APPEND GREND_LINK_LIBS
+	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath)
+
+# TODO: assume unixen, presumably there'll be different library lookup
+#       stuff for windows/etc
+else()
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
+	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
+	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+
+	list(APPEND GREND_LINK_LIBS
+		PkgConfig::SDL2
+		PkgConfig::Bullet
+		pthread
+	)
+
+	if (GLSL_VERSION EQUAL 100)
+		message(STATUS "GL: Using GLESv2")
+		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
+		find_library(GLESv2 GLESv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
+	elseif(GLSL_VERSION EQUAL 300)
+		message(STATUS "GL: Using GLESv3")
+		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
+		# Hmm, seems there's no decidicated GLESv3 lib on linux?
+		find_library(GL GL)
+		list(APPEND GREND_LINK_LIBS GL)
+	else()
+		message(STATUS "GL: Using glew")
+		add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
+		pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
+		list(APPEND GREND_LINK_LIBS PkgConfig::Glew)
+	endif()
+endif()
 
 set(INCLUDES include/grend)
 set(LIBRARY_INCLUDES 
@@ -57,11 +100,11 @@ add_compile_definitions(
 
 add_compile_options(
 	-DGLSL_VERSION=${GLSL_VERSION}
-	-DIMGUI_IMPL_OPENGL_LOADER_GLEW
 	-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 	# TODO: this obviously breaks portable installs
 	-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
+	-Og -g
 )
 
 if (PHYSICS_BULLET)
@@ -144,23 +187,15 @@ add_library(Grend SHARED
 
 target_include_directories(Grend PUBLIC
 	"${PROJECT_BINARY_DIR}"
-	${BULLET_PHYSICS_SOURCE_DIR}/src)
+	${BULLET_PHYSICS_SOURCE_DIR}/src
+)
 target_link_libraries(Grend
-	SDL2
-	#PkgConfig::SDL2_ttf
-	BulletCollision
-	BulletDynamics
-	BulletSoftBody
-	LinearMath
+	${GREND_LINK_LIBS}
 	nanovg
-	#pthread
-	glm
-	GLESv3
 )
 target_compile_options(Grend PUBLIC "-O2")
 
-include_directories(demos/landscape-test/)
-add_library(main SHARED
+set(LANDSCAPE_DEMO_SRC
 	demos/landscape-test/boxSpawner.cpp
 	demos/landscape-test/enemy.cpp
 	demos/landscape-test/healthbar.cpp
@@ -168,11 +203,23 @@ add_library(main SHARED
 	demos/landscape-test/landscapeGenerator.cpp
 	demos/landscape-test/main.cpp
 	demos/landscape-test/player.cpp
-	demos/landscape-test/projectile.cpp
-)
+	demos/landscape-test/projectile.cpp)
 
-target_include_directories(main PUBLIC "${PROJECT_BINARY_DIR}")
-target_link_libraries(main Grend SDL2 SDL2main)
+include_directories(demos/landscape-test/)
+
+if (ANDROID)
+	add_library(main SHARED ${LANDSCAPE_DEMO_SRC})
+
+	target_include_directories(main PUBLIC "${PROJECT_BINARY_DIR}")
+	target_link_libraries(main Grend SDL2 SDL2main)
+	install(TARGETS main DESTINATION lib)
+
+else()
+	add_executable(landscape-demo ${LANDSCAPE_DEMO_SRC})
+	target_include_directories(landscape-demo PUBLIC "${PROJECT_BINARY_DIR}")
+	target_link_libraries(landscape-demo Grend)
+	install(TARGETS landscape-demo DESTINATION bin)
+endif()
 
 #include_directories(demos/map-viewer/)
 #add_library(map-viewer demos/map-viewer/main.cpp)
@@ -180,8 +227,7 @@ target_link_libraries(main Grend SDL2 SDL2main)
 
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend                 DESTINATION lib)
-#install(TARGETS nanovg                DESTINATION lib)
-install(TARGETS main                  DESTINATION lib)
+install(TARGETS nanovg                DESTINATION lib)
 #install(TARGETS map-viewer            DESTINATION bin)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)

@@ -392,7 +392,7 @@ void check_errors(int line, const char *filename, const char *func) {
 		}
 
 		std::cerr << std::endl;
-		//*(int*)NULL = 1234;
+		*(int*)NULL = 1234;
 	}
 }
 

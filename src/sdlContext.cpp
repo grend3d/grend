@@ -86,14 +86,14 @@ context::context(const char *progname) {
 
 	SDL_GL_SetSwapInterval(1);
 
-	/*
-	// TODO: toggle for ES/core
+#if GLSL_VERSION >= 330
+	// only use glew for core profiles
 	if ((glew_status = glewInit()) != GLEW_OK) {
 		SDL_Die("glewInit()");
 		// TODO: check for vertex array extensions on gles2, error out
 		//       if not supported
 	}
-	*/
+#endif
 
 	std::cerr << "initialized glew" << std::endl;
 

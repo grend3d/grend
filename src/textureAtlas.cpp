@@ -14,6 +14,8 @@ atlas::atlas(size_t dimension, enum mode m) : tree(dimension) {
 				genTextureColor(dimension, dimension, rgbaf_if_supported()));
 	}
 
+	DO_ERROR_CHECK();
+
 	depth_tex = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, 
 	                genTextureDepthStencil(dimension, dimension));
 }
