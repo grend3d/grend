@@ -5,6 +5,7 @@
 #include <grend/geometryGeneration.hpp>
 #include <grend/gameEditor.hpp>
 #include <grend/controllers.hpp>
+#include <grend/logging.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
@@ -17,7 +18,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 
-#include <iostream>
 #include <memory>
 #include <chrono>
 #include <map>
@@ -62,12 +62,10 @@ class generatorEventHandler : public component {
 
 		virtual void
 		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
-			std::cerr << "handleEvent(): got here, " << "("
-				<< ev.position.x << "[+/-" << ev.extent.x << "], "
-				<< ev.position.y << "[+/-" << ev.extent.y << "], "
-				<< ev.position.z << "[+/-" << ev.extent.z << "]"
-				<< ") was ";
+			GR_LOG(LOG_SPAM, "handleEvent: got here, [+/-%g] [+/-%g] [+/-%g]",
+				ev.extent.x, ev.extent.y, ev.extent.z);
 
+			/*
 			switch (ev.type) {
 				case generatorEvent::types::generatorStarted:
 					std::cerr << "started";
@@ -87,6 +85,7 @@ class generatorEventHandler : public component {
 			}
 
 			std::cerr << std::endl;
+			*/
 		}
 };
 
@@ -100,7 +99,7 @@ class generatorEventActivator : public generatorEventHandler {
 
 		virtual void
 		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
-			std::cerr << "TODO: activate/deactivate stuff here" << std::endl;
+			// TODO: activate/deactivate stuff here
 		}
 };
 
@@ -143,9 +142,8 @@ class worldEntityGenerator : public generatorEventHandler {
 
 						if (positions.count(foo) == 0) {
 							positions.insert(foo);
-							std::cerr
-								<< "worldEntityGenerator(): generating some things"
-								<< std::endl;
+							GR_LOG(LOG_SPAM,
+							       "worldEntityGenerator(): generating some things");
 
 							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
 
@@ -261,10 +259,13 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	input.bind(MODAL_ALL_MODES,
 		[&, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
+				// TODO: log interface
+				/*
 				std::cerr << "Got here! serializing stuff" << std::endl;
 				std::cerr
 					<< game->serializers->serializeEntities((game->entities.get())).dump(4)
 					<< std::endl;
+					*/
 			}
 
 			return MODAL_NO_CHANGE;
@@ -411,9 +412,14 @@ void landscapeGenView::render(gameMain *game) {
 }
 
 int main(int argc, char *argv[]) {
+	/*
 	std::cerr << "entering main()" << std::endl;
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
+	*/
+	GR_LOG(LOG_INFO, "entering main()");
+	GR_LOG(LOG_INFO, "started SDL context");
+	GR_LOG(LOG_INFO, "have game state");
 
 	try {
 		TRS staticPosition; // default
@@ -491,10 +497,10 @@ int main(int argc, char *argv[]) {
 		game->run();
 
 	} catch (const std::exception& ex) {
-		std::cerr << "Exception! " << ex.what() << std::endl;
+		GR_LOG(LOG_ERROR, "Exception! %s", ex.what());
 
 	} catch (const char* ex) {
-		std::cerr << "Exception! " << ex << std::endl;
+		GR_LOG(LOG_ERROR, "Exception! %s", ex);
 	}
 
 	return 0;
