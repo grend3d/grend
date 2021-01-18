@@ -5,7 +5,6 @@
 #include <grend/geometryGeneration.hpp>
 #include <grend/gameEditor.hpp>
 #include <grend/controllers.hpp>
-#include <grend/logging.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
@@ -62,7 +61,8 @@ class generatorEventHandler : public component {
 
 		virtual void
 		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
-			GR_LOG(LOG_SPAM, "handleEvent: got here, [+/-%g] [+/-%g] [+/-%g]",
+			SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,
+				"handleEvent: got here, [+/-%g] [+/-%g] [+/-%g]",
 				ev.extent.x, ev.extent.y, ev.extent.z);
 
 			/*
@@ -142,8 +142,8 @@ class worldEntityGenerator : public generatorEventHandler {
 
 						if (positions.count(foo) == 0) {
 							positions.insert(foo);
-							GR_LOG(LOG_SPAM,
-							       "worldEntityGenerator(): generating some things");
+							SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,
+								"worldEntityGenerator(): generating some things");
 
 							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
 
@@ -417,9 +417,9 @@ int main(int argc, char *argv[]) {
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
 	*/
-	GR_LOG(LOG_INFO, "entering main()");
-	GR_LOG(LOG_INFO, "started SDL context");
-	GR_LOG(LOG_INFO, "have game state");
+	SDL_Log("entering main()");
+	SDL_Log("started SDL context");
+	SDL_Log("have game state");
 
 	try {
 		TRS staticPosition; // default
@@ -497,10 +497,10 @@ int main(int argc, char *argv[]) {
 		game->run();
 
 	} catch (const std::exception& ex) {
-		GR_LOG(LOG_ERROR, "Exception! %s", ex.what());
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex.what());
 
 	} catch (const char* ex) {
-		GR_LOG(LOG_ERROR, "Exception! %s", ex);
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex);
 	}
 
 	return 0;
