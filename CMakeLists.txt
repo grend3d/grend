@@ -37,9 +37,10 @@ if (ANDROID)
 	find_library(BulletDynamics  Bullet3Dynamics)
 	find_library(BulletSoftBody  BulletSoftBody)
 	find_library(LinearMath      LinearMath)
+	find_library(glm             glm)
 
 	list(APPEND GREND_LINK_LIBS
-	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath)
+	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath glm)
 
 # TODO: assume unixen, presumably there'll be different library lookup
 #       stuff for windows/etc
@@ -177,9 +178,11 @@ add_library(Grend SHARED
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp
 	libs/imgui/imgui_draw.cpp
+	libs/imgui/imgui_tables.cpp
 	libs/imgui/imgui_widgets.cpp
-	libs/imgui/examples/imgui_impl_opengl3.cpp
-	libs/imgui/examples/imgui_impl_sdl.cpp
+
+	libs/imgui/backends/imgui_impl_opengl3.cpp
+	libs/imgui/backends/imgui_impl_sdl.cpp
 
 	libs/stb/stbi.cpp
 	libs/stb/stb_vorbis.c
@@ -227,7 +230,10 @@ endif()
 
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend                 DESTINATION lib)
-install(TARGETS nanovg                DESTINATION lib)
+if (NOT ANDROID)
+	# XXX: figure out how to do this properly
+	install(TARGETS nanovg                DESTINATION lib)
+endif()
 #install(TARGETS map-viewer            DESTINATION bin)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
