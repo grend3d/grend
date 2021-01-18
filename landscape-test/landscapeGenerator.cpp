@@ -86,7 +86,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	static gameModel::ptr temp[gridsize][gridsize];
 	static gameModel::ptr grassmod;
 
-#define LOCAL_BUILD 1
+#define LOCAL_BUILD 0
 #if LOCAL_BUILD
 	if (grassmod == nullptr) {
 		//grassmod = loadScene("./test-assets/obj/crapgrass.glb");
