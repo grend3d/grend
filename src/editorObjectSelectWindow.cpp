@@ -19,7 +19,7 @@ void gameEditor::objectSelectWindow(gameMain *game) {
 
 		ImGui::SameLine(300);
 		std::string mstr = "(" + std::to_string(obj->nodes.size()) + " meshes)";
-		ImGui::Text(mstr.c_str());
+		ImGui::Text("%s", mstr.c_str());
 	}
 
 	ImGui::End();

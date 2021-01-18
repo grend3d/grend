@@ -137,9 +137,11 @@ static size_t gltf_buff_element_size(int component, int type) {
 			size_component = sizeof(GLfloat);
 			break;
 
+#ifdef GL_DOUBLE
 		case TINYGLTF_COMPONENT_TYPE_DOUBLE:
 			size_component = sizeof(GLdouble); 
 			break;
+#endif
 	}
 
 	return size_component * size_type;

@@ -41,10 +41,10 @@ bool fileDialog::promptFilename(void) {
 
 		ImGui::SameLine(250);
 		std::string sz = std::to_string(ent.size);
-		ImGui::Text(sz.c_str());
+		ImGui::Text("%s", sz.c_str());
 
 		ImGui::SameLine(300);
-		ImGui::Text((ent.type == entType::Directory)? "[DIR]" : "[FILE]");
+		ImGui::Text("%s", (ent.type == entType::Directory)? "[DIR]" : "[FILE]");
 	}
 
 	//ImGui::Columns(1);

@@ -22,7 +22,7 @@ void Buffer::unbind(void) {
 }
 
 void *Buffer::map(GLenum access) {
-	return glMapBuffer(type, access);
+	//return glMapBuffer(type, access);
 	DO_ERROR_CHECK();
 }
 

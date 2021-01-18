@@ -1,5 +1,5 @@
 #include <grend/text.hpp>
-#include <SDL_ttf.h>
+//#include <SDL_ttf.h>
 #include <iostream>
 
 using namespace grendx;
@@ -10,6 +10,7 @@ text_renderer::text_renderer(renderContext::ptr eng,
 {
 	// XXX: TODO asdf remove
 	return;
+	/*
 	assert(rend != nullptr);
 
 	if ((ttf = TTF_OpenFont(font, size)) == nullptr) {
@@ -42,6 +43,7 @@ text_renderer::text_renderer(renderContext::ptr eng,
 
 	bindVao(orig_vao);
 	DO_ERROR_CHECK();
+	*/
 }
 
 text_renderer::~text_renderer() {
@@ -52,6 +54,7 @@ void text_renderer::render(glm::vec3 pos,
                            std::string str,
                            SDL_Color color)
 {
+	/*
 	bindVao(text_vao);
 	text_shader->bind();
 	//rend->set_shader(text_shader);
@@ -93,16 +96,19 @@ void text_renderer::render(glm::vec3 pos,
 		 pos.x,         pos.y + height, 0, 0, 0,
 		 pos.x,         pos.y,          0, 0, 1,
 	};
+	*/
 
 	/*
 	fprintf(stderr, " > loaded text: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        rgba_surf->w, rgba_surf->h, rgba_surf->pitch, rgba_surf->format->BytesPerPixel);
 			*/
 
+	/*
 	text_shader->set("UItex", 0);
 	text_vbo->buffer(quad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	SDL_FreeSurface(rgba_surf);
 	SDL_FreeSurface(surf);
+	*/
 }

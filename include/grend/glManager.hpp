@@ -190,7 +190,8 @@ class Buffer : public Obj {
 		void bind(void);
 		void unbind(void);
 
-		void *map(GLenum access = GL_WRITE_ONLY);
+		//void *map(GLenum access = GL_WRITE_ONLY);
+		void *map(GLenum access);
 		GLenum unmap(void);
 
 		void allocate(size_t n);

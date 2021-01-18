@@ -7,7 +7,7 @@
 using namespace grendx;
 
 static void editPointLight(gameMain *game, gameLightPoint::ptr light) {
-	ImGui::Text("Point light properties");
+	ImGui::Text("%s", "Point light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 	ImGui::SliderFloat("radius", &light->radius, 0.01f, 3.f);
@@ -15,7 +15,7 @@ static void editPointLight(gameMain *game, gameLightPoint::ptr light) {
 }
 
 static void editSpotLight(gameMain *game, gameLightSpot::ptr light) {
-	ImGui::Text("Spot light properties");
+	ImGui::Text("%s", "Spot light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 	ImGui::SliderFloat("radius", &light->radius, 0.01f, 3.f);
@@ -24,7 +24,7 @@ static void editSpotLight(gameMain *game, gameLightSpot::ptr light) {
 }
 
 static void editDirectionalLight(gameMain *game, gameLightDirectional::ptr light) {
-	ImGui::Text("Directional light properties");
+	ImGui::Text("%s", "Directional light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 	//ImGui::Text("(This space intentionally left blank)");
@@ -32,7 +32,7 @@ static void editDirectionalLight(gameMain *game, gameLightDirectional::ptr light
 }
 
 static void editLight(gameMain *game, gameLight::ptr light) {
-	ImGui::Text("Light properties");
+	ImGui::Text("%s", "Light properties");
 	ImGui::Indent(16.f);
 	ImGui::Separator();
 	ImGui::ColorEdit4("Color", glm::value_ptr(light->diffuse));
@@ -62,7 +62,7 @@ static void editLight(gameMain *game, gameLight::ptr light) {
 
 template <class T>
 static void editRefProbe(gameMain *game, T probe) {
-	ImGui::Text("Reflection probe properties");
+	ImGui::Text("%s", "Reflection probe properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 	ImGui::InputFloat3("Bounding box minimum", glm::value_ptr(probe->boundingBox.min));
@@ -105,7 +105,7 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 	ImGui::Begin("Object editor", &showObjectEditorWindow, 
 	             ImGuiWindowFlags_AlwaysAutoResize);
 
-	ImGui::Text(selectedNode->typeString().c_str());
+	ImGui::Text("%s", selectedNode->typeString().c_str());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 	ImGui::InputFloat3("Position",
@@ -133,7 +133,7 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 	}
 
 	{
-		ImGui::Text("Animations");
+		ImGui::Text("%s", "Animations");
 		ImGui::Separator();
 		ImGui::Indent(16.f);
 

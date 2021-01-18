@@ -39,14 +39,14 @@ void gameEditor::metricsWindow(gameMain *game) {
 		devbuild += " (debugging checks enabled)";
 	}
 
-	ImGui::TextColored(ImVec4(0.3f, 0.8f, 0.2f, 1.f), devbuild.c_str());
+	ImGui::TextColored(ImVec4(0.3f, 0.8f, 0.2f, 1.f), "%s", devbuild.c_str());
 #endif
 
-	ImGui::Text(fpsStr.c_str());
-	ImGui::Text(meshes.c_str());
-	ImGui::Text(buffered.c_str());
-	ImGui::Text(textures.c_str());
-	ImGui::Text(total.c_str());
+	ImGui::Text("%s", fpsStr.c_str());
+	ImGui::Text("%s", meshes.c_str());
+	ImGui::Text("%s", buffered.c_str());
+	ImGui::Text("%s", textures.c_str());
+	ImGui::Text("%s", total.c_str());
 
 	ImGui::End();
 }

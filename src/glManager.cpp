@@ -381,10 +381,12 @@ void check_errors(int line, const char *filename, const char *func) {
 				std::cerr << "invalid framebuffer operation"; break;
 			case GL_OUT_OF_MEMORY:
 				std::cerr << "out of memory"; break;
+				/*
 			case GL_STACK_UNDERFLOW:
 				std::cerr << "stack underflow"; break;
 			case GL_STACK_OVERFLOW:
 				std::cerr << "stack overflow"; break;
+				*/
 			default:
 				std::cerr << "some kind of error code, #" << err; break;
 		}

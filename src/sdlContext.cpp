@@ -30,9 +30,11 @@ context::context(const char *progname) {
 		SDL_Die(SDL_GetError());
 	}
 
+	/*
 	if (TTF_Init() < 0) {
 		//SDL_Die("Couldn't initialize sdl2_ttf");
 	}
+	*/
 
 	std::cerr << "got to end of init stuff" << std::endl;
 
@@ -84,11 +86,14 @@ context::context(const char *progname) {
 
 	SDL_GL_SetSwapInterval(1);
 
+	/*
+	// TODO: toggle for ES/core
 	if ((glew_status = glewInit()) != GLEW_OK) {
 		SDL_Die("glewInit()");
 		// TODO: check for vertex array extensions on gles2, error out
 		//       if not supported
 	}
+	*/
 
 	std::cerr << "initialized glew" << std::endl;
 

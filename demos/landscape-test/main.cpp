@@ -28,7 +28,7 @@
 
 // XXX:  toggle using textures/models I have locally, don't want to
 //       bloat the assets folder again
-#define LOCAL_BUILD 1
+#define LOCAL_BUILD 0
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -415,78 +415,87 @@ int main(int argc, char *argv[]) {
 	std::cerr << "started SDL context" << std::endl;
 	std::cerr << "have game state" << std::endl;
 
-	TRS staticPosition; // default
-	gameMain *game = new gameMainDevWindow();
-	//gameMain *game = new gameMain();
+	try {
+		TRS staticPosition; // default
+		gameMain *game = new gameMainDevWindow();
+		//gameMain *game = new gameMain();
 
-// XXX:  toggle using textures I have locally, don't want to bloat the assets
-//       folder again
-// TODO: include some default textures in assets for this, or procedurally generate
+	// XXX:  toggle using textures I have locally, don't want to bloat the assets
+	//       folder again
+	// TODO: include some default textures in assets for this, or procedurally generate
 #if LOCAL_BUILD
-	landscapeMaterial = std::make_shared<material>();
-	landscapeMaterial->factors.diffuse = {1, 1, 1, 1};
-	landscapeMaterial->factors.ambient = {1, 1, 1, 1};
-	landscapeMaterial->factors.specular = {1, 1, 1, 1};
-	landscapeMaterial->factors.emissive = {1, 1, 1, 1};
-	landscapeMaterial->factors.roughness = 1.f;
-	landscapeMaterial->factors.metalness = 1.f;
-	landscapeMaterial->factors.opacity = 1;
-	landscapeMaterial->factors.refract_idx = 1.5;
+		landscapeMaterial = std::make_shared<material>();
+		landscapeMaterial->factors.diffuse = {1, 1, 1, 1};
+		landscapeMaterial->factors.ambient = {1, 1, 1, 1};
+		landscapeMaterial->factors.specular = {1, 1, 1, 1};
+		landscapeMaterial->factors.emissive = {1, 1, 1, 1};
+		landscapeMaterial->factors.roughness = 1.f;
+		landscapeMaterial->factors.metalness = 1.f;
+		landscapeMaterial->factors.opacity = 1;
+		landscapeMaterial->factors.refract_idx = 1.5;
 
-	landscapeMaterial->maps.diffuse
-		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_diff_2k.jpg");
-	landscapeMaterial->maps.metalRoughness
-		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_rough_green_2k.jpg");
-	landscapeMaterial->maps.normal
-		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_nor_2k.jpg");
-	landscapeMaterial->maps.ambientOcclusion
-		= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_ao_2k.jpg");
-	landscapeMaterial->maps.emissive
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png");
+		landscapeMaterial->maps.diffuse
+			= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_diff_2k.jpg");
+		landscapeMaterial->maps.metalRoughness
+			= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_rough_green_2k.jpg");
+		landscapeMaterial->maps.normal
+			= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_nor_2k.jpg");
+		landscapeMaterial->maps.ambientOcclusion
+			= std::make_shared<materialTexture>("/home/flux/blender/tex/aerial_grass_rock_2k_jpg/aerial_grass_rock_ao_2k.jpg");
+		landscapeMaterial->maps.emissive
+			= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png");
 
-	treeNode = load_object("assets-old/obj/Modular Terrain Hilly/Prop_Tree_Pine_3.obj");
+		treeNode = load_object("assets-old/obj/Modular Terrain Hilly/Prop_Tree_Pine_3.obj");
 
 #else
-	landscapeMaterial = std::make_shared<material>();
-	landscapeMaterial->factors.diffuse = {0.15, 0.3, 0.1, 1};
-	landscapeMaterial->factors.ambient = {1, 1, 1, 1};
-	landscapeMaterial->factors.specular = {1, 1, 1, 1};
-	landscapeMaterial->factors.emissive = {0, 0, 0, 0};
-	landscapeMaterial->factors.roughness = 0.9f;
-	landscapeMaterial->factors.metalness = 0.f;
-	landscapeMaterial->factors.opacity = 1;
-	landscapeMaterial->factors.refract_idx = 1.5;
+		landscapeMaterial = std::make_shared<material>();
+		landscapeMaterial->factors.diffuse = {0.15, 0.3, 0.1, 1};
+		landscapeMaterial->factors.ambient = {1, 1, 1, 1};
+		landscapeMaterial->factors.specular = {1, 1, 1, 1};
+		landscapeMaterial->factors.emissive = {0, 0, 0, 0};
+		landscapeMaterial->factors.roughness = 0.9f;
+		landscapeMaterial->factors.metalness = 0.f;
+		landscapeMaterial->factors.opacity = 1;
+		landscapeMaterial->factors.refract_idx = 1.5;
 
-	treeNode = generate_cuboid(1.0, 1.0, 1.0);
+		treeNode = generate_cuboid(1.0, 1.0, 1.0);
 #endif
 
-	compileModel("treedude", treeNode);
+		compileModel("treedude", treeNode);
 
-	game->jobs->addAsync([=] {
-		auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
-		foo->worldPosition = glm::vec3(-10, 0, -5);
-		game->audio->add(foo);
-		return true;
-	});
+		game->jobs->addAsync([=] {
+			auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
+			foo->worldPosition = glm::vec3(-10, 0, -5);
+			game->audio->add(foo);
+			return true;
+		});
 
-	game->jobs->addAsync([=] {
-		auto bar = openSpatialLoop(GR_PREFIX "assets/sfx/Meditating Beat.ogg");
-		bar->worldPosition = glm::vec3(0, 0, -5);
-		game->audio->add(bar);
-		return true;
-	});
+		game->jobs->addAsync([=] {
+			auto bar = openSpatialLoop(GR_PREFIX "assets/sfx/Meditating Beat.ogg");
+			bar->worldPosition = glm::vec3(0, 0, -5);
+			game->audio->add(bar);
+			return true;
+		});
 
-	game->state->rootnode = loadMap(game);
-	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
+		game->state->rootnode = loadMap(game);
+		game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
 
-	landscapeGenView::ptr player = std::make_shared<landscapeGenView>(game);
-	player->landscape.setPosition(game, glm::vec3(1));
-	player->cam->setFar(1000.0);
-	game->setView(player);
+		landscapeGenView::ptr player = std::make_shared<landscapeGenView>(game);
+		player->landscape.setPosition(game, glm::vec3(1));
+		player->cam->setFar(1000.0);
+		game->setView(player);
 
-	setNode("entities",  game->state->rootnode, game->entities->root);
-	setNode("landscape", game->state->rootnode, player->landscape.getNode());
+		setNode("entities",  game->state->rootnode, game->entities->root);
+		setNode("landscape", game->state->rootnode, player->landscape.getNode());
 
-	game->run();
+		game->run();
+
+	} catch (const std::exception& ex) {
+		std::cerr << "Exception! " << ex.what() << std::endl;
+
+	} catch (const char* ex) {
+		std::cerr << "Exception! " << ex << std::endl;
+	}
+
 	return 0;
 }

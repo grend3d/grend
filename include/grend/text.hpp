@@ -3,7 +3,7 @@
 #include <grend/glManager.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/engine.hpp>
-#include <SDL_ttf.h>
+//#include <SDL_ttf.h>
 
 namespace grendx {
 
@@ -16,7 +16,7 @@ class text_renderer {
 
 		void render(glm::vec3 pos, std::string str, SDL_Color color = {255, 255, 255, 255});
 
-		TTF_Font *ttf = nullptr;
+		//TTF_Font *ttf = nullptr;
 		renderContext::ptr rend;
 		Buffer::ptr  text_vbo;
 		Vao::ptr     text_vao;

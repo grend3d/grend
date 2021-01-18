@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.6)
+
+project(MY_APP)
+
+option(BUILD_SHARED_LIBS "build the shared stuff" ON)
+find_library(SDL2 SDL2)
+
+add_subdirectory(grend)
+add_library(main SHARED)
+target_sources(main PRIVATE stub.c)
+target_link_libraries(main landscape-test)

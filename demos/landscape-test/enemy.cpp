@@ -22,7 +22,7 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 
 	// TODO:
 	if (!enemyModel) {
-#define LOCAL_BUILD 1
+#define LOCAL_BUILD 0
 #if LOCAL_BUILD
 		enemyModel = loadScene("test-assets/obj/test-enemy.glb");
 		enemyModel->transform.scale = glm::vec3(0.2);
