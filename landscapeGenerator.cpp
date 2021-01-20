@@ -3,17 +3,14 @@
 #include "landscapeGenerator.hpp"
 #include <grend/gameEditor.hpp>
 
-void worldGenerator::setEventQueue(generatorEventQueue q) {
+void worldGenerator::setEventQueue(generatorEventQueue::ptr q) {
 	eventQueue = q;
 }
 
 void worldGenerator::emit(generatorEvent ev) {
-	if (!eventQueue) {
-		// no queue set, nothing to emit to
-		return;
+	if (eventQueue) {
+		eventQueue->emit(ev);
 	}
-
-	eventQueue->push_back(ev);
 }
 
 static float thing(float x, float y) {
@@ -85,6 +82,9 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	static gameModel::ptr models[gridsize][gridsize];
 	static gameModel::ptr temp[gridsize][gridsize];
 	static gameModel::ptr grassmod;
+	// BIG XXX: avoid accessing landscape material shared pointer from multiple
+	//          threads (assignment to mesh material increases use count)
+	static std::mutex landscapemtx;
 
 #define LOCAL_BUILD 0
 #if LOCAL_BUILD
@@ -108,9 +108,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 
 	glm::vec3 diff = curpos - lastpos;
 	float off = cellsize * (gridsize / 2);
-	std::cerr << "curpos != genpos, diff: "
-		<< "(" << diff.z << "," << diff.y << "," << diff.z << ")"
-		<< std::endl;
+	SDL_Log("curpos != genpos, diff: (%g, %g, %g)", diff.x, diff.y, diff.z);
 
 	for (int x = 0; x < gridsize; x++) {
 		for (int y = 0; y < gridsize; y++) {
@@ -138,7 +136,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 							.type = generatorEvent::types::deleted,
 							.position = prev + glm::vec3(cellsize*0.5, 0, cellsize*0.5),
 							.extent = glm::vec3(cellsize * 0.5f, HUGE_VALF, cellsize*0.5f),
-							});
+					});
 				}
 
 				emit((generatorEvent) {
@@ -147,22 +145,49 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					.extent = glm::vec3(cellsize * 0.5f, HUGE_VALF, cellsize*0.5f),
 				});
 
+				SDL_Log("CCCCCCCC: generating coord (%g, %g)", coord.x, coord.z);
+
 				// TODO: reaaaaallly need to split this up
 				futures.push_back(game->jobs->addAsync([=] {
+					SDL_Log("DDDDDDD: got here, from the future (%g, %g)",
+							coord.x, coord.z);
 					auto ptr = generateHeightmap(cellsize, cellsize, 1.0, coord.x, coord.z, landscapeThing);
 					//auto ptr = generateHeightmap(24, 24, 0.5, coord.x, coord.z, thing);
+					SDL_Log("EEEEEEE: generated model");
 					ptr->transform.position = glm::vec3(coord.x, 0, coord.z);
+
 					gameMesh::ptr mesh =
-						std::dynamic_pointer_cast<gameMesh>(ptr->nodes["mesh"]);
-					mesh->meshMaterial = landscapeMaterial;
+						std::dynamic_pointer_cast<gameMesh>(ptr->getNode("mesh"));
+					gameMesh *fug = dynamic_cast<gameMesh*>(ptr->getNode("mesh").get());
+
+					gameMesh *blarg = (gameMesh*)ptr->getNode("mesh").get();
+
+					SDL_Log("EEEEEEE.v2: has node: %d, mesh ptr: %p, source ptr: %p, other? %p, id: %s, blarg: %p",
+						ptr->hasNode("mesh"), mesh.get(),
+						ptr->getNode("mesh").get(), fug, ptr->getNode("mesh")->idString().c_str(), blarg);
+
+					if (mesh) {
+						//std::lock_guard<std::mutex> g(landscapemtx);
+						mesh->meshMaterial = std::make_shared<material>();
+						mesh->meshMaterial->factors.diffuse = {0.15, 0.3, 0.1, 1};
+						mesh->meshMaterial->factors.ambient = {1, 1, 1, 1};
+						mesh->meshMaterial->factors.specular = {1, 1, 1, 1};
+						mesh->meshMaterial->factors.emissive = {0, 0, 0, 0};
+						mesh->meshMaterial->factors.roughness = 0.9f;
+						mesh->meshMaterial->factors.metalness = 0.f;
+						mesh->meshMaterial->factors.opacity = 1;
+						mesh->meshMaterial->factors.refract_idx = 1.5;
+					}
+					//mesh->meshMaterial = landscapeMaterial;
 					std::string name = "gen["+std::to_string(int(x))+"]["+std::to_string(int(y))+"]";
+					SDL_Log("FFFFFFF: setting node");
 
 					gameObject::ptr foo = std::make_shared<gameObject>();
 					setNode("asdfasdf", foo, ptr);
-					std::cerr << "trying to add physics model" << std::endl;
+					SDL_Log("GGGGGGG: Adding landscape mesh to physics");
 
 					auto fut = game->jobs->addDeferred([=]{
-							std::cerr << "generating new model" << std::endl;
+						SDL_Log("HHHHHHH: Generating new landscape model");
 						compileModel(name, ptr);
 						bindModel(ptr);
 						return true;
@@ -174,6 +199,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 
 					game->phys->addStaticModels(nullptr, foo, TRS());
 
+#if 0
 					gameParticles::ptr parts = std::make_shared<gameParticles>(32);
 					parts->activeInstances = randtrees;
 					parts->radius = cellsize / 2.f * 1.415;
@@ -193,8 +219,8 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					}
 
 					parts->update();
-					setNode("tree", parts, treeNode);
-					setNode("parts", ptr, parts);
+					setNodeXXX("tree", parts, treeNode);
+					setNodeXXX("parts", ptr, parts);
 
 					int randgrass = (posgrad.y*0.5 + 0.5) * 256 * (1.0 - baseElevation/50.0);
 					gameParticles::ptr grass = std::make_shared<gameParticles>(256);
@@ -223,8 +249,8 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 					}
 
 					grass->update();
-					setNode("grass", grass, grassmod);
-					setNode("grassparts", ptr, grass);
+					setNodeXXX("grass", grass, grassmod);
+					setNodeXXX("grassparts", ptr, grass);
 
 					int randlight = (posgrad.y + 1.0)*0.5 * 7 * (1.0 - baseElevation/50.0);
 
@@ -252,8 +278,9 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 						);
 
 						std::string name = "point["+std::to_string(i)+"]";
-						setNode(name, ptr, nlit);
+						setNodeXXX(name, ptr, nlit);
 					}
+#endif
 
 					temp[x][y] = ptr;
 					fut.wait();
@@ -290,12 +317,14 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 	});
 	meh.wait();
 
+	/*
 	auto fut = game->jobs->addDeferred([&] {
 		//bindCookedMeshes();
 		return true;
 	});
 
 	fut.wait();
+	*/
 	returnValue = ret;
 }
 
@@ -309,7 +338,7 @@ void landscapeGenerator::setPosition(gameMain *game, glm::vec3 position) {
 	}
 
 	if (!genjob.valid() && curpos != lastPosition) {
-		std::cerr << "BBBBBBBBBB: starting new generator job" << std::endl;
+		SDL_Log("BBBBBBBBBB: starting new generator job");
 		glm::vec3 npos = lastPosition;
 		lastPosition = curpos;
 
