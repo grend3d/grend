@@ -30,7 +30,7 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 }
 
 void Texture::buffer(materialTexture::ptr tex, bool srgb) {
-	fprintf(stderr, " > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
+	SDL_Log(" > buffering image: w = %u, h = %u, bytesperpixel: %u\n",
 	        tex->width, tex->height, tex->channels);
 
 	GLenum texformat = surfaceGlFormat(tex->channels);
@@ -96,20 +96,21 @@ void Texture::cubemap(std::string directory, std::string extension) {
 		{"posz", GL_TEXTURE_CUBE_MAP_POSITIVE_Z}
 	};
 
-	std::cerr << __func__ << ": hi" << std::endl;
+	SDL_Log("Loading a cubemap from %s", directory.c_str());
 
 	for (const auto& [img, direction] : dirmap) {
 		std::string fname = directory + "/" + img + extension;
 		//SDL_Surface *surf = IMG_Load(fname.c_str());
 		int width, height, channels;
 		uint8_t *surf = stbi_load(fname.c_str(), &width, &height, &channels, 0);
-		std::cerr << __func__ << ": loaded a " << fname << std::endl;
+		//std::cerr << __func__ << ": loaded a " << fname << std::endl;
+		SDL_Log("Have cubemap image at %s", fname.c_str());
 
 		if (!surf) {
 			SDL_Die("couldn't load cubemap texture");
 		}
 
-		fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
+		SDL_Log(" > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
 	        width, height, 0, channels);
 
 		GLenum texformat = surfaceGlFormat(channels);
@@ -126,6 +127,7 @@ void Texture::cubemap(std::string directory, std::string extension) {
 
 		//SDL_FreeSurface(surf);
 		stbi_image_free(surf);
+		SDL_Log("Loaded %s to cubemap", fname.c_str());
 
 #if 0
 		for (unsigned i = 1; surf; i++) {

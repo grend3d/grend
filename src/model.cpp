@@ -17,6 +17,10 @@
 
 namespace grendx {
 
+// XXX: "key functions"
+gameMesh::~gameMesh() {};
+gameModel::~gameModel() {};
+
 void gameModel::genNormals(void) {
 	std::cerr << " > generating new normals... " << vertices.size() << std::endl;
 

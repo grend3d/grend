@@ -3,6 +3,20 @@
 
 namespace grendx::ecs {
 
+// key functions for rtti
+rigidBody::~rigidBody() {
+	std::cerr << "got to ~rigidBody()" << std::endl;
+	//phys = nullptr;
+	phys.reset();
+};
+rigidBodySphere::~rigidBodySphere() {};
+rigidBodyBox::~rigidBodyBox() {};
+syncRigidBody::~syncRigidBody() {};
+syncRigidBodyTransform::~syncRigidBodyTransform() {};
+syncRigidBodyPosition::~syncRigidBodyPosition() {};
+syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
+syncRigidBodySystem::~syncRigidBodySystem() {};
+
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");

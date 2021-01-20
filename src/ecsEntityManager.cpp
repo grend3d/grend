@@ -2,6 +2,16 @@
 
 namespace grendx::ecs {
 
+// key functions for rtti
+component::~component() {
+	std::cerr << "got to ~component() "
+		<< "[type: " << this->typeString() << "]"
+		<< std::endl;
+}
+
+entity::~entity() {};
+entitySystem::~entitySystem() {};
+
 void entityManager::update(float delta) {
 	for (auto& [name, system] : systems) {
 		if (system) {
@@ -64,7 +74,7 @@ void entityManager::freeEntity(entity *ent) {
 			// entities get a self-referential entity and base component,
 			// need to check for that
 			if (sub && sub != ent) {
-				std::cerr << "entity has subentity, deleting that too" << std::endl;
+				SDL_Log("entity has subentity, deleting that too");
 				remove(sub);
 			}
 		}
@@ -76,7 +86,7 @@ void entityManager::freeEntity(entity *ent) {
 
 	// then remove pointers from indexes
 	for (auto& [name, comp] : comps) {
-		std::cerr << "removing component " << name << " from entity" << std::endl;
+		SDL_Log("removing component %s from entity", name.c_str());
 		componentEntities.erase(comp);
 		components[name].erase(comp);
 	}
@@ -207,7 +217,6 @@ entity *findFirst(entityManager *manager,
 std::set<component*>& entityManager::getComponents(std::string name) {
 	// XXX: avoid creating component names if nothing registered them
 	static std::set<component*> nullret;
-	//std::cerr << "looking up components for " << name << std::endl;
 
 	return (components.count(name))? components[name] : nullret;
 }
@@ -236,7 +245,7 @@ void entityManager::registerComponent(entity *ent,
                                       component *ptr)
 {
 	// TODO: need a proper logger
-	std::cerr << "registering component '" << name << "' for " << ptr << std::endl;
+	SDL_Log("registering component '%s' for %p", name.c_str(), ptr);
 	components[name].insert(ptr);
 	entityComponents[ent].insert({name, ptr});
 	componentEntities.insert({ptr, ent});

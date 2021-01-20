@@ -1,5 +1,6 @@
 #include <grend/glManager.hpp>
 #include <grend/gameModel.hpp>
+#include <SDL.h>
 
 #include <string>
 #include <vector>
@@ -27,11 +28,11 @@ static GLenum   currentFaceOrder;
 std::map<uint32_t, Texture::weakptr> textureCache;
 
 compiledMesh::~compiledMesh() {
-	std::cerr << "Freeing a compiledMesh" << std::endl;
+	SDL_Log("Freeing a compiledMesh");
 }
 
 compiledModel::~compiledModel() {
-	std::cerr << "Freeing a compiledModel" << std::endl;
+	SDL_Log("Freeing a compiledModel");
 }
 
 void initializeOpengl(void) {
@@ -54,23 +55,19 @@ void initializeOpengl(void) {
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,           &maxUBOSize);
 #endif
 
-	std::cerr << " OpenGL initializing... " << __func__ << std::endl;
-	std::cerr << " OpenGL " << glGetString(GL_VERSION) << std::endl;
-	std::cerr << " OpenGL vendor: " << glGetString(GL_VENDOR) << std::endl;
-	std::cerr << " OpenGL renderer: " << glGetString(GL_RENDERER) << std::endl;
+	SDL_Log(" OpenGL initializing... ");
+	SDL_Log(" OpenGL %s", glGetString(GL_VERSION));
+	SDL_Log(" OpenGL vendor: %s", glGetString(GL_VENDOR));
+	SDL_Log(" OpenGL renderer: %s", glGetString(GL_RENDERER));
 
-	std::cerr << " OpenGL GLSL target " << GLSL_VERSION << std::endl;
-	std::cerr << " OpenGL max fragment textures: " << maxImageUnits << std::endl;
-	std::cerr << " OpenGL max total textures: " << maxCombined << std::endl;
-	std::cerr << " OpenGL max texture size: " << maxTextureSize << std::endl;
-	std::cerr << " OpenGL max vertex vector uniforms: "
-		<< maxVertexUniforms << std::endl;
-	std::cerr << " OpenGL max fragment vector uniforms: "
-		<< maxFragmentUniforms << std::endl;
-	std::cerr << " OpenGL max uniform block bindings: "
-		<< maxUBOBindings << std::endl;
-	std::cerr << " OpenGL max uniform block size: "
-		<< maxUBOSize << std::endl;
+	SDL_Log(" OpenGL GLSL target: %d", GLSL_VERSION);
+	SDL_Log(" OpenGL max fragment textures: %d", maxImageUnits);
+	SDL_Log(" OpenGL max total textures: %d", maxCombined);
+	SDL_Log(" OpenGL max texture size: %d", maxTextureSize);
+	SDL_Log(" OpenGL max vertex vector uniforms: %d", maxVertexUniforms);
+	SDL_Log(" OpenGL max fragment vector uniforms: %d", maxFragmentUniforms);
+	SDL_Log(" OpenGL max uniform block bindings: %d", maxUBOBindings);
+	SDL_Log(" OpenGL max uniform block size: %d", maxUBOSize);
 
 	if (maxImageUnits < 8) {
 		throw std::logic_error("This GPU doesn't allow enough texture bindings!");
@@ -144,8 +141,7 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
 	if (it != textureCache.end()) {
 		if (auto observe = it->second.lock()) {
 			static const unsigned sizes[4] = {256, 512, 2048, 4096};
-			fprintf(stderr, "texture cache hit: %08x (%uK)\n",
-			        hash, sizes[hash >> 30]);
+			SDL_Log("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
 			return observe;
 		}
 	}
@@ -162,7 +158,7 @@ void compileMeshes(std::string objname, meshMap& meshies) {
 	for (const auto& [name, mesh] : meshies) {
 		compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 		std::string meshname = objname + "." + name;
-		std::cerr << ">>> compiling mesh " << meshname << std::endl;
+		SDL_Log(">>> compiling mesh %s", meshname.c_str());
 
 		mesh->comped_mesh = foo;
 		mesh->compiled = true;
@@ -201,7 +197,7 @@ void compileMeshes(std::string objname, meshMap& meshies) {
 }
 
 void compileModel(std::string name, gameModel::ptr model) {
-	std::cerr << " >>> compiling " << name << std::endl;
+	SDL_Log(" >>> compiling %s", name.c_str());
 
 	// TODO: might be able to clear vertex info after compiling here
 	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
@@ -225,7 +221,7 @@ void compileModel(std::string name, gameModel::ptr model) {
 		if (ptr->type == gameObject::objType::Mesh) {
 			// TODO: mesh naming is kind of crap
 			std::string asdf = name + "." + meshname;
-			std::cerr << " > have cooked mesh " << asdf << std::endl;
+			SDL_Log(" > have cooked mesh %s", asdf.c_str());
 			obj->meshes.push_back(asdf);
 			meshes[meshname] = std::dynamic_pointer_cast<gameMesh>(ptr);
 		}
@@ -260,7 +256,7 @@ void compileModels(modelMap& models) {
 
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	if (mesh == nullptr) {
-		std::cerr << "/!\\ Have broken mesh name..." << std::endl;
+		SDL_Log("/!\\ Have broken mesh name...");
 		return currentVao;
 	}
 
@@ -303,7 +299,7 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 
 	for (std::string& mesh_name : obj->meshes) {
 		if (auto ptr = cookedMeshes[mesh_name].lock()) {
-			std::cerr << " # binding mesh " << mesh_name << std::endl;
+			SDL_Log(" # binding mesh %s", mesh_name.c_str());
 			ptr->vao = preloadMeshVao(obj, ptr);
 		}
 	}
@@ -313,17 +309,17 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 
 void bindModel(gameModel::ptr model) {
 	if (model->comped_model == nullptr) {
-		std::cerr << " # ERROR: trying to bind an uncompiled model" << std::endl;
+		SDL_Log(" # ERROR: trying to bind an uncompiled model");
 	}
 
-	std::cerr << " # binding a model" << std::endl;
+	SDL_Log(" # binding a model");
 	model->comped_model->vao = preloadModelVao(model->comped_model);
 }
 
 void bindCookedMeshes(void) {
 	for (auto& [name, wptr] : cookedModels) {
 		if (auto ptr = wptr.lock()) {
-			std::cerr << " # binding " << name << std::endl;
+			SDL_Log(" # binding %s", name.c_str());
 			ptr->vao = preloadModelVao(ptr);
 		}
 	}
@@ -367,31 +363,32 @@ void check_errors(int line, const char *filename, const char *func) {
 
 	// TODO: maybe exceptions or some way to address errors
 	while ((err = glGetError()) != GL_NO_ERROR) {
-		std::cerr << "/!\\ ERROR: " << filename << ":" << line
-			<< ": " << func << "(): ";
+		const char *errstr;
 
 		switch (err) {
 			case GL_INVALID_ENUM:     
-				std::cerr << "invalid enum"; break;
+				errstr = "invalid enum"; break;
 			case GL_INVALID_VALUE:    
-				std::cerr << "invalid value"; break;
+				errstr = "invalid value"; break;
 			case GL_INVALID_OPERATION:
-				std::cerr << "invalid operation"; break;
+				errstr = "invalid operation"; break;
 			case GL_INVALID_FRAMEBUFFER_OPERATION:
-				std::cerr << "invalid framebuffer operation"; break;
+				errstr = "invalid framebuffer operation"; break;
 			case GL_OUT_OF_MEMORY:
-				std::cerr << "out of memory"; break;
+				errstr = "out of memory"; break;
 				/*
 			case GL_STACK_UNDERFLOW:
-				std::cerr << "stack underflow"; break;
+				errstr = "stack underflow"; break;
 			case GL_STACK_OVERFLOW:
-				std::cerr << "stack overflow"; break;
+				errstr = "stack overflow"; break;
 				*/
 			default:
-				std::cerr << "some kind of error code, #" << err; break;
+				errstr = "some kind of error code"; break;
 		}
 
-		std::cerr << std::endl;
+		SDL_Log("/!\\ OPENGL ERROR: %s:%d: %s(): %s (errno. %d)",
+			filename, line, func, errstr, err);
+
 		*(int*)NULL = 1234;
 	}
 }

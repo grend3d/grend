@@ -5,7 +5,7 @@
 namespace grendx {
 
 void SDL_Die(const char *message) {
-	std::cerr << "SDL_Die(): " << message << std::endl;
+	SDL_Log("SDL_Die(): %s", message);
 	SDL_Quit();
 	throw std::logic_error(message);
 }
@@ -25,7 +25,7 @@ static void callbackStub(void *userdata, uint8_t *stream, int len) {
 }
 
 context::context(const char *progname) {
-	std::cerr << "got to context::context()" << std::endl;
+	SDL_Log("got to context::context()");
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
 		SDL_Die(SDL_GetError());
 	}
@@ -35,8 +35,6 @@ context::context(const char *progname) {
 		//SDL_Die("Couldn't initialize sdl2_ttf");
 	}
 	*/
-
-	std::cerr << "got to end of init stuff" << std::endl;
 
 #if GLSL_VERSION == 100
 	// opengl es 2.0
@@ -82,7 +80,7 @@ context::context(const char *progname) {
 	}
 
 	glcontext = SDL_GL_CreateContext(window);
-	std::cerr << "have window + gl context" << std::endl;
+	SDL_Log("have window + gl context");
 
 	SDL_GL_SetSwapInterval(1);
 
@@ -93,9 +91,9 @@ context::context(const char *progname) {
 		// TODO: check for vertex array extensions on gles2, error out
 		//       if not supported
 	}
-#endif
 
-	std::cerr << "initialized glew" << std::endl;
+	SDL_Log("initialized glew");
+#endif
 
 	SDL_AudioSpec want;
 	SDL_memset(&want, 0, sizeof(want));
@@ -114,6 +112,8 @@ context::context(const char *progname) {
 	} else {
 		SDL_PauseAudioDevice(audioOut, 0);
 	}
+
+	SDL_Log("Finished initializing SDL");
 }
 
 context::~context() {

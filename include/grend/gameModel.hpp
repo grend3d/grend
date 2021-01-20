@@ -24,6 +24,7 @@ class gameMesh : public gameObject {
 		typedef std::weak_ptr<gameMesh> weakptr;
 
 		gameMesh() : gameObject(objType::Mesh) {};
+		virtual ~gameMesh();
 
 		virtual std::string typeString(void) {
 			return "Mesh";
@@ -47,6 +48,7 @@ class gameModel : public gameObject {
 		typedef std::weak_ptr<gameModel> weakptr;
 
 		gameModel() : gameObject(objType::Model) {};
+		virtual ~gameModel();
 
 		virtual std::string typeString(void) {
 			return "Model";

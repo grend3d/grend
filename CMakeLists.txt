@@ -8,6 +8,9 @@ option(BUILD_SHARED_LIBS "build the shared stuff" ON)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
+message(STATUS "ASSETS:  ${CMAKE_ANDROID_ASSETS_DIRECTORIES}")
+message(STATUS "ASSETS2: ${APK_DIR}")
+message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 
 # GLSL version is also used to determine OpenGL API version
 #set(GLSL_VERSION 100) # OpenGL ES 2.0
@@ -104,7 +107,8 @@ add_compile_options(
 	-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 	# TODO: this obviously breaks portable installs
-	-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
+	#-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
+	-DGR_PREFIX="/sdcard/grend/"
 	-Og -g
 )
 

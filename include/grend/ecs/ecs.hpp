@@ -71,12 +71,8 @@ class component {
 			manager->registerComponent(ent, "component", this);
 		}
 
+		virtual ~component();
 		virtual const char* typeString(void) const { return "component"; };
-		virtual ~component() {
-			std::cerr << "got to ~component() "
-				<< "[type: " << this->typeString() << "]"
-				<< std::endl;
-		};
 
 		// draw the imgui widgets for this component, TODO
 		// also, this class needs a polymorphic member in order to upcast,
@@ -95,6 +91,7 @@ class entity : public component {
 			manager->registerComponent(this, "entity", this);
 		}
 
+		virtual ~entity();
 		virtual const char* typeString(void) const { return "entity"; };
 
 		virtual void update(entityManager *manager, float delta) = 0;
@@ -108,7 +105,7 @@ class entitySystem {
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
 
-		virtual ~entitySystem() {};
+		virtual ~entitySystem();
 		virtual void update(entityManager *manager, float delta) {}
 };
 

@@ -128,7 +128,7 @@ channelBuffers_ptr grendx::openAudio(std::string filename) {
 	int16_t *ibuf;
 	int len = stb_vorbis_decode_filename(filename.c_str(), &channels, &rate, &ibuf);
 
-	fprintf(stderr, "%s: loading audio: %d, %d, %d\n", filename.c_str(), len, channels, rate);
+	SDL_Log("%s: loading audio: %d, %d, %d\n", filename.c_str(), len, channels, rate);
 
 	if (len > 0 && channels > 0) {
 		auto ret = std::make_shared<channelBuffers>();

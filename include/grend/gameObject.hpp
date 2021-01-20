@@ -47,7 +47,7 @@ class gameObject {
 		typedef std::weak_ptr<gameObject> weakptr;
 
 		gameObject(enum objType t = objType::None) : type(t) {};
-		~gameObject();
+		virtual ~gameObject();
 
 		// handlers for basic input events
 		virtual void onLeftClick() {
@@ -113,6 +113,14 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 	sub->parent = obj;
 }
 
+static inline
+void setNodeXXX(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
+	assert(obj != nullptr && sub != nullptr);
+
+	obj->nodes[name] = sub;
+}
+
+
 // TODO: just realized these overload syscalls, should that be avoided?
 //       in principle it's fine, might be confusing in code though
 gameObject::ptr unlink(gameObject::ptr node);
@@ -126,6 +134,7 @@ class gameImport : public gameObject {
 
 		gameImport(std::string path)
 			: gameObject(objType::Import), sourceFile(path) {}
+		virtual ~gameImport();
 
 		virtual std::string typeString(void) {
 			return "Imported file";
@@ -146,6 +155,7 @@ class gameSkin : public gameObject {
 		typedef std::weak_ptr<gameSkin>   weakptr;
 
 		gameSkin() : gameObject(objType::Skin) {}
+		virtual ~gameSkin();
 
 		virtual std::string typeString(void) {
 			return "Skin";
@@ -166,6 +176,7 @@ class gameParticles : public gameObject {
 		typedef std::weak_ptr<gameParticles>   weakptr;
 
 		gameParticles(unsigned _maxInstances = 256);
+		virtual ~gameParticles();
 
 		virtual std::string typeString(void) {
 			return "Particle system";
@@ -202,6 +213,7 @@ class gameLight : public gameObject {
 
 		gameLight(enum lightTypes t)
 			: gameObject(objType::Light), lightType(t) {};
+		virtual ~gameLight();
 
 		virtual std::string typeString(void) {
 			return "Light (abstract)";
@@ -225,6 +237,7 @@ class gameLightPoint : public gameLight {
 		typedef std::weak_ptr<gameLightPoint> weakptr;
 
 		gameLightPoint() : gameLight(lightTypes::Point) {};
+		virtual ~gameLightPoint();
 
 		virtual std::string typeString(void) {
 			return "Point light";
@@ -243,6 +256,7 @@ class gameLightSpot : public gameLight {
 		typedef std::weak_ptr<gameLightSpot> weakptr;
 
 		gameLightSpot() : gameLight(lightTypes::Spot) {};
+		virtual ~gameLightSpot();
 
 		virtual std::string typeString(void) {
 			return "Spot light";
@@ -263,6 +277,7 @@ class gameLightDirectional : public gameLight {
 		typedef std::weak_ptr<gameLightDirectional> weakptr;
 
 		gameLightDirectional() : gameLight(lightTypes::Directional) {};
+		virtual ~gameLightDirectional();
 
 		virtual std::string typeString(void) {
 			return "Directional light";
@@ -284,6 +299,8 @@ class gameReflectionProbe : public gameObject {
 		}
 
 		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
+		virtual ~gameReflectionProbe();
+
 		quadtree::node_id faces[5][6];
 		// bounding box for parallax correction
 		AABB boundingBox = {
@@ -309,6 +326,7 @@ class gameIrradianceProbe : public gameObject {
 		gameIrradianceProbe() : gameObject(objType::IrradianceProbe) {
 			source = std::make_shared<gameReflectionProbe>();
 		};
+		virtual ~gameIrradianceProbe();
 
 		gameReflectionProbe::ptr source;
 		quadtree::node_id faces[6];

@@ -11,6 +11,18 @@ gameObject::~gameObject() {
 	}
 }
 
+// XXX: "key functions", needed to do dynamic_cast across .so boundries
+//      Requires that the function be a "non-inline, non-pure virtual function"
+gameImport::~gameImport() {};
+gameSkin::~gameSkin() {};
+gameParticles::~gameParticles() {};
+gameLight::~gameLight() {};
+gameLightPoint::~gameLightPoint() {};
+gameLightSpot::~gameLightSpot() {};
+gameLightDirectional::~gameLightDirectional() {};
+gameReflectionProbe::~gameReflectionProbe() {};
+gameIrradianceProbe::~gameIrradianceProbe() {};
+
 size_t grendx::allocateObjID(void) {
 	static size_t counter = 0;
 	return ++counter;

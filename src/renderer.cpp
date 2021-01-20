@@ -54,7 +54,6 @@ renderContext::renderContext(context& ctx) {
 #ifdef __EMSCRIPTEN__
 	screen_x = SCREEN_SIZE_X;
 	screen_y = SCREEN_SIZE_Y;
-	std::cerr << "also got here" << std::endl;
 #else
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 #endif
@@ -100,7 +99,7 @@ renderContext::renderContext(context& ctx) {
 	default_aomap->buffer(default_material->maps.ambientOcclusion);
 
 	loadShaders();
-	std::cerr << __func__ << ": Reached end of constructor" << std::endl;
+	SDL_Log("Initialized render context");
 }
 
 renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
@@ -179,11 +178,18 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
 }
 
 void renderContext::loadShaders(void) {
-	std::cerr << "loading shaders" << std::endl;
+	SDL_Log("Loading shaders");
 
+	/*
 	lightingShaders["main"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/src/pixel-shading-metal-roughness-pbr.frag",
+			globalShaderOptions);
+			*/
+
+	lightingShaders["main"] =
+		loadLightingShader(
+			GR_PREFIX "shaders/src/unshaded.frag",
 			globalShaderOptions);
 
 	lightingShaders["unshaded"] = 

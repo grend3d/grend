@@ -54,10 +54,10 @@ int gameMain::step(void) {
 		last_frame_time = cur_ticks;
 
 		if (view == nullptr) {
-			std::cerr <<
+			SDL_Log(
 				"ERROR: no view defined, you must set a view controller "
 				"with gameMain::setView()"
-				<< std::endl;
+			);
 			running = false;
 		}
 

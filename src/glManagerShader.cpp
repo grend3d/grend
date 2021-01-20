@@ -17,16 +17,10 @@ Shader::Shader(GLuint o)
 	: Obj(o, Obj::type::Shader) { }
 
 bool Shader::load(std::string filename, shaderOptions& options) {
-	std::cerr << __func__ << ": " << __LINE__ << ": loading "
-	          << filename << std::endl;
+	SDL_Log("loading shader: %s", filename.c_str());
 
 	std::string source    = load_file(filename);
 	std::string processed = preprocessShader(source, options);
-
-	/*
-	std::cerr << __func__ << " Have processed shader: " << std::endl
-		<< processed << std::endl;
-		*/
 
 	const char *temp = processed.c_str();
 	int compiled;
@@ -44,11 +38,11 @@ bool Shader::load(std::string filename, shaderOptions& options) {
 		shader_log = new char[max_length];
 		glGetShaderInfoLog(obj, max_length, &max_length, shader_log);
 
-		std::cerr << "BIGERROR: compiliing the processed shader: " << std::endl;
-		std::cerr << "@ " << filename << std::endl;
-		std::cerr << shader_log << std::endl;
-		std::cerr << "SOURCE: ----------------------------------" << std::endl;
-		std::cerr << processed << std::endl;
+		SDL_Log("BIGERROR: compiliing the processed shader: ");
+		SDL_Log("@ %s", filename.c_str());
+		SDL_Log("%s", shader_log);
+		SDL_Log("SOURCE: ----------------------------------");
+		SDL_Log("%s", processed.c_str());
 
 	} else {
 		// only store this if the shader is in a good state
@@ -90,7 +84,7 @@ bool Program::link(void) {
 
 	if (!linked) {
 		std::string err = (std::string)"error linking program: " + log();
-		std::cerr << err << std::endl;
+		SDL_Log("%s", err.c_str());
 	}
 
 	return linked;

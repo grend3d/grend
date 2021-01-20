@@ -42,8 +42,6 @@ class jobQueue {
 		// jobs that must run syncronously, on the main thread
 		// (eg. anything that touches openGL)
 		std::list<std::packaged_task<bool()>> deferredJobs;
-
-
 };
 
 // namespace grendx

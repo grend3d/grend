@@ -14,12 +14,8 @@ class rigidBody : public component {
 			mass = _mass;
 		}
 
+		virtual ~rigidBody();
 		virtual const char* typeString(void) const { return "rigidBody"; };
-		virtual ~rigidBody() {
-			std::cerr << "got to ~rigidBody()" << std::endl;
-			//phys = nullptr;
-			phys.reset();
-		};
 
 		void registerCollisionQueue(std::shared_ptr<std::vector<collision>> queue) {
 			if (phys) {
@@ -49,10 +45,8 @@ class rigidBodySphere : public rigidBody {
 			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
 		}
 
+		virtual ~rigidBodySphere();
 		virtual const char* typeString(void) const { return "rigidBodySphere"; };
-		virtual ~rigidBodySphere() {
-			std::cerr << "got to ~rigidBodySphere()" << std::endl;
-		};
 
 		virtual void setRadius(float r) {
 			// XXX: if the object has moved since it was added, this will reset
@@ -80,8 +74,8 @@ class rigidBodyBox : public rigidBody {
 			phys = manager->engine->phys->addBox(ent, position, mass, box);
 		}
 
+		virtual ~rigidBodyBox();
 		virtual const char* typeString(void) const { return "rigidBodyBox"; };
-		virtual ~rigidBodyBox() {};
 };
 
 class syncRigidBody : public component {
@@ -92,8 +86,8 @@ class syncRigidBody : public component {
 			manager->registerComponent(ent, "syncRigidBody", this);
 		}
 
+		virtual ~syncRigidBody();
 		virtual const char* typeString(void) const { return "syncRigidBody"; };
-		virtual ~syncRigidBody() {};
 		virtual void sync(entityManager *manager, entity *ent) = 0;
 };
 
@@ -105,8 +99,8 @@ class syncRigidBodyTransform : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyTransform", this);
 		}
 
+		virtual ~syncRigidBodyTransform();
 		virtual const char* typeString(void) const { return "syncRigidBodyTransform"; };
-		virtual ~syncRigidBodyTransform() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
@@ -118,8 +112,8 @@ class syncRigidBodyPosition : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyPosition", this);
 		}
 
+		virtual ~syncRigidBodyPosition();
 		virtual const char* typeString(void) const { return "syncRigidBodyPosition"; };
-		virtual ~syncRigidBodyPosition() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
@@ -131,8 +125,8 @@ class syncRigidBodyXZVelocity : public syncRigidBody {
 			manager->registerComponent(ent, "syncRigidBodyXZVelocity", this);
 		}
 
+		virtual ~syncRigidBodyXZVelocity();
 		virtual const char* typeString(void) const { return "syncRigidBodyXZVelocity"; };
-		virtual ~syncRigidBodyXZVelocity() {};
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
@@ -141,6 +135,7 @@ class syncRigidBodySystem : public entitySystem {
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
 
+		virtual ~syncRigidBodySystem();
 		virtual void update(entityManager *manager, float delta);
 };
 

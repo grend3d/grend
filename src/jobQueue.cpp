@@ -6,6 +6,8 @@ jobQueue::jobQueue(unsigned concurrency) {
 	for (unsigned i = 0; i < concurrency; i++) {
 		workers.push_back(std::thread(&jobQueue::worker, this));
 	}
+	//workers.push_back(std::thread(&jobQueue::worker, this));
+	//workers.push_back(std::thread(&jobQueue::worker, this));
 }
 
 jobQueue::~jobQueue() {
@@ -61,23 +63,21 @@ void jobQueue::worker(void) {
 }
 
 #include <iostream>
+#include <SDL.h>
 std::packaged_task<bool()> jobQueue::getAsync(void) {
 	std::unique_lock<std::mutex> slock(mtx);
 
 	if (asyncJobs.empty()) {
-		std::cerr
-			<< "got here, thread "
-			<< std::this_thread::get_id()
-			<< " waiting for a job"
-			<< std::endl;
+		// TODO: debug statements hurt performance
+		SDL_Log("[job queue] got here, thread %lu waiting for job",
+			std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
 		waiters.wait(slock, [this]{ return !asyncJobs.empty(); });
 	}
 
-	std::cerr
-		<< "(empty: " << asyncJobs.empty() << ") "
-		<< "got here, thread "
-		<< std::this_thread::get_id() << std::endl;
+	SDL_Log("[job queue] (empty: %d) got here, thread %lu",
+		asyncJobs.empty(),
+		std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
 	auto job = std::move(asyncJobs.front());
 	asyncJobs.pop_front();

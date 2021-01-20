@@ -3,6 +3,10 @@
 
 namespace grendx::ecs {
 
+// key functions for rtti
+collisionHandler::~collisionHandler() {};
+entitySystemCollision::~entitySystemCollision() {};
+
 void entitySystemCollision::update(entityManager *manager, float delta) {
 	for (auto& col : *manager->collisions) {
 		if (col.adata && col.bdata) {

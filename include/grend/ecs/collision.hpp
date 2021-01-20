@@ -14,8 +14,8 @@ class collisionHandler : public component {
 			manager->registerComponent(ent, "collisionHandler", this);
 		}
 
+		virtual ~collisionHandler();
 		virtual const char* typeString(void) const { return "collisionHandler"; };
-		virtual ~collisionHandler() {};
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
@@ -29,6 +29,7 @@ class entitySystemCollision : public entitySystem {
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
 
+		virtual ~entitySystemCollision();
 		virtual void update(entityManager *manager, float delta);
 };
 

@@ -52,6 +52,7 @@ static std::string preprocess(std::string& sourcestr,
 	while (std::getline(source, line)) {
 		size_t inc = line.find("#include");
 		size_t prag = line.find("#pragma");
+		size_t directive = line.find("#");
 
 		if (inc != std::string::npos) {
 			auto path = extractInclude(line);
@@ -61,6 +62,10 @@ static std::string preprocess(std::string& sourcestr,
 			// strip pragmas, just in case, they're leftovers from
 			// the old preprocessor setup
 			continue;
+
+		} else if (directive != std::string::npos) {
+			// remove leading spaces, if any
+			processed += line.substr(directive) + "\n";
 
 		} else {
 			processed += line + "\n";
