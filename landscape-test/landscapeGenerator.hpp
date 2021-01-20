@@ -5,6 +5,7 @@
 #include <grend/animation.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/collision.hpp>
+#include <thread>
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -22,14 +23,34 @@ struct generatorEvent {
 	glm::vec3 extent;
 };
 
-// TODO: maybe mutex, although events probably won't be pushed from workers here
-typedef std::shared_ptr<std::vector<generatorEvent>> generatorEventQueue;
+class generatorEventQueue {
+	public:
+		typedef std::shared_ptr<generatorEventQueue> ptr;
+		typedef std::weak_ptr<generatorEventQueue>   weakptr;
+
+		std::lock_guard<std::mutex> lock(void) {
+			return std::lock_guard<std::mutex>(mtx);
+		}
+
+		std::vector<generatorEvent>& getQueue(void) {
+			return queue;
+		}
+
+		void emit(generatorEvent ev) {
+			std::lock_guard<std::mutex> g(mtx);
+			queue.push_back(ev);
+		}
+
+	private:
+		std::mutex mtx;
+		std::vector<generatorEvent> queue;
+};
 
 class worldGenerator {
 	public:
 		virtual gameObject::ptr getNode(void) { return root; };
 		virtual void setPosition(gameMain *game, glm::vec3 position) = 0;
-		virtual void setEventQueue(generatorEventQueue q);
+		virtual void setEventQueue(generatorEventQueue::ptr q);
 
 	protected:
 		// TODO: generic event class
@@ -37,7 +58,7 @@ class worldGenerator {
 
 		gameObject::ptr root = std::make_shared<gameObject>();
 		glm::vec3 lastPosition = glm::vec3(INT_MAX);
-		generatorEventQueue eventQueue = nullptr;
+		generatorEventQueue::ptr eventQueue = nullptr;
 };
 
 class landscapeGenerator : public worldGenerator {

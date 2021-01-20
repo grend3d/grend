@@ -47,8 +47,7 @@ class landscapeEventSystem : public entitySystem {
 	public:
 		virtual void update(entityManager *manager, float delta);
 
-		generatorEventQueue queue
-			= std::make_shared<std::vector<generatorEvent>>();
+		generatorEventQueue::ptr queue = std::make_shared<generatorEventQueue>();
 };
 
 class generatorEventHandler : public component {
@@ -61,28 +60,31 @@ class generatorEventHandler : public component {
 
 		virtual void
 		handleEvent(entityManager *manager, entity *ent, generatorEvent& ev) {
-			SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,
-				"handleEvent: got here, [+/-%g] [+/-%g] [+/-%g]",
-				ev.extent.x, ev.extent.y, ev.extent.z);
+			const char *typestr;
 
-			/*
 			switch (ev.type) {
 				case generatorEvent::types::generatorStarted:
-					std::cerr << "started";
+					typestr =  "started";
 					break;
 
 				case generatorEvent::types::generated:
-					std::cerr << "generated";
+					typestr =  "generated";
 					break;
 
 				case generatorEvent::types::deleted:
-					std::cerr << "deleted";
+					typestr =  "deleted";
 					break;
 
 				default:
-					std::cerr << "<unknown>";
+					typestr =  "<unknown>";
 					break;
 			}
+
+			SDL_Log(
+				"handleEvent: got here, %s [+/-%g] [+/-%g] [+/-%g]",
+				typestr, ev.extent.x, ev.extent.y, ev.extent.z);
+
+			/*
 
 			std::cerr << std::endl;
 			*/
@@ -105,8 +107,10 @@ class generatorEventActivator : public generatorEventHandler {
 
 void landscapeEventSystem::update(entityManager *manager, float delta) {
 	auto handlers = manager->getComponents("generatorEventHandler");
+	auto g = queue->lock();
+	auto& quevec = queue->getQueue();
 
-	for (auto& ev : *queue) {
+	for (auto& ev : quevec) {
 		for (auto& it : handlers) {
 			generatorEventHandler *handler = dynamic_cast<generatorEventHandler*>(it);
 			entity *ent = manager->getEntity(handler);
@@ -117,7 +121,8 @@ void landscapeEventSystem::update(entityManager *manager, float delta) {
 		}
 	}
 
-	queue->clear();
+	// XXX: should be in queue class
+	quevec.clear();
 }
 
 // XXX: this sort of makes sense but not really... game entity with no renderable
@@ -128,7 +133,7 @@ class worldEntityGenerator : public generatorEventHandler {
 		worldEntityGenerator(entityManager *manager, entity *ent)
 			: generatorEventHandler(manager, ent)
 		{
-			manager->registerComponent(ent, "generatorEventHandler", this);
+			manager->registerComponent(ent, "worldEntityGenerator", this);
 		}
 
 		virtual void
@@ -142,8 +147,7 @@ class worldEntityGenerator : public generatorEventHandler {
 
 						if (positions.count(foo) == 0) {
 							positions.insert(foo);
-							SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION,
-								"worldEntityGenerator(): generating some things");
+							SDL_Log("worldEntityGenerator(): generating some things");
 
 							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
 
@@ -204,7 +208,8 @@ class landscapeGenView : public gameView {
 
 landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	post = renderPostChain::ptr(new renderPostChain(
-				{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+				{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag", game->rend->globalShaderOptions)},
+				//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 				SCREEN_SIZE_X, SCREEN_SIZE_Y));
 
 	game->serializers->add<rigidBodySphereSerializer>();
@@ -274,6 +279,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 };
 
 void landscapeGenView::logic(gameMain *game, float delta) {
+	//SDL_Log("Got to landscapeGenView::logic()");
 	static glm::vec3 lastvel = glm::vec3(0);
 	static gameObject::ptr retval;
 
@@ -344,6 +350,10 @@ static void drawPlayerHealthbar(entityManager *manager,
 	nvgText(vgui.nvg, wx - 235, 80, "💚 Testing this", NULL);
 	nvgText(vgui.nvg, wx - 235, 80 + 16, "Go forward ➡", NULL);
 	nvgText(vgui.nvg, wx - 235, 80 + 32, "⬅ Go back", NULL);
+
+	double fps = manager->engine->frame_timer.average();
+	std::string fpsstr = std::to_string(fps) + "fps";
+	nvgText(vgui.nvg, wx/2, 80 + 32, fpsstr.c_str(), NULL);
 }
 
 static void renderHealthbars(entityManager *manager,
@@ -375,6 +385,7 @@ static void renderHealthbars(entityManager *manager,
 }
 
 void landscapeGenView::render(gameMain *game) {
+	//SDL_Log("Got to landscapeGenView::render()");
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 	renderFlags flags = game->rend->getLightingFlags();
@@ -423,8 +434,8 @@ int main(int argc, char *argv[]) {
 
 	try {
 		TRS staticPosition; // default
-		gameMain *game = new gameMainDevWindow();
-		//gameMain *game = new gameMain();
+		//gameMain *game = new gameMainDevWindow();
+		gameMain *game = new gameMain();
 
 	// XXX:  toggle using textures I have locally, don't want to bloat the assets
 	//       folder again
@@ -493,7 +504,9 @@ int main(int argc, char *argv[]) {
 
 		setNode("entities",  game->state->rootnode, game->entities->root);
 		setNode("landscape", game->state->rootnode, player->landscape.getNode());
+		setNode("testlight", game->state->rootnode, std::make_shared<gameLightPoint>());
 
+		SDL_Log("Got to game->run()!");
 		game->run();
 
 	} catch (const std::exception& ex) {
