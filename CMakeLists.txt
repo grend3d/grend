@@ -22,6 +22,11 @@ add_subdirectory(libs/nanovg)
 
 set(GREND_LINK_LIBS)
 if (ANDROID)
+	# TODO: how's this going to work in production, just require assets
+	#       be unpacked onto the SD card? I'm definitely not rewriting
+	#       every library that touches C/C++ file i/o
+	add_compile_options(-DGR_PREFIX="/sdcard/grend/")
+
 	# TODO: ideally this could be deduplicated
 	if (GLSL_VERSION EQUAL 100)
 		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
@@ -48,6 +53,8 @@ if (ANDROID)
 # TODO: assume unixen, presumably there'll be different library lookup
 #       stuff for windows/etc
 else()
+	add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
 	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
@@ -67,9 +74,9 @@ else()
 	elseif(GLSL_VERSION EQUAL 300)
 		message(STATUS "GL: Using GLESv3")
 		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
-		# Hmm, seems there's no decidicated GLESv3 lib on linux?
-		find_library(GL GL)
-		list(APPEND GREND_LINK_LIBS GL)
+		# seems gles3 is part of the gles2 library
+		find_library(GLESv2 GLESv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
 	else()
 		message(STATUS "GL: Using glew")
 		add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
@@ -107,8 +114,6 @@ add_compile_options(
 	-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 	# TODO: this obviously breaks portable installs
-	#-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
-	-DGR_PREFIX="/sdcard/grend/"
 	-Og -g
 )
 

@@ -63,9 +63,11 @@ static std::string preprocess(std::string& sourcestr,
 			// the old preprocessor setup
 			continue;
 
+			/*
 		} else if (directive != std::string::npos) {
 			// remove leading spaces, if any
 			processed += line.substr(directive) + "\n";
+			*/
 
 		} else {
 			processed += line + "\n";
