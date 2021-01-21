@@ -1,4 +1,5 @@
 #pragma once
+#include <lib/compat.glsl>
 
 vec2 atlasUV(vec3 transform, vec2 uv) {
 	return vec2(

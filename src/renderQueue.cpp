@@ -462,12 +462,10 @@ unsigned renderQueue::flush(unsigned width,
 				}
 			}
 
-			/*
 			set_irradiance_probe(
 				nearest_irradiance_probe(applyTransform(transform)),
 				flags.skinnedShader,
 				rctx->atlases);
-				*/
 			drawMesh(flags, nullptr, flags.skinnedShader,
 			         transform, inverted, mesh);
 		}
@@ -483,11 +481,9 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("cameraPosition", cam->position());
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		/*
 		set_irradiance_probe(
 			nearest_irradiance_probe(applyTransform(transform)),
 			flags.mainShader, rctx->atlases);
-			*/
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -582,12 +578,10 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 				offset = 0.0;
 			}
 
-			/*
 			set_irradiance_probe(
 				nearest_irradiance_probe(applyTransform(transform)),
 				flags.skinnedShader,
 				rctx->atlases);
-				*/
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
 			drawnMeshes++;
 		}
@@ -604,11 +598,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		/*
 		set_irradiance_probe(
 			nearest_irradiance_probe(applyTransform(transform)),
 			flags.mainShader, rctx->atlases);
-			*/
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
 	}
@@ -621,11 +613,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.instancedShader, rctx);
 
 	for (auto& [transform, inverted, particleSystem, mesh] : instancedMeshes) {
-		/*
 		set_irradiance_probe(
 			nearest_irradiance_probe(applyTransform(transform)),
 			flags.mainShader, rctx->atlases);
-			*/
 		drawMeshInstanced(flags, fb, flags.instancedShader,
 		                  transform, inverted, particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
@@ -882,6 +872,8 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	lightbuf.uactive_spot_lights        = activeSpots;
 	lightbuf.uactive_directional_lights = activeDirs;
 
+	SDL_Log("updating buffers: lights: %u, points: %u, spots: %u",
+	        sizeof(lightbuf), sizeof(pointbuf), sizeof(spotbuf));
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
 	rctx->pointTiles->update(&pointbuf,  0, sizeof(pointbuf));
 	rctx->spotTiles->update(&spotbuf,    0, sizeof(spotbuf));
@@ -901,10 +893,12 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 
 #if GLSL_VERSION >= 140
 	program->setUniformBlock("lights",      rctx->lightBuffer, UBO_LIGHT_INFO);
+#if !defined(USE_SINGLE_UBO)
 	program->setUniformBlock("point_light_tiles", rctx->pointTiles,
 	                         UBO_POINT_LIGHT_TILES);
 	program->setUniformBlock("spot_light_tiles", rctx->spotTiles,
 	                         UBO_SPOT_LIGHT_TILES);
+#endif
 
 	DO_ERROR_CHECK();
 

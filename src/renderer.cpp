@@ -189,7 +189,7 @@ void renderContext::loadShaders(void) {
 
 	lightingShaders["main"] =
 		loadLightingShader(
-			GR_PREFIX "shaders/src/unshaded.frag",
+			GR_PREFIX "shaders/src/pixel-shading.frag",
 			globalShaderOptions);
 
 	lightingShaders["unshaded"] = 

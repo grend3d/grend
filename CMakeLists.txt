@@ -26,6 +26,10 @@ if (ANDROID)
 	#       be unpacked onto the SD card? I'm definitely not rewriting
 	#       every library that touches C/C++ file i/o
 	add_compile_options(-DGR_PREFIX="/sdcard/grend/")
+	add_compile_options(-DMAX_LIGHTS=8)
+	# TODO: toggleable for old adreno only...?
+	#add_compile_options(-DUSE_SINGLE_UBO)
+	add_compile_options(-DBROKEN_UINTS)
 
 	# TODO: ideally this could be deduplicated
 	if (GLSL_VERSION EQUAL 100)

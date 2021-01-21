@@ -32,7 +32,7 @@ void main(void) {
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
 	vec3 total_light = (anmaterial.emissive.rgb * emissive.rgb);
 
-	for (uint i = 0u; i < ACTIVE_POINTS_RAW; i++) {
+	for (uint i = uint(0); i < ACTIVE_POINTS_RAW; i++) {
 		float atten = point_attenuation(i, vec3(f_position));
 		float shadow = point_shadow(i, vec3(f_position));
 
@@ -47,7 +47,7 @@ void main(void) {
 		total_light += lum;
 	}
 
-	for (uint i = 0u; i < ACTIVE_SPOTS_RAW; i++) {
+	for (uint i = uint(0); i < ACTIVE_SPOTS_RAW; i++) {
 		float atten = spot_attenuation(i, vec3(f_position));
 		vec3 lum = mrp_lighting(SPOT_LIGHT(i).position,
 		                        SPOT_LIGHT(i).diffuse, 
@@ -57,7 +57,7 @@ void main(void) {
 		total_light += lum*atten;
 	}
 
-	for (uint i = 0u; i < ACTIVE_DIRECTIONAL_RAW; i++) {
+	for (uint i = uint(0); i < ACTIVE_DIRECTIONAL_RAW; i++) {
 		float atten = directional_attenuation(i, vec3(f_position));
 		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT(i).position,
 		                        DIRECTIONAL_LIGHT(i).diffuse, 

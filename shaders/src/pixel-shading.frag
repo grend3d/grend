@@ -5,6 +5,7 @@ precision mediump sampler2D;
 precision mediump samplerCube;
 
 #define PHONG_USE_BLINN_PHONG
+#define DEBUG_CLUSTERS 1
 
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
@@ -14,9 +15,16 @@ precision mediump samplerCube;
 #include <lib/shadows.glsl>
 
 #define LIGHT_FUNCTION blinn_phong_lighting
+//#define LIGHT_FUNCTION debugthing
 #include <lighting/blinn-phong.glsl>
 #include <lighting/fresnel-schlick.glsl>
 #include <lighting/lightingLoop.glsl>
+
+vec3 debugthing(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
+                vec3 albedo, vec3 normal, float metallic, float roughness)
+{
+	return albedo*0.5;
+}
 
 void main(void) {
 	uint cluster = CURRENT_CLUSTER();
@@ -50,5 +58,14 @@ void main(void) {
 	           normal_dir, metallic, roughness, 1.0);
 
 	//vec4 dispnorm = vec4((normal_dir + 1.0)/2.0, 1.0);
+
+#if DEBUG_CLUSTERS
+	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);
+	const float thresh = 0.75;
+	const float invthresh = thresh / 1.0;
+	FRAG_COLOR = vec4(total_light +
+		vec3(invthresh * max(0.0, N - thresh), 1.0 - N, N), 1.0);
+#else
 	FRAG_COLOR = vec4(total_light, anmaterial.opacity);
+#endif
 }

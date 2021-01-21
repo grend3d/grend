@@ -32,6 +32,7 @@ namespace grendx {
 
 // TODO: need some unified location to put this, there's a duplicated definition
 //       of this in shaders/lib/shading-uniforms.glsl
+// TODO: also, this is becoming a nest of preprocessor definitions... ugh
 #if defined(CLUSTERED_LIGHTS) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
 // for clustered, tiled, number of possible light objects available (ie. in view)
 #ifndef MAX_POINT_LIGHT_OBJECTS
@@ -47,6 +48,28 @@ namespace grendx {
 #endif
 
 #else // if < opengl 4.3
+
+// XXX: so, there's a ridiculous number of bugs in the gles3 implementation 
+//      of the adreno 3xx-based phone I'm testing on, one of which is that
+//      multiple UBOs aren't actually usable... so, need a fallback to
+//      the old style non-tiled lights array, but using one UBO
+//
+//      https://developer.qualcomm.com/forum/qdn-forums/software/adreno-gpu-sdk/29611
+#if defined(USE_SINGLE_UBO)
+#ifndef MAX_POINT_LIGHT_OBJECTS
+#define MAX_POINT_LIGHT_OBJECTS MAX_LIGHTS
+#endif
+
+#ifndef MAX_SPOT_LIGHT_OBJECTS
+#define MAX_SPOT_LIGHT_OBJECTS MAX_LIGHTS
+#endif
+
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#endif
+
+#else /* not defined(USE_SINGLE_UBO) */
+// otherwise, tiled lighting, lots more lights available
 #ifndef MAX_POINT_LIGHT_OBJECTS
 #define MAX_POINT_LIGHT_OBJECTS 90
 #endif
@@ -57,6 +80,7 @@ namespace grendx {
 
 #ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
 #define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#endif
 #endif
 #endif // < opengl 4.3
 

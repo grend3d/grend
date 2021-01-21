@@ -115,7 +115,7 @@ layout(std430, binding = 1) buffer plights {
 	//uint directional_clusters[16*16*16 * MAX_DIRECTIONAL_LIGHT_OBJECTS];
 };
 
-#define CURRENT_CLUSTER()  (0u)
+#define CURRENT_CLUSTER()  (uint(0))
 
 #define ACTIVE_POINTS      (active_point_lights)
 #define ACTIVE_SPOTS       (active_spot_lights)
@@ -217,9 +217,9 @@ uint vertexShaderCluster() {
 #endif
 
 #define POINT_LIGHT_IDX(P, CLUSTER) \
-	(point_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])
+	(point_tiles[CLUSTER + ((P+uint(1))>>uint(2))][(P + uint(1)) & uint(3)])
 #define SPOT_LIGHT_IDX(P, CLUSTER) \
-	(spot_tiles[CLUSTER + ((P+1u)>>2u)][(P + 1u) & 3u])
+	(spot_tiles[CLUSTER + ((P+uint(1))>>uint(2))][(P + uint(1)) & uint(3)])
 #define DIRECTIONAL_LIGHT_IDX(P, CLUSTER) \
 	(P)
 
@@ -252,7 +252,7 @@ uniform point_light point_lights[MAX_LIGHTS];
 uniform spot_light spot_lights[MAX_LIGHTS];
 uniform directional_light directional_lights[MAX_LIGHTS];
 
-#define CURRENT_CLUSTER()  (0u) 
+#define CURRENT_CLUSTER()  (uint(0)) 
 
 // for loop iterators, can't use uniform to index lights on gles2
 #if GLSL_VERSION < 140

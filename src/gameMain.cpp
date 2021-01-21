@@ -141,6 +141,9 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		DO_ERROR_CHECK();
 
 		game->rend->framebuffer->framebuffer->bind();
+		glClearStencil(0);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		DO_ERROR_CHECK();
 
 		// TODO: constants for texture bindings, no magic numbers floating around

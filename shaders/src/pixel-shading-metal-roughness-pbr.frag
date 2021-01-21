@@ -96,7 +96,7 @@ void main(void) {
 	total_light = EARLY_TONEMAP(total_light, 1.0);
 
 #ifdef DEBUG_CLUSTERS
-	float N = float(ACTIVE_POINTS(cluster) / float(MAX_LIGHTS));
+	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);
 	const float thresh = 0.75;
 	const float invthresh = thresh / 1.0;
 	FRAG_COLOR = vec4(total_light +

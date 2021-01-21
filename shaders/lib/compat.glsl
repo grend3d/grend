@@ -16,6 +16,13 @@
 #define GLSL_VERSION 300
 #endif
 
+#if defined(BROKEN_UINTS)
+#define uint  int
+#define uvec2 ivec2
+#define uvec3 ivec3
+#define uvec4 ivec4
+#endif
+
 #if GLSL_VERSION < 130
 	#ifdef VERTEX_SHADER
 		#define IN attribute
