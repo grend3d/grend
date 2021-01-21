@@ -631,13 +631,20 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	return drawnMeshes;
 }
 
-#if GLSL_VERSION < 140 /* < opengl 3.1, use plain uniform indexes */
+typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
+typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
+typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
+typedef std::tuple<pointList, spotList, dirList> lightLists;
+
+//#if GLSL_VERSION < 140 /* < opengl 3.1, use plain uniform indexes */
+#if 1
 static void syncPlainUniforms(Program::ptr program,
 	                          renderContext::ptr rctx,
-	                          std::vector<gameLightPoint::ptr>& points,
-	                          std::vector<gameLightSpot::ptr>& spots,
-	                          std::vector<gameLightDirectional::ptr>& directionals)
+	                          pointList& points,
+	                          spotList& spots,
+	                          dirList&  directionals)
 {
+	SDL_Log(">>> syncing plain uniforms");
 	size_t pactive = min(MAX_LIGHTS, points.size());
 	size_t sactive = min(MAX_LIGHTS, spots.size());
 	size_t dactive = min(MAX_LIGHTS, directionals.size());
@@ -647,14 +654,15 @@ static void syncPlainUniforms(Program::ptr program,
 	program->set("active_directionals", (GLint)dactive);
 
 	for (size_t i = 0; i < pactive; i++) {
-		gameLightPoint::ptr light = points[i];
+		//gameLightPoint::ptr light = points[i];
+		auto& [trans, light] = points[i];
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
 		std::string locstr = "points[" + std::to_string(i) + "]";
 
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
+		program->set(locstr + ".position",      glm::vec4(light->transform.position, 0.0));
+		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
 		program->set(locstr + ".intensity",     light->intensity);
 		program->set(locstr + ".radius",        light->radius);
 		program->set(locstr + ".casts_shadows", light->casts_shadows);
@@ -669,7 +677,8 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 
 	for (size_t i = 0; i < sactive; i++) {
-		gameLightSpot::ptr light = spots[i];
+		//gameLightSpot::ptr light = spots[i];
+		auto& [trans, light] = spots[i];
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
@@ -678,9 +687,9 @@ static void syncPlainUniforms(Program::ptr program,
 		glm::vec3 rotvec =
 			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
 
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
-		program->set(locstr + ".direction",     rotvec);
+		program->set(locstr + ".position",      glm::vec4(light->transform.position, 1.0));
+		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
+		program->set(locstr + ".direction",     glm::vec4(rotvec, 0.0));
 		program->set(locstr + ".intensity",     light->intensity);
 		program->set(locstr + ".radius",        light->radius);
 		program->set(locstr + ".angle",         light->angle);
@@ -694,7 +703,8 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 
 	for (size_t i = 0; i < dactive; i++) {
-		gameLightDirectional::ptr light = directionals[i];
+		//gameLightDirectional::ptr light = directionals[i];
+		auto& [trans, light] = directionals[i];
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
@@ -705,9 +715,9 @@ static void syncPlainUniforms(Program::ptr program,
 
 		// position is ignored in the shader, but might as well set it anyway
 		// TODO: probably remove position member from directional lights
-		program->set(locstr + ".position",      light->transform.position);
-		program->set(locstr + ".diffuse",       light->diffuse);
-		program->set(locstr + ".direction",     rotvec);
+		program->set(locstr + ".position",      glm::vec4(light->transform.position, 0.0));
+		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
+		program->set(locstr + ".direction",     glm::vec4(rotvec, 0.0));
 		program->set(locstr + ".intensity",     light->intensity);
 		program->set(locstr + ".casts_shadows", light->casts_shadows);
 
@@ -719,11 +729,6 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 }
 #endif
-
-typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
-typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
-typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
-typedef std::tuple<pointList, spotList, dirList> lightLists;
 
 static inline float rectScale(float R, float d) {
 	return 1.f / cos(d/R);
@@ -941,7 +946,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	syncPlainUniforms(program, rctx, point_lights,
 	                  spot_lights, directional_lights);
 
-	set_reflection_probe(refprobe, program, rctx->atlases);
+	//set_reflection_probe(refprobe, program, rctx->atlases);
 	DO_ERROR_CHECK();
 #endif
 

@@ -129,6 +129,7 @@ layout(std430, binding = 1) buffer plights {
 	directional[directional_clusters[CLUSTER+P] & 0x1f]
 
 #elif GLSL_VERSION >= 140 /* opengl 3.1+, use uniform buffers */
+//#elif 0
 
 // for clustered, tiled, number of possible light objects available (ie. in view)
 #ifndef MAX_POINT_LIGHT_OBJECTS
@@ -147,6 +148,7 @@ layout (std140) uniform lights {
 	uint uactive_point_lights;
 	uint uactive_spot_lights;
 	uint uactive_directional_lights;
+	uint padding;
 
 	// TODO: configurable number of reflection mips
 	// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
@@ -244,31 +246,44 @@ uniform uint active_directional_lights;
 // first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
 // (not using reflection_atlas since you can't both read and write to a bound
 //  framebuffer texture)
-uniform vec3 reflection_probe[30];
-uniform vec3 refboxMin;
-uniform vec3 refboxMax;
-uniform vec3 refprobePosition;
+uniform vec4 reflection_probe[30];
+uniform vec4 refboxMin;
+uniform vec4 refboxMax;
+uniform vec4 refprobePosition;
 
-uniform point_light point_lights[MAX_LIGHTS];
-uniform spot_light spot_lights[MAX_LIGHTS];
+uniform point_light       point_lights[MAX_LIGHTS];
+uniform spot_light        spot_lights[MAX_LIGHTS];
 uniform directional_light directional_lights[MAX_LIGHTS];
 
 #define CURRENT_CLUSTER()  (uint(0)) 
 
 // for loop iterators, can't use uniform to index lights on gles2
 #if GLSL_VERSION < 140
-#define ACTIVE_POINTS      (GLES2_MAX_POINT_LIGHTS)
-#define ACTIVE_SPOTS       (GLES2_MAX_SPOT_LIGHTS)
-#define ACTIVE_DIRECTIONAL (GLES2_MAX_DIRECTIONAL_LIGHTS)
+#define ACTIVE_POINTS(CLUSTER)      (GLES2_MAX_POINT_LIGHTS)
+#define ACTIVE_SPOTS(CLUSTER)       (GLES2_MAX_SPOT_LIGHTS)
+#define ACTIVE_DIRECTIONAL(CLUSTER) (GLES2_MAX_DIRECTIONAL_LIGHTS)
+
+#define ACTIVE_POINTS_RAW      (GLES2_MAX_POINT_LIGHTS)
+#define ACTIVE_SPOTS_RAW       (GLES2_MAX_SPOT_LIGHTS)
+#define ACTIVE_DIRECTIONAL_RAW (GLES2_MAX_DIRECTIONAL_LIGHTS)
+
 #else
-#define ACTIVE_POINTS      (active_point_lights)
-#define ACTIVE_SPOTS       (active_spot_lights)
-#define ACTIVE_DIRECTIONAL (active_directional_lights)
+#define ACTIVE_POINTS(CLUSTER)      (active_point_lights)
+#define ACTIVE_SPOTS(CLUSTER)       (active_spot_lights)
+#define ACTIVE_DIRECTIONAL(CLUSTER) (active_directional_lights)
+
+#define ACTIVE_POINTS_RAW      (active_point_lights)
+#define ACTIVE_SPOTS_RAW       (active_spot_lights)
+#define ACTIVE_DIRECTIONAL_RAW (active_directional_lights)
 #endif
 
-#define POINT_LIGHT(P, CLUSTER)       point_lights[P]
-#define SPOT_LIGHT(P, CLUSTER)        spot_lights[P]
-#define DIRECTIONAL_LIGHT(P, CLUSTER) directional_lights[P]
+#define POINT_LIGHT_IDX(P, CLUSTER)       (P)
+#define SPOT_LIGHT_IDX(P, CLUSTER)        (P)
+#define DIRECTIONAL_LIGHT_IDX(P, CLUSTER) (P)
+
+#define POINT_LIGHT(P)       point_lights[P]
+#define SPOT_LIGHT(P)        spot_lights[P]
+#define DIRECTIONAL_LIGHT(P) directional_lights[P]
 
 #endif
 

@@ -133,7 +133,7 @@ class worldEntityGenerator : public generatorEventHandler {
 		worldEntityGenerator(entityManager *manager, entity *ent)
 			: generatorEventHandler(manager, ent)
 		{
-			manager->registerComponent(ent, "worldEntityGenerator", this);
+			manager->registerComponent(ent, "generatorEventHandler", this);
 		}
 
 		virtual void
@@ -242,17 +242,15 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 
 	game->entities->add(new worldEntitySpawner(game->entities.get()));
 
-	/*
-	for (unsigned i = 0; i < 15; i++) {
+	for (unsigned i = 0; i < 10; i++) {
 		glm::vec3 position = glm::vec3(
 			float(rand()) / RAND_MAX * 100.0 - 50,
 			50.0,
 			float(rand()) / RAND_MAX * 100.0 - 50
 		);
 
-		manager->add(new enemy(manager.get(), game, position));
+		game->entities->add(new enemy(game->entities.get(), game, position));
 	}
-	*/
 
 	bindCookedMeshes();
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
@@ -509,7 +507,7 @@ int main(int argc, char *argv[]) {
 
 		setNode("entities",  game->state->rootnode, game->entities->root);
 		setNode("landscape", game->state->rootnode, player->landscape.getNode());
-		setNode("testlight", game->state->rootnode, dlit);
+		//setNode("testlight", game->state->rootnode, dlit);
 
 		SDL_Log("Got to game->run()!");
 		game->run();
