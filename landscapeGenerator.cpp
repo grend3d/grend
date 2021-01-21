@@ -151,7 +151,7 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 				futures.push_back(game->jobs->addAsync([=] {
 					SDL_Log("DDDDDDD: got here, from the future (%g, %g)",
 							coord.x, coord.z);
-					auto ptr = generateHeightmap(cellsize, cellsize, 1.0, coord.x, coord.z, landscapeThing);
+					auto ptr = generateHeightmap(cellsize, cellsize, 2.0, coord.x, coord.z, landscapeThing);
 					//auto ptr = generateHeightmap(24, 24, 0.5, coord.x, coord.z, thing);
 					SDL_Log("EEEEEEE: generated model");
 					ptr->transform.position = glm::vec3(coord.x, 0, coord.z);

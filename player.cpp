@@ -70,6 +70,7 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 
 	node->transform.position = position;
 	setNode("model", node, playerModel);
+	setNode("light", node, std::make_shared<gameLightPoint>());
 	character = std::make_shared<animatedCharacter>(playerModel);
 	character->setAnimation("idle");
 

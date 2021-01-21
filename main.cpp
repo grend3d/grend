@@ -149,11 +149,11 @@ class worldEntityGenerator : public generatorEventHandler {
 							positions.insert(foo);
 							SDL_Log("worldEntityGenerator(): generating some things");
 
-							manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
+							//manager->add(new enemy(manager, manager->engine, ev.position + glm::vec3(0, 50.f, 0)));
 
 							// TODO: need a way to know what the general shape of
 							//       the generated thing is...
-							manager->add(new healthPickup(manager, ev.position + glm::vec3(0, 10.f, 0)));
+							//manager->add(new healthPickup(manager, ev.position + glm::vec3(0, 10.f, 0)));
 						}
 					}
 					break;
@@ -201,7 +201,7 @@ class landscapeGenView : public gameView {
 		//modalSDLInput input;
 		vecGUI vgui;
 		int menuSelect = 0;
-		float zoom = 5.f;
+		float zoom = 10.f;
 
 		landscapeGenerator landscape;
 };
@@ -293,7 +293,7 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	entity *playerEnt = findFirst(game->entities.get(), {"player"});
 
 	while (!playerEnt) {
-		playerEnt = new player(game->entities.get(), game, glm::vec3(0, 20, 0));
+		playerEnt = new player(game->entities.get(), game, glm::vec3(-5, 20, -5));
 		game->entities->add(playerEnt);
 		new generatorEventHandler(game->entities.get(), playerEnt);
 		new health(game->entities.get(), playerEnt);
@@ -353,6 +353,7 @@ static void drawPlayerHealthbar(entityManager *manager,
 
 	double fps = manager->engine->frame_timer.average();
 	std::string fpsstr = std::to_string(fps) + "fps";
+	nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 0xff));
 	nvgText(vgui.nvg, wx/2, 80 + 32, fpsstr.c_str(), NULL);
 }
 
@@ -501,10 +502,14 @@ int main(int argc, char *argv[]) {
 		player->landscape.setPosition(game, glm::vec3(1));
 		player->cam->setFar(1000.0);
 		game->setView(player);
+		game->rend->lightThreshold = 0.5;
+		//ENABLE_GL_ERROR_CHECK(false);
+
+		gameLightDirectional::ptr dlit = std::make_shared<gameLightDirectional>();
 
 		setNode("entities",  game->state->rootnode, game->entities->root);
 		setNode("landscape", game->state->rootnode, player->landscape.getNode());
-		setNode("testlight", game->state->rootnode, std::make_shared<gameLightPoint>());
+		setNode("testlight", game->state->rootnode, dlit);
 
 		SDL_Log("Got to game->run()!");
 		game->run();
