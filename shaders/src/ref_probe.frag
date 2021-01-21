@@ -33,14 +33,14 @@ void main(void) {
 	vec3 total_light = (anmaterial.emissive.rgb * emissive.rgb);
 
 	for (uint i = uint(0); i < ACTIVE_POINTS_RAW; i++) {
-		float atten = point_attenuation(i, vec3(f_position));
+		float atten = point_attenuation(i, f_position.xyz);
 		float shadow = point_shadow(i, vec3(f_position));
 
 		vec3 lum =
 			mix(vec3(0.0),
-				mrp_lighting(POINT_LIGHT(i).position,
+				mrp_lighting(POINT_LIGHT(i).position.xyz,
 				             POINT_LIGHT(i).diffuse,
-				             vec3(f_position), view_dir,
+				             f_position.xyz, view_dir,
 				             albedo, f_normal, metallic, roughness),
 				shadow*atten);
 
@@ -48,20 +48,20 @@ void main(void) {
 	}
 
 	for (uint i = uint(0); i < ACTIVE_SPOTS_RAW; i++) {
-		float atten = spot_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(SPOT_LIGHT(i).position,
+		float atten = spot_attenuation(i, f_position.xyz);
+		vec3 lum = mrp_lighting(SPOT_LIGHT(i).position.xyz,
 		                        SPOT_LIGHT(i).diffuse, 
-		                        vec3(f_position), view_dir,
+		                        f_position.xyz, view_dir,
 		                        albedo, f_normal, metallic, roughness);
 
 		total_light += lum*atten;
 	}
 
 	for (uint i = uint(0); i < ACTIVE_DIRECTIONAL_RAW; i++) {
-		float atten = directional_attenuation(i, vec3(f_position));
-		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT(i).position,
+		float atten = directional_attenuation(i, f_position.xyz);
+		vec3 lum = mrp_lighting(DIRECTIONAL_LIGHT(i).position.xyz,
 		                        DIRECTIONAL_LIGHT(i).diffuse, 
-		                        vec3(f_position), view_dir,
+		                        f_position.xyz, view_dir,
 		                        albedo, f_normal, metallic, roughness);
 
 		total_light += lum*atten;

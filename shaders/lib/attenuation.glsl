@@ -2,7 +2,7 @@
 #include <lib/shading-uniforms.glsl>
 
 float point_attenuation(uint i, vec3 pos) {
-	vec3 light_vertex = POINT_LIGHT(i).position - pos;
+	vec3 light_vertex = POINT_LIGHT(i).position.xyz - pos;
 	float dist = length(light_vertex);
 	float falloff = pow((dist/POINT_LIGHT(i).radius) + 1.0, 2.0);
 
@@ -13,7 +13,7 @@ float point_attenuation(uint i, vec3 pos) {
 }
 
 float spot_attenuation(uint idx, vec3 pos) {
-	vec3 light_vertex = pos - SPOT_LIGHT(idx).position;
+	vec3 light_vertex = pos - SPOT_LIGHT(idx).position.xyz;
 	float dist = length(light_vertex);
 	float falloff = pow((dist/SPOT_LIGHT(idx).radius) + 1.0, 2.0);
 
@@ -22,7 +22,7 @@ float spot_attenuation(uint idx, vec3 pos) {
 	float lum = max(0.0, SPOT_LIGHT(idx).intensity
 		/ (falloff - lightThreshold) - lightThreshold);
 
-	float d = dot(normalize(light_vertex), SPOT_LIGHT(idx).direction);
+	float d = dot(normalize(light_vertex), SPOT_LIGHT(idx).direction.xyz);
 	return (d > SPOT_LIGHT(idx).angle)
 		? lum
 		: 0.0;

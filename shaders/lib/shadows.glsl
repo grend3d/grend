@@ -8,7 +8,7 @@ float far = 100.0;
 
 // TODO: compile-time and uniform parameter macros, once I get to
 //       doing hot shader reloading
-#define DEPTH_BIAS 0.001
+#define DEPTH_BIAS 0.01
 //#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
 #define SHADOW_FILTER shadow_pcf
@@ -86,7 +86,7 @@ float point_shadow(uint idx, vec3 pos) {
 		return 1.0;
 	}
 
-	vec3 light_vertex = POINT_LIGHT(idx).position - pos;
+	vec3 light_vertex = POINT_LIGHT(idx).position.xyz - pos;
 	vec3 light_dir = normalize(light_vertex);
 
 	vec3 dat = textureCubeAtlasUV(-light_dir);
@@ -94,7 +94,7 @@ float point_shadow(uint idx, vec3 pos) {
 	int  face = int(dat.z);
 
 	return SHADOW_FILTER(shadowmap_atlas,
-	                     POINT_LIGHT(idx).shadowmap[face],
+	                     POINT_LIGHT(idx).shadowmap[face].xyz,
 	                     light_vertex,
 	                     uv);
 }
@@ -104,20 +104,20 @@ float spot_shadow(uint idx, vec3 pos) {
 		return 1.0;
 	}
 
-	vec3 light_vertex = SPOT_LIGHT(idx).position - pos;
+	vec3 light_vertex = SPOT_LIGHT(idx).position.xyz - pos;
 	vec3 light_dir = normalize(light_vertex);
 
-	if (dot(light_dir, SPOT_LIGHT(idx).direction) > SPOT_LIGHT(idx).angle) {
+	if (dot(light_dir, SPOT_LIGHT(idx).direction.xyz) > SPOT_LIGHT(idx).angle) {
 		// XXX: maybe pass this in a uniform, or use quarternion for rotation
 		//      and extract an SO(3) out of that
-		vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction);
+		vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction.xyz);
 		vec3 right = normalize(cross(vec3(0, 0, 1), adjdir));
 		vec3 up = normalize(cross(right, adjdir));
 
 		float p = 1.0 - SPOT_LIGHT(idx).angle;
 		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
 		vec4 depth = texture2DAtlas(shadowmap_atlas,
-		                            SPOT_LIGHT(idx).shadowmap, uv);
+		                            SPOT_LIGHT(idx).shadowmap.xyz, uv);
 
 		return ((depth.r + 0.001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
 	}

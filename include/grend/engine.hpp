@@ -97,22 +97,21 @@ struct point_std140 {
 struct spot_std140 {
 	GLfloat position[4];   // 0
 	GLfloat diffuse[4];    // 16
-	GLfloat direction[3];  // 32
-	GLfloat intensity;     // 44
-	GLfloat radius;        // 48
-	GLfloat angle;         // 52
-	GLuint  casts_shadows; // 56
-	GLuint  padding;       // 60, pad to 64
+	GLfloat direction[4];  // 32
+	GLfloat intensity;     // 48
+	GLfloat radius;        // 52
+	GLfloat angle;         // 56
+	GLuint  casts_shadows; // 60
 	GLfloat shadowmap[4];  // 64, end 80
 } __attribute__((packed));
 
 struct directional_std140 {
 	GLfloat position[4];   // 0
 	GLfloat diffuse[4];    // 16
-	GLfloat direction[3];  // 32
+	GLfloat direction[4];  // 32
 	GLfloat intensity;     // 44
 	GLuint  casts_shadows; // 48
-	GLfloat padding[3];    // 52, pad to 64
+	GLfloat padding[2];    // 52, pad to 64
 	GLfloat shadowmap[4];  // 64, end 80
 } __attribute__((packed));
 

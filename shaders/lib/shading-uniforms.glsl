@@ -3,32 +3,33 @@
 #include <lib/shading-varying.glsl>
 
 struct point_light {
-	vec3 position;
+	vec4 position;
 	vec4 diffuse;
 	float intensity;
 	float radius;
 	bool casts_shadows;
-	vec3 shadowmap[6];
+	float pada; // pad to 16 byte alignment
+	vec4 shadowmap[6];
 };
 
 struct spot_light {
-	vec3 position;
+	vec4 position;
 	vec4 diffuse;
-	vec3 direction;
+	vec4 direction;
 	float intensity;
 	float radius; // bulb radius
 	float angle;
 	bool casts_shadows;
-	vec3 shadowmap;
+	vec4 shadowmap;
 };
 
 struct directional_light {
-	vec3 position;
+	vec4 position;
 	vec4 diffuse;
-	vec3 direction;
+	vec4 direction;
 	float intensity;
 	bool casts_shadows;
-	vec3 shadowmap;
+	vec4 shadowmap;
 };
 
 struct material {
@@ -100,10 +101,10 @@ layout(std430, binding = 1) buffer plights {
 	uint active_spot_lights;
 	uint active_directional_lights;
 
-	vec3 reflection_probe[30];
-	vec3 refboxMin;
-	vec3 refboxMax;
-	vec3 refprobePosition;
+	vec4 reflection_probe[30];
+	vec4 refboxMin;
+	vec4 refboxMax;
+	vec4 refprobePosition;
 
 	point_light point[MAX_POINT_LIGHT_OBJECTS];
 	spot_light spot[MAX_SPOT_LIGHT_OBJECTS];
@@ -151,10 +152,10 @@ layout (std140) uniform lights {
 	// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
 	// (not using reflection_atlas since you can't both read and write to a bound
 	//  framebuffer texture)
-	vec3 reflection_probe[30];
-	vec3 refboxMin;
-	vec3 refboxMax;
-	vec3 refprobePosition;
+	vec4 reflection_probe[30];
+	vec4 refboxMin;
+	vec4 refboxMax;
+	vec4 refprobePosition;
 
 	point_light       upoint_lights[MAX_POINT_LIGHT_OBJECTS];
 	spot_light        uspot_lights[MAX_SPOT_LIGHT_OBJECTS];

@@ -10,12 +10,12 @@ vec4 reflectionLinearMip(vec3 pos, vec3 cam, vec3 normal, float roughness) {
 	vec3 dir = correctParallax(pos, cam, normal);
 
 	vec3 lowercube[6] = vec3[] (
-		reflection_probe[6*lower + 0],
-		reflection_probe[6*lower + 1],
-		reflection_probe[6*lower + 2],
-		reflection_probe[6*lower + 3],
-		reflection_probe[6*lower + 4],
-		reflection_probe[6*lower + 5]
+		reflection_probe[6*lower + 0].xyz,
+		reflection_probe[6*lower + 1].xyz,
+		reflection_probe[6*lower + 2].xyz,
+		reflection_probe[6*lower + 3].xyz,
+		reflection_probe[6*lower + 4].xyz,
+		reflection_probe[6*lower + 5].xyz
 	);
 
 	vec4 lowerSample;
@@ -34,12 +34,12 @@ vec4 reflectionLinearMip(vec3 pos, vec3 cam, vec3 normal, float roughness) {
 
 	} else {
 		vec3 uppercube[6] = vec3[] (
-			reflection_probe[6*upper + 0],
-			reflection_probe[6*upper + 1],
-			reflection_probe[6*upper + 2],
-			reflection_probe[6*upper + 3],
-			reflection_probe[6*upper + 4],
-			reflection_probe[6*upper + 5]
+			reflection_probe[6*upper + 0].xyz,
+			reflection_probe[6*upper + 1].xyz,
+			reflection_probe[6*upper + 2].xyz,
+			reflection_probe[6*upper + 3].xyz,
+			reflection_probe[6*upper + 4].xyz,
+			reflection_probe[6*upper + 5].xyz
 		);
 
 		vec4 upperSample = textureCubeAtlas(irradiance_atlas, uppercube, dir);
