@@ -80,8 +80,18 @@ uniform mat4 v_inv;
 #endif
 #endif
 
+// if no light array layout is explicitly defined, default to tiled
+#if !defined(CLUSTERED_LIGHT_ARRAY) \
+ && !defined(TILED_LIGHT_ARRAY) \
+ && !defined(PLAIN_UNIFORM_LIGHT_ARRAY)
+#define PLAIN_UNIFORM_LIGHT_ARRAY
+#warning "No light array layout defined, defaulting to PLAIN_UNIFORM_LIGHT_ARRAY (compatible)"
+#endif
+
 // gles3, core430+ use SSBOs, clustered lights
-#if defined(CLUSTERED_LIGHTS) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
+// TODO: would be more manageable to split the different uniform layouts
+//       into their own includes
+#if defined(CLUSTERED_LIGHT_ARRAY) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
 
 // for clustered, tiled, number of possible light objects available (ie. in view)
 #ifndef MAX_POINT_LIGHT_OBJECTS
@@ -128,8 +138,7 @@ layout(std430, binding = 1) buffer plights {
 #define DIRECTIONAL_LIGHT(P, CLUSTER) \
 	directional[directional_clusters[CLUSTER+P] & 0x1f]
 
-#elif GLSL_VERSION >= 140 /* opengl 3.1+, use uniform buffers */
-//#elif 0
+#elif defined(TILED_LIGHT_ARRAY) && GLSL_VERSION >= 140 /* opengl 3.1+, use uniform buffers */
 
 // for clustered, tiled, number of possible light objects available (ie. in view)
 #ifndef MAX_POINT_LIGHT_OBJECTS
@@ -235,7 +244,7 @@ uint vertexShaderCluster() {
 #define ACTIVE_DIRECTIONAL_RAW (uactive_directional_lights)
 
 // otherwise fallback to regular old uniforms
-#else
+#elif defined(PLAIN_UNIFORM_LIGHT_ARRAY)
 
 uniform uint active_point_lights;
 uniform uint active_spot_lights;
@@ -281,10 +290,12 @@ uniform directional_light directional_lights[MAX_LIGHTS];
 #define SPOT_LIGHT_IDX(P, CLUSTER)        (P)
 #define DIRECTIONAL_LIGHT_IDX(P, CLUSTER) (P)
 
-#define POINT_LIGHT(P)       point_lights[P]
-#define SPOT_LIGHT(P)        spot_lights[P]
-#define DIRECTIONAL_LIGHT(P) directional_lights[P]
+#define POINT_LIGHT(P)       (point_lights[P])
+#define SPOT_LIGHT(P)        (spot_lights[P])
+#define DIRECTIONAL_LIGHT(P) (directional_lights[P])
 
+#else
+#error "No light array layout specified! (see shaders/lib/shading-uniforms.glsl)"
 #endif
 
 // TODO: UBO for material (except on gles2...)

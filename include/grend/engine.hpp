@@ -30,25 +30,20 @@ namespace grendx {
 #endif
 #endif
 
-// TODO: need some unified location to put this, there's a duplicated definition
-//       of this in shaders/lib/shading-uniforms.glsl
-// TODO: also, this is becoming a nest of preprocessor definitions... ugh
-#if defined(CLUSTERED_LIGHTS) && (GLSL_VERSION == 300 || GLSL_VERSION >= 430)
-// for clustered, tiled, number of possible light objects available (ie. in view)
-#ifndef MAX_POINT_LIGHT_OBJECTS
-#define MAX_POINT_LIGHT_OBJECTS 1024
+// clustered light array definitions
+#ifndef MAX_POINT_LIGHT_OBJECTS_CLUSTERED
+#define MAX_POINT_LIGHT_OBJECTS_CLUSTERED 1024
 #endif
 
-#ifndef MAX_SPOT_LIGHT_OBJECTS
-#define MAX_SPOT_LIGHT_OBJECTS 1024
+#ifndef MAX_SPOT_LIGHT_OBJECTS_CLUSTERED
+#define MAX_SPOT_LIGHT_OBJECTS_CLUSTERED 1024
 #endif
 
-#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
-#define MAX_DIRECTIONAL_LIGHT_OBJECTS 32
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS_CLUSTERED
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS_CLUSTERED 32
 #endif
 
-#else // if < opengl 4.3
-
+// tiled light array definitions
 // XXX: so, there's a ridiculous number of bugs in the gles3 implementation 
 //      of the adreno 3xx-based phone I'm testing on, one of which is that
 //      multiple UBOs aren't actually usable... so, need a fallback to
@@ -56,33 +51,32 @@ namespace grendx {
 //
 //      https://developer.qualcomm.com/forum/qdn-forums/software/adreno-gpu-sdk/29611
 #if defined(USE_SINGLE_UBO)
-#ifndef MAX_POINT_LIGHT_OBJECTS
-#define MAX_POINT_LIGHT_OBJECTS MAX_LIGHTS
+#ifndef MAX_POINT_LIGHT_OBJECTS_TILED
+#define MAX_POINT_LIGHT_OBJECTS_TILED MAX_LIGHTS
 #endif
 
-#ifndef MAX_SPOT_LIGHT_OBJECTS
-#define MAX_SPOT_LIGHT_OBJECTS MAX_LIGHTS
+#ifndef MAX_SPOT_LIGHT_OBJECTS_TILED
+#define MAX_SPOT_LIGHT_OBJECTS_TILED MAX_LIGHTS
 #endif
 
-#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
-#define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED 4
 #endif
 
 #else /* not defined(USE_SINGLE_UBO) */
 // otherwise, tiled lighting, lots more lights available
-#ifndef MAX_POINT_LIGHT_OBJECTS
-#define MAX_POINT_LIGHT_OBJECTS 90
+#ifndef MAX_POINT_LIGHT_OBJECTS_TILED
+#define MAX_POINT_LIGHT_OBJECTS_TILED 90
 #endif
 
-#ifndef MAX_SPOT_LIGHT_OBJECTS
-#define MAX_SPOT_LIGHT_OBJECTS 32
+#ifndef MAX_SPOT_LIGHT_OBJECTS_TILED
+#define MAX_SPOT_LIGHT_OBJECTS_TILED 32
 #endif
 
-#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
-#define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
+#ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
+#define MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED 4
 #endif
 #endif
-#endif // < opengl 4.3
 
 struct point_std140 {
 	GLfloat position[4];   // 0
@@ -126,9 +120,9 @@ struct lights_std140 {
 	GLfloat refboxMax[4];
 	GLfloat refprobePosition[4];       // end 528 + 16
 
-	point_std140 upoint_lights[MAX_POINT_LIGHT_OBJECTS];
-	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS];
-	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS];
+	point_std140 upoint_lights[MAX_POINT_LIGHT_OBJECTS_TILED];
+	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS_TILED];
+	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED];
 } __attribute__((packed));
 
 struct light_tiles_std140 {
@@ -183,6 +177,12 @@ class renderContext {
 		typedef std::shared_ptr<renderContext> ptr;
 		typedef std::weak_ptr<renderContext> weakptr;
 
+		enum lightingModes {
+			Clustered,
+			Tiled,
+			PlainArray,
+		};
+
 		renderContext(context& ctx);
 		~renderContext() { };
 		void loadShaders(void);
@@ -192,6 +192,7 @@ class renderContext {
 		void newframe(void);
 		// look up stencil buffer index in drawn objects
 		gameMesh::ptr index(unsigned idx);
+		void setArrayMode(enum lightingModes mode);
 
 		// XXX
 		struct renderFlags getLightingFlags(std::string name="main");
@@ -205,8 +206,11 @@ class renderContext {
 
 		// sky box
 		skybox defaultSkybox;
+
+		// global rendering state
 		renderAtlases atlases;
 		shaderOptions globalShaderOptions;
+		enum lightingModes lightingMode = lightingModes::PlainArray;
 
 		// maps 
 		// XXX: loaded shaders, here so they can be accessed from the editor
@@ -332,6 +336,8 @@ void drawIrradianceProbe(renderQueue& queue,
                          renderContext::ptr rctx);
 
 void buildTilemap(renderQueue& queue, renderContext::ptr rctx);
+void buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx);
+void buildTilemapClustered(renderQueue& queue, renderContext::ptr rctx);
 
 void packLight(gameLightPoint::ptr light, point_std140 *p,
                renderContext::ptr rctx, glm::mat4& trans);

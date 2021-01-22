@@ -242,6 +242,11 @@ void renderContext::loadShaders(void) {
 	DO_ERROR_CHECK();
 }
 
+void renderContext::setArrayMode(enum lightingModes mode) {
+	// TODO: buffer allocation and shader recompilation here
+	lightingMode = mode;
+}
+
 struct renderFlags renderContext::getLightingFlags(std::string name) {
 	// TODO: handle name not being in lightingShaders
 	return lightingShaders[name];

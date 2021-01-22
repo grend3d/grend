@@ -16,6 +16,7 @@
 #define GLSL_VERSION 300
 #endif
 
+#define BROKEN_UINTS
 #if defined(BROKEN_UINTS)
 #define uint  int
 #define uvec2 ivec2

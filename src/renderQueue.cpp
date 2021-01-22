@@ -636,42 +636,49 @@ typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
 typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
 typedef std::tuple<pointList, spotList, dirList> lightLists;
 
-//#if GLSL_VERSION < 140 /* < opengl 3.1, use plain uniform indexes */
-#if 1
 static void syncPlainUniforms(Program::ptr program,
 	                          renderContext::ptr rctx,
 	                          pointList& points,
 	                          spotList& spots,
 	                          dirList&  directionals)
 {
-	SDL_Log(">>> syncing plain uniforms");
 	size_t pactive = min(MAX_LIGHTS, points.size());
 	size_t sactive = min(MAX_LIGHTS, spots.size());
 	size_t dactive = min(MAX_LIGHTS, directionals.size());
 
-	program->set("active_points",       (GLint)pactive);
-	program->set("active_spots",        (GLint)sactive);
-	program->set("active_directionals", (GLint)dactive);
+	program->set("active_point_lights",       (GLint)pactive);
+	program->set("active_spot_lights",        (GLint)sactive);
+	program->set("active_directional_lights", (GLint)dactive);
+
+	SDL_Log(">>> syncing plain uniforms: %lu point, %lu spot, %lu directional",
+		pactive, sactive, dactive);
 
 	for (size_t i = 0; i < pactive; i++) {
 		//gameLightPoint::ptr light = points[i];
 		auto& [trans, light] = points[i];
+		glm::vec3 pos = applyTransform(trans, light->transform.position);
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "points[" + std::to_string(i) + "]";
+		std::string locstr = "point_lights[" + std::to_string(i) + "]";
 
-		program->set(locstr + ".position",      glm::vec4(light->transform.position, 0.0));
+		program->set(locstr + ".position",      glm::vec4(pos, 1.0));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".intensity",     light->intensity);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".radius",        light->radius);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".casts_shadows", light->casts_shadows);
+		DO_ERROR_CHECK();
 
 		if (light->casts_shadows) {
 			for (unsigned k = 0; k < 6; k++) {
 				std::string sloc = locstr + ".shadowmap[" + std::to_string(k) + "]";
 				auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap[k]);
-				program->set(sloc, vec);
+				program->set(sloc, glm::vec4(vec, 0.0));
+				DO_ERROR_CHECK();
 			}
 		}
 	}
@@ -682,23 +689,31 @@ static void syncPlainUniforms(Program::ptr program,
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "spots[" + std::to_string(i) + "]";
+		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
 		// light points toward +X by default
 		glm::vec3 rotvec =
 			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
 
 		program->set(locstr + ".position",      glm::vec4(light->transform.position, 1.0));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".direction",     glm::vec4(rotvec, 0.0));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".intensity",     light->intensity);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".radius",        light->radius);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".angle",         light->angle);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".casts_shadows", light->casts_shadows);
+		DO_ERROR_CHECK();
 
 		if (light->casts_shadows) {
 			std::string sloc = locstr + ".shadowmap";
 			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, vec);
+			program->set(sloc, glm::vec4(vec, 0.0));
+			DO_ERROR_CHECK();
 		}
 	}
 
@@ -708,7 +723,7 @@ static void syncPlainUniforms(Program::ptr program,
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
-		std::string locstr = "directionals[" + std::to_string(i) + "]";
+		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
 		// light points toward +X by default
 		glm::vec3 rotvec =
 			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
@@ -716,27 +731,49 @@ static void syncPlainUniforms(Program::ptr program,
 		// position is ignored in the shader, but might as well set it anyway
 		// TODO: probably remove position member from directional lights
 		program->set(locstr + ".position",      glm::vec4(light->transform.position, 0.0));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".direction",     glm::vec4(rotvec, 0.0));
+		DO_ERROR_CHECK();
 		program->set(locstr + ".intensity",     light->intensity);
+		DO_ERROR_CHECK();
 		program->set(locstr + ".casts_shadows", light->casts_shadows);
+		DO_ERROR_CHECK();
 
 		if (light->casts_shadows) {
 			std::string sloc = locstr + ".shadowmap";
 			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, vec);
+			program->set(sloc, glm::vec4(vec, 0.0));
+			DO_ERROR_CHECK();
 		}
 	}
 }
-#endif
 
 static inline float rectScale(float R, float d) {
 	return 1.f / cos(d/R);
 }
 
+void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
+	switch (rctx->lightingMode) {
+		case renderContext::lightingModes::Clustered:
+			// TODO:
+			break;
+
+		case renderContext::lightingModes::Tiled:
+			buildTilemapTiled(queue, rctx);
+			break;
+
+		case renderContext::lightingModes::PlainArray:
+		default:
+			// nothing to do
+			break;
+	}
+}
+
 // TODO: possibly move this to it's own file
 #include <grend/plane.hpp>
-void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
+void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 	lights_std140&      lightbuf = rctx->lightBufferCtx;
 	light_tiles_std140& pointbuf = rctx->pointTilesCtx;
 	light_tiles_std140& spotbuf  = rctx->spotTilesCtx;
@@ -836,7 +873,7 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 	for (auto& [trans, _, lit] : queue.lights) {
 		glm::vec3 pos = applyTransform(trans);
 
-		if (activePoints < MAX_POINT_LIGHT_OBJECTS &&
+		if (activePoints < MAX_POINT_LIGHT_OBJECTS_TILED &&
 		    lit->lightType == gameLight::lightTypes::Point)
 		{
 			gameLightPoint::ptr plit =
@@ -848,7 +885,7 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 			buildTiles(lit, trans, activePoints);
 			activePoints++;
 
-		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS
+		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS_TILED
 		           && lit->lightType == gameLight::lightTypes::Spot)
 		{
 			gameLightSpot::ptr slit =
@@ -860,7 +897,7 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 			buildTiles(lit, trans, activeSpots);
 			activeSpots++;
 
-		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS
+		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
 		          && lit->lightType == gameLight::lightTypes::Directional)
 		{
 			gameLightDirectional::ptr dlit =
@@ -895,60 +932,65 @@ void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
 }
 
 void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
-
-#if GLSL_VERSION >= 140
-	program->setUniformBlock("lights",      rctx->lightBuffer, UBO_LIGHT_INFO);
-#if !defined(USE_SINGLE_UBO)
-	program->setUniformBlock("point_light_tiles", rctx->pointTiles,
-	                         UBO_POINT_LIGHT_TILES);
-	program->setUniformBlock("spot_light_tiles", rctx->spotTiles,
-	                         UBO_SPOT_LIGHT_TILES);
-#endif
-
-	DO_ERROR_CHECK();
-
-#else
-	pointList point_lights;
-	spotList  spot_lights;
-	dirList   directional_lights;
-
-	for (auto& [trans, _, light] : lights) {
-		switch (light->lightType) {
-			case gameLight::lightTypes::Point:
-				{
-					gameLightPoint::ptr plit =
-						std::dynamic_pointer_cast<gameLightPoint>(light);
-					point_lights.push_back({trans, plit});
-				}
-				break;
-
-			case gameLight::lightTypes::Spot:
-				{
-					gameLightSpot::ptr slit =
-						std::dynamic_pointer_cast<gameLightSpot>(light);
-					spot_lights.push_back({trans, slit});
-				}
-				break;
-
-			case gameLight::lightTypes::Directional:
-				{
-					gameLightDirectional::ptr dlit =
-						std::dynamic_pointer_cast<gameLightDirectional>(light);
-					directional_lights.push_back({trans, dlit});
-				}
-				break;
-
-			default:
-				break;
-		}
+	if (rctx->lightingMode == renderContext::lightingModes::Clustered) {
+		// TODO: implement
+		// TODO: function to set mode
+		SDL_Log("TODO: clustered light array");
 	}
 
-	syncPlainUniforms(program, rctx, point_lights,
-	                  spot_lights, directional_lights);
-
-	//set_reflection_probe(refprobe, program, rctx->atlases);
-	DO_ERROR_CHECK();
+	else if (rctx->lightingMode == renderContext::lightingModes::Tiled) {
+		program->setUniformBlock("lights", rctx->lightBuffer, UBO_LIGHT_INFO);
+#if !defined(USE_SINGLE_UBO)
+		program->setUniformBlock("point_light_tiles", rctx->pointTiles,
+								 UBO_POINT_LIGHT_TILES);
+		program->setUniformBlock("spot_light_tiles", rctx->spotTiles,
+								 UBO_SPOT_LIGHT_TILES);
 #endif
+		DO_ERROR_CHECK();
+	}
+
+	else if (rctx->lightingMode == renderContext::lightingModes::PlainArray) {
+		pointList point_lights;
+		spotList  spot_lights;
+		dirList   directional_lights;
+
+		for (auto& [trans, _, light] : lights) {
+			switch (light->lightType) {
+				case gameLight::lightTypes::Point:
+					{
+						gameLightPoint::ptr plit =
+							std::dynamic_pointer_cast<gameLightPoint>(light);
+						point_lights.push_back({trans, plit});
+					}
+					break;
+
+				case gameLight::lightTypes::Spot:
+					{
+						gameLightSpot::ptr slit =
+							std::dynamic_pointer_cast<gameLightSpot>(light);
+						spot_lights.push_back({trans, slit});
+					}
+					break;
+
+				case gameLight::lightTypes::Directional:
+					{
+						gameLightDirectional::ptr dlit =
+							std::dynamic_pointer_cast<gameLightDirectional>(light);
+						directional_lights.push_back({trans, dlit});
+					}
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		syncPlainUniforms(program, rctx, point_lights,
+						  spot_lights, directional_lights);
+
+		//set_reflection_probe(refprobe, program, rctx->atlases);
+		DO_ERROR_CHECK();
+	}
 
 	program->set("renderWidth",  (float)rctx->framebuffer->width);
 	program->set("renderHeight", (float)rctx->framebuffer->height);

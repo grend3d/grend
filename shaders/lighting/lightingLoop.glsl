@@ -11,7 +11,7 @@
 { \
 	for (uint i = uint(0); i < ACTIVE_POINTS(cluster); i++) { \
 		uint idx = POINT_LIGHT_IDX(i, CUR_CLUSTER); \
-		float atten = /*point_attenuation(idx, POSITION)*/ 1.0; \
+		float atten = point_attenuation(idx, POSITION); \
 		float shadow = /*point_shadow(idx, POSITION)*/ 1.0; \
 \
 		vec3 lum = LIGHT_FUNCTION(POINT_LIGHT(idx).position.xyz, \
@@ -24,7 +24,7 @@
 \
 	for (uint i = uint(0); i < ACTIVE_SPOTS(cluster); i++) { \
 		uint idx = SPOT_LIGHT_IDX(i, CUR_CLUSTER); \
-		float atten = /*spot_attenuation(idx, vec3(f_position))*/ 1.0; \
+		float atten = spot_attenuation(idx, vec3(f_position)); \
 		float shadow = /*spot_shadow(idx, vec3(f_position))*/ 1.0; \
 		vec3 lum = LIGHT_FUNCTION(SPOT_LIGHT(idx).position.xyz, \
 		                          SPOT_LIGHT(idx).diffuse, \
