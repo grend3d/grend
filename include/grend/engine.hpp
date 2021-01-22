@@ -210,7 +210,7 @@ class renderContext {
 		// global rendering state
 		renderAtlases atlases;
 		shaderOptions globalShaderOptions;
-		enum lightingModes lightingMode = lightingModes::PlainArray;
+		enum lightingModes lightingMode = lightingModes::Tiled;
 
 		// maps 
 		// XXX: loaded shaders, here so they can be accessed from the editor
