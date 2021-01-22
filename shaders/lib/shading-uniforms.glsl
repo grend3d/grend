@@ -84,8 +84,8 @@ uniform mat4 v_inv;
 #if !defined(CLUSTERED_LIGHT_ARRAY) \
  && !defined(TILED_LIGHT_ARRAY) \
  && !defined(PLAIN_UNIFORM_LIGHT_ARRAY)
-#define PLAIN_UNIFORM_LIGHT_ARRAY
-#warning "No light array layout defined, defaulting to PLAIN_UNIFORM_LIGHT_ARRAY (compatible)"
+#define TILED_LIGHT_ARRAY
+#warning "No light array layout defined, defaulting to TILED_LIGHT_ARRAY"
 #endif
 
 // gles3, core430+ use SSBOs, clustered lights
