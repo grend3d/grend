@@ -193,13 +193,13 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 						return true;
 					});
 
+					SDL_Log("IIIIIII: generating tree instances");
 					glm::vec2 posgrad = randomGradient(glm::vec2(coord.x, coord.z));
 					float baseElevation = landscapeThing(coord.x, coord.z);
 					int randtrees = (posgrad.x + 1.0)*0.5 * 5 * (1.0 - baseElevation/50.0);
 
 					game->phys->addStaticModels(nullptr, foo, TRS());
 
-#if 0
 					gameParticles::ptr parts = std::make_shared<gameParticles>(32);
 					parts->activeInstances = randtrees;
 					parts->radius = cellsize / 2.f * 1.415;
@@ -218,10 +218,13 @@ void landscapeGenerator::generateLandscape(gameMain *game,
 						parts->positions[i] = transform.getTransform();
 					}
 
+					SDL_Log("JJJJJJJ: adding node instances...");
 					parts->update();
 					setNodeXXX("tree", parts, treeNode);
 					setNodeXXX("parts", ptr, parts);
+					SDL_Log("KKKKKKK: ok cool");
 
+#if 0
 					int randgrass = (posgrad.y*0.5 + 0.5) * 256 * (1.0 - baseElevation/50.0);
 					gameParticles::ptr grass = std::make_shared<gameParticles>(256);
 					grass->activeInstances = randgrass;
