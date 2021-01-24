@@ -206,6 +206,10 @@ class landscapeGenView : public gameView {
 		landscapeGenerator landscape;
 };
 
+// XXX
+static glm::vec2 movepos(0, 0);
+static glm::vec2 actionpos(0, 0);
+
 landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	post = renderPostChain::ptr(new renderPostChain(
 				{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag", game->rend->globalShaderOptions)},
@@ -254,11 +258,86 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 
 	bindCookedMeshes();
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
+
+#if defined(__ANDROID__)
+	input.bind(modes::Move, [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_FINGERMOTION) {
+			float x = ev.tfinger.x;
+			float y = ev.tfinger.y;
+			int wx = game->rend->screen_x;
+			int wy = game->rend->screen_y;
+			float sx = 2*wx/16.f;
+			float sy = 7*wy/9.f;
+
+			glm::vec2 touch(wx * x, wy * y);
+			glm::vec2 movepad(sx, sy);
+			glm::vec2 diff = movepad - touch;
+			float     dist = glm::length(diff) / 150.f;
+
+			if (dist < 1.0) {
+				glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
+				SDL_Log("MOVE: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
+				cam->setVelocity(dir);
+				movepos = -diff;
+				inputSys->inputs->push_back({
+					.type = inputEvent::types::move,
+					.data = cam->velocity(),
+					.active = true,
+				});
+			}
+
+			SDL_Log("MOVE: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
+		}
+
+		return MODAL_NO_CHANGE;
+	});
+
+	input.bind(modes::Move, [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.type == SDL_FINGERMOTION) {
+			static uint32_t last_action = 0;
+
+			float x = ev.tfinger.x;
+			float y = ev.tfinger.y;
+			int wx = game->rend->screen_x;
+			int wy = game->rend->screen_y;
+			float sx = 14*wx/16.f;
+			float sy = 7*wy/9.f;
+
+			glm::vec2 touch(wx * x, wy * y);
+			glm::vec2 movepad(sx, sy);
+			glm::vec2 diff = movepad - touch;
+			float     dist = glm::length(diff) / 150.f;
+			uint32_t  ticks = SDL_GetTicks();
+
+			if (dist < 1.0) {
+				glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
+				SDL_Log("ACTION: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
+				actionpos = -diff;
+
+				if (ticks - last_action > 500) {
+					last_action = ticks;
+					inputSys->inputs->push_back({
+						.type = inputEvent::types::primaryAction,
+						.data = glm::normalize(dir),
+						.active = true,
+					});
+				}
+			}
+
+			SDL_Log("ACTION: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
+		}
+
+		return MODAL_NO_CHANGE;
+	});
+
+#else
 	input.bind(modes::Move, controller::camMovement(cam, 10.f));
 	//input.bind(modes::Move, controller::camFPS(cam, game));
-	input.bind(modes::Move, controller::camAngled2DFixed(cam, game, -M_PI/4.f));
 	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
 	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
+#endif
+
+	input.bind(modes::Move, controller::camAngled2DFixed(cam, game, -M_PI/4.f));
 	input.bind(MODAL_ALL_MODES,
 		[&, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
@@ -383,6 +462,47 @@ static void renderHealthbars(entityManager *manager,
 	}
 }
 
+static void renderControls(gameMain *game, vecGUI& vgui) {
+	int wx = game->rend->screen_x;
+	int wy = game->rend->screen_y;
+
+	int sx = 2*wx/16;
+	int sy = 7*wy/9;
+
+	int ax = 14*wx/16;
+	int ay = 7*wy/9;
+
+	// left movement pad
+	nvgStrokeWidth(vgui.nvg, 2.0);
+	nvgBeginPath(vgui.nvg);
+	nvgCircle(vgui.nvg, sx + movepos.x, sy + movepos.y, 50);
+	nvgFillColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x80));
+	nvgStrokeColor(vgui.nvg, nvgRGBA(255, 255, 255, 192));
+	nvgStroke(vgui.nvg);
+	nvgFill(vgui.nvg);
+
+	nvgStrokeWidth(vgui.nvg, 2.0);
+	nvgBeginPath(vgui.nvg);
+	nvgCircle(vgui.nvg, sx, sy, 150);
+	nvgStrokeColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x40));
+	nvgStroke(vgui.nvg);
+
+	// right action pad
+	nvgStrokeWidth(vgui.nvg, 2.0);
+	nvgBeginPath(vgui.nvg);
+	nvgCircle(vgui.nvg, ax + actionpos.x, ay + actionpos.y, 50);
+	nvgFillColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x80));
+	nvgStrokeColor(vgui.nvg, nvgRGBA(255, 255, 255, 192));
+	nvgStroke(vgui.nvg);
+	nvgFill(vgui.nvg);
+
+	nvgStrokeWidth(vgui.nvg, 2.0);
+	nvgBeginPath(vgui.nvg);
+	nvgCircle(vgui.nvg, ax, ay, 150);
+	nvgStrokeColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x40));
+	nvgStroke(vgui.nvg);
+}
+
 void landscapeGenView::render(gameMain *game) {
 	//SDL_Log("Got to landscapeGenView::render()");
 	int winsize_x, winsize_y;
@@ -415,6 +535,7 @@ void landscapeGenView::render(gameMain *game) {
 		nvgSave(vgui.nvg);
 
 		renderHealthbars(game->entities.get(), vgui, cam);
+		renderControls(game, vgui);
 
 		nvgRestore(vgui.nvg);
 		nvgEndFrame(vgui.nvg);
