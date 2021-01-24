@@ -1,9 +1,9 @@
 #include "inputHandler.hpp"
 
 void inputHandlerSystem::update(entityManager *manager, float delta) {
-	auto handlers = manager->getComponents("inputHandler");
+	auto handlers  = manager->getComponents("inputHandler");
 	// TODO: maybe have seperate system for pollers
-	auto pollers  = manager->getComponents("inputPoller");
+	auto pollers   = manager->getComponents("inputPoller");
 
 	for (auto& ev : *inputs) {
 		for (auto& it : handlers) {
@@ -28,6 +28,19 @@ void inputHandlerSystem::update(entityManager *manager, float delta) {
 	inputs->clear();
 }
 
+void inputHandlerSystem::handleEvent(entityManager *manager, SDL_Event& ev) {
+	auto rawEvents = manager->getComponents("rawEventHandler");
+
+	for (auto& it : rawEvents) {
+		rawEventHandler *handler = dynamic_cast<rawEventHandler*>(it);
+		entity *ent = manager->getEntity(handler);
+
+		if (handler && ent) {
+			handler->handleEvent(manager, ent, ev);
+		}
+	}
+}
+
 void mouseRotationPoller::update(entityManager *manager, entity *ent) {
 	int x, y, win_x, win_y;
 
@@ -42,6 +55,74 @@ void mouseRotationPoller::update(entityManager *manager, entity *ent) {
 	glm::quat rot(glm::vec3(0, atan2(diff.x, diff.y), 0));
 
 	ent->node->transform.rotation = rot;
+}
+
+void touchMovementHandler::handleEvent(entityManager *manager,
+                                       entity *ent,
+                                       SDL_Event& ev)
+{
+	if (ev.type == SDL_FINGERMOTION || ev.type == SDL_FINGERDOWN) {
+		float x = ev.tfinger.x;
+		float y = ev.tfinger.y;
+		int wx = manager->engine->rend->screen_x;
+		int wy = manager->engine->rend->screen_y;
+
+		glm::vec2 touch(wx * x, wy * y);
+		glm::vec2 diff = center - touch;
+		float     dist = glm::length(diff) / 150.f;
+
+		if (dist < 1.0) {
+			glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
+			SDL_Log("MOVE: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
+			touchpos = -diff;
+			inputs->push_back({
+				.type = inputEvent::types::move,
+				.data = dir,
+				.active = true,
+			});
+		}
+
+		SDL_Log("MOVE: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
+	}
+}
+
+void touchRotationHandler::handleEvent(entityManager *manager,
+                                       entity *ent,
+                                       SDL_Event& ev)
+{
+	if (ev.type == SDL_FINGERMOTION || ev.type == SDL_FINGERDOWN) {
+		static uint32_t last_action = 0;
+
+		float x = ev.tfinger.x;
+		float y = ev.tfinger.y;
+		int wx = manager->engine->rend->screen_x;
+		int wy = manager->engine->rend->screen_y;
+
+		glm::vec2 touch(wx * x, wy * y);
+		glm::vec2 diff = center - touch;
+		float     dist = glm::length(diff) / 150.f;
+		uint32_t  ticks = SDL_GetTicks();
+
+		if (dist < 1.0) {
+			glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
+			SDL_Log("ACTION: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
+			touchpos = -diff;
+
+			glm::quat rot(glm::vec3(0, atan2(touchpos.x, touchpos.y), 0));
+			ent->node->transform.rotation = rot;
+
+			if (ticks - last_action > 500) {
+				last_action = ticks;
+				inputs->push_back({
+					.type = inputEvent::types::primaryAction,
+					.data = glm::normalize(dir),
+					.active = true,
+				});
+			}
+		}
+
+		SDL_Log("ACTION: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
+	}
 }
 
 bindFunc inputMapper(inputQueue q, camera::ptr cam) {
