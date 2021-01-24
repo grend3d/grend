@@ -204,6 +204,7 @@ class landscapeGenView : public gameView {
 		float zoom = 10.f;
 
 		landscapeGenerator landscape;
+		inputHandlerSystem::ptr inputSystem;
 };
 
 // XXX
@@ -229,22 +230,25 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	game->entities->systems["collision"] = std::make_shared<entitySystemCollision>();
 	game->entities->systems["syncPhysics"] = std::make_shared<syncRigidBodySystem>();
 
-	auto inputSys = std::make_shared<inputHandlerSystem>();
-	game->entities->systems["input"] = inputSys;
+	inputSystem = std::make_shared<inputHandlerSystem>();
+	game->entities->systems["input"] = inputSystem;
 
 	auto generatorSys = std::make_shared<landscapeEventSystem>();
 	game->entities->systems["landscapeEvents"] = generatorSys;
 	landscape.setEventQueue(generatorSys->queue);
 
 	//manager->add(new player(manager.get(), game, glm::vec3(-15, 50, 0)));
+	/*
 	player *playerEnt = new player(game->entities.get(), game, glm::vec3(0, 20, 0));
 	game->entities->add(playerEnt);
 	new generatorEventHandler(game->entities.get(), playerEnt);
 	new health(game->entities.get(), playerEnt);
 	new enemyCollision(game->entities.get(), playerEnt);
 	new healthPickupCollision(game->entities.get(), playerEnt);
+	new mouseRotationPoller(game->entities.get(), playerEnt);
 
 	game->entities->add(new worldEntitySpawner(game->entities.get()));
+	*/
 
 	for (unsigned i = 0; i < 10; i++) {
 		glm::vec3 position = glm::vec3(
@@ -259,85 +263,19 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 	bindCookedMeshes();
 	input.bind(MODAL_ALL_MODES, resizeInputHandler(game, post));
 
-#if defined(__ANDROID__)
-	input.bind(modes::Move, [=] (SDL_Event& ev, unsigned flags) {
-		if (ev.type == SDL_FINGERMOTION) {
-			float x = ev.tfinger.x;
-			float y = ev.tfinger.y;
-			int wx = game->rend->screen_x;
-			int wy = game->rend->screen_y;
-			float sx = 2*wx/16.f;
-			float sy = 7*wy/9.f;
-
-			glm::vec2 touch(wx * x, wy * y);
-			glm::vec2 movepad(sx, sy);
-			glm::vec2 diff = movepad - touch;
-			float     dist = glm::length(diff) / 150.f;
-
-			if (dist < 1.0) {
-				glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
-				SDL_Log("MOVE: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
-				cam->setVelocity(dir);
-				movepos = -diff;
-				inputSys->inputs->push_back({
-					.type = inputEvent::types::move,
-					.data = cam->velocity(),
-					.active = true,
-				});
-			}
-
-			SDL_Log("MOVE: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
-		}
-
-		return MODAL_NO_CHANGE;
-	});
-
-	input.bind(modes::Move, [=] (SDL_Event& ev, unsigned flags) {
-		if (ev.type == SDL_FINGERMOTION) {
-			static uint32_t last_action = 0;
-
-			float x = ev.tfinger.x;
-			float y = ev.tfinger.y;
-			int wx = game->rend->screen_x;
-			int wy = game->rend->screen_y;
-			float sx = 14*wx/16.f;
-			float sy = 7*wy/9.f;
-
-			glm::vec2 touch(wx * x, wy * y);
-			glm::vec2 movepad(sx, sy);
-			glm::vec2 diff = movepad - touch;
-			float     dist = glm::length(diff) / 150.f;
-			uint32_t  ticks = SDL_GetTicks();
-
-			if (dist < 1.0) {
-				glm::vec3 dir = (cam->direction()*diff.y + cam->right()*diff.x) / 15.f;
-				SDL_Log("ACTION: %g (%g,%g,%g)", dist, dir.x, dir.y, dir.z);
-				actionpos = -diff;
-
-				if (ticks - last_action > 500) {
-					last_action = ticks;
-					inputSys->inputs->push_back({
-						.type = inputEvent::types::primaryAction,
-						.data = glm::normalize(dir),
-						.active = true,
-					});
-				}
-			}
-
-			SDL_Log("ACTION: got finger touch, %g (%g, %g)", dist, touch.x, touch.y);
-		}
-
-		return MODAL_NO_CHANGE;
-	});
-
-#else
+#if !defined(__ANDROID__)
 	input.bind(modes::Move, controller::camMovement(cam, 10.f));
 	//input.bind(modes::Move, controller::camFPS(cam, game));
 	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
-	input.bind(modes::Move, inputMapper(inputSys->inputs, cam));
+	input.bind(modes::Move, inputMapper(inputSystem->inputs, cam));
 #endif
 
 	input.bind(modes::Move, controller::camAngled2DFixed(cam, game, -M_PI/4.f));
+	input.bind(modes::Move, [=] (SDL_Event& ev, unsigned flags) {
+		inputSystem->handleEvent(game->entities.get(), ev);
+		return MODAL_NO_CHANGE;
+	});
+
 	input.bind(MODAL_ALL_MODES,
 		[&, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
@@ -352,6 +290,7 @@ landscapeGenView::landscapeGenView(gameMain *game) : gameView() {
 
 			return MODAL_NO_CHANGE;
 		});
+
 	input.setMode(modes::Move);
 };
 
@@ -369,13 +308,28 @@ void landscapeGenView::logic(gameMain *game, float delta) {
 	
 	entity *playerEnt = findFirst(game->entities.get(), {"player"});
 
-	while (!playerEnt) {
+	if (!playerEnt) {
 		playerEnt = new player(game->entities.get(), game, glm::vec3(-5, 20, -5));
 		game->entities->add(playerEnt);
 		new generatorEventHandler(game->entities.get(), playerEnt);
 		new health(game->entities.get(), playerEnt);
 		new enemyCollision(game->entities.get(), playerEnt);
 		new healthPickupCollision(game->entities.get(), playerEnt);
+
+#if defined(__ANDROID__)
+		int wx = game->rend->screen_x;
+		int wy = game->rend->screen_y;
+		glm::vec2 movepad  ( 2*wx/16.f, 7*wy/9.f);
+		glm::vec2 actionpad(14*wx/16.f, 7*wy/9.f);
+
+		new touchMovementHandler(game->entities.get(), playerEnt, cam,
+		                         inputSystem->inputs, movepad, 150.f);
+		new touchRotationHandler(game->entities.get(), playerEnt, cam,
+		                         inputSystem->inputs, actionpad, 150.f);
+		
+#else
+		new mouseRotationPoller(game->entities.get(), playerEnt);
+#endif
 	}
 
 	if (playerEnt) {
@@ -463,19 +417,27 @@ static void renderHealthbars(entityManager *manager,
 }
 
 static void renderControls(gameMain *game, vecGUI& vgui) {
-	int wx = game->rend->screen_x;
-	int wy = game->rend->screen_y;
+	// TODO: should have a generic "pad" component
+	// assume first instances of these components are the ones we want,
+	// since there should only be 1 of each
+	auto& movepads   = game->entities->getComponents("touchMovementHandler");
+	auto& actionpads = game->entities->getComponents("touchRotationHandler");
+	touchMovementHandler *movepad;
+	touchRotationHandler *actionpad;
 
-	int sx = 2*wx/16;
-	int sy = 7*wy/9;
+	if (movepads.size() == 0 || actionpads.size() == 0) {
+		return;
+	}
 
-	int ax = 14*wx/16;
-	int ay = 7*wy/9;
+	movepad   = dynamic_cast<touchMovementHandler*>(*movepads.begin());
+	actionpad = dynamic_cast<touchRotationHandler*>(*actionpads.begin());
 
 	// left movement pad
 	nvgStrokeWidth(vgui.nvg, 2.0);
 	nvgBeginPath(vgui.nvg);
-	nvgCircle(vgui.nvg, sx + movepos.x, sy + movepos.y, 50);
+	nvgCircle(vgui.nvg, movepad->center.x + movepad->touchpos.x,
+	                    movepad->center.y + movepad->touchpos.y,
+	                    movepad->radius / 3.f);
 	nvgFillColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x80));
 	nvgStrokeColor(vgui.nvg, nvgRGBA(255, 255, 255, 192));
 	nvgStroke(vgui.nvg);
@@ -483,14 +445,16 @@ static void renderControls(gameMain *game, vecGUI& vgui) {
 
 	nvgStrokeWidth(vgui.nvg, 2.0);
 	nvgBeginPath(vgui.nvg);
-	nvgCircle(vgui.nvg, sx, sy, 150);
+	nvgCircle(vgui.nvg, movepad->center.x, movepad->center.y, movepad->radius);
 	nvgStrokeColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x40));
 	nvgStroke(vgui.nvg);
 
 	// right action pad
 	nvgStrokeWidth(vgui.nvg, 2.0);
 	nvgBeginPath(vgui.nvg);
-	nvgCircle(vgui.nvg, ax + actionpos.x, ay + actionpos.y, 50);
+	nvgCircle(vgui.nvg, actionpad->center.x + actionpad->touchpos.x,
+	                    actionpad->center.y + actionpad->touchpos.y,
+	                    actionpad->radius / 3.f);
 	nvgFillColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x80));
 	nvgStrokeColor(vgui.nvg, nvgRGBA(255, 255, 255, 192));
 	nvgStroke(vgui.nvg);
@@ -498,7 +462,7 @@ static void renderControls(gameMain *game, vecGUI& vgui) {
 
 	nvgStrokeWidth(vgui.nvg, 2.0);
 	nvgBeginPath(vgui.nvg);
-	nvgCircle(vgui.nvg, ax, ay, 150);
+	nvgCircle(vgui.nvg, actionpad->center.x, actionpad->center.y, actionpad->radius);
 	nvgStrokeColor(vgui.nvg, nvgRGBA(0x60, 0x60, 0x60, 0x40));
 	nvgStroke(vgui.nvg);
 }
