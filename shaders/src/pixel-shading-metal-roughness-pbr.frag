@@ -63,12 +63,12 @@ void main(void) {
 	vec3 posws = f_position.xyz;
 
 	vec3 test[6] = vec3[](
-		reflection_probe[0],
-		reflection_probe[1],
-		reflection_probe[2],
-		reflection_probe[3],
-		reflection_probe[4],
-		reflection_probe[5]
+		reflection_probe[0].xyz,
+		reflection_probe[1].xyz,
+		reflection_probe[2].xyz,
+		reflection_probe[3].xyz,
+		reflection_probe[4].xyz,
+		reflection_probe[5].xyz
 	);
 
 	vec3 altdir = reflect(-view_dir, normal_dir);
