@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libgrend
+Description: Game development framework
+Version: 1.0
+Requires: sdl2 bullet glm
+
+Libs: -L${libdir} -lgrend
+Cflags: -I${includedir} @GREND_COMPILE_OPTIONS@

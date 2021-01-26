@@ -131,9 +131,7 @@ else()
 	set(PHYSICS_IMPLEMENTATION src/impPhysics.cpp)
 endif()
 
-configure_file(config.h.in config.h)
-
-add_library(Grend SHARED
+add_library(Grend
 	${PHYSICS_IMPLEMENTATION}
 	src/animation.cpp
 	src/controllers.cpp
@@ -211,6 +209,17 @@ target_link_libraries(Grend
 )
 target_compile_options(Grend PUBLIC "-O2")
 
+get_target_property(GREND_COMPILE_OPTIONS_LIST Grend COMPILE_OPTIONS)
+set(GREND_COMPILE_OPTIONS)
+foreach (item ${GREND_COMPILE_OPTIONS_LIST})
+	string(APPEND GREND_COMPILE_OPTIONS "${item} ")
+endforeach()
+
+message(STATUS "Compile options: ${GREND_COMPILE_OPTIONS}")
+configure_file(config.h.in config.h)
+configure_file(grend.pc.in grend.pc @ONLY)
+
+#[[
 set(LANDSCAPE_DEMO_SRC
 	demos/landscape-test/boxSpawner.cpp
 	demos/landscape-test/enemy.cpp
@@ -240,13 +249,16 @@ else()
 	add_executable(map-viewer demos/map-viewer/main.cpp)
 	target_link_libraries(map-viewer Grend)
 endif()
+]]
 
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend                 DESTINATION lib)
 if (NOT ANDROID)
 	# XXX: figure out how to do this properly
 	install(TARGETS nanovg                DESTINATION lib)
+	#[[
 	install(TARGETS map-viewer            DESTINATION bin)
+	]]
 endif()
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
