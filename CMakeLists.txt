@@ -4,7 +4,6 @@ project(Grend VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-option(BUILD_SHARED_LIBS "build the shared stuff" ON)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
@@ -112,10 +111,6 @@ set(LIBRARY_INCLUDES
 	libs/json/single_include
 	libs/stb)
 
-include_directories(include)
-include_directories(${LIBRARY_INCLUDES})
-include_directories(PkgConfig::GLM)
-
 #[[
 add_compile_definitions(
 	GLSL_VERSION=${GLSL_VERSION}
@@ -214,6 +209,8 @@ add_library(Grend
 )
 
 target_include_directories(Grend PUBLIC
+	include
+	${LIBRARY_INCLUDES}
 	"${PROJECT_BINARY_DIR}"
 	${BULLET_PHYSICS_SOURCE_DIR}/src
 )
