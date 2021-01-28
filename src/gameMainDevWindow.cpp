@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/gameMainDevWindow.hpp>
 
 #ifdef PHYSICS_BULLET

@@ -21,11 +21,16 @@ set(GLSL_VERSION 300) # OpenGL ES 3.0
 add_subdirectory(libs/nanovg)
 
 set(GREND_LINK_LIBS)
+set(GR_PREFIX)
+## used in the grend.pc file, so things can know which GL library to link
+set(GREND_GL_PKG)
+
 if (ANDROID)
 	# TODO: how's this going to work in production, just require assets
 	#       be unpacked onto the SD card? I'm definitely not rewriting
 	#       every library that touches C/C++ file i/o
-	add_compile_options(-DGR_PREFIX="/sdcard/grend/")
+	#add_compile_options(-DGR_PREFIX="/sdcard/grend/")
+	set(GR_PREFIX "/sdcard/grend/")
 	add_compile_options(-DMAX_LIGHTS=8)
 	# TODO: toggleable for old adreno only...?
 	#add_compile_options(-DUSE_SINGLE_UBO)
@@ -57,7 +62,8 @@ if (ANDROID)
 # TODO: assume unixen, presumably there'll be different library lookup
 #       stuff for windows/etc
 else()
-	add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+	set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
 
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
@@ -72,17 +78,25 @@ else()
 
 	if (GLSL_VERSION EQUAL 100)
 		message(STATUS "GL: Using GLESv2")
+		set(GREND_GL_PKG "glesv2")
+
 		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
-		find_library(GLESv2 GLESv2)
+		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
 		list(APPEND GREND_LINK_LIBS GLESv2)
+
 	elseif(GLSL_VERSION EQUAL 300)
 		message(STATUS "GL: Using GLESv3")
+		set(GREND_GL_PKG "glesv2")
+
 		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
 		# seems gles3 is part of the gles2 library
-		find_library(GLESv2 GLESv2)
-		list(APPEND GREND_LINK_LIBS GLESv2)
+		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
+		list(APPEND GREND_LINK_LIBS PkgConfig::GLESv2)
+
 	else()
 		message(STATUS "GL: Using glew")
+		set(GREND_GL_PKG "glew")
+
 		add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
 		pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
 		list(APPEND GREND_LINK_LIBS PkgConfig::Glew)
@@ -114,8 +128,8 @@ add_compile_definitions(
 ]]
 
 add_compile_options(
-	-DGLSL_VERSION=${GLSL_VERSION}
-	-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
+	#-DGLSL_VERSION=${GLSL_VERSION}
+	#-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 	# TODO: this obviously breaks portable installs
 	-Og -g
@@ -123,11 +137,11 @@ add_compile_options(
 
 if (PHYSICS_BULLET)
 	#add_compile_definitions(PHYSICS_BULLET)
-	add_compile_options(-DPHYSICS_BULLET)
+	#add_compile_options(-DPHYSICS_BULLET)
 	set(PHYSICS_IMPLEMENTATION src/bulletPhysics.cpp)
 else()
 	#add_compile_definitions(PHYSICS_IMP)
-	add_compile_options(-DPHYSICS_IMP)
+	#add_compile_options(-DPHYSICS_IMP)
 	set(PHYSICS_IMPLEMENTATION src/impPhysics.cpp)
 endif()
 
@@ -216,7 +230,7 @@ foreach (item ${GREND_COMPILE_OPTIONS_LIST})
 endforeach()
 
 message(STATUS "Compile options: ${GREND_COMPILE_OPTIONS}")
-configure_file(config.h.in config.h)
+configure_file(grend-config.h.in grend-config.h)
 configure_file(grend.pc.in grend.pc @ONLY)
 
 #[[
@@ -260,6 +274,9 @@ if (NOT ANDROID)
 	install(TARGETS map-viewer            DESTINATION bin)
 	]]
 endif()
+
+install(FILES     ${PROJECT_BINARY_DIR}/grend.pc       DESTINATION lib/pkgconfig)
+install(FILES     ${PROJECT_BINARY_DIR}/grend-config.h DESTINATION include)
 install(DIRECTORY ${INCLUDES}         DESTINATION include)
 install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
 install(DIRECTORY shaders/lib         DESTINATION share/grend/shaders)

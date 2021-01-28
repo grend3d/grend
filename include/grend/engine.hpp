@@ -1,5 +1,7 @@
 #pragma once
 
+#include <grend-config.h>
+
 #include <grend/renderFramebuffer.hpp>
 #include <grend/renderPostStage.hpp>
 #include <grend/gameObject.hpp>

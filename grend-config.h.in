@@ -1,0 +1,9 @@
+#pragma once
+
+enum { OFF, ON };
+
+#cmakedefine GLSL_VERSION @GLSL_VERSION@
+#cmakedefine PHYSICS_BULLET
+#cmakedefine GREND_ERROR_CHECK @GREND_ERROR_CHECK@
+#cmakedefine GR_PREFIX "@GR_PREFIX@"
+#cmakedefine PORTABLE_INSTALL

@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/engine.hpp>
 #include <grend/glManager.hpp>
 #include <grend/geometryGeneration.hpp> // TODO: camelCase

@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/shaderPreprocess.hpp>
 #include <grend/glManager.hpp>
 #include <grend/engine.hpp>

@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #ifdef PHYSICS_BULLET
 #include <grend/physics.hpp>
 #include <grend/bulletPhysics.hpp>

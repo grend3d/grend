@@ -6,7 +6,7 @@ includedir=${prefix}/include
 Name: libgrend
 Description: Game development framework
 Version: 1.0
-Requires: sdl2 bullet glm
+Requires: sdl2 bullet glm @GREND_GL_PKG@
 
-Libs: -L${libdir} -lgrend
-Cflags: -I${includedir} @GREND_COMPILE_OPTIONS@
+Libs: -L${libdir} -lGrend -lnanovg
+Cflags: -I${includedir} -I${includedir}/grend/libs -I${includedir}/grend/libs/json/include @GREND_COMPILE_OPTIONS@

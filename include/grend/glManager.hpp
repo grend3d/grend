@@ -1,5 +1,6 @@
 #pragma once
 
+#include <grend-config.h>
 #include <grend/glVersion.hpp>
 #include <grend/material.hpp>
 #include <grend/sdlContext.hpp>

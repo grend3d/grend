@@ -1,5 +1,7 @@
 #pragma once
 
+#include <grend-config.h>
+
 #if GLSL_VERSION == 100
 #define GLSL_STRING "100"
 #elif GLSL_VERSION == 300

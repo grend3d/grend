@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/vecGUI.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/glManager.hpp>

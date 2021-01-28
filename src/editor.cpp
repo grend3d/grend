@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/gameEditor.hpp>
 #include <grend/gameState.hpp>
 #include <grend/engine.hpp>

@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/gameMain.hpp>
 #include <string.h> // memset
 

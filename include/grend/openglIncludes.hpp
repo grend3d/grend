@@ -1,5 +1,7 @@
 #pragma once
 
+#include <grend-config.h>
+
 // use glew for core versions, GLES headers for ES
 #if GLSL_VERSION == 100
 #define GL2_PROTOTYPES 1

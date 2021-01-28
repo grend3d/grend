@@ -1,3 +1,5 @@
+#include <grend-config.h>
+
 #include <grend/engine.hpp>
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
@@ -180,17 +182,17 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
 void renderContext::loadShaders(void) {
 	SDL_Log("Loading shaders");
 
-	/*
 	lightingShaders["main"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/src/pixel-shading-metal-roughness-pbr.frag",
 			globalShaderOptions);
-			*/
 
+	/*
 	lightingShaders["main"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/src/pixel-shading.frag",
 			globalShaderOptions);
+			*/
 
 	lightingShaders["unshaded"] = 
 		loadLightingShader(
