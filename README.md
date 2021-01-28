@@ -1,8 +1,12 @@
-Building examples
-=================
+![screenshot](http://lisp.us.to/data/post7-data/tile-gameplay.png)
+
+A procedural landscape demo to test engine features.
+
+Building
+========
 
 You'll need all of the dependencies for grend installed first, see the
-![README](https://github.com/grend3d/grend/README) there for details.
+![README](https://github.com/grend3d/grend/README.md) there for details.
 
 ### In-tree library (for one-off builds)
 
