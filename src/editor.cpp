@@ -21,9 +21,19 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
 	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
 										  */
+
+	// don't apply post-processing filters if this is an embedded profile
+	// (so no tonemapping/HDR)
+#ifdef NO_FLOATING_FB
+	post = renderPostChain::ptr(new renderPostChain(
+		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
+		                game->rend->globalShaderOptions)},
+		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+#else
 	post = renderPostChain::ptr(new renderPostChain(
 		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+#endif
 
 	loading_thing = makePostprocessor<rOutput>(
 		loadProgram(GR_PREFIX "shaders/src/postprocess.vert",

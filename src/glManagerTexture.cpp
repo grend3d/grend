@@ -37,6 +37,7 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	bind();
 
 #ifdef NO_FORMAT_CONVERSION
+	/*
 	// XXX: need something more efficient
 	std::vector<uint8_t> temp = tex->pixels;
 
@@ -49,6 +50,11 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 	             0, texformat, tex->width, tex->height,
 	             0, texformat, GL_UNSIGNED_BYTE, temp.data());
+				 */
+
+	glTexImage2D(GL_TEXTURE_2D,
+	             0, texformat, tex->width, tex->height,
+	             0, texformat, GL_UNSIGNED_BYTE, tex->pixels.data());
 
 #else
 	glTexImage2D(GL_TEXTURE_2D,
