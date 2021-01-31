@@ -36,6 +36,46 @@ bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 	};
 }
 
+bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
+	return [=] (SDL_Event& ev, unsigned flags) {
+		glm::vec3 dir, right, up;
+
+		dir   = glm::normalize(cam->direction() * glm::vec3(1, 0, 1));
+		right = glm::normalize(cam->right() * glm::vec3(1, 0, 1));
+		up    = glm::vec3(0, 1, 0);
+
+		if (ev.type == SDL_KEYDOWN) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_w:     cam->setVelocity( dir*accel); break;
+				case SDLK_s:     cam->setVelocity(-dir*accel); break;
+				case SDLK_a:     cam->setVelocity( right*accel); break;
+				case SDLK_d:     cam->setVelocity(-right*accel); break;
+				case SDLK_q:     cam->setVelocity( up*accel); break;
+				case SDLK_e:     cam->setVelocity(-up*accel); break;
+				case SDLK_SPACE: cam->setVelocity( up*50.f); break;
+				default: break;
+			};
+
+		} else if (ev.type == SDL_KEYUP) {
+			switch (ev.key.keysym.sym) {
+				case SDLK_w:
+				case SDLK_s:
+				case SDLK_a:
+				case SDLK_d:
+				case SDLK_q:
+				case SDLK_e:
+				case SDLK_SPACE:
+					cam->setVelocity(glm::vec3(0));
+					break;
+
+				default: break;
+			};
+		}
+
+		return MODAL_NO_CHANGE;
+	};
+}
+
 bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		int x, y;

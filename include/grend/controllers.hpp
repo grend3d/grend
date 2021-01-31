@@ -11,6 +11,7 @@ namespace controller {
 // TODO: maybe make this a template, could be applied to
 //       anything with a position field
 bindFunc camMovement(camera::ptr cam, float accel);
+bindFunc camMovement2D(camera::ptr cam, float accel);
 bindFunc camFPS(camera::ptr cam, gameMain *game);
 bindFunc camAngled2D(camera::ptr cam, gameMain *game, float angle);
 bindFunc camAngled2DFixed(camera::ptr cam, gameMain *game, float angle);
