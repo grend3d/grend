@@ -914,8 +914,10 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 	lightbuf.uactive_spot_lights        = activeSpots;
 	lightbuf.uactive_directional_lights = activeDirs;
 
+	/*
 	SDL_Log("updating buffers: lights: %u, points: %u, spots: %u",
 	        sizeof(lightbuf), sizeof(pointbuf), sizeof(spotbuf));
+			*/
 	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
 	rctx->pointTiles->update(&pointbuf,  0, sizeof(pointbuf));
 	rctx->spotTiles->update(&spotbuf,    0, sizeof(spotbuf));

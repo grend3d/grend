@@ -148,7 +148,6 @@ void gameEditor::loadUIModels(void) {
 }
 
 void gameEditor::render(gameMain *game) {
-	SDL_Log("Got to gameEditor::render()");
 	renderQueue que(cam);
 	auto flags = game->rend->getLightingFlags();
 
@@ -172,7 +171,6 @@ void gameEditor::render(gameMain *game) {
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
-	SDL_Log("window size: %dx%d", winsize_x, winsize_y);
 	post->draw(game->rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
@@ -187,7 +185,6 @@ void gameEditor::render(gameMain *game) {
 	renderEditor(game);
 	renderImgui(game);
 #endif
-	SDL_Log("end of gameEditor::render()");
 }
 
 void gameEditor::renderWorldObjects(gameMain *game) {
@@ -348,7 +345,6 @@ void gameEditor::handleCursorUpdate(gameMain *game) {
 }
 
 void gameEditor::logic(gameMain *game, float delta) {
-	SDL_Log("Got to gameEditor::logic()");
 	cam->updatePosition(delta);
 
 	auto orientation = UIObjects->getNode("Orientation-Indicator");
