@@ -1,4 +1,5 @@
 #include <grend/ecs/ecs.hpp>
+#include <grend/ecs/search.hpp>
 
 namespace grendx::ecs {
 
@@ -113,70 +114,16 @@ bool entityManager::hasComponents(entity *ent,
 std::set<entity*> searchEntities(entityManager *manager,
                                  std::initializer_list<std::string> tags)
 {
-	std::set<entity*> ret;
-	std::vector<std::set<entity*>> candidates;
+	return searchEntities<std::initializer_list<std::string>>
+		(manager, {tags.begin(), tags.end()}, tags.size());
+}
 
-	/*
-	// left here for debugging, just in case
-	for (auto& ent : manager->entities) {
-		if (manager->hasComponents(ent, tags)) {
-			ret.insert(ent);
-		}
-	}
-	*/
-
-	if (tags.size() == 0) {
-		// lol
-		return {};
-
-	} else if (tags.size() == 1) {
-		auto& comps = manager->getComponents(*tags.begin());
-
-		for (auto& comp : comps) {
-			ret.insert(manager->getEntity(comp));
-		}
-
-	} else {
-		// TODO: could this be done without generating the sets of entities...?
-		//       would need a map of component names -> entities, which would be
-		//       messy since an entity can have more than one of any component...
-		//       this is probably good enough, just don't search for "entity" :P
-		for (auto& tag : tags) {
-			auto& comps = manager->getComponents(tag);
-			candidates.push_back({});
-
-			for (auto& comp : comps) {
-				candidates.back().insert(manager->getEntity(comp));
-			}
-		}
-
-		// find smallest (most exclusive) set of candidates
-		auto smallest = candidates.begin();
-		for (auto it = candidates.begin(); it != candidates.end(); it++) {
-			if (it->size() < smallest->size()) {
-				smallest = it;
-			}
-		}
-
-		for (auto ent : *smallest) {
-			bool inAll = true;
-
-			for (auto it = candidates.begin(); it != candidates.end(); it++) {
-				if (it == smallest)  continue;
-
-				if (!it->count(ent)) {
-					inAll = false;
-					break;
-				}
-			}
-
-			if (inAll) {
-				ret.insert(ent);
-			}
-		}
-	}
-
-	return ret;
+std::set<entity*> searchEntities(entityManager *manager,
+                                 std::vector<std::string>& tags)
+{
+	//return searchEntities(manager, {tags.data(), tags.data() + tags.size()});
+	return searchEntities<std::vector<std::string>>
+		(manager, {tags.begin(), tags.end()}, tags.size());
 }
 
 entity *findNearest(entityManager *manager,

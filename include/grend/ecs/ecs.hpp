@@ -111,6 +111,8 @@ class entitySystem {
 
 std::set<entity*> searchEntities(entityManager *manager,
                                  std::initializer_list<std::string> tags);
+std::set<entity*> searchEntities(entityManager *manager,
+                                 std::vector<std::string>& tags);
 
 entity *findNearest(entityManager *manager,
                     glm::vec3 position,
