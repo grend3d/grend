@@ -126,6 +126,7 @@ void setNodeXXX(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 gameObject::ptr unlink(gameObject::ptr node);
 gameObject::ptr clone(gameObject::ptr node);     // shallow copy
 gameObject::ptr duplicate(gameObject::ptr node); // deep copy
+std::string     getNodeName(gameObject::ptr node);
 
 class gameImport : public gameObject {
 	public:

@@ -126,7 +126,9 @@ class gameEditor : public gameView {
 		void metricsWindow(gameMain *game);
 
 		// populates map object tree
-		void addnodes(std::string name, gameObject::ptr obj);
+		void addnodes(std::string name,
+		              gameObject::ptr obj,
+		              std::set<gameObject::ptr>& selectedPath);
 		void addnodesRec(const std::string& name,
 		                  gameObject::ptr obj,
 		                  std::set<gameObject::ptr>& selectedPath);

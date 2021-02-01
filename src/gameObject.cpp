@@ -81,6 +81,20 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	return clone(node);
 }
 
+std::string grendx::getNodeName(gameObject::ptr node) {
+	if (node != nullptr) {
+		if (auto p = node->parent.lock()) {
+			for (auto& [key, ptr] : p->nodes) {
+				if (node == ptr) {
+					return key;
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
 void gameObject::removeNode(std::string name) {
 	auto it = nodes.find(name);
 
