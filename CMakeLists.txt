@@ -38,6 +38,10 @@ set(LANDSCAPE_DEMO_SRC
 	src/main.cpp
 	src/player.cpp
 	src/projectile.cpp
+	src/UI.cpp
+	src/flag.cpp
+	src/team.cpp
+	src/area.cpp
 )
 
 if (ANDROID)

@@ -1,0 +1,2668 @@
+{
+    "map": {
+        "file": "./assets/maps//base.map"
+    },
+    "root": {
+        "nodes": {
+            "entities": {
+                "nodes": {
+                    "entity[94621896725808]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    2.0,
+                                    2.0,
+                                    2.0
+                                ],
+                                "sourceFile": "assets/obj/flag.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -20.0,
+                            1.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621896725872]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    2.0,
+                                    2.0,
+                                    2.0
+                                ],
+                                "sourceFile": "assets/obj/flag.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            0.0,
+                            1.0,
+                            35.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621899385248]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            17.02860450744629,
+                            3.3212060928344727,
+                            -47.71003341674805
+                        ],
+                        "rotation": [
+                            0.8173444271087646,
+                            0.5390390157699585,
+                            0.16093644499778748,
+                            0.12443656474351883
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621899800928]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -6.814286231994629,
+                            1.1499971151351929,
+                            -36.840538024902344
+                        ],
+                        "rotation": [
+                            -0.20781852304935455,
+                            0.017607351765036583,
+                            0.9625560641288757,
+                            0.1731683313846588
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621899826704]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            75.93065643310547,
+                            -19.400442123413086,
+                            -135.45999145507813
+                        ],
+                        "rotation": [
+                            0.7108522653579712,
+                            -0.5947214961051941,
+                            4.192477831566066e-08,
+                            -0.37549373507499695
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621899849696]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -7.05382776260376,
+                            1.1499998569488525,
+                            -33.23906326293945
+                        ],
+                        "rotation": [
+                            -0.06901592761278152,
+                            -0.2676280736923218,
+                            0.6870760917663574,
+                            0.6719661355018616
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900185920]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            38.55950164794922,
+                            2.4746615886688232,
+                            -45.84982681274414
+                        ],
+                        "rotation": [
+                            0.7855669856071472,
+                            -0.4830918610095978,
+                            0.09304780513048172,
+                            -0.375298410654068
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900261728]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            33.89494705200195,
+                            -4.147892951965332,
+                            -68.87559509277344
+                        ],
+                        "rotation": [
+                            0.08279462903738022,
+                            0.8426631689071655,
+                            3.183014598562295e-07,
+                            0.5320374369621277
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900552304]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -5.119510173797607,
+                            -1.8601945638656616,
+                            -115.65074157714844
+                        ],
+                        "rotation": [
+                            0.9376739859580994,
+                            0.3401417136192322,
+                            -0.025951726362109184,
+                            0.06631474941968918
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900715600]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -46.25160217285156,
+                            -6.01149320602417,
+                            -50.33411407470703
+                        ],
+                        "rotation": [
+                            -0.3925798833370209,
+                            0.06304118782281876,
+                            0.9142264127731323,
+                            -0.07808244973421097
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900817664]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -7.052853584289551,
+                            1.1499369144439697,
+                            -36.66089630126953
+                        ],
+                        "rotation": [
+                            0.9457027912139893,
+                            0.14751200377941132,
+                            -0.1964123696088791,
+                            0.21285821497440338
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621900974576]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -17.065549850463867,
+                            1.149999737739563,
+                            -38.80655288696289
+                        ],
+                        "rotation": [
+                            0.023932676762342453,
+                            -0.2956557273864746,
+                            0.7957008481025696,
+                            -0.5280861854553223
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901126448]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            62.07466125488281,
+                            -15.477334022521973,
+                            -113.496826171875
+                        ],
+                        "rotation": [
+                            0.6952465176582336,
+                            0.6077687740325928,
+                            -2.786279367228417e-07,
+                            0.38373082876205444
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901276448]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            59.59357452392578,
+                            22.089134216308594,
+                            -79.45858001708984
+                        ],
+                        "rotation": [
+                            0.6201474666595459,
+                            0.6851053237915039,
+                            -0.22343584895133972,
+                            0.31003910303115845
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901415856]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            38.105648040771484,
+                            6.152463436126709,
+                            -68.04108428955078
+                        ],
+                        "rotation": [
+                            0.5298068523406982,
+                            -0.6371697783470154,
+                            0.0742339938879013,
+                            -0.5548052191734314
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901468176]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            26.122312545776367,
+                            3.7548601627349854,
+                            -54.592472076416016
+                        ],
+                        "rotation": [
+                            0.33222317695617676,
+                            0.8122289180755615,
+                            -0.04539712890982628,
+                            0.47733744978904724
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901479616]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -6.782897472381592,
+                            1.149834394454956,
+                            -32.38679885864258
+                        ],
+                        "rotation": [
+                            0.05788755044341087,
+                            0.6131858229637146,
+                            -0.475706547498703,
+                            0.6279773116111755
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901650144]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            -3.5875062942504883,
+                            -7.205820560455322,
+                            -108.31141662597656
+                        ],
+                        "rotation": [
+                            0.056214526295661926,
+                            0.998179018497467,
+                            3.498830669634856e-10,
+                            0.021875860169529915
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621901906144]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            16.547420501708984,
+                            8.114941596984863,
+                            -68.50495910644531
+                        ],
+                        "rotation": [
+                            0.10870521515607834,
+                            0.8764135241508484,
+                            0.2064949870109558,
+                            -0.4212389886379242
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621902323936]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 50.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 1.0,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    -1.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.25,
+                                    0.25,
+                                    0.25
+                                ],
+                                "sourceFile": "/home/flux/programs/cpp/opengl-sdl/grend-engine/build/asdf/share/grend/assets/obj/TestGuy/rigged-lowpolyguy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -5.5095672607421875,
+                            1.9999998807907104,
+                            23.637744903564453
+                        ],
+                        "rotation": [
+                            0.9695404171943665,
+                            0.0,
+                            -0.24493132531642914,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621902619536]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            82.82060241699219,
+                            -21.100507736206055,
+                            -146.38339233398438
+                        ],
+                        "rotation": [
+                            0.908799409866333,
+                            -0.3527982831001282,
+                            -1.1477575156959574e-07,
+                            -0.22274869680404663
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621902775920]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            89.65885162353516,
+                            -22.364748001098633,
+                            -157.1859588623047
+                        ],
+                        "rotation": [
+                            0.6312217712402344,
+                            -0.6558230519294739,
+                            -1.416411237187276e-07,
+                            -0.4140714108943939
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621936024016]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    2.0,
+                                    2.0,
+                                    2.0
+                                ],
+                                "sourceFile": "assets/obj/flag.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            0.0,
+                            1.0,
+                            -35.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621936025968]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    2.0,
+                                    2.0,
+                                    2.0
+                                ],
+                                "sourceFile": "assets/obj/flag.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            20.0,
+                            1.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937327984]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -201.31402587890625,
+                            -100905.7265625,
+                            -97.78642272949219
+                        ],
+                        "rotation": [
+                            0.09459678828716278,
+                            0.0,
+                            0.9955156445503235,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937364608]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            0.11462876200675964,
+                            -100645.6640625,
+                            38.87257385253906
+                        ],
+                        "rotation": [
+                            0.37144288420677185,
+                            0.0,
+                            -0.9284558296203613,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937380304]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -61.33367156982422,
+                            -101738.515625,
+                            75.54524230957031
+                        ],
+                        "rotation": [
+                            0.15529181063175201,
+                            0.0,
+                            -0.9878686666488647,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937396000]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -67.25653076171875,
+                            -101772.203125,
+                            -0.3129659593105316
+                        ],
+                        "rotation": [
+                            0.9835188984870911,
+                            0.0,
+                            0.18080535531044006,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937449664]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -21.99110984802246,
+                            -100820.796875,
+                            -23.071701049804688
+                        ],
+                        "rotation": [
+                            0.48367008566856384,
+                            0.0,
+                            -0.8752503991127014,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937460032]": {
+                        "nodes": {
+                            "model": {
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "sourceFile": "assets/obj/test-enemy.glb",
+                                "type": "Imported file"
+                            }
+                        },
+                        "position": [
+                            -6.315910816192627,
+                            -101406.5703125,
+                            43.36182403564453
+                        ],
+                        "rotation": [
+                            0.31441617012023926,
+                            0.0,
+                            -0.9492852687835693,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "entity[94621937472352]": {
+                        "nodes": {
+                            "light": {
+                                "casts_shadows": false,
+                                "diffuse": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "intensity": 500.0,
+                                "is_static": true,
+                                "nodes": null,
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "radius": 0.15000000596046448,
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "Point light"
+                            },
+                            "model": {
+                                "nodes": {
+                                    "model": {
+                                        "position": [
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "rotation": [
+                                            1.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "scale": [
+                                            1.0,
+                                            1.0,
+                                            1.0
+                                        ],
+                                        "sourceFile": "",
+                                        "type": "Model"
+                                    }
+                                },
+                                "position": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "rotation": [
+                                    1.0,
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "scale": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "gameObject"
+                            }
+                        },
+                        "position": [
+                            30.33240509033203,
+                            -0.35626962780952454,
+                            -41.271461486816406
+                        ],
+                        "rotation": [
+                            0.44381070137023926,
+                            -0.2418626993894577,
+                            0.659930944442749,
+                            0.5559007525444031
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    }
+                },
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "flags": {
+                "nodes": {
+                    "blue": {
+                        "nodes": null,
+                        "position": [
+                            0.0,
+                            1.0,
+                            35.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "orange": {
+                        "nodes": null,
+                        "position": [
+                            -20.0,
+                            1.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "purple": {
+                        "nodes": null,
+                        "position": [
+                            20.0,
+                            1.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    },
+                    "red": {
+                        "nodes": null,
+                        "position": [
+                            0.0,
+                            1.0,
+                            -35.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            2.0,
+                            2.0,
+                            2.0
+                        ],
+                        "type": "gameObject"
+                    }
+                },
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "helmet": {
+                "nodes": {
+                    "import[2779]": {
+                        "position": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "sourceFile": "/media/stuff/flux/glstuff/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary//DamagedHelmet.glb",
+                        "type": "Imported file"
+                    }
+                },
+                "position": [
+                    0.0,
+                    3.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "irradiance probe E141": {
+                "boundingBox": {
+                    "max": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "min": [
+                        -1.0,
+                        -1.0,
+                        -1.0
+                    ]
+                },
+                "is_static": true,
+                "nodes": null,
+                "position": [
+                    -21.799999237060547,
+                    38.400001525878906,
+                    -14.300000190734863
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "Irradiance probe"
+            },
+            "lights": {
+                "nodes": {
+                    "point light E135": {
+                        "casts_shadows": false,
+                        "diffuse": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "intensity": 201.031005859375,
+                        "is_static": true,
+                        "nodes": null,
+                        "position": [
+                            -4.400000095367432,
+                            33.099998474121094,
+                            -14.100000381469727
+                        ],
+                        "radius": 1.0,
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "Point light"
+                    }
+                },
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "object E135": {
+                "nodes": {
+                    "import[151]": {
+                        "position": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "sourceFile": "./../../grend-engine/test-assets/obj//ctf-arena-platform.glb",
+                        "type": "Imported file"
+                    }
+                },
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "reflection probe E94": {
+                "boundingBox": {
+                    "max": [
+                        30.0,
+                        10.0,
+                        50.0
+                    ],
+                    "min": [
+                        -30.0,
+                        -5.0,
+                        -50.0
+                    ]
+                },
+                "is_static": true,
+                "nodes": null,
+                "position": [
+                    0.0,
+                    5.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "Reflection probe"
+            }
+        },
+        "position": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "rotation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "type": "gameObject"
+    }
+}

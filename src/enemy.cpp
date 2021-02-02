@@ -22,16 +22,9 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 
 	// TODO:
 	if (!enemyModel) {
-#define LOCAL_BUILD 0
-#if LOCAL_BUILD
-		enemyModel = loadScene("test-assets/obj/test-enemy.glb");
-		enemyModel->transform.scale = glm::vec3(0.2);
-#else
-		gameModel::ptr mod = generate_cuboid(1.0, 2.0, 0.5);
-		enemyModel = std::make_shared<gameObject>();
-		compileModel("emeny", mod);
-		setNode("model", enemyModel, mod);
-#endif
+		enemyModel = loadScene("assets/obj/test-enemy.glb");
+		enemyModel->transform.scale = glm::vec3(0.5);
+		bindCookedMeshes();
 	}
 
 	node->transform.position = position;
