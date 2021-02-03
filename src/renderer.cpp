@@ -85,8 +85,12 @@ renderContext::renderContext(context& ctx) {
 		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/lightblue-normal.png"),
 	default_material->maps.ambientOcclusion
 		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+	/*
 	default_material->maps.emissive
 		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
+		*/
+	default_material->maps.emissive
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
 
 	default_diffuse         = genTexture();
 	default_metal_roughness = genTexture();

@@ -45,7 +45,7 @@ struct material {
 		glm::vec4 diffuse = {1, 1, 1, 1};
 		glm::vec4 ambient = {0, 0, 0, 0};
 		glm::vec4 specular = {1, 1, 1, 1};
-		glm::vec4 emissive = {1, 1, 1, 1};
+		glm::vec4 emissive = {0, 0, 0, 1};
 		GLfloat   roughness = 1.0;
 		// XXX: default metalness factor should be 1.0 for gltf, but
 		//      gltf always includes a metalness factor, so use 0.f (no metalness)
