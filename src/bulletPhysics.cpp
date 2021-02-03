@@ -74,10 +74,12 @@ void bulletObject::setPosition(glm::vec3 pos) {
 }
 
 void bulletObject::setVelocity(glm::vec3 vel) {
+	body->activate(true);
 	body->setLinearVelocity(btVector3(vel.x, vel.y, vel.z));
 }
 
 void bulletObject::setAcceleration(glm::vec3 accel) {
+	body->activate(true);
 	body->applyCentralForce(btVector3(accel.x, accel.y, accel.z));
 }
 
