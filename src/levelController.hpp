@@ -1,26 +1,19 @@
 #pragma once
 
-#include <grend/gameMain.hpp>
-
 #include <string>
 #include <functional>
 #include <vector>
 #include <map>
 #include <utility>
 
-using namespace grendx;
-
 class levelController {
-	gameMain *game = nullptr;
-
 	public:
-		typedef std::function<void(gameMain *game)> initFunc;
-		typedef std::function<bool(gameMain *game)> objectiveFunc;
-		typedef std::function<std::pair<bool, std::string>(gameMain *game)> loseFunc;
-		typedef std::function<void(gameMain *game)> destructFunc;
+		typedef std::function<void()> initFunc;
+		typedef std::function<bool()> objectiveFunc;
+		typedef std::function<std::pair<bool, std::string>()> loseFunc;
+		typedef std::function<void()> destructFunc;
 
 		levelController() {};
-		levelController(gameMain *_game) : game(_game) {};
 
 		void addInit(initFunc func);
 		void addDestructor(destructFunc func);

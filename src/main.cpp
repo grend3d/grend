@@ -234,7 +234,7 @@ static glm::vec2 actionpos(0, 0);
 
 projalphaView::projalphaView(gameMain *game)
 	: gameView(),
-	  level(new levelController(game))
+	  level(new levelController)
 {
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
@@ -313,6 +313,8 @@ void projalphaView::logic(gameMain *game, float delta) {
 	entity *playerEnt = findFirst(game->entities.get(), {"player"});
 
 	if (!playerEnt) {
+		level->reset();
+
 		playerEnt = new player(game->entities.get(), game, glm::vec3(-5, 20, -5));
 		game->entities->add(playerEnt);
 		new generatorEventHandler(game->entities.get(), playerEnt);
@@ -344,6 +346,18 @@ void projalphaView::logic(gameMain *game, float delta) {
 	}
 
 	game->entities->update(delta);
+
+	if (level->won()) {
+		SDL_Log("winner winner, a dinner of chicken!");
+		level->reset();
+	} 
+
+	auto lost = level->lost();
+	if (lost.first) {
+		SDL_Log("lol u died: %s", lost.second.c_str());
+		level->reset();
+		// TODO: reset
+	}
 }
 
 void projalphaView::render(gameMain *game) {
@@ -377,6 +391,7 @@ void projalphaView::render(gameMain *game) {
 		nvgSave(vgui.nvg);
 
 		renderHealthbars(game->entities.get(), vgui, cam);
+		renderObjectives(game->entities.get(), level.get(), vgui);
 		renderControls(game, vgui);
 
 		nvgRestore(vgui.nvg);
@@ -432,23 +447,57 @@ int main(int argc, const char *argv[]) try {
 	game->setView(player);
 	game->rend->lightThreshold = 0.1;
 
-	gameObject::ptr flagnodes = game->state->rootnode->getNode("flags");
-	initEntitiesFromNodes(flagnodes,
-		[&] (const std::string& name, gameObject::ptr& ptr) {
-			std::cerr << "have flag node " << name << std::endl;
-			auto f = new flag(game->entities.get(), game,
-			                  ptr->transform.position, name);
-			game->entities->add(f);
+	// JS flashbacks
+	player->level->addInit([=] () {
+		gameObject::ptr flagnodes = game->state->rootnode->getNode("flags");
+
+		initEntitiesFromNodes(flagnodes,
+			[=] (const std::string& name, gameObject::ptr& ptr) {
+				std::cerr << "have flag node " << name << std::endl;
+
+				auto f = new flag(game->entities.get(), game,
+								  ptr->transform.position, name);
+				game->entities->add(f);
+			});
+	});
+
+	player->level->addInit([=] () {
+		gameObject::ptr spawners = game->state->rootnode->getNode("spawners");
+
+		initEntitiesFromNodes(spawners,
+			[&] (const std::string& name, gameObject::ptr& ptr) {
+				std::cerr << "have spawner node " << name << std::endl;
+
+				auto en = new enemySpawner(game->entities.get(), game,
+										   ptr->transform.position);
+				new team(game->entities.get(), en, "red");
+				game->entities->add(en);
+			});
+	});
+
+	player->level->addDestructor([=] () {
+		// TODO: should just have reset function in entity manager
+		for (auto& ent : game->entities->entities) {
+			game->entities->remove(ent);
+		}
+
+		game->entities->clearFreedEntities();
+	});
+
+	player->level->addObjective("Destroy all robospawners",
+		[=] () {
+			std::set<entity*> spawners
+				= searchEntities(game->entities.get(), {"enemySpawner"});
+
+			return spawners.size() == 0;
 		});
 
-	gameObject::ptr spawners = game->state->rootnode->getNode("spawners");
-	initEntitiesFromNodes(spawners,
-		[&] (const std::string& name, gameObject::ptr& ptr) {
-			std::cerr << "have spawner node " << name << std::endl;
-			auto en = new enemySpawner(game->entities.get(), game,
-			                           ptr->transform.position);
-			new team(game->entities.get(), en, "red");
-			game->entities->add(en);
+	player->level->addObjective("Destroy all enemy robots",
+		[=] () {
+			std::set<entity*> enemies
+				= searchEntities(game->entities.get(), {"enemy"});
+
+			return enemies.size() == 0;
 		});
 
 	setNode("entities",  game->state->rootnode, game->entities->root);

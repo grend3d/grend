@@ -21,11 +21,11 @@ void levelController::addObjective(std::string description,
 
 void levelController::reset(void) {
 	for (auto& f : destructors) {
-		f(game);
+		f();
 	}
 
 	for (auto& f : initializers) {
-		f(game);
+		f();
 	}
 }
 
@@ -33,7 +33,7 @@ bool levelController::won(void) {
 	bool allSatisfied = true;
 
 	for (auto& [desc, f] : objectives) {
-		bool completed = f(game);
+		bool completed = f();
 
 		objectivesCompleted[desc] = completed;
 		allSatisfied &= objectivesCompleted[desc];
@@ -44,7 +44,7 @@ bool levelController::won(void) {
 
 std::pair<bool, std::string> levelController::lost(void) {
 	for (auto& f : loseConditions) {
-		auto result = f(game);
+		auto result = f();
 
 		if (!result.first) {
 			return result;

@@ -27,6 +27,24 @@ void drawPlayerHealthbar(entityManager *manager,
 	nvgFill(vgui.nvg);
 	//nvgRotate(vgui.nvg, -0.1*cos(ticks));
 
+	nvgFontSize(vgui.nvg, 16.f);
+	nvgFontFace(vgui.nvg, "sans-bold");
+	nvgFontBlur(vgui.nvg, 0);
+	nvgTextAlign(vgui.nvg, NVG_ALIGN_LEFT);
+
+	double fps = manager->engine->frame_timer.average();
+	std::string fpsstr = std::to_string(fps) + "fps";
+	nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 0xff));
+	nvgText(vgui.nvg, wx/2, 80 + 32, fpsstr.c_str(), NULL);
+}
+
+void renderObjectives(entityManager *manager,
+                      levelController *level,
+                      vecGUI& vgui)
+{
+	int wx = manager->engine->rend->screen_x;
+	int wy = manager->engine->rend->screen_y;
+
 	nvgBeginPath(vgui.nvg);
 	nvgRoundedRect(vgui.nvg, wx - 250, 50, 200, 100, 10);
 	nvgFillColor(vgui.nvg, nvgRGBA(28, 30, 34, 192));
@@ -39,14 +57,18 @@ void drawPlayerHealthbar(entityManager *manager,
 	nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
 	nvgText(vgui.nvg, wx - 82, 80, "❎", NULL);
 	nvgFillColor(vgui.nvg, nvgRGBA(220, 220, 220, 160));
-	nvgText(vgui.nvg, wx - 235, 80, "💚 Testing this", NULL);
+	nvgText(vgui.nvg, wx - 235, 80, "💚 Objectives: ", NULL);
+	/*
 	nvgText(vgui.nvg, wx - 235, 80 + 16, "Go forward ➡", NULL);
 	nvgText(vgui.nvg, wx - 235, 80 + 32, "⬅ Go back", NULL);
+	*/
 
-	double fps = manager->engine->frame_timer.average();
-	std::string fpsstr = std::to_string(fps) + "fps";
-	nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 0xff));
-	nvgText(vgui.nvg, wx/2, 80 + 32, fpsstr.c_str(), NULL);
+	unsigned i = 1;
+	for (auto& [desc, completed] : level->objectivesCompleted) {
+		std::string foo = (completed? "➡" : "❎") + desc;
+
+		nvgText(vgui.nvg, wx - 235, 80 + (i++ * 16), foo.c_str(), NULL);
+	}
 }
 
 void renderHealthbars(entityManager *manager,

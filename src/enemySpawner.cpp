@@ -19,6 +19,8 @@ enemySpawner::enemySpawner(entityManager *manager, gameMain *game, glm::vec3 pos
 	new projectileCollision(manager, this);
 	auto body = new rigidBodySphere(manager, this, position, 0.0, 1.0);
 
+	manager->registerComponent(this, "enemySpawner", this);
+
 	// TODO: resource manager
 	if (!spawnerModel) {
 		spawnerModel = loadScene("assets/obj/enemy-spawner.glb");
