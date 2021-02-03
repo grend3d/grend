@@ -52,5 +52,5 @@ void enemy::update(entityManager *manager, float delta) {
 	body->syncPhysics(this);
 	*/
 
-	collisions->clear();
+	//collisions->clear();
 }

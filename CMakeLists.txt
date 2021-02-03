@@ -32,6 +32,7 @@ set(LANDSCAPE_DEMO_SRC
 	src/boxSpawner.cpp
 	src/boxSpawner.hpp
 	src/enemy.cpp
+	src/enemySpawner.cpp
 	src/healthbar.cpp
 	src/inputHandler.cpp
 	src/landscapeGenerator.cpp
@@ -42,6 +43,7 @@ set(LANDSCAPE_DEMO_SRC
 	src/flag.cpp
 	src/team.cpp
 	src/area.cpp
+	src/levelController.cpp
 )
 
 if (ANDROID)

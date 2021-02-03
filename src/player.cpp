@@ -48,7 +48,7 @@ gameObject::ptr animatedCharacter::getObject(void) {
 player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
 	// TODO: don't keep strong reference to body
-	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
+	  body(new rigidBodySphere(manager, this, position, 10.0, 1.0))
 {
 	static gameObject::ptr playerModel = nullptr;
 

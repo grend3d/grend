@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <functional>
 
 #include <initializer_list>
 
@@ -45,6 +46,8 @@ using namespace grendx::ecs;
 #include "UI.hpp"
 #include "flag.hpp"
 #include "team.hpp"
+#include "enemySpawner.hpp"
+#include "levelController.hpp"
 
 class landscapeEventSystem : public entitySystem {
 	public:
@@ -220,6 +223,7 @@ class projalphaView : public gameView {
 		int menuSelect = 0;
 		float zoom = 20.f;
 
+		std::unique_ptr<levelController> level;
 		landscapeGenerator landscape;
 		inputHandlerSystem::ptr inputSystem;
 };
@@ -228,7 +232,10 @@ class projalphaView : public gameView {
 static glm::vec2 movepos(0, 0);
 static glm::vec2 actionpos(0, 0);
 
-projalphaView::projalphaView(gameMain *game) : gameView() {
+projalphaView::projalphaView(gameMain *game)
+	: gameView(),
+	  level(new levelController(game))
+{
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
 		                game->rend->globalShaderOptions)},
@@ -331,17 +338,6 @@ void projalphaView::logic(gameMain *game, float delta) {
 #endif
 	}
 
-	std::set<entity*> enemies = searchEntities(game->entities.get(), {"enemy"});
-	for (unsigned i = enemies.size(); i < 30; i++) {
-		glm::vec3 position = glm::vec3(
-			float(rand()) / RAND_MAX * 100.0 - 50,
-			50.0,
-			float(rand()) / RAND_MAX * 100.0 - 50
-		);
-
-		game->entities->add(new enemy(game->entities.get(), game, position));
-	}
-
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
 		cam->setPosition(transform.position - zoom*cam->direction());
@@ -388,6 +384,18 @@ void projalphaView::render(gameMain *game) {
 	}
 }
 
+void initEntitiesFromNodes(gameObject::ptr node,
+                           std::function<void(const std::string&, gameObject::ptr&)> init)
+{
+	if (node == nullptr) {
+		return;
+	}
+
+	for (auto& [name, ptr] : node->nodes) {
+		init(name, ptr);
+	}
+}
+
 int main(int argc, const char *argv[]) try {
 	const char *mapfile = "assets/maps/base.map";
 
@@ -425,19 +433,23 @@ int main(int argc, const char *argv[]) try {
 	game->rend->lightThreshold = 0.1;
 
 	gameObject::ptr flagnodes = game->state->rootnode->getNode("flags");
-	if (flagnodes) {
-		std::cerr << "have flag nodes!" << std::endl;
-
-		for (auto& [name, ptr] : flagnodes->nodes) {
+	initEntitiesFromNodes(flagnodes,
+		[&] (const std::string& name, gameObject::ptr& ptr) {
 			std::cerr << "have flag node " << name << std::endl;
 			auto f = new flag(game->entities.get(), game,
 			                  ptr->transform.position, name);
 			game->entities->add(f);
-		}
+		});
 
-	} else {
-		std::cerr << "No flag nodes..." << std::endl;
-	}
+	gameObject::ptr spawners = game->state->rootnode->getNode("spawners");
+	initEntitiesFromNodes(spawners,
+		[&] (const std::string& name, gameObject::ptr& ptr) {
+			std::cerr << "have spawner node " << name << std::endl;
+			auto en = new enemySpawner(game->entities.get(), game,
+			                           ptr->transform.position);
+			new team(game->entities.get(), en, "red");
+			game->entities->add(en);
+		});
 
 	setNode("entities",  game->state->rootnode, game->entities->root);
 	SDL_Log("Got to game->run()!");
