@@ -46,7 +46,7 @@ std::pair<bool, std::string> levelController::lost(void) {
 	for (auto& f : loseConditions) {
 		auto result = f();
 
-		if (!result.first) {
+		if (result.first) {
 			return result;
 		}
 	}

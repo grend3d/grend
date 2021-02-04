@@ -226,6 +226,10 @@ class projalphaView : public gameView {
 		std::unique_ptr<levelController> level;
 		landscapeGenerator landscape;
 		inputHandlerSystem::ptr inputSystem;
+
+	private:
+		void drawMainMenu(int wx, int wy);
+
 };
 
 // XXX
@@ -296,10 +300,15 @@ projalphaView::projalphaView(gameMain *game)
 			return MODAL_NO_CHANGE;
 		});
 
-	input.setMode(modes::Move);
+	input.setMode(modes::MainMenu);
 };
 
 void projalphaView::logic(gameMain *game, float delta) {
+	if (input.mode != modes::Move) {
+		// XXX:
+		return;
+	}
+
 	static glm::vec3 lastvel = glm::vec3(0);
 	static gameObject::ptr retval;
 
@@ -309,36 +318,8 @@ void projalphaView::logic(gameMain *game, float delta) {
 
 	game->phys->stepSimulation(delta);
 	game->phys->filterCollisions();;
-	
+
 	entity *playerEnt = findFirst(game->entities.get(), {"player"});
-
-	if (!playerEnt) {
-		level->reset();
-
-		playerEnt = new player(game->entities.get(), game, glm::vec3(-5, 20, -5));
-		game->entities->add(playerEnt);
-		new generatorEventHandler(game->entities.get(), playerEnt);
-		new health(game->entities.get(), playerEnt);
-		new enemyCollision(game->entities.get(), playerEnt);
-		new healthPickupCollision(game->entities.get(), playerEnt);
-		new flagPickup(game->entities.get(), playerEnt);
-		new team(game->entities.get(), playerEnt, "blue");
-
-#if defined(__ANDROID__)
-		int wx = game->rend->screen_x;
-		int wy = game->rend->screen_y;
-		glm::vec2 movepad  ( 2*wx/16.f, 7*wy/9.f);
-		glm::vec2 actionpad(14*wx/16.f, 7*wy/9.f);
-
-		new touchMovementHandler(game->entities.get(), playerEnt, cam,
-		                         inputSystem->inputs, movepad, 150.f);
-		new touchRotationHandler(game->entities.get(), playerEnt, cam,
-		                         inputSystem->inputs, actionpad, 150.f);
-		
-#else
-		new mouseRotationPoller(game->entities.get(), playerEnt);
-#endif
-	}
 
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
@@ -355,8 +336,7 @@ void projalphaView::logic(gameMain *game, float delta) {
 	auto lost = level->lost();
 	if (lost.first) {
 		SDL_Log("lol u died: %s", lost.second.c_str());
-		level->reset();
-		// TODO: reset
+		input.setMode(modes::MainMenu);
 	}
 }
 
@@ -371,10 +351,10 @@ void projalphaView::render(gameMain *game) {
 		// TODO: need to set post size on resize event..
 		//post->setSize(winsize_x, winsize_y);
 		post->draw(game->rend->framebuffer);
-		input.setMode(modes::Move);
+		//input.setMode(modes::Move);
 
 		// TODO: function to do this
-		//drawMainMenu(winsize_x, winsize_y);
+		drawMainMenu(winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam, flags);
@@ -396,6 +376,29 @@ void projalphaView::render(gameMain *game) {
 
 		nvgRestore(vgui.nvg);
 		nvgEndFrame(vgui.nvg);
+	}
+}
+
+void projalphaView::drawMainMenu(int wx, int wy) {
+	static int selected;
+	bool reset = false;
+
+	vgui.newFrame(wx, wy);
+	vgui.menuBegin(wx / 2 - 100, wy / 2 - 100, 200, "testing");
+
+	if (vgui.menuEntry("Play", &selected)) {
+		if (vgui.clicked()) {
+			reset = true; // XXX:
+			input.setMode(modes::Move);
+		}
+	}
+
+	vgui.menuEntry("Quit", &selected);
+	vgui.menuEnd();
+	vgui.endFrame();
+
+	if (reset) {
+		level->reset();
 	}
 }
 
@@ -442,13 +445,14 @@ int main(int argc, const char *argv[]) try {
 	game->state->rootnode = loadMap(game, mapfile);
 	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
 
-	projalphaView::ptr player = std::make_shared<projalphaView>(game);
-	player->cam->setFar(1000.0);
-	game->setView(player);
+	projalphaView::ptr view = std::make_shared<projalphaView>(game);
+	view->cam->setFar(1000.0);
+	view->cam->setFovx(70.0);
+	game->setView(view);
 	game->rend->lightThreshold = 0.1;
 
 	// JS flashbacks
-	player->level->addInit([=] () {
+	view->level->addInit([=] () {
 		gameObject::ptr flagnodes = game->state->rootnode->getNode("flags");
 
 		initEntitiesFromNodes(flagnodes,
@@ -461,7 +465,7 @@ int main(int argc, const char *argv[]) try {
 			});
 	});
 
-	player->level->addInit([=] () {
+	view->level->addInit([=] () {
 		gameObject::ptr spawners = game->state->rootnode->getNode("spawners");
 
 		initEntitiesFromNodes(spawners,
@@ -475,7 +479,35 @@ int main(int argc, const char *argv[]) try {
 			});
 	});
 
-	player->level->addDestructor([=] () {
+	view->level->addInit([=] () {
+		entity *playerEnt;
+
+		playerEnt = new player(game->entities.get(), game, glm::vec3(-5, 20, -5));
+		game->entities->add(playerEnt);
+		new generatorEventHandler(game->entities.get(), playerEnt);
+		new health(game->entities.get(), playerEnt);
+		new enemyCollision(game->entities.get(), playerEnt);
+		new healthPickupCollision(game->entities.get(), playerEnt);
+		new flagPickup(game->entities.get(), playerEnt);
+		new team(game->entities.get(), playerEnt, "blue");
+
+#if defined(__ANDROID__)
+		int wx = game->rend->screen_x;
+		int wy = game->rend->screen_y;
+		glm::vec2 movepad  ( 2*wx/16.f, 7*wy/9.f);
+		glm::vec2 actionpad(14*wx/16.f, 7*wy/9.f);
+
+		new touchMovementHandler(game->entities.get(), playerEnt, cam,
+								 view->inputSystem->inputs, movepad, 150.f);
+		new touchRotationHandler(game->entities.get(), playerEnt, cam,
+								 view->inputSystem->inputs, actionpad, 150.f);
+
+#else
+		new mouseRotationPoller(game->entities.get(), playerEnt);
+#endif
+	});
+
+	view->level->addDestructor([=] () {
 		// TODO: should just have reset function in entity manager
 		for (auto& ent : game->entities->entities) {
 			game->entities->remove(ent);
@@ -484,7 +516,7 @@ int main(int argc, const char *argv[]) try {
 		game->entities->clearFreedEntities();
 	});
 
-	player->level->addObjective("Destroy all robospawners",
+	view->level->addObjective("Destroy all robospawners",
 		[=] () {
 			std::set<entity*> spawners
 				= searchEntities(game->entities.get(), {"enemySpawner"});
@@ -492,12 +524,20 @@ int main(int argc, const char *argv[]) try {
 			return spawners.size() == 0;
 		});
 
-	player->level->addObjective("Destroy all enemy robots",
+	view->level->addObjective("Destroy all enemy robots",
 		[=] () {
 			std::set<entity*> enemies
 				= searchEntities(game->entities.get(), {"enemy"});
 
 			return enemies.size() == 0;
+		});
+
+	view->level->addLoseCondition(
+		[=] () {
+			std::set<entity*> players
+				= searchEntities(game->entities.get(), {"player"});
+
+			return std::pair<bool, std::string>(players.size() == 0, "lol u died");
 		});
 
 	setNode("entities",  game->state->rootnode, game->entities->root);
