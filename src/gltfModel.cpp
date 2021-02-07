@@ -250,26 +250,63 @@ gltf_accessor_aabb(tinygltf::Accessor& acc) {
 	}
 }
 
-static grendx::materialTexture::ptr
+static materialTexture::ptr
 gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
-	grendx::materialTexture::ptr ret = std::make_shared<grendx::materialTexture>();
+	// XXX: basically reimplementing the other texcache, should this just load
+	//      directly into a texture object?
 
-	auto& tex = gltf_texture(gltf_model, tex_idx);
-	std::cerr << "        + texture source: " << tex.source << std::endl;
+	// XXX: big hacks: using field sizes as a unique identifier for the model
+	//      seriously this might not be good code :V
+	size_t hash =
+		(gltf_model.accessors.size()   << 12) +
+		(gltf_model.animations.size()  << 11) +
+		(gltf_model.buffers.size()     << 10) +
+		(gltf_model.bufferViews.size() << 9)  +
+		(gltf_model.materials.size()   << 8)  +
+		(gltf_model.meshes.size()      << 7)  +
+		(gltf_model.nodes.size()       << 7)  +
+		(gltf_model.textures.size()    << 6)  +
+		(gltf_model.images.size()      << 5)  +
+		(gltf_model.skins.size()       << 4)  +
+		(gltf_model.samplers.size()    << 3)  +
+		(gltf_model.cameras.size()     << 2)  +
+		(gltf_model.scenes.size()      << 1)  +
+		(gltf_model.lights.size());
 
-	auto& img = gltf_image(gltf_model, tex.source);
-	std::cerr << "        + texture image source: " << img.uri << ", "
-		<< img.width << "x" << img.height << ":" << img.component << std::endl;
+	typedef std::pair<size_t, int> cachekey;
+	static std::map<cachekey, materialTexture::weakptr> cache;
+	materialTexture::ptr ret;
+	cachekey key = {hash, tex_idx};
+
+	if (cache.count(key) && (ret = cache[key].lock())) {
+		return ret;
+
+	} else {
+		cache[key] = ret = std::make_shared<materialTexture>();
+
+		auto& tex = gltf_texture(gltf_model, tex_idx);
+		std::cerr << "        + texture source: " << tex.source << std::endl;
+
+		auto& img = gltf_image(gltf_model, tex.source);
+		std::cerr << "        + texture image source: " << img.uri << ", "
+			<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
 
-	ret->pixels.insert(ret->pixels.end(),
-			img.image.begin(), img.image.end());
-	ret->width = img.width;
-	ret->height = img.height;
-	ret->channels = img.component;
-	ret->size = ret->width * ret->height * ret->channels;
+		ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
+		ret->width = img.width;
+		ret->height = img.height;
+		ret->channels = img.component;
+		ret->size = ret->width * ret->height * ret->channels;
 
-	return ret;
+		// while we're here, clear expired cache entries
+		for (auto it = cache.begin(); it != cache.end();) {
+			auto& [key, ptr] = *it;
+
+			it = ptr.expired()? cache.erase(it) : std::next(it);
+		}
+
+		return ret;
+	}
 }
 
 static grendx::material::ptr
