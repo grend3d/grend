@@ -277,55 +277,33 @@ void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
 	program->set("anmaterial.opacity",   mat.opacity);
 
 	glActiveTexture(GL_TEXTURE0);
-	if (mesh->textures.diffuse) {
-		mesh->textures.diffuse->bind();
-		program->set("diffuse_map", 0);
-
-	} else {
-		default_diffuse->bind();
-		program->set("diffuse_map", 0);
-	}
+	mesh->textures.diffuse? mesh->textures.diffuse->bind() : default_diffuse->bind();
 
 	glActiveTexture(GL_TEXTURE1);
-	if (mesh->textures.metalRoughness) {
-		mesh->textures.metalRoughness->bind();
-		program->set("specular_map", 1);
-
-	} else {
-		default_metal_roughness->bind();
-		program->set("specular_map", 1);
-	}
+	mesh->textures.metalRoughness
+		? mesh->textures.metalRoughness->bind()
+		: default_metal_roughness->bind();
 
 	glActiveTexture(GL_TEXTURE2);
-	if (mesh->textures.normal) {
-		mesh->textures.normal->bind();
-		program->set("normal_map", 2);
-
-	} else {
-		default_normmap->bind();
-		program->set("normal_map", 2);
-	}
+	mesh->textures.normal? mesh->textures.normal->bind() : default_normmap->bind();
 
 	glActiveTexture(GL_TEXTURE3);
-	if (mesh->textures.ambientOcclusion) {
-		mesh->textures.ambientOcclusion->bind();
-		program->set("ambient_occ_map", 3);
-
-	} else {
-		default_aomap->bind();
-		program->set("ambient_occ_map", 3);
-	}
+	mesh->textures.ambientOcclusion
+		? mesh->textures.ambientOcclusion->bind()
+		: default_aomap->bind();
 
 	glActiveTexture(GL_TEXTURE4);
-	if (mesh->textures.emissive) {
-		//obj->matEmissive[mat_name]->bind();
-		mesh->textures.emissive->bind();
-		program->set("emissive_map", 4);
+	mesh->textures.emissive? mesh->textures.emissive->bind() : default_emissive->bind();
 
-	} else {
-		default_emissive->bind();
-		program->set("emissive_map", 4);
-	}
+	glActiveTexture(GL_TEXTURE5);
+	mesh->textures.lightmap? mesh->textures.lightmap->bind() : default_lightmap->bind();
+
+	program->set("diffuse_map", 0);
+	program->set("specular_map", 1);
+	program->set("normal_map", 2);
+	program->set("ambient_occ_map", 3);
+	program->set("emissive_map", 4);
+	program->set("lightmap", 5);
 
 	DO_ERROR_CHECK();
 }
@@ -361,6 +339,10 @@ void grendx::set_default_material(Program::ptr program) {
 	glActiveTexture(GL_TEXTURE4);
 	default_emissive->bind();
 	program->set("emissive_map", 4);
+
+	glActiveTexture(GL_TEXTURE5);
+	default_lightmap->bind();
+	program->set("lightmap", 5);
 }
 
 glm::mat4 grendx::model_to_world(glm::mat4 model) {

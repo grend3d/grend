@@ -51,6 +51,7 @@ uniform sampler2D normal_map;
 uniform sampler2D ambient_occ_map;
 uniform sampler2D alpha_map;
 uniform sampler2D emissive_map;
+uniform sampler2D lightmap;
 
 uniform sampler2D shadowmap_atlas;
 uniform sampler2D reflection_atlas;

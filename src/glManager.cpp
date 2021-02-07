@@ -190,6 +190,10 @@ void compileMeshes(std::string objname, meshMap& meshies) {
 			if (maps.emissive && maps.emissive->loaded()) {
 				foo->textures.emissive = texcache(maps.emissive, true);
 			}
+
+			if (maps.lightmap && maps.lightmap->loaded()) {
+				foo->textures.lightmap = texcache(maps.lightmap, true);
+			}
 		}
 
 		cookedMeshes[meshname] = foo;

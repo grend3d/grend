@@ -324,6 +324,7 @@ class compiledMesh {
 			Texture::ptr normal;
 			Texture::ptr ambientOcclusion;
 			Texture::ptr emissive;
+			Texture::ptr lightmap;
 		} textures;
 };
 

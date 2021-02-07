@@ -391,8 +391,33 @@ static grendx::material::ptr
 	return ret;
 }
 
+materialTexture::ptr load_gltf_lightmap(tinygltf::Model& tgltf_model) {
+
+	for (auto& img : tgltf_model.images) {
+		if (img.name.find("grendLightmap") != std::string::npos) {
+			std::cerr << " GLTF > have lightmap: "
+				" name: " << img.name << ", "
+				" uri: " << img.uri
+				<< " (" << img.mimeType << ")"
+				<< std::endl;
+
+			materialTexture::ptr ret = std::make_shared<materialTexture>();
+			ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
+			ret->width = img.width;
+			ret->height = img.height;
+			ret->channels = img.component;
+			ret->size = ret->width * ret->height * ret->channels;
+			
+			return ret;
+		}
+	}
+
+	return nullptr;
+}
+
 grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 	modelMap ret;
+	materialTexture::ptr lightmap = load_gltf_lightmap(tgltf_model);
 
 	for (auto& mesh : tgltf_model.meshes) {
 		grendx::gameModel::ptr curModel =
@@ -417,13 +442,14 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			setNode(temp_name, curModel, modmesh);
 
 			if (prim.material >= 0) {
-				modmesh->meshMaterial = 
-					gltf_load_material(tgltf_model, prim.material);
-
+				modmesh->meshMaterial
+					= gltf_load_material(tgltf_model, prim.material);
 			} else {
 				// XXX: a little wasteful
 				modmesh->meshMaterial = std::make_shared<material>();
 			}
+
+			modmesh->meshMaterial->maps.lightmap = lightmap;
 
 			// accessor indices
 			int elements = prim.indices;

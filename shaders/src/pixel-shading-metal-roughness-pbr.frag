@@ -52,6 +52,7 @@ void main(void) {
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
 	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
 	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
+	vec3 lightmapped = texture2D(lightmap, f_lightmap).rgb;
 
 	vec3 Fspec = F(f_0(albedo, metallic), view_dir, normalize(view_dir + normal_dir));
 	vec3 Fdiff = 1.0 - Fspec;
@@ -59,7 +60,8 @@ void main(void) {
 	// ambient light, from irradiance map
 	vec3 total_light =
 		(radmap.rgb * anmaterial.diffuse.rgb * albedo * Fdiff * aoidx)
-		+ (anmaterial.emissive.rgb * emissive.rgb);
+		+ (anmaterial.emissive.rgb * emissive.rgb)
+		+ lightmapped;
 
 	LIGHT_LOOP(cluster, f_position.xyz, view_dir, albedo,
 	           normal_dir, metallic, roughness, aoidx);
