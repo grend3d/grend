@@ -23,6 +23,8 @@ void main(void) {
 
 	f_texcoord = texcoord;
 	f_position = m * transforms[gl_InstanceID] * vec4(in_Position, 1.0);
+	f_lightmap = a_lightmap;
+	f_color = v_color;
 
 	gl_Position = p*v * f_position;
 }

@@ -77,7 +77,9 @@ class gameModel : public gameObject {
 			glm::vec3 position;
 			glm::vec3 normal;
 			glm::vec3 tangent;
+			glm::vec3 color;
 			glm::vec2 uv;
+			glm::vec2 lightmap;
 		};
 
 		std::vector<vertex> vertices;
@@ -91,8 +93,10 @@ class gameModel : public gameObject {
 
 		// used to determine if normals, etc need to be generated
 		bool haveNormals = false;
-		bool haveTexcoords = false;
+		bool haveColors = false;
 		bool haveTangents = false;
+		bool haveTexcoords = false;
+		bool haveLightmap = false;
 		bool haveJoints = false;
 		bool haveAABB = false;
 };

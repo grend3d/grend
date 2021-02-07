@@ -20,8 +20,10 @@ void main(void) {
 
 	TBN = mat3(T, B, N);
 
-	f_texcoord = texcoord;
 	f_position = m * vec4(in_Position, 1);
+	f_texcoord = texcoord;
+	f_lightmap = a_lightmap;
+	f_color = v_color;
 
 	gl_Position = p*v * f_position;
 }

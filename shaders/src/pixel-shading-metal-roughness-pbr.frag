@@ -40,7 +40,12 @@ void main(void) {
 		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
-	vec3 albedo = anmaterial.diffuse.rgb * texcolor.rgb * anmaterial.diffuse.w;
+
+	vec3 albedo = f_color.rgb
+		* anmaterial.diffuse.rgb
+		* texcolor.rgb
+		* anmaterial.diffuse.w * f_color.w;
+
 	float opacity = texcolor.a * anmaterial.opacity;
 
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;

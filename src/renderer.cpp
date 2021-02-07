@@ -15,6 +15,7 @@ material::ptr default_material;
 Texture::ptr default_diffuse, default_metal_roughness;
 Texture::ptr default_normmap, default_aomap;
 Texture::ptr default_emissive;
+Texture::ptr default_lightmap;
 
 renderContext::renderContext(context& ctx) {
 	enable(GL_DEPTH_TEST);
@@ -91,15 +92,19 @@ renderContext::renderContext(context& ctx) {
 		*/
 	default_material->maps.emissive
 		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+	default_material->maps.lightmap
+		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
 
 	default_diffuse         = genTexture();
 	default_metal_roughness = genTexture();
 	default_normmap         = genTexture();
 	default_aomap           = genTexture();
 	default_emissive        = genTexture();
+	default_lightmap        = genTexture();
 
 	default_diffuse->buffer(default_material->maps.diffuse, true);
 	default_emissive->buffer(default_material->maps.emissive, true);
+	default_lightmap->buffer(default_material->maps.lightmap, true);
 	default_metal_roughness->buffer(default_material->maps.metalRoughness);
 	default_normmap->buffer(default_material->maps.normal);
 	default_aomap->buffer(default_material->maps.ambientOcclusion);
@@ -124,11 +129,14 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
 	                          ret.skinnedShader,
 	                          ret.instancedShader})
 	{
+		// TODO: consistent naming, just go with "a_*" since that's what's in
+		//       gltf docs, as good a convention as any
 		prog->attribute("in_Position", VAO_VERTICES);
 		prog->attribute("v_normal",    VAO_NORMALS);
 		prog->attribute("v_tangent",   VAO_TANGENTS);
-		prog->attribute("v_bitangent", VAO_BITANGENTS);
+		prog->attribute("v_color",     VAO_COLORS);
 		prog->attribute("texcoord",    VAO_TEXCOORDS);
+		prog->attribute("a_lightmap",  VAO_LIGHTMAP);
 	}
 
 	// skinned shader also has some joint attributes
@@ -240,7 +248,6 @@ void renderContext::loadShaders(void) {
 		s->attribute("in_Position", VAO_VERTICES);
 		s->attribute("v_normal",    VAO_NORMALS);
 		s->attribute("v_tangent",   VAO_TANGENTS);
-		s->attribute("v_bitangent", VAO_BITANGENTS);
 		s->attribute("texcoord",    VAO_TEXCOORDS);
 		s->link();
 	}

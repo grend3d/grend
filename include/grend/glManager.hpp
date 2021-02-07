@@ -55,10 +55,11 @@ enum {
 	VAO_VERTICES      = 1,
 	VAO_NORMALS       = 2,
 	VAO_TANGENTS      = 3,
-	VAO_BITANGENTS    = 4,
+	VAO_COLORS        = 4,
 	VAO_TEXCOORDS     = 5,
-	VAO_JOINTS        = 6,
-	VAO_JOINT_WEIGHTS = 7,
+	VAO_LIGHTMAP      = 6,
+	VAO_JOINTS        = 7,
+	VAO_JOINT_WEIGHTS = 8,
 };
 
 enum {

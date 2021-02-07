@@ -35,7 +35,11 @@ void main(void) {
 	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
 	vec3 normal_dir = vec3(1, -1, 1) * normalize(normidx * 2.0 - 1.0);
 	normal_dir = normalize(TBN * normal_dir);
-	vec3 albedo = anmaterial.diffuse.rgb * texcolor.rgb * anmaterial.diffuse.w;
+
+	vec3 albedo = f_color.rgb
+		* anmaterial.diffuse.rgb
+		* texcolor.rgb
+		* anmaterial.diffuse.w * f_color.w;
 
 	vec3 total_light = albedo*max(0.1, dot(vec3(0.5774), normal_dir));
 	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));

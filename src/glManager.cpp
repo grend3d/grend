@@ -277,8 +277,14 @@ Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	glEnableVertexAttribArray(VAO_TANGENTS);
 	SET_VERTEX_VAO(VAO_TANGENTS, gameModel::vertex, tangent);
 
+	glEnableVertexAttribArray(VAO_COLORS);
+	SET_VERTEX_VAO(VAO_COLORS, gameModel::vertex, color);
+
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
 	SET_VERTEX_VAO(VAO_TEXCOORDS, gameModel::vertex, uv);
+
+	glEnableVertexAttribArray(VAO_LIGHTMAP);
+	SET_VERTEX_VAO(VAO_LIGHTMAP, gameModel::vertex, lightmap);
 
 	if (obj->haveJoints) {
 		obj->joints->bind();

@@ -62,6 +62,7 @@ struct material {
 		materialTexture::ptr normal;
 		materialTexture::ptr ambientOcclusion;
 		materialTexture::ptr emissive;
+		materialTexture::ptr lightmap;
 	} maps;
 };
 

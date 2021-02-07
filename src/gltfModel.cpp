@@ -392,18 +392,40 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			int elements = prim.indices;
 			int normals = -1;
 			int position = -1;
+			int tangents = -1;
+			int colors = -1;
 			int texcoord = -1;
+			int lightmap = -1;
+
 			int joints = -1;
 			int weights = -1;
-			int tangents = -1;
 
 			for (auto& attr : prim.attributes) {
 				if (attr.first == "NORMAL")     normals = attr.second;
 				if (attr.first == "POSITION")   position = attr.second;
+				if (attr.first == "TANGENT")    tangents = attr.second;
+				if (attr.first == "COLOR_0")    colors = attr.second;
 				if (attr.first == "TEXCOORD_0") texcoord = attr.second;
+
+				// XXX: if there's a texcoord 1, that's the material UV map,
+				//      first is the lightmap UVs... quirk of how blender does
+				//      it's automatic lightmap UV map generation, the generated
+				//      UV map gets put into the first slot, the original is put
+				//      in the second.
+				//
+				//      also assumes texcoord definitions are sequential,
+				//      not sure if the spec requires that, would be good
+				//      to handle out-of-order definitions anyway, TODO for
+				//      another day
+				if (attr.first == "TEXCOORD_1") {
+					// throw an error just in case that assumption is wrong...
+					assert_nonzero(texcoord != -1);
+					lightmap = texcoord;
+					texcoord = attr.second;
+				}
+
 				if (attr.first == "JOINTS_0")   joints = attr.second; 
 				if (attr.first == "WEIGHTS_0")  weights = attr.second; 
-				if (attr.first == "TANGENT")    tangents = attr.second;
 			}
 
 			if (position < 0) {
@@ -447,13 +469,19 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				}
 			}
 
+			accessorIterator<usvec4>    colorIt;
 			accessorIterator<glm::vec3> positionIt;
 			accessorIterator<glm::vec3> normalIt;
 			accessorIterator<glm::vec3> tangentIt;
 			accessorIterator<glm::vec2> uvIt;
+			accessorIterator<glm::vec2> litIt;
 
 			if (normals >= 0) {
 				check_index(tgltf_model.accessors, normals);
+
+				auto& acc = tgltf_model.accessors[normals];
+				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				//gltf_unpack_buffer(tgltf_model, normals, curModel->normals);
 				normalIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, normals);
@@ -464,9 +492,29 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				check_index(tgltf_model.accessors, tangents);
 				std::cerr << "        have tangents... " << tangents << std::endl;
 
+				auto& acc = tgltf_model.accessors[tangents];
+				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
+
 				//gltf_unpack_buffer(tgltf_model, tangents, curModel->tangents);
+				// TODO: tangent is vec4!
 				tangentIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, tangents);
 				curModel->haveTangents = true;
+			}
+
+			if (colors >= 0) {
+				check_index(tgltf_model.accessors, colors);
+				std::cerr << "        have colors... " << colors << std::endl;
+
+				auto& acc = tgltf_model.accessors[colors];
+				// TODO: also vec3
+				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
+				// TODO: need to handle float and byte types
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
+				//gltf_unpack_buffer(tgltf_model, colors, curModel->colors);
+				colorIt = gltf_buffer_iterator<usvec4>(tgltf_model, colors);
+				curModel->haveColors = true;
 			}
 
 			if (position >= 0) {
@@ -474,8 +522,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 				auto& acc = tgltf_model.accessors[position];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
-				assert_type(acc.componentType, 
-					TINYGLTF_COMPONENT_TYPE_FLOAT);
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				//gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
 				positionIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, position);
@@ -498,13 +545,36 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				curModel->haveTexcoords = true;
 			}
 
+			if (lightmap >= 0) {
+				check_index(tgltf_model.accessors, lightmap);
+
+				auto& acc = tgltf_model.accessors[lightmap];
+				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
+				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
+
+				//gltf_unpack_buffer(tgltf_model, lightmap, curModel->lightmap);
+				litIt = gltf_buffer_iterator<glm::vec2>(tgltf_model, lightmap);
+				curModel->haveLightmap = true;
+			}
+
 			for (; !positionIt.atEnd(); positionIt++) {
 				gameModel::vertex vert;
 
 				vert.position = *positionIt;
-				if (!normalIt.atEnd())  {vert.normal  = *normalIt; normalIt++;};
-				if (!tangentIt.atEnd()) {vert.tangent = *tangentIt; tangentIt++;};
-				if (!uvIt.atEnd())      {vert.uv      = *uvIt; uvIt++;};
+				if (!normalIt.atEnd())  {vert.normal   = *normalIt;  normalIt++;};
+				if (!tangentIt.atEnd()) {vert.tangent  = *tangentIt; tangentIt++;};
+				if (!colorIt.atEnd())   {
+					// XXX
+					auto it = *colorIt;
+					glm::vec4 c(it.x, it.y, it.z, it.w);
+					c = c / 65536.f;
+					vert.color = c;
+					colorIt++;
+				} else {
+					vert.color = glm::vec4(1.f);
+				}
+				if (!uvIt.atEnd())      {vert.uv       = *uvIt;      uvIt++;};
+				if (!litIt.atEnd())     {vert.lightmap = *litIt;     litIt++;};
 
 				curModel->vertices.push_back(vert);
 			}
