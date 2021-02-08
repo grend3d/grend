@@ -30,7 +30,7 @@ boxBullet::boxBullet(entityManager *manager, gameMain *game, glm::vec3 position)
 	}
 
 	setNode("model", node, model);
-	setNode("light", node, lit);
+	//setNode("light", node, lit);
 }
 
 void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev)

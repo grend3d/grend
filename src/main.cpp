@@ -274,7 +274,7 @@ projalphaView::projalphaView(gameMain *game)
 #if !defined(__ANDROID__)
 	//input.bind(modes::Move, controller::camMovement(cam, 30.f));
 	//input.bind(modes::Move, controller::camFPS(cam, game));
-	input.bind(modes::Move, controller::camMovement2D(cam, 20.f));
+	input.bind(modes::Move, controller::camMovement2D(cam, 15.f));
 	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
 	input.bind(modes::Move, inputMapper(inputSystem->inputs, cam));
 #endif
@@ -323,7 +323,7 @@ void projalphaView::logic(gameMain *game, float delta) {
 
 	if (playerEnt) {
 		TRS& transform = playerEnt->getNode()->transform;
-		cam->setPosition(transform.position - zoom*cam->direction());
+		cam->slide(transform.position - zoom*cam->direction(), 8.f, delta);
 	}
 
 	game->entities->update(delta);

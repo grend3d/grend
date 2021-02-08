@@ -9,7 +9,7 @@
 enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
 	// TODO: shouldn't keep strong reference to body
-	  body(new rigidBodySphere(manager, this, position, 1.0, 1.0))
+	  body(new rigidBodySphere(manager, this, position, 1.0, 0.5))
 {
 	static gameObject::ptr enemyModel = nullptr;
 
@@ -23,7 +23,7 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 	// TODO:
 	if (!enemyModel) {
 		enemyModel = loadScene("assets/obj/test-enemy.glb");
-		enemyModel->transform.scale = glm::vec3(0.5);
+		enemyModel->transform.scale = glm::vec3(0.25);
 		bindCookedMeshes();
 	}
 

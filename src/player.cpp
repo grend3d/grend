@@ -62,7 +62,7 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	if (!playerModel) {
 		// TODO: resource cache
 		playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
-		playerModel->transform.scale = glm::vec3(0.25f);
+		playerModel->transform.scale = glm::vec3(0.16f);
 		playerModel->transform.position = glm::vec3(0, -1, 0);
 		bindCookedMeshes();
 	}
