@@ -30,6 +30,7 @@ class camera {
 		const float near() { return near_; };
 		const float far() { return far_; };
 
+		void slide(glm::vec3 target, float divisor, float delta);
 		void setPosition(glm::vec3 pos);
 		void updatePosition(float delta); // increment by velocity
 		void setDirection(glm::vec3 dir);
