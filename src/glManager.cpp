@@ -12,9 +12,6 @@
 
 namespace grendx {
 
-static cookedMeshMap  cookedMeshes;
-static cookedModelMap cookedModels;
-
 static Buffer::ptr screenquadVbo;
 static Vao::ptr screenquadVao;
 
@@ -154,53 +151,49 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
 	return ret;
 }
 
-void compileMeshes(std::string objname, meshMap& meshies) {
-	for (const auto& [name, mesh] : meshies) {
-		compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
-		std::string meshname = objname + "." + name;
-		SDL_Log(">>> compiling mesh %s", meshname.c_str());
+compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
+	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
-		mesh->comped_mesh = foo;
-		mesh->compiled = true;
+	mesh->comped_mesh = foo;
+	mesh->compiled = true;
 
-		foo->elements = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
-		foo->elements->buffer(mesh->faces.data(),
-		                      mesh->faces.size() * sizeof(GLuint));
+	foo->elements = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	foo->elements->buffer(mesh->faces.data(),
+						  mesh->faces.size() * sizeof(GLuint));
 
-		if (mesh->meshMaterial) {
-			foo->factors = mesh->meshMaterial->factors;
-			auto& maps = mesh->meshMaterial->maps;
+	if (mesh->meshMaterial) {
+		foo->factors = mesh->meshMaterial->factors;
+		auto& maps = mesh->meshMaterial->maps;
 
-			if (maps.diffuse && maps.diffuse->loaded()) {
-				foo->textures.diffuse = texcache(maps.diffuse, true);
-			}
-
-			if (maps.metalRoughness && maps.metalRoughness->loaded()) {
-				foo->textures.metalRoughness = texcache(maps.metalRoughness);
-			}
-
-			if (maps.normal && maps.normal->loaded()) {
-				foo->textures.normal = texcache(maps.normal);
-			}
-
-			if (maps.ambientOcclusion && maps.ambientOcclusion->loaded()) {
-				foo->textures.ambientOcclusion = texcache(maps.ambientOcclusion);
-			}
-
-			if (maps.emissive && maps.emissive->loaded()) {
-				foo->textures.emissive = texcache(maps.emissive, true);
-			}
-
-			if (maps.lightmap && maps.lightmap->loaded()) {
-				foo->textures.lightmap = texcache(maps.lightmap, true);
-			}
+		if (maps.diffuse && maps.diffuse->loaded()) {
+			foo->textures.diffuse = texcache(maps.diffuse, true);
 		}
 
-		cookedMeshes[meshname] = foo;
+		if (maps.metalRoughness && maps.metalRoughness->loaded()) {
+			foo->textures.metalRoughness = texcache(maps.metalRoughness);
+		}
+
+		if (maps.normal && maps.normal->loaded()) {
+			foo->textures.normal = texcache(maps.normal);
+		}
+
+		if (maps.ambientOcclusion && maps.ambientOcclusion->loaded()) {
+			foo->textures.ambientOcclusion = texcache(maps.ambientOcclusion);
+		}
+
+		if (maps.emissive && maps.emissive->loaded()) {
+			foo->textures.emissive = texcache(maps.emissive, true);
+		}
+
+		if (maps.lightmap && maps.lightmap->loaded()) {
+			foo->textures.lightmap = texcache(maps.lightmap, true);
+		}
 	}
+
+	return foo;
 }
 
-void compileModel(std::string name, gameModel::ptr model) {
+compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
 	SDL_Log(" >>> compiling %s", name.c_str());
 
 	// TODO: might be able to clear vertex info after compiling here
@@ -219,21 +212,20 @@ void compileModel(std::string name, gameModel::ptr model) {
 		                    model->joints.size() * sizeof(gameModel::jointWeights));
 	}
 
-	// collect mesh subnodes from the model
-	meshMap meshes;
 	for (auto& [meshname, ptr] : model->nodes) {
 		if (ptr->type == gameObject::objType::Mesh) {
-			// TODO: mesh naming is kind of crap
-			std::string asdf = name + "." + meshname;
-			SDL_Log(" > have cooked mesh %s", asdf.c_str());
-			obj->meshes.push_back(asdf);
-			meshes[meshname] = std::dynamic_pointer_cast<gameMesh>(ptr);
+			auto wptr = std::dynamic_pointer_cast<gameMesh>(ptr);
+			SDL_Log(">>> compiling mesh %s", meshname.c_str());
+			obj->meshes[meshname] = compileMesh(wptr);
 		}
 	}
 
-	compileMeshes(name, meshes);
-	cookedModels[name] = obj;
 	DO_ERROR_CHECK();
+
+	SDL_Log(" # binding model...");
+	obj->vao = preloadModelVao(obj);
+
+	return obj;
 }
 
 void compileModels(modelMap& models) {
@@ -250,7 +242,7 @@ void compileModels(modelMap& models) {
 #define GLM_VEC_ENTRIES(TYPE, MEMBER) \
 	((((TYPE*)NULL)->MEMBER).length())
 
-#define SET_VERTEX_VAO(BINDING, TYPE, MEMBER) \
+#define SET_VAO_ENTRY(BINDING, TYPE, MEMBER) \
 	do { \
 	glVertexAttribPointer(BINDING, GLM_VEC_ENTRIES(TYPE, MEMBER), \
 	                      GL_FLOAT, GL_FALSE, sizeof(TYPE),       \
@@ -273,30 +265,30 @@ Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 
 	obj->vertices->bind();
 	glEnableVertexAttribArray(VAO_VERTICES);
-	SET_VERTEX_VAO(VAO_VERTICES, gameModel::vertex, position);
+	SET_VAO_ENTRY(VAO_VERTICES, gameModel::vertex, position);
 
 	glEnableVertexAttribArray(VAO_NORMALS);
-	SET_VERTEX_VAO(VAO_NORMALS, gameModel::vertex, normal);
+	SET_VAO_ENTRY(VAO_NORMALS, gameModel::vertex, normal);
 
 	glEnableVertexAttribArray(VAO_TANGENTS);
-	SET_VERTEX_VAO(VAO_TANGENTS, gameModel::vertex, tangent);
+	SET_VAO_ENTRY(VAO_TANGENTS, gameModel::vertex, tangent);
 
 	glEnableVertexAttribArray(VAO_COLORS);
-	SET_VERTEX_VAO(VAO_COLORS, gameModel::vertex, color);
+	SET_VAO_ENTRY(VAO_COLORS, gameModel::vertex, color);
 
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
-	SET_VERTEX_VAO(VAO_TEXCOORDS, gameModel::vertex, uv);
+	SET_VAO_ENTRY(VAO_TEXCOORDS, gameModel::vertex, uv);
 
 	glEnableVertexAttribArray(VAO_LIGHTMAP);
-	SET_VERTEX_VAO(VAO_LIGHTMAP, gameModel::vertex, lightmap);
+	SET_VAO_ENTRY(VAO_LIGHTMAP, gameModel::vertex, lightmap);
 
 	if (obj->haveJoints) {
 		obj->joints->bind();
 		glEnableVertexAttribArray(VAO_JOINTS);
-		SET_VERTEX_VAO(VAO_JOINTS, gameModel::jointWeights, joints);
+		SET_VAO_ENTRY(VAO_JOINTS, gameModel::jointWeights, joints);
 
 		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
-		SET_VERTEX_VAO(VAO_JOINT_WEIGHTS, gameModel::jointWeights, weights);
+		SET_VAO_ENTRY(VAO_JOINT_WEIGHTS, gameModel::jointWeights, weights);
 	}
 
 	bindVao(orig_vao);
@@ -307,11 +299,9 @@ Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 	Vao::ptr orig_vao = currentVao;
 
-	for (std::string& mesh_name : obj->meshes) {
-		if (auto ptr = cookedMeshes[mesh_name].lock()) {
-			SDL_Log(" # binding mesh %s", mesh_name.c_str());
-			ptr->vao = preloadMeshVao(obj, ptr);
-		}
+	for (auto [mesh_name, ptr] : obj->meshes) {
+		SDL_Log(" # binding mesh %s", mesh_name.c_str());
+		ptr->vao = preloadMeshVao(obj, ptr);
 	}
 
 	return orig_vao;
@@ -326,13 +316,18 @@ void bindModel(gameModel::ptr model) {
 	model->comped_model->vao = preloadModelVao(model->comped_model);
 }
 
+// TODO: now that things are cleaned up a lot, this function isn't necessary
+//       at all, just call bindModel at the end of the compile call...
 void bindCookedMeshes(void) {
-	for (auto& [name, wptr] : cookedModels) {
+	/*
+	SDL_Log(" # rebinding all models...");
+
+	for (auto& wptr : cookedModels) {
 		if (auto ptr = wptr.lock()) {
-			SDL_Log(" # binding %s", name.c_str());
 			ptr->vao = preloadModelVao(ptr);
 		}
 	}
+	*/
 }
 
 static std::vector<GLfloat> screenquad_data = {

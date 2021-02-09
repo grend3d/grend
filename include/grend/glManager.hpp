@@ -337,24 +337,22 @@ class compiledModel {
 		~compiledModel();
 
 		Vao::ptr vao;
-		std::vector<std::string> meshes;
+		std::map<std::string, compiledMesh::ptr> meshes;
 		Buffer::ptr vertices;
 
 		bool haveJoints = false;
 		Buffer::ptr joints;
 };
 
-// TODO: weakptr, once model loading stuff is straightened out
-typedef std::map<std::string, compiledMesh::weakptr> cookedMeshMap;
-typedef std::map<std::string, compiledModel::weakptr> cookedModelMap;
 Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
 
 void initializeOpengl(void);
-void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<gameMesh>>& meshies);
-void compileModel(std::string name, std::shared_ptr<gameModel> mod);
+//void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<gameMesh>>& meshies);
+compiledMesh::ptr compileMesh(std::shared_ptr<gameMesh>& mesh);
+compiledModel::ptr compileModel(std::string name, std::shared_ptr<gameModel> mod);
 void compileModels(std::map<std::string, std::shared_ptr<gameModel>>& models);
-Vao::ptr preloadMeshVao(std::shared_ptr<gameModel> obj, compiledMesh& mesh);
-Vao::ptr preloadModelVao(std::shared_ptr<gameModel> mesh);
+Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh);
+Vao::ptr preloadModelVao(compiledModel::ptr obj);
 void bindModel(std::shared_ptr<gameModel> model);
 void bindCookedMeshes(void);
 Vao::ptr getCurrentVao(void);
