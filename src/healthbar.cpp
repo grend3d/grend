@@ -1,5 +1,6 @@
 #include "healthbar.hpp"
 #include "health.hpp"
+#include <grend/interpolation.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -19,7 +20,7 @@ void worldHealthbar::draw(entityManager *manager, entity *ent,
 	if (entHealth->amount < 1.0 && cam->onScreen(screenpos)) {
 		// TODO: some sort of grid editor wouldn't be too hard,
 		//       probably worthwhile for quick UIs
-		float depth = 8*max(0.f, screenpos.w);
+		float depth = 16*max(0.f, screenpos.w);
 		float pad = depth*8.f;
 
 		float width  = 8*pad;
@@ -44,15 +45,16 @@ void worldHealthbar::draw(entityManager *manager, entity *ent,
 		nvgFill(vgui.nvg);
 
 		//float amount = sin(i*ticks)*0.5 + 0.5;
-		float amount = entHealth->amount;
+		//float amount = entHealth->amount;
+		lastAmount = interp::average(entHealth->amount, lastAmount, 16.f, 1.f/60);
 		nvgBeginPath(vgui.nvg);
-		nvgRect(vgui.nvg, innermin.x, innermin.y, amount*(width - 2*pad), pad);
+		nvgRect(vgui.nvg, innermin.x, innermin.y, lastAmount*(width - 2*pad), pad);
 		nvgFillColor(vgui.nvg, nvgRGBA(0, 192, 0, 192));
 		nvgFill(vgui.nvg);
 
 		nvgBeginPath(vgui.nvg);
-		nvgRect(vgui.nvg, innermin.x + amount*(width - 2*pad),
-				innermin.y, (1.f - amount)*(width - 2*pad), pad);
+		nvgRect(vgui.nvg, innermin.x + lastAmount*(width - 2*pad),
+		        innermin.y, (1.f - lastAmount)*(width - 2*pad), pad);
 		nvgFillColor(vgui.nvg, nvgRGBA(192, 0, 0, 192));
 		nvgFill(vgui.nvg);
 

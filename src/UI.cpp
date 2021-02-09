@@ -1,11 +1,18 @@
 #include "UI.hpp"
 #include "inputHandler.hpp"
 #include "healthbar.hpp"
+#include <grend/interpolation.hpp>
 
 void drawPlayerHealthbar(entityManager *manager,
                          vecGUI&vgui,
                          health *playerHealth)
 {
+	static float slowAmount = 0.0;
+	static float fastAmount = 0.0;
+	fastAmount = interp::average(playerHealth->amount, fastAmount,  4.f, 1.f/60);
+	slowAmount = interp::average(fastAmount,           slowAmount, 32.f, 1.f/60);
+	float diff = slowAmount - fastAmount;
+
 	int wx = manager->engine->rend->screen_x;
 	int wy = manager->engine->rend->screen_y;
 
@@ -17,15 +24,26 @@ void drawPlayerHealthbar(entityManager *manager,
 
 	//nvgRotate(vgui.nvg, 0.1*cos(ticks));
 	nvgBeginPath(vgui.nvg);
-	nvgRect(vgui.nvg, 90, 44, 256, 24);
+	nvgRect(vgui.nvg, 90, 48, 256, 16);
 	nvgFillColor(vgui.nvg, nvgRGBA(30, 30, 30, 127));
 	nvgFill(vgui.nvg);
 
 	nvgBeginPath(vgui.nvg);
-	nvgRect(vgui.nvg, 93, 47, 252*playerHealth->amount, 20);
-	nvgFillColor(vgui.nvg, nvgRGBA(192, 32, 32, 127));
+	nvgRect(vgui.nvg, 93, 50, 252*fastAmount, 12);
+	nvgFillColor(vgui.nvg, nvgRGBA(192, 32, 32, 196));
 	nvgFill(vgui.nvg);
 	//nvgRotate(vgui.nvg, -0.1*cos(ticks));
+
+	if (diff > 0.001) {
+		float k = 252*fastAmount;
+
+		nvgBeginPath(vgui.nvg);
+		nvgRect(vgui.nvg, 93 + k, 50, (252 - k)*diff, 12);
+		nvgFillColor(vgui.nvg, nvgRGBA(192, 64, 32, 196));
+		nvgFill(vgui.nvg);
+	}
+	//nvgRotate(vgui.nvg, -0.1*cos(ticks));
+
 
 	nvgFontSize(vgui.nvg, 16.f);
 	nvgFontFace(vgui.nvg, "sans-bold");

@@ -14,7 +14,7 @@ class enemyCollision : public collisionHandler {
 	float lastCollision = 0;
 
 	public:
-		enemyCollision(entityManager *manager, entity *ent, float _damage = 2.5f)
+		enemyCollision(entityManager *manager, entity *ent, float _damage = 15.f)
 			: collisionHandler(manager, ent, {"enemy"})
 		{
 			damage = _damage;

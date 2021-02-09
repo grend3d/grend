@@ -29,6 +29,7 @@ class worldHealthbar : public healthbar {
 			manager->registerComponent(ent, "worldHealthbar", this);
 		}
 
+		float lastAmount = 1.0;
 		virtual void draw(entityManager *manager, entity *ent,
 		                  vecGUI& vgui, camera::ptr cam);
 };
