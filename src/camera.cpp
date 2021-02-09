@@ -2,14 +2,12 @@
 #include <grend/glmIncludes.hpp>
 #include <grend/boundingBox.hpp>
 #include <grend/utility.hpp>
+#include <grend/interpolation.hpp>
 
 using namespace grendx;
 
 void camera::slide(glm::vec3 target, float divisor, float delta) {
-	float fdelta = (1.f / 60) / delta; // normalize to 60fps
-	float fdiv = divisor*fdelta;
-
-	position_ = (target + (fdiv - 1.f)*position_) / fdiv;
+	position_ = interp::average(target, position_, divisor, delta);
 }
 
 void camera::setPosition(glm::vec3 pos) {
