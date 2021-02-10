@@ -17,9 +17,10 @@ namespace grendx { class gameMain; }
 
 namespace grendx::ecs {
 
-class entitySystem;
 class component;
 class entity;
+class entitySystem;
+class entityEventSystem;
 
 class entityManager {
 	public:
@@ -30,10 +31,15 @@ class entityManager {
 		~entityManager();
 
 		std::map<std::string, std::shared_ptr<entitySystem>> systems;
+		std::map<std::string, std::shared_ptr<entityEventSystem>> addEvents;
+		std::map<std::string, std::shared_ptr<entityEventSystem>> removeEvents;
+		// TODO: probably want externally-specified event systems
+
 		std::map<std::string, std::set<component*>> components;
 		std::map<entity*, std::multimap<std::string, component*>> entityComponents;
 		std::map<component*, entity*> componentEntities;
 		std::set<entity*> entities;
+		std::set<entity*> added;
 		std::set<entity*> condemned;
 
 		void update(float delta);
@@ -107,6 +113,19 @@ class entitySystem {
 
 		virtual ~entitySystem();
 		virtual void update(entityManager *manager, float delta) {}
+};
+
+class entityEventSystem {
+	public:
+		typedef std::shared_ptr<entityEventSystem> ptr;
+		typedef std::weak_ptr<entityEventSystem>   weakptr;
+
+		entityEventSystem(std::vector<std::string> _tags) : tags(_tags) {};
+
+		virtual ~entityEventSystem();
+		virtual void onEvent(entityManager *manager, entity *ent, float delta) {};
+
+		std::vector<std::string> tags;
 };
 
 std::set<entity*> searchEntities(entityManager *manager,

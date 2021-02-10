@@ -12,6 +12,7 @@ component::~component() {
 
 entity::~entity() {};
 entitySystem::~entitySystem() {};
+entityEventSystem::~entityEventSystem() {};
 
 void entityManager::update(float delta) {
 	for (auto& [name, system] : systems) {
@@ -24,13 +25,35 @@ void entityManager::update(float delta) {
 		ent->update(this, delta);
 	}
 
+	for (auto& ent : added) {
+		for (auto& [_, sys] : addEvents) {
+			// TODO: not very efficient, need some sort of system indexing
+			//       to reduce overhead when there's lots of systems
+			if (hasComponents(ent, sys->tags)) {
+				sys->onEvent(this, ent, delta);
+			}
+		}
+	}
+
+	for (auto& ent : condemned) {
+		for (auto& [_, sys] : removeEvents) {
+			// TODO: not very efficient, need some sort of system indexing
+			//       to reduce overhead when there's lots of systems
+			if (hasComponents(ent, sys->tags)) {
+				sys->onEvent(this, ent, delta);
+			}
+		}
+	}
+
 	collisions->clear();
+	added.clear();
 	clearFreedEntities();
 }
 
 void entityManager::add(entity *ent) {
 	setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
 	entities.insert(ent);
+	added.insert(ent);
 }
 
 void entityManager::remove(entity *ent) {
