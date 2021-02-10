@@ -174,7 +174,7 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	auto& scale = jay["scale"];
 	auto& rot   = jay["rotation"];
 
-	std::cerr << jay.dump(3) << std::endl;
+	//std::cerr << jay.dump(3) << std::endl;
 
 	ret->transform.position = glm::vec3(pos[0], pos[1], pos[2]);
 	ret->transform.scale    = glm::vec3(scale[0], scale[1], scale[2]);

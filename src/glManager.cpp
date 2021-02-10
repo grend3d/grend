@@ -25,11 +25,11 @@ static GLenum   currentFaceOrder;
 std::map<uint32_t, Texture::weakptr> textureCache;
 
 compiledMesh::~compiledMesh() {
-	SDL_Log("Freeing a compiledMesh");
+	//SDL_Log("Freeing a compiledMesh");
 }
 
 compiledModel::~compiledModel() {
-	SDL_Log("Freeing a compiledModel");
+	//SDL_Log("Freeing a compiledModel");
 }
 
 void initializeOpengl(void) {
@@ -137,8 +137,8 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
 
 	if (it != textureCache.end()) {
 		if (auto observe = it->second.lock()) {
-			static const unsigned sizes[4] = {256, 512, 2048, 4096};
-			SDL_Log("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
+			//static const unsigned sizes[4] = {256, 512, 2048, 4096};
+			//SDL_Log("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
 			return observe;
 		}
 	}
@@ -194,8 +194,6 @@ compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
 }
 
 compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
-	SDL_Log(" >>> compiling %s", name.c_str());
-
 	// TODO: might be able to clear vertex info after compiling here
 	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
 	model->comped_model = obj;
@@ -215,14 +213,11 @@ compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
 	for (auto& [meshname, ptr] : model->nodes) {
 		if (ptr->type == gameObject::objType::Mesh) {
 			auto wptr = std::dynamic_pointer_cast<gameMesh>(ptr);
-			SDL_Log(">>> compiling mesh %s", meshname.c_str());
 			obj->meshes[meshname] = compileMesh(wptr);
 		}
 	}
 
 	DO_ERROR_CHECK();
-
-	SDL_Log(" # binding model...");
 	obj->vao = preloadModelVao(obj);
 
 	return obj;
@@ -300,7 +295,6 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 	Vao::ptr orig_vao = currentVao;
 
 	for (auto [mesh_name, ptr] : obj->meshes) {
-		SDL_Log(" # binding mesh %s", mesh_name.c_str());
 		ptr->vao = preloadMeshVao(obj, ptr);
 	}
 
@@ -312,7 +306,6 @@ void bindModel(gameModel::ptr model) {
 		SDL_Log(" # ERROR: trying to bind an uncompiled model");
 	}
 
-	SDL_Log(" # binding a model");
 	model->comped_model->vao = preloadModelVao(model->comped_model);
 }
 

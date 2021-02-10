@@ -28,8 +28,6 @@ quadtree::node_id quadtree::alloc(unsigned size) {
 		retnode = alloc_node(rounded_size);
 
 		if (!retnode) {
-			std::cerr << "XXX: freeing old nodes..." << std::endl;
-			//assert(false);
 			free_oldest();
 		}
 	}
@@ -64,8 +62,10 @@ quadtree::node *quadtree::alloc_node(unsigned size) {
 			unsigned off_x = cur_x + x*temp->size/2;
 			unsigned off_y = cur_y + y*temp->size/2;
 
+			/*
 			fprintf(stderr, "i: %u, size: %u, max_free: %u, x: %u, y: %u, off_x: %u, off_y: %u\n",
 				i, temp->size, temp->max_free, x, y, off_x, off_y);
+				*/
 
 			if (temp->subnodes[x][y] && size <= temp->subnodes[x][y]->max_free) {
 				iter = temp->subnodes[x][y];
@@ -91,8 +91,6 @@ quadtree::node *quadtree::alloc_node(unsigned size) {
 
 		temp = iter;
 	}
-
-	fprintf(stderr, "allocated node %p\n", ret);
 
 	return ret;
 }
@@ -140,7 +138,6 @@ void quadtree::free_oldest(void) {
 		return;
 	}
 
-	fprintf(stderr, "freeing ID %u\n", temp->id);
 	free(temp->id);
 }
 

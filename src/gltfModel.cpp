@@ -161,10 +161,6 @@ static void *gltf_load_accessor(tinygltf::Model& tgltf_model, int idx) {
 	check_index(tgltf_model.buffers, view.buffer);
 	auto& buffer = tgltf_model.buffers[view.buffer];
 
-	std::cerr << "        - acc @ " << idx << std::endl;
-	std::cerr << "        - view @ " << acc.bufferView << std::endl;
-	std::cerr << "        - buffer @ " << view.buffer << std::endl;
-
 	check_index(buffer.data,
 			view.byteOffset + acc.byteOffset + buff_size - 1);
 	return static_cast<void*>(buffer.data.data() + (view.byteOffset + acc.byteOffset));
@@ -285,11 +281,11 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 		cache[key] = ret = std::make_shared<materialTexture>();
 
 		auto& tex = gltf_texture(gltf_model, tex_idx);
-		std::cerr << "        + texture source: " << tex.source << std::endl;
+		//std::cerr << "        + texture source: " << tex.source << std::endl;
 
 		auto& img = gltf_image(gltf_model, tex.source);
-		std::cerr << "        + texture image source: " << img.uri << ", "
-			<< img.width << "x" << img.height << ":" << img.component << std::endl;
+		//std::cerr << "        + texture image source: " << img.uri << ", "
+		//	<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
 
 		ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
@@ -322,6 +318,7 @@ static grendx::material::ptr
 	glm::vec4 mat_diffuse(base_color[0], base_color[1],
 			base_color[2], base_color[3]);
 
+	/*
 	std::cerr << "        + have material " << matidxname << std::endl;
 	std::cerr << "        + base color: "
 		<< mat_diffuse.x << ", " << mat_diffuse.y
@@ -344,6 +341,7 @@ static grendx::material::ptr
 		<< mat.normalTexture.index << std::endl;
 	std::cerr << "        + occlusion map idx: "
 		<< mat.occlusionTexture.index << std::endl;
+		*/
 
 	if (pbr.baseColorTexture.index >= 0) {
 		ret->maps.diffuse =
@@ -424,8 +422,10 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			grendx::gameModel::ptr(new grendx::gameModel());
 		ret[mesh.name] = curModel;
 
+		/*
 		std::cerr << " GLTF > have mesh " << mesh.name << std::endl;
 		std::cerr << "      > primitives: " << std::endl;
+		*/
 
 		for (size_t i = 0; i < mesh.primitives.size(); i++) {
 			auto& prim = mesh.primitives[i];
@@ -433,10 +433,12 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			std::string temp_name = mesh.name + suffix
 				+ ":" + std::to_string(prim.material);
 
+			/*
 			std::cerr << "        primitive: " << temp_name << std::endl;
 			std::cerr << "        material: " << prim.material << std::endl;
 			std::cerr << "        indices: " << prim.indices << std::endl;
 			std::cerr << "        mode: " << prim.mode << std::endl;
+			*/
 
 			grendx::gameMesh::ptr modmesh = grendx::gameMesh::ptr(new grendx::gameMesh());
 			setNode(temp_name, curModel, modmesh);
@@ -522,7 +524,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 			} else {
 				// identity-mapped indices
-				std::cerr << "        generating indices..." << std::endl;
+				// std::cerr << "        generating indices..." << std::endl;
 				auto& acc = tgltf_model.accessors[position];
 				auto& submesh = modmesh->faces;
 				size_t vsize = curModel->vertices.size();
@@ -553,7 +555,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 			if (tangents >= 0) {
 				check_index(tgltf_model.accessors, tangents);
-				std::cerr << "        have tangents... " << tangents << std::endl;
+				// std::cerr << "        have tangents... " << tangents << std::endl;
 
 				auto& acc = tgltf_model.accessors[tangents];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
@@ -567,7 +569,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 			if (colors >= 0) {
 				check_index(tgltf_model.accessors, colors);
-				std::cerr << "        have colors... " << colors << std::endl;
+				// std::cerr << "        have colors... " << colors << std::endl;
 
 				auto& acc = tgltf_model.accessors[colors];
 				// TODO: also vec3
@@ -662,7 +664,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				weightIt = gltf_buffer_iterator<glm::vec4>(tgltf_model, weights);
 
 				curModel->haveJoints = true;
-				std::cerr << "        have joints: " << joints << std::endl;
+				// std::cerr << "        have joints: " << joints << std::endl;
 			}
 
 			for (; !jointIt.atEnd(); jointIt++) {
@@ -947,10 +949,12 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 		// TODO: range check
 		auto& mesh = gmod.meshes[node.mesh];
 		setNode("mesh", ret, models[mesh.name]);
+		/*
 		std::cerr << "GLTF node mesh: "
 			<< node.mesh << " (" << mesh.name << ")"
 			<< " @ " << models[mesh.name]
 			<< std::endl;
+			*/
 	}
 
 	if (node.skin >= 0) {
@@ -964,9 +968,11 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 		meh += std::to_string(x) + ", ";
 	}
 	meh += "]";
+	/*
 	std::cerr << "GLTF node children: "
 		<< std::to_string(nodeidx) << " -> " << meh
 		<< std::endl;
+		*/
 
 	for (auto& x : node.children) {
 		std::string id = "node["+std::to_string(x)+"]";
@@ -999,7 +1005,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 	animation::ptr chananim;
 
 	if (chan.target_path == "translation") {
-		std::cerr << "GLTF: loading translation animation" << std::endl;
+		// std::cerr << "GLTF: loading translation animation" << std::endl;
 		animationTranslation::ptr objanim =
 			std::make_shared<animationTranslation>();
 		chananim = objanim;
@@ -1011,7 +1017,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "rotation") {
-		std::cerr << "GLTF: loading rotation animation" << std::endl;
+		// std::cerr << "GLTF: loading rotation animation" << std::endl;
 		animationRotation::ptr objanim =
 			std::make_shared<animationRotation>();
 		chananim = objanim;
@@ -1023,7 +1029,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "scale") {
-		std::cerr << "GLTF: loading scale animation" << std::endl;
+		// std::cerr << "GLTF: loading scale animation" << std::endl;
 		animationScale::ptr objanim =
 			std::make_shared<animationScale>();
 		chananim = objanim;
@@ -1059,9 +1065,11 @@ static animation_map collectAnimations(tinygltf::Model& gmod) {
 		// when the animation has multiple channels 
 		std::set<int> chanset;
 
+		/*
 		std::cerr << "GLTF: collectAnimations(): have animation '"
 			<< anim.name
 			<< "'" << std::endl;
+			*/
 
 		for (auto& chan : anim.channels) {
 			auto chanptr = std::make_shared<animationChannel>();
@@ -1095,7 +1103,7 @@ load_gltf_scene_nodes(std::string filename,
 	}
 
 	for (auto& lit : gmod.lights) {
-		std::cerr << " GLTF > have light: " << lit.name << ": " << lit.type << std::endl;
+		// std::cerr << " GLTF > have light: " << lit.name << ": " << lit.type << std::endl;
 	}
 
 	return ret;
