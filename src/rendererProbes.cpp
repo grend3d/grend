@@ -131,8 +131,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	//       clean encapsulation...
 	quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap);
 	glm::vec3 dir = glm::mat3(transform) * glm::vec3(1, 0, 0);
-	//glm::vec3 up  = glm::mat3(transform) * glm::vec3(0, 0, 1);
-	glm::vec3 up  = glm::vec3(0, -1, 0);
+	glm::vec3 up  = glm::mat3(transform) * glm::vec3(0, 1, 0);
 
 	cam->setDirection(dir, up);
 	cam->setViewport(info.size, info.size);

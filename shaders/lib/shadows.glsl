@@ -110,17 +110,18 @@ float spot_shadow(uint idx, vec3 pos) {
 	if (dot(light_dir, SPOT_LIGHT(idx).direction.xyz) < SPOT_LIGHT(idx).angle) {
 		// XXX: maybe pass this in a uniform, or use quarternion for rotation
 		//      and extract an SO(3) out of that
-		//vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction.xyz);
-		vec3 up = SPOT_LIGHT(idx).up.xyz;
-		vec3 right = normalize(cross(SPOT_LIGHT(idx).up.xyz,
-		                             -SPOT_LIGHT(idx).direction.xyz));
+		vec3 up = -SPOT_LIGHT(idx).up.xyz;
+		vec3 right = normalize(cross(up, -SPOT_LIGHT(idx).direction.xyz));
 
 		float p = 1.0 - SPOT_LIGHT(idx).angle;
 		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
 		vec4 depth = texture2DAtlas(shadowmap_atlas,
 		                            SPOT_LIGHT(idx).shadowmap.xyz, uv);
 
-		return ((depth.r + 0.001) > vec_to_depth(light_vertex))? 1.0 : 0.0;
+		return SHADOW_FILTER(shadowmap_atlas,
+		       SPOT_LIGHT(idx).shadowmap.xyz,
+		       light_vertex,
+		       uv);
 	}
 
 	return 0.0;
