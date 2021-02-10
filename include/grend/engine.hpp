@@ -72,7 +72,7 @@ namespace grendx {
 #endif
 
 #ifndef MAX_SPOT_LIGHT_OBJECTS_TILED
-#define MAX_SPOT_LIGHT_OBJECTS_TILED 32
+#define MAX_SPOT_LIGHT_OBJECTS_TILED 24
 #endif
 
 #ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
@@ -94,11 +94,12 @@ struct spot_std140 {
 	GLfloat position[4];   // 0
 	GLfloat diffuse[4];    // 16
 	GLfloat direction[4];  // 32
-	GLfloat intensity;     // 48
-	GLfloat radius;        // 52
-	GLfloat angle;         // 56
-	GLuint  casts_shadows; // 60
-	GLfloat shadowmap[4];  // 64, end 80
+	GLfloat up[4];         // 48
+	GLfloat intensity;     // 64
+	GLfloat radius;        // 68
+	GLfloat angle;         // 72
+	GLuint  casts_shadows; // 76
+	GLfloat shadowmap[4];  // 80, end 96
 } __attribute__((packed));
 
 struct directional_std140 {
@@ -328,6 +329,10 @@ void drawShadowCubeMap(renderQueue& queue,
                        gameLightPoint::ptr light,
                        glm::mat4& transform,
 					   renderContext::ptr rctx);
+void drawSpotlightShadow(renderQueue& queue,
+                         gameLightSpot::ptr light,
+                         glm::mat4& transform,
+					     renderContext::ptr rctx);
 void drawReflectionProbe(renderQueue& queue,
                          gameReflectionProbe::ptr probe,
                          glm::mat4& transform,

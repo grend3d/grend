@@ -16,6 +16,7 @@ struct spot_light {
 	vec4 position;
 	vec4 diffuse;
 	vec4 direction;
+	vec4 up;
 	float intensity;
 	float radius; // bulb radius
 	float angle;

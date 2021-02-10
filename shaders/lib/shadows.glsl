@@ -4,11 +4,11 @@
 
 // TODO: make these uniforms
 float near = 0.1;
-float far = 100.0;
+float far = 50.0;
 
 // TODO: compile-time and uniform parameter macros, once I get to
 //       doing hot shader reloading
-#define DEPTH_BIAS 0.01
+#define DEPTH_BIAS 0.001
 //#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
 #define SHADOW_FILTER shadow_pcf
@@ -107,12 +107,13 @@ float spot_shadow(uint idx, vec3 pos) {
 	vec3 light_vertex = SPOT_LIGHT(idx).position.xyz - pos;
 	vec3 light_dir = normalize(light_vertex);
 
-	if (dot(light_dir, SPOT_LIGHT(idx).direction.xyz) > SPOT_LIGHT(idx).angle) {
+	if (dot(light_dir, SPOT_LIGHT(idx).direction.xyz) < SPOT_LIGHT(idx).angle) {
 		// XXX: maybe pass this in a uniform, or use quarternion for rotation
 		//      and extract an SO(3) out of that
-		vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction.xyz);
-		vec3 right = normalize(cross(vec3(0, 0, 1), adjdir));
-		vec3 up = normalize(cross(right, adjdir));
+		//vec3 adjdir = normalize(-SPOT_LIGHT(idx).direction.xyz);
+		vec3 up = SPOT_LIGHT(idx).up.xyz;
+		vec3 right = normalize(cross(SPOT_LIGHT(idx).up.xyz,
+		                             -SPOT_LIGHT(idx).direction.xyz));
 
 		float p = 1.0 - SPOT_LIGHT(idx).angle;
 		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;

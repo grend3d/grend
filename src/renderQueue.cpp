@@ -140,7 +140,16 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 			drawShadowCubeMap(*this, plit, trans, rctx);
 
 		} else if (light->lightType == gameLight::lightTypes::Spot) {
-			// TODO: shadow map
+			gameLightSpot::ptr slit =
+				std::dynamic_pointer_cast<gameLightSpot>(light);
+
+			auto& shatree = rctx->atlases.shadows->tree;
+			if (!shatree.valid(slit->shadowmap)) {
+				// TODO: configurable size
+				slit->shadowmap = shatree.alloc(256);
+			}
+
+			drawSpotlightShadow(*this, slit, trans, rctx);
 
 		} else if (light->lightType == gameLight::lightTypes::Directional) {
 			// TODO: orthoganal shadow map

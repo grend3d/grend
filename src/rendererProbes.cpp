@@ -93,6 +93,73 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	light->have_map = true;
 }
 
+// TODO: minimize duplicated code with drawReflectionProbe
+void grendx::drawSpotlightShadow(renderQueue& queue,
+                                 gameLightSpot::ptr light,
+                                 glm::mat4& transform,
+                                 renderContext::ptr rctx)
+{
+	if (!light->casts_shadows) {
+		return;
+	}
+
+	// refresh atlas cache time to indicate it was recently used
+	light->shadowmap = rctx->atlases.shadows->tree.refresh(light->shadowmap);
+
+	if (light->is_static && light->have_map) {
+		// static probe already rendered, nothing to do
+		return;
+	}
+
+	enable(GL_SCISSOR_TEST);
+	enable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+
+	camera::ptr cam = camera::ptr(new camera());
+	cam->setPosition(applyTransform(transform));
+	// TODO: light angle
+	cam->setFovx(90);
+	cam->setFar(50);
+
+	renderFlags flags = rctx->probeShaders["shadow"];
+
+	// TODO: very inefficient, should set only used transforms
+	for (Program::ptr prog : {flags.mainShader,
+	                          flags.skinnedShader,
+	                          flags.instancedShader})
+	{
+		prog->bind();
+		queue.shaderSync(prog, rctx);
+	}
+
+	if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap)) {
+		std::cerr
+			<< "drawSpotlightShadow(): couldn't bind shadow framebuffer"
+			<< std::endl;
+		return;
+	}
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	renderQueue porque = queue;
+	// TODO: texture atlas should have some tree wrappers, just for
+	//       clean encapsulation...
+	quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap);
+	glm::vec3 dir = glm::mat3(transform) * glm::vec3(1, 0, 0);
+	//glm::vec3 up  = glm::mat3(transform) * glm::vec3(0, 0, 1);
+	glm::vec3 up  = glm::vec3(0, -1, 0);
+
+	cam->setDirection(dir, up);
+	cam->setViewport(info.size, info.size);
+
+	porque.setCamera(cam);
+	porque.flush(info.size, info.size, rctx, flags);
+	DO_ERROR_CHECK();
+
+	light->have_map = true;
+}
+
 static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
                                          renderContext::ptr rctx,
                                          unsigned level)
