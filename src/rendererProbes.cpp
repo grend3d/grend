@@ -58,16 +58,9 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	camera::ptr cam = camera::ptr(new camera());
 	cam->setPosition(applyTransform(transform));
 	cam->setFovx(90);
+	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
-
-	for (Program::ptr prog : {flags.mainShader,
-	                          flags.skinnedShader,
-	                          flags.instancedShader})
-	{
-		prog->bind();
-		queue.shaderSync(prog, rctx);
-	}
 
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
@@ -123,15 +116,6 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
-
-	// TODO: very inefficient, should set only used transforms
-	for (Program::ptr prog : {flags.mainShader,
-	                          flags.skinnedShader,
-	                          flags.instancedShader})
-	{
-		prog->bind();
-		queue.shaderSync(prog, rctx);
-	}
 
 	if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap)) {
 		std::cerr
