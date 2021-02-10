@@ -53,8 +53,8 @@ void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev
 			}
 		}
 
-		auto ch = std::make_shared<stereoAudioChannel>(sfx);
+		//auto ch = std::make_shared<stereoAudioChannel>(sfx);
 		//ch->worldPosition = position;
-		manager->engine->audio->add(ch);
+		//manager->engine->audio->add(ch);
 	}
 }

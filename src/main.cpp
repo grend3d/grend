@@ -48,6 +48,7 @@ using namespace grendx::ecs;
 #include "team.hpp"
 #include "enemySpawner.hpp"
 #include "levelController.hpp"
+#include "killedParticles.hpp"
 
 class landscapeEventSystem : public entitySystem {
 	public:
@@ -260,6 +261,17 @@ projalphaView::projalphaView(gameMain *game)
 	game->entities->systems["abyss"]    = std::make_shared<abyssDeleter>();
 	game->entities->systems["collision"] = std::make_shared<entitySystemCollision>();
 	game->entities->systems["syncPhysics"] = std::make_shared<syncRigidBodySystem>();
+
+	/*
+	game->entities->addEvents["killedParticles"]
+		= std::make_shared<killedParticles>();
+		*/
+	game->entities->removeEvents["enemyParticles"]
+		= killedParticles::ptr(new killedParticles({"enemy"}));
+	game->entities->removeEvents["spawnerParticles"]
+		= killedParticles::ptr(new killedParticles({"enemySpawner"}));
+	game->entities->removeEvents["playerParticles"]
+		= killedParticles::ptr(new killedParticles({"player"}));
 
 	inputSystem = std::make_shared<inputHandlerSystem>();
 	game->entities->systems["input"] = inputSystem;

@@ -44,6 +44,7 @@ set(LANDSCAPE_DEMO_SRC
 	src/team.cpp
 	src/area.cpp
 	src/levelController.cpp
+	src/killedParticles.cpp
 )
 
 if (ANDROID)
