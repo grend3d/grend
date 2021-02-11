@@ -41,6 +41,7 @@ class gameMesh : public gameObject {
 
 // used for joint indices
 typedef glm::vec<4, uint16_t, glm::defaultp> usvec4;
+typedef glm::vec<4, uint8_t,  glm::defaultp> ubvec4;
 
 class gameModel : public gameObject {
 	public:

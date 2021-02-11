@@ -308,8 +308,8 @@ gameImport::ptr grendx::loadScene(std::string path) {
 	std::string ext = filename_extension(path);
 
 	if (ext == ".gltf" || ext == ".glb") {
-		auto [objs, mods] = load_gltf_scene(path);
 		std::cerr << "load_scene(): loading scene" << std::endl;
+		auto [objs, mods] = load_gltf_scene(path);
 
 		std::string import_name = "import["+std::to_string(objs->id)+"]";
 		compileModels(mods);

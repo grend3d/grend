@@ -60,6 +60,7 @@ template <typename T>
 static inline bool check_index(std::vector<T> container, size_t idx) {
 	if (idx >= container.size()) {
 		// TODO: toggle exceptions somehow
+		SDL_Log("EXCEPTION: check_index()");
 		throw std::out_of_range("check_index()");
 		return false;
 	}
@@ -69,6 +70,7 @@ static inline bool check_index(std::vector<T> container, size_t idx) {
 
 static inline bool assert_type(int type, int expected) {
 	if (type != expected) {
+		SDL_Log("EXCEPTION: assert_type()");
 		throw std::invalid_argument(
 			"assert_type(): have " + std::to_string(type)
 			+ ", expected " + std::to_string(expected));
@@ -80,6 +82,7 @@ static inline bool assert_type(int type, int expected) {
 
 static inline bool assert_nonzero(size_t x) {
 	if (x == 0) {
+		SDL_Log("EXCEPTION: assert_nonzero()");
 		throw std::logic_error("assert_nonzero()");
 		return false;
 	}
@@ -494,6 +497,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			}
 
 			if (position < 0) {
+				SDL_Log("EXCEPTION: load_gltf_models() can't load a mesh primitive without position information");
 				throw std::logic_error(
 					"load_gltf_models(): can't load a mesh primitive "
 					"without position information");
@@ -644,7 +648,10 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				curModel->vertices.push_back(vert);
 			}
 
-			accessorIterator<usvec4>    jointIt;
+			accessorIterator<usvec4> jointItShort;
+			accessorIterator<ubvec4> jointItByte;
+			unsigned jointType;
+
 			accessorIterator<glm::vec4> weightIt;
 
 			if (joints >= 0 && weights >= 0) {
@@ -655,27 +662,45 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 				assert_type(jac.type, TINYGLTF_TYPE_VEC4);
 				assert_type(wac.type, TINYGLTF_TYPE_VEC4);
-				assert_type(jac.componentType,
-					TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
+				if (jac.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+					jointType = jac.componentType;
+					jointItByte = gltf_buffer_iterator<ubvec4>(tgltf_model, joints);
+				} else if (jac.componentType
+				           == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+				{
+					jointType = jac.componentType;
+					jointItShort = gltf_buffer_iterator<usvec4>(tgltf_model, joints);
+				}
+
+				//assert_type(jac.componentType,
+				//	TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
+
 				assert_type(wac.componentType,
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				jointIt = gltf_buffer_iterator<usvec4>(tgltf_model, joints);
 				weightIt = gltf_buffer_iterator<glm::vec4>(tgltf_model, weights);
-
 				curModel->haveJoints = true;
 				// std::cerr << "        have joints: " << joints << std::endl;
 			}
 
-			for (; !jointIt.atEnd(); jointIt++) {
+			for (; !weightIt.atEnd(); weightIt++) {
 				gameModel::jointWeights joint;
 
-				joint.joints = *jointIt;
-				if (!weightIt.atEnd()) {
-					joint.weights = *weightIt;
-					weightIt++;
+				if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+					if (!jointItByte.atEnd()) {
+						joint.joints = *jointItByte;
+						jointItByte++;
+					}
+
+				} else if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+					if (!jointItShort.atEnd()) {
+						joint.joints = *jointItShort;
+						jointItShort++;
+					}
 				}
 
+				joint.weights = *weightIt;
 				curModel->joints.push_back(joint);
 			}
 
@@ -1128,6 +1153,7 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 	}
 
 	if (!loaded) {
+		SDL_Log("EXCEPTION: %s", err.c_str());
 		throw std::logic_error(err);
 	}
 
@@ -1159,10 +1185,15 @@ grendx::modelMap grendx::load_gltf_models(std::string filename) {
 
 std::pair<grendx::gameImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
+	SDL_Log("Opening gltf scene %s...", filename.c_str());
 	tinygltf::Model gmod = open_gltf_model(filename);
+	SDL_Log("Loading gltf scene %s...", filename.c_str());
 	grendx::modelMap models = load_gltf_models(gmod);
+	SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
 	gameImport::ptr ret = load_gltf_scene_nodes(filename, gmod, models);
 
+	SDL_Log("updating sources %s...", filename.c_str());
 	updateModelSources(models, filename);
+	SDL_Log("done loading %s", filename.c_str());
 	return {ret, models};
 }
