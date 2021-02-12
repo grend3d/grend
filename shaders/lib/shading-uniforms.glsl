@@ -148,7 +148,7 @@ layout(std430, binding = 1) buffer plights {
 #endif
 
 #ifndef MAX_SPOT_LIGHT_OBJECTS
-#define MAX_SPOT_LIGHT_OBJECTS 32
+#define MAX_SPOT_LIGHT_OBJECTS 24
 #endif
 
 #ifndef MAX_DIRECTIONAL_LIGHT_OBJECTS
