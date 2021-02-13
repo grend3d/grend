@@ -10,6 +10,8 @@ endif()
 
 if (GREND_PATH)
 	message(STATUS "GREND_PATH: ${GREND_PATH}")
+	add_subdirectory(bullet)
+	set(BULLET_PHYSICS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/bullet")
 	add_subdirectory(${GREND_PATH})
 endif()
 
@@ -55,6 +57,13 @@ if (ANDROID)
 	list(APPEND DEMO_LINK_LIBS SDL2 SDL2main)
 
 else()
+	if(MINGW OR WIN32 OR CYGWIN)
+		message(STATUS "Got here")
+		#add_compile_options(-lopengl32)
+		find_library(opengl32 opengl32)
+		list(APPEND DEMO_LINK_LIBS opengl32)
+	endif()
+
 	message(STATUS "Setting standalone executable")
 	set(TARGET_NAME landscape-demo)
 	add_executable(landscape-demo ${LANDSCAPE_DEMO_SRC})
@@ -62,4 +71,5 @@ else()
 endif()
 
 target_include_directories(${TARGET_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(${TARGET_NAME} PUBLIC Grend)
 target_link_libraries(${TARGET_NAME} ${DEMO_LINK_LIBS})

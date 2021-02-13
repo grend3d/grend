@@ -428,8 +428,20 @@ void initEntitiesFromNodes(gameObject::ptr node,
 	}
 }
 
-int main(int argc, const char *argv[]) try {
-	const char *mapfile = "assets/maps/base.map";
+#define _WIN32 1
+#if defined(_WIN32)
+extern "C" {
+//int WinMain(int argc, char *argv[]);
+int WinMain(void);
+}
+
+int WinMain(void) try {
+	int argc = 1;
+	const char *argv[] = {"asdf"};
+#else
+int main(int argc, char *argv[]) try {
+#endif
+	const char *mapfile = "assets/maps/level-test.map";
 
 	if (argc > 1) {
 		mapfile = argv[1];
@@ -442,6 +454,7 @@ int main(int argc, const char *argv[]) try {
 	TRS staticPosition; // default
 	gameMain *game = new gameMainDevWindow();
 
+	/*
 	game->jobs->addAsync([=] {
 		auto foo = openSpatialLoop(GR_PREFIX "assets/sfx/Bit Bit Loop.ogg");
 		foo->worldPosition = glm::vec3(-10, 0, -5);
@@ -455,6 +468,7 @@ int main(int argc, const char *argv[]) try {
 		game->audio->add(bar);
 		return true;
 	});
+	*/
 
 	game->state->rootnode = loadMap(game, mapfile);
 	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
