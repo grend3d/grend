@@ -428,7 +428,6 @@ void initEntitiesFromNodes(gameObject::ptr node,
 	}
 }
 
-#define _WIN32 1
 #if defined(_WIN32)
 extern "C" {
 //int WinMain(int argc, char *argv[]);

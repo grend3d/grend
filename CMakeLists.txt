@@ -3,15 +3,19 @@ project(map-viewer-thing VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-if (EXISTS ./grend)
+if (EXISTS ${PROJECT_SOURCE_DIR}/grend)
 	message(STATUS "Found grend subdirectory, using that as library")
 	set(GREND_PATH ./grend)
 endif()
 
-if (GREND_PATH)
-	message(STATUS "GREND_PATH: ${GREND_PATH}")
+if (EXISTS ${PROJECT_SOURCE_DIR}/bullet)
+	message(STATUS "Found bullet subdirectory, using that as library")
 	add_subdirectory(bullet)
 	set(BULLET_PHYSICS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/bullet")
+endif()
+
+if (GREND_PATH)
+	message(STATUS "GREND_PATH: ${GREND_PATH}")
 	add_subdirectory(${GREND_PATH})
 endif()
 
