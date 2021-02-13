@@ -26,6 +26,7 @@ set(GR_PREFIX)
 set(GREND_GL_PKG)
 
 if (ANDROID)
+	message(STATUS "Target: Android")
 	# TODO: how's this going to work in production, just require assets
 	#       be unpacked onto the SD card? I'm definitely not rewriting
 	#       every library that touches C/C++ file i/o
@@ -59,17 +60,25 @@ if (ANDROID)
 	list(APPEND GREND_LINK_LIBS
 	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath glm)
 
-# TODO: assume unixen, presumably there'll be different library lookup
-#       stuff for windows/etc
-else()
+elseif (MINGW OR WIN32 OR CYGWIN)
+	message(STATUS "Target: Windows")
+
 	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
 	set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
 
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
-	#pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
 	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
 
+	# only have glew on windows
+	pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
+	message(STATUS "GL: Using glew")
+	set(GREND_GL_PKG "glew")
+	add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
+
+	# use in-tree library on windows, bullet packaged with msys2 seems
+	# to be a bit borked (function signatures don't match, should submit
+	# a bug report/fix...)
 	find_library(BulletCollision Bullet3Collision)
 	find_library(BulletDynamics  Bullet3Dynamics)
 	find_library(BulletSoftBody  BulletSoftBody)
@@ -78,10 +87,30 @@ else()
 
 	list(APPEND GREND_LINK_LIBS
 		PkgConfig::SDL2
+		PkgConfig::Glew
 		#PkgConfig::Bullet
 		BulletCollision BulletDynamics BulletSoftBody LinearMath
 		pthread
 		opengl32
+	)
+
+# TODO: assume unixen, presumably there'll be different library lookup
+#       stuff for windows/etc
+else()
+	message(STATUS "Target: Unix-ish")
+	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+	set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
+	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
+	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+
+	list(APPEND GREND_LINK_LIBS
+		PkgConfig::SDL2
+		PkgConfig::Bullet
+		BulletCollision BulletDynamics BulletSoftBody LinearMath
+		pthread
 	)
 
 	if (GLSL_VERSION EQUAL 100)

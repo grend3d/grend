@@ -1,8 +1,9 @@
 #pragma once
 
 #include <grend-config.h>
-
+#if defined(_WIN32)
 #include <windef.h>
+#endif
 
 // use glew for core versions, GLES headers for ES
 #if GLSL_VERSION == 100
