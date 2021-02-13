@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <tinygltf/tiny_gltf.h>
+//#include <tinygltf/tiny_gltf.h>
 
 #include <stdint.h>
 

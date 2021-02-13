@@ -11,6 +11,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 using namespace grendx;
 
 bool fileDialog::promptFilename(void) {
@@ -75,6 +78,32 @@ void fileDialog::chdir(std::string dir) {
 }
 
 void fileDialog::listdir(void) {
+	if (fs::exists(currentDir) && fs::is_directory(currentDir)) {
+		std::cerr << "Testing this" << std::endl;
+		dirContents.clear();
+		cursorPos = -1;
+
+		for (auto& p : fs::directory_iterator(currentDir)) {
+			dirContents.push_back({
+				.name = p.path().filename(),
+				//.size = fs::file_size(p.path()),
+				.size = 0,
+				.type = (fs::is_directory(p.path()))
+						? entType::Directory
+						: entType::File,
+			});
+		}
+
+		std::sort(dirContents.begin(), dirContents.end(),
+			[&] (struct f_dirent& a, struct f_dirent& b) {
+				return (a.type != b.type)
+					? a.type < b.type
+					: a.name < b.name;
+			});
+	} else {
+		std::cerr << "Invalid directory " << currentDir << std::endl;
+	}
+#if 0
 	DIR *dirp;
 
 	if ((dirp = opendir(currentDir))) {
@@ -99,6 +128,7 @@ void fileDialog::listdir(void) {
 					: a.name < b.name;
 			});
 	}
+#endif
 }
 
 void fileDialog::handleDoubleclick(struct f_dirent& ent) {

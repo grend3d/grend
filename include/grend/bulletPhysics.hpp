@@ -12,9 +12,10 @@
 #include <list>
 #include <set>
 #include <memory>
-#include <mutex>
 
 #include "btBulletDynamicsCommon.h"
+#include <mutex>
+#include <condition_variable>
 
 namespace grendx {
 

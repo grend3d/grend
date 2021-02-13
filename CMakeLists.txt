@@ -4,7 +4,7 @@ project(Grend VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-option(BUILD_SHARED_LIBS "build the shared stuff" ON)
+#option(BUILD_SHARED_LIBS "build the shared stuff" ON)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
@@ -14,8 +14,8 @@ message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 
 # GLSL version is also used to determine OpenGL API version
 #set(GLSL_VERSION 100) # OpenGL ES 2.0
-set(GLSL_VERSION 300) # OpenGL ES 3.0
-#set(GLSL_VERSION 330)  # OpenGL core 3.30
+#set(GLSL_VERSION 300) # OpenGL ES 3.0
+set(GLSL_VERSION 330)  # OpenGL core 3.30
 #set(GLSL_VERSION 430) # OpenGL core 4.30
 
 add_subdirectory(libs/nanovg)
@@ -67,13 +67,21 @@ else()
 
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
-	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
+	#pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
 	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+
+	find_library(BulletCollision Bullet3Collision)
+	find_library(BulletDynamics  Bullet3Dynamics)
+	find_library(BulletSoftBody  BulletSoftBody)
+	find_library(LinearMath      LinearMath)
+	find_library(opengl32        opengl32)
 
 	list(APPEND GREND_LINK_LIBS
 		PkgConfig::SDL2
-		PkgConfig::Bullet
+		#PkgConfig::Bullet
+		BulletCollision BulletDynamics BulletSoftBody LinearMath
 		pthread
+		opengl32
 	)
 
 	if (GLSL_VERSION EQUAL 100)
@@ -112,9 +120,9 @@ set(LIBRARY_INCLUDES
 	libs/json/single_include
 	libs/stb)
 
-include_directories(include)
-include_directories(${LIBRARY_INCLUDES})
-include_directories(PkgConfig::GLM)
+#include_directories(include)
+#include_directories(${LIBRARY_INCLUDES})
+#include_directories(PkgConfig::GLM)
 
 #[[
 add_compile_definitions(
@@ -132,7 +140,7 @@ add_compile_options(
 	#-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
 	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
 	# TODO: this obviously breaks portable installs
-	-Og -g
+	#-Og -g
 )
 
 if (PHYSICS_BULLET)
@@ -216,12 +224,14 @@ add_library(Grend
 target_include_directories(Grend PUBLIC
 	"${PROJECT_BINARY_DIR}"
 	${BULLET_PHYSICS_SOURCE_DIR}/src
+	include
+	${LIBRARY_INCLUDES}
 )
 target_link_libraries(Grend
 	${GREND_LINK_LIBS}
 	nanovg
 )
-target_compile_options(Grend PUBLIC "-O2")
+#target_compile_options(Grend PUBLIC "-O2")
 
 get_target_property(GREND_COMPILE_OPTIONS_LIST Grend COMPILE_OPTIONS)
 set(GREND_COMPILE_OPTIONS)

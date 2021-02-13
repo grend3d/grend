@@ -2,6 +2,9 @@
 #include <grend/glmIncludes.hpp>
 #include <memory>
 
+#undef near
+#undef far
+
 namespace grendx {
 
 class camera {
