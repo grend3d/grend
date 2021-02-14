@@ -3,6 +3,16 @@ project(map-viewer-thing VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if (NOT CMAKE_BUILD_TYPE)
+	message(WARNING "CMAKE_BUILD_TYPE not set, defaulting to Release")
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS         "-Wall")
+set(CMAKE_CXX_FLAGS_DEBUG   "-DGAME_BUILD_DEBUG=1 -Og -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-DGAME_BUILD_RELEASE=1")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 if (EXISTS ${PROJECT_SOURCE_DIR}/grend)
 	message(STATUS "Found grend subdirectory, using that as library")
 	set(GREND_PATH ./grend)

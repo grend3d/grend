@@ -450,8 +450,12 @@ int main(int argc, char *argv[]) try {
 	SDL_Log("started SDL context");
 	SDL_Log("have game state");
 
-	TRS staticPosition; // default
+	// include editor in debug builds, use main game view for release
+#if defined(GAME_BUILD_DEBUG)
 	gameMain *game = new gameMainDevWindow();
+#else
+	gameMain *game = new gameMain();
+#endif
 
 	/*
 	game->jobs->addAsync([=] {
@@ -469,6 +473,7 @@ int main(int argc, char *argv[]) try {
 	});
 	*/
 
+	TRS staticPosition; // default
 	game->state->rootnode = loadMap(game, mapfile);
 	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
 
