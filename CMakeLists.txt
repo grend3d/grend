@@ -4,6 +4,16 @@ project(Grend VERSION 0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if (NOT CMAKE_BUILD_TYPE)
+	message(WARNING "CMAKE_BUILD_TYPE not set, defaulting to Release")
+	set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS         "-Wall")
+set(CMAKE_CXX_FLAGS_DEBUG   "-DGREND_BUILD_DEBUG=1 -Og -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 #option(BUILD_SHARED_LIBS "build the shared stuff" ON)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
 option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
@@ -163,14 +173,6 @@ add_compile_definitions(
 	GR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
 )
 ]]
-
-add_compile_options(
-	#-DGLSL_VERSION=${GLSL_VERSION}
-	#-DGREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
-	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
-	# TODO: this obviously breaks portable installs
-	#-Og -g
-)
 
 if (PHYSICS_BULLET)
 	#add_compile_definitions(PHYSICS_BULLET)
