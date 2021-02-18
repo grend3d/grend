@@ -20,13 +20,17 @@ endif()
 
 if (EXISTS ${PROJECT_SOURCE_DIR}/bullet)
 	message(STATUS "Found bullet subdirectory, using that as library")
-	add_subdirectory(bullet)
 	set(BULLET_PHYSICS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/bullet")
 endif()
 
 if (GREND_PATH)
 	message(STATUS "GREND_PATH: ${GREND_PATH}")
 	add_subdirectory(${GREND_PATH})
+endif()
+
+if (BULLET_PHYSICS_SOURCE_DIR)
+	message(STATUS "BULLET_PHYSICS_SOURCE_DIR: ${BULLET_PHYSICS_SOURCE_DIR}")
+	add_subdirectory(${BULLET_PHYSICS_SOURCE_DIR})
 endif()
 
 set (DEMO_LINK_LIBS)
@@ -75,6 +79,8 @@ else()
 	if(MINGW OR WIN32 OR CYGWIN)
 		message(STATUS "Building for/on windows")
 		#add_compile_options(-lopengl32)
+		# XXX: should be part of grend target compile options...
+		add_compile_options(-D_WIN32)
 		find_library(opengl32 opengl32)
 		list(APPEND DEMO_LINK_LIBS opengl32)
 	else()
