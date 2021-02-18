@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend-config.h>
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 #include <windef.h>
 #endif
 

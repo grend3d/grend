@@ -84,6 +84,8 @@ elseif (MINGW OR WIN32 OR CYGWIN)
 	pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
 	message(STATUS "GL: Using glew")
 	set(GREND_GL_PKG "glew")
+	add_compile_options(-D_WIN32) # mingw doesn't seem to define this?
+	                              # might as well explicitly define it
 	add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
 
 	# use in-tree library on windows, bullet packaged with msys2 seems
