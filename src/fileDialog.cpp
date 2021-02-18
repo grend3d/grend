@@ -11,8 +11,10 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#if defined(_WIN32)
 #include <filesystem>
 namespace fs = std::filesystem;
+#endif
 
 using namespace grendx;
 
@@ -78,6 +80,9 @@ void fileDialog::chdir(std::string dir) {
 }
 
 void fileDialog::listdir(void) {
+// XXX: older debian raspi is built on doesn't include c++17 filesystem functions,
+//      so leave the old posix code in for that... aaaaa
+#if defined(_WIN32)
 	if (fs::exists(currentDir) && fs::is_directory(currentDir)) {
 		std::cerr << "Testing this" << std::endl;
 		dirContents.clear();
@@ -103,7 +108,8 @@ void fileDialog::listdir(void) {
 	} else {
 		std::cerr << "Invalid directory " << currentDir << std::endl;
 	}
-#if 0
+
+#else
 	DIR *dirp;
 
 	if ((dirp = opendir(currentDir))) {
