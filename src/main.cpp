@@ -618,7 +618,9 @@ int main(int argc, char *argv[]) try {
 
 } catch (const std::exception& ex) {
 	SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex.what());
+	return 1;
 
 } catch (const char* ex) {
 	SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex);
+	return 1;
 }
