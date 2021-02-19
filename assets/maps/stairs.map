@@ -1,0 +1,140 @@
+{
+    "map": {
+        "file": "./assets/maps//stairs.map"
+    },
+    "root": {
+        "nodes": {
+            "entities": {
+                "nodes": null,
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            },
+            "import[129]": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "sourceFile": "./assets/obj//stairs-test.glb",
+                "type": "Imported file"
+            },
+            "irradiance probe E62": {
+                "boundingBox": {
+                    "max": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "min": [
+                        -1.0,
+                        -1.0,
+                        -1.0
+                    ]
+                },
+                "is_static": true,
+                "nodes": null,
+                "position": [
+                    -3.200000047683716,
+                    2.9000000953674316,
+                    -2.200000047683716
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "Irradiance probe"
+            },
+            "spawners": {
+                "nodes": {
+                    "spawner1": {
+                        "nodes": null,
+                        "position": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "rotation": [
+                            1.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "scale": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "type": "gameObject"
+                    }
+                },
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "type": "gameObject"
+            }
+        },
+        "position": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "rotation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "scale": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "type": "gameObject"
+    }
+}
