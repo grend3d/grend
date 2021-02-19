@@ -574,7 +574,45 @@ int main(int argc, char *argv[]) try {
 
 	setNode("entities",  game->state->rootnode, game->entities->root);
 	SDL_Log("Got to game->run()!");
-	game->run();
+
+	if (char *target = getenv("GREND_TEST_TARGET")) {
+		SDL_Log("Got a test target!");
+
+		if (strcmp(target, "default") == 0) {
+			SDL_Log("Default tester!");
+			game->running = true;
+			view->input.setMode(projalphaView::modes::Move);
+
+			for (unsigned i = 0; i < 256; i++) {
+				if (!game->running) {
+					SDL_Log("ERROR: game stopped running!");
+					return 1;
+				}
+
+				try {
+					game->step();
+				} catch (const std::exception& ex) {
+					SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex.what());
+					return 1;
+
+				} catch (const char* ex) {
+					SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Exception! %s", ex);
+					return 1;
+				}
+			}
+
+			SDL_Log("Test '%s' passed.", target);
+
+		} else {
+			SDL_Log("Unknown test '%s', counting that as an error...", target);
+			return 1;
+		}
+
+
+	} else {
+		SDL_Log("No test configured, running normally");
+		game->run();
+	}
 
 	return 0;
 
