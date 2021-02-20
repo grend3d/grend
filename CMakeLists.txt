@@ -28,6 +28,7 @@ message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 set(GLSL_VERSION 330)  # OpenGL core 3.30
 #set(GLSL_VERSION 430) # OpenGL core 4.30
 
+include(GNUInstallDirs)
 add_subdirectory(libs/nanovg)
 
 set(GREND_LINK_LIBS)
@@ -35,13 +36,20 @@ set(GR_PREFIX)
 ## used in the grend.pc file, so things can know which GL library to link
 set(GREND_GL_PKG)
 
+if (PORTABLE_BUILD)
+	set(GR_PREFIX "./")
+endif()
+
 if (ANDROID)
 	message(STATUS "Target: Android")
 	# TODO: how's this going to work in production, just require assets
 	#       be unpacked onto the SD card? I'm definitely not rewriting
 	#       every library that touches C/C++ file i/o
 	#add_compile_options(-DGR_PREFIX="/sdcard/grend/")
-	set(GR_PREFIX "/sdcard/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "/sdcard/grend/")
+	endif()
+
 	add_compile_options(-DMAX_LIGHTS=8)
 	# TODO: toggleable for old adreno only...?
 	#add_compile_options(-DUSE_SINGLE_UBO)
@@ -73,8 +81,9 @@ if (ANDROID)
 elseif (MINGW OR WIN32 OR CYGWIN)
 	message(STATUS "Target: Windows")
 
-	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
-	set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	endif()
 
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
@@ -111,7 +120,9 @@ elseif (MINGW OR WIN32 OR CYGWIN)
 else()
 	message(STATUS "Target: Unix-ish")
 	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
-	set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	endif()
 
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
@@ -309,27 +320,26 @@ endif()
 ]]
 
 # TODO: need to have library includes under grend folder
-install(TARGETS Grend                 DESTINATION lib)
+install(TARGETS Grend DESTINATION ${CMAKE_INSTALL_LIBDIR})
 if (NOT ANDROID)
 	# XXX: figure out how to do this properly
-	install(TARGETS nanovg                DESTINATION lib)
-	#[[
-	install(TARGETS map-viewer            DESTINATION bin)
-	]]
+	install(TARGETS nanovg DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-install(FILES     ${PROJECT_BINARY_DIR}/grend.pc       DESTINATION lib/pkgconfig)
-install(FILES     ${PROJECT_BINARY_DIR}/grend-config.h DESTINATION include)
-install(DIRECTORY ${INCLUDES}         DESTINATION include)
-install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION include/grend)
-install(DIRECTORY shaders/lib         DESTINATION share/grend/shaders)
-install(DIRECTORY shaders/lighting    DESTINATION share/grend/shaders)
-install(DIRECTORY shaders/src         DESTINATION share/grend/shaders)
-install(DIRECTORY assets              DESTINATION share/grend)
+install(FILES     ${PROJECT_BINARY_DIR}/grend.pc       DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+install(FILES     ${PROJECT_BINARY_DIR}/grend-config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY ${INCLUDES}         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/grend)
+install(DIRECTORY shaders/lib         DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
+install(DIRECTORY shaders/lighting    DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
+install(DIRECTORY shaders/src         DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
+install(DIRECTORY assets              DESTINATION ${CMAKE_INSTALL_DATADIR}/grend)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
 
 if (PORTABLE_BUILD)
 	# TODO: should also output a launcher script
+	# TODO: this doesn't work anymore, since this is just a library now
+	#       should be moved to project directories
 	install(CODE
 	[[
 		#include(BundleUtilities)
@@ -340,7 +350,7 @@ if (PORTABLE_BUILD)
 			UNRESOLVED_DEPENDENCIES_VAR unresolved_libs
 			EXECUTABLES landscape-test map-viewer
 			# have to bring your own libGL
-			POST_EXCLUDE_REGEXES ".*libGL.so"
+			POST_EXCLUDE_REGEXES ".*libGL.so" "opengl32.dll"
 		)
 
 		message("RESOLVED:   ${runtime_libs}")
@@ -348,7 +358,7 @@ if (PORTABLE_BUILD)
 
 		foreach(_lib ${runtime_libs})
 			file(INSTALL
-				DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
+				DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 				TYPE SHARED_LIBRARY
 				#FOLLOW_SYMLINK_CHAIN
 				FILES "${_lib}")
