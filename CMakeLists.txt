@@ -24,8 +24,8 @@ message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 
 # GLSL version is also used to determine OpenGL API version
 #set(GLSL_VERSION 100) # OpenGL ES 2.0
-#set(GLSL_VERSION 300) # OpenGL ES 3.0
-set(GLSL_VERSION 330)  # OpenGL core 3.30
+set(GLSL_VERSION 300) # OpenGL ES 3.0
+#set(GLSL_VERSION 330)  # OpenGL core 3.30
 #set(GLSL_VERSION 430) # OpenGL core 4.30
 
 include(GNUInstallDirs)
@@ -287,38 +287,6 @@ message(STATUS "Compile options: ${GREND_COMPILE_OPTIONS}")
 configure_file(grend-config.h.in grend-config.h)
 configure_file(grend.pc.in grend.pc @ONLY)
 
-#[[
-set(LANDSCAPE_DEMO_SRC
-	demos/landscape-test/boxSpawner.cpp
-	demos/landscape-test/enemy.cpp
-	demos/landscape-test/healthbar.cpp
-	demos/landscape-test/inputHandler.cpp
-	demos/landscape-test/landscapeGenerator.cpp
-	demos/landscape-test/main.cpp
-	demos/landscape-test/player.cpp
-	demos/landscape-test/projectile.cpp)
-
-include_directories(demos/landscape-test/)
-
-if (ANDROID)
-	add_library(main SHARED ${LANDSCAPE_DEMO_SRC})
-
-	target_include_directories(main PUBLIC "${PROJECT_BINARY_DIR}")
-	target_link_libraries(main Grend SDL2 SDL2main)
-	install(TARGETS main DESTINATION lib)
-
-else()
-	add_executable(landscape-demo ${LANDSCAPE_DEMO_SRC})
-	target_include_directories(landscape-demo PUBLIC "${PROJECT_BINARY_DIR}")
-	target_link_libraries(landscape-demo Grend)
-	install(TARGETS landscape-demo DESTINATION bin)
-
-	include_directories(demos/map-viewer/)
-	add_executable(map-viewer demos/map-viewer/main.cpp)
-	target_link_libraries(map-viewer Grend)
-endif()
-]]
-
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend DESTINATION ${CMAKE_INSTALL_LIBDIR})
 if (NOT ANDROID)
@@ -335,39 +303,3 @@ install(DIRECTORY shaders/lighting    DESTINATION ${CMAKE_INSTALL_DATADIR}/grend
 install(DIRECTORY shaders/src         DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
 install(DIRECTORY assets              DESTINATION ${CMAKE_INSTALL_DATADIR}/grend)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")
-
-if (PORTABLE_BUILD)
-	# TODO: should also output a launcher script
-	# TODO: this doesn't work anymore, since this is just a library now
-	#       should be moved to project directories
-	install(CODE
-	[[
-		#include(BundleUtilities)
-		#	fixup_bundle("landscape-test" "" "asdf")
-
-		file(GET_RUNTIME_DEPENDENCIES
-			RESOLVED_DEPENDENCIES_VAR   runtime_libs
-			UNRESOLVED_DEPENDENCIES_VAR unresolved_libs
-			EXECUTABLES landscape-test map-viewer
-			# have to bring your own libGL
-			POST_EXCLUDE_REGEXES ".*libGL.so" "opengl32.dll"
-		)
-
-		message("RESOLVED:   ${runtime_libs}")
-		message("UNRESOLVED: ${unresolved_libs}")
-
-		foreach(_lib ${runtime_libs})
-			file(INSTALL
-				DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-				TYPE SHARED_LIBRARY
-				#FOLLOW_SYMLINK_CHAIN
-				FILES "${_lib}")
-		endforeach()
-	]])
-endif()
-
-include(InstallRequiredSystemLibraries)
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_PACKAGE_VERSION_MAJOR "${Grend_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${Grend_VERSION_MINOR}")
-include(CPack)
