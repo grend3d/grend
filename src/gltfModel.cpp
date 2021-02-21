@@ -732,8 +732,9 @@ struct mapent {
 	tinygltf::Animation anim;
 };
 
-typedef
-std::map<int, std::vector<animationChannel::ptr>> animation_map;
+// TODO: camelcase?
+typedef std::map<int, std::vector<animationChannel::ptr>> animation_map;
+typedef std::map<std::string, gameObject::ptr> node_map;
 
 static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
 {
@@ -758,11 +759,10 @@ load_gltf_skin_node_top(tinygltf::Model& gmod,
 		return nullptr;
 	}
 
-	// TODO: range checko
-	auto& node = gmod.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
-	auto it = animations.find(nodeidx); if (it != animations.end()) {
+	auto it = animations.find(nodeidx);
+	if (it != animations.end()) {
 		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
 		ret->animations = it->second;
 	}
@@ -914,7 +914,7 @@ static void load_gltf_node_light(tinygltf::Model& gmod,
 
 		int idx = val.GetNumberAsInt();
 
-		if (idx >= gmod.lights.size()) {
+		if ((unsigned)idx >= gmod.lights.size()) {
 			std::cerr << " GLTF > invalid light object index" << std::endl;
 			return;
 		}
@@ -957,6 +957,7 @@ static gameObject::ptr
 load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
                           modelMap& models,
                           animation_map& anims,
+                          node_map& names,
                           int nodeidx)
 {
 	// TODO: range check
@@ -970,20 +971,21 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 		ret->animations = it->second;
 	}
 
-	if (node.mesh >= 0) {
-		// TODO: range check
+	if (node.mesh >= 0 && (unsigned)node.mesh < gmod.meshes.size()) {
 		auto& mesh = gmod.meshes[node.mesh];
-		setNode("mesh", ret, models[mesh.name]);
-		/*
-		std::cerr << "GLTF node mesh: "
-			<< node.mesh << " (" << mesh.name << ")"
-			<< " @ " << models[mesh.name]
-			<< std::endl;
-			*/
+
+		if (models.count(mesh.name)) {
+			setNode("mesh", ret, models[mesh.name]);
+
+		} else {
+			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+			            "Invalid model name '%s'!", mesh.name.c_str());
+		}
 	}
 
 	if (node.skin >= 0) {
 		// TODO: range check
+		// TODO: get skin node names
 		auto  obj = load_gltf_skin_nodes(gmod, anims, node.skin);
 		setNode("skin", ret, obj);
 	}
@@ -993,15 +995,20 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 		meh += std::to_string(x) + ", ";
 	}
 	meh += "]";
-	/*
-	std::cerr << "GLTF node children: "
-		<< std::to_string(nodeidx) << " -> " << meh
-		<< std::endl;
-		*/
 
 	for (auto& x : node.children) {
 		std::string id = "node["+std::to_string(x)+"]";
-		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, anims, x));
+		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, anims, names, x));
+	}
+
+	if (!node.name.empty()) {
+		if (!names.count(node.name)) {
+			names[node.name] = ret;
+
+		} else {
+			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+			            "Repeated name '%s', ignoring...", node.name.c_str());
+		}
 	}
 
 	return ret;
@@ -1118,18 +1125,26 @@ load_gltf_scene_nodes(std::string filename,
 {
 	gameImport::ptr ret = std::make_shared<gameImport>(filename);
 	auto anims = collectAnimations(gmod);
+	node_map names;
 
+	gameImport::ptr sceneobj = std::make_shared<gameImport>(filename);
 	for (auto& scene : gmod.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
-			setNode(id, ret,
-				load_gltf_scene_nodes_rec(gmod, models, anims, nodeidx));
+			setNode(id, sceneobj,
+				load_gltf_scene_nodes_rec(gmod, models, anims, names, nodeidx));
 		}
 	}
 
-	for (auto& lit : gmod.lights) {
-		// std::cerr << " GLTF > have light: " << lit.name << ": " << lit.type << std::endl;
+	auto nameobj = std::make_shared<gameObject>();
+	nameobj->visible = false;
+
+	for (auto& [name, obj] : names) {
+		setNode(name, nameobj, obj);
 	}
+
+	setNode("names", ret, nameobj);
+	setNode("scene", ret, sceneobj);
 
 	return ret;
 }
