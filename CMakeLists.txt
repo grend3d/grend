@@ -287,6 +287,36 @@ message(STATUS "Compile options: ${GREND_COMPILE_OPTIONS}")
 configure_file(grend-config.h.in grend-config.h)
 configure_file(grend.pc.in grend.pc @ONLY)
 
+# XXX: added a "shader preprocessor" but that's not quite good enough,
+#      lots of glsl implementations don't handle all of the preprocessor macros
+#      left in, and I can't justify finishing that preprocessor at the moment,
+#      so just bake the base engine shaders for now
+file(GLOB SHADER_SRC
+     LIST_DIRECTORIES false
+	 ${CMAKE_SOURCE_DIR}/shaders/src/*.vert
+	 ${CMAKE_SOURCE_DIR}/shaders/src/*.frag)
+
+set(SHADER_OUT)
+file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shader_out/")
+
+foreach(_shaderpath ${SHADER_SRC})
+	get_filename_component(_shadername ${_shaderpath} NAME)
+	set(_shaderout ${PROJECT_BINARY_DIR}/shader_out/${_shadername})
+	list(APPEND SHADER_OUT ${_shaderout})
+
+	add_custom_command(OUTPUT ${_shaderout}
+		COMMAND cpp
+			-DGLSL_VERSION=${GLSL_VERSION}
+			-I${PROJECT_SOURCE_DIR}/shaders
+			-I${PROJECT_BINARY_DIR}
+			-P ${_shaderpath} ${_shaderout}
+		DEPENDS ${_shaderpath}
+	)
+endforeach()
+
+add_custom_target(shaderPreprocessEngine SOURCES ${SHADER_OUT})
+add_dependencies(Grend shaderPreprocessEngine)
+
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend DESTINATION ${CMAKE_INSTALL_LIBDIR})
 if (NOT ANDROID)
@@ -301,5 +331,6 @@ install(DIRECTORY ${LIBRARY_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gr
 install(DIRECTORY shaders/lib         DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
 install(DIRECTORY shaders/lighting    DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
 install(DIRECTORY shaders/src         DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders)
+install(FILES     ${SHADER_OUT}       DESTINATION ${CMAKE_INSTALL_DATADIR}/grend/shaders/baked)
 install(DIRECTORY assets              DESTINATION ${CMAKE_INSTALL_DATADIR}/grend)
 install(CODE "message(\"Testing this! \${CMAKE_INSTALL_PREFIX}\")")

@@ -26,7 +26,7 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 	// (so no tonemapping/HDR)
 #ifdef NO_FLOATING_FB
 	post = renderPostChain::ptr(new renderPostChain(
-		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
+		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
 		                game->rend->globalShaderOptions)},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #else
@@ -36,8 +36,8 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 #endif
 
 	loading_thing = makePostprocessor<rOutput>(
-		loadProgram(GR_PREFIX "shaders/src/postprocess.vert",
-		            GR_PREFIX "shaders/src/texpresent.frag",
+		loadProgram(GR_PREFIX "shaders/baked/postprocess.vert",
+		            GR_PREFIX "shaders/baked/texpresent.frag",
 		            game->rend->globalShaderOptions),
 		SCREEN_SIZE_X,
 		SCREEN_SIZE_Y
