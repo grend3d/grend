@@ -40,17 +40,47 @@ static void drawProfilerGroups(gameMain *game,
 	}
 }
 
+struct tabEntry {
+	std::shared_ptr<profile::group> group;
+	unsigned id;
+	bool opened;
+};
+
 void gameEditor::profilerWindow(gameMain *game) {
-	static std::shared_ptr<profile::group> profptr = nullptr;
+	static std::vector<tabEntry> entries;
+	static unsigned counter = 0;
 
-	ImGui::Begin("Profiler", &showMetricsWindow);
-
-	if (ImGui::Button("Capture")) {
-		profptr = profile::getFrame();
+	// if a tab was closed (in the last frame), erase it here
+	for (auto it = entries.begin(); it < entries.end();) {
+		it = (it->opened)? std::next(it) : entries.erase(it);
 	}
 
-	if (profptr) {
-		drawProfilerGroups(game, profptr.get());
+	ImGui::Begin("Profiler", &showProfilerWindow);
+
+	if (ImGui::Button("New capture")) {
+		auto ptr = profile::getFrame();
+
+		entries.push_back({
+			.group  = ptr,
+			.id     = counter++,
+			.opened = true,
+		});
+	}
+
+	ImGui::SameLine();
+	static ImGuiTabBarFlags flags = ImGuiTabBarFlags_AutoSelectNewTabs;
+	if (ImGui::BeginTabBar("Captures"), flags) {
+		for (unsigned i = 0; i < entries.size(); i++) {
+			auto& ent = entries[i];
+			std::string name = "Capture " + std::to_string(ent.id);
+
+			if (ent.opened && ImGui::BeginTabItem(name.c_str(), &ent.opened)) {
+				ImGui::Separator();
+				drawProfilerGroups(game, ent.group.get());
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
 	}
 
 	ImGui::End();
