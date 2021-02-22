@@ -214,6 +214,7 @@ add_library(Grend
 	src/editorMetricsWindow.cpp
 	src/editorObjectEditorWindow.cpp
 	src/editorObjectSelectWindow.cpp
+	src/editorProfiler.cpp
 	src/fileDialog.cpp
 	src/geometryGeneration.cpp
 	src/glManager.cpp

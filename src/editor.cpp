@@ -468,6 +468,8 @@ void gameEditor::renderEditor(gameMain *game) {
 
 	menubar(game);
 
+	// TODO: this could probably be reduced to like a map of
+	//       window names to states...
 	if (showMetricsWindow) {
 		//ImGui::ShowMetricsWindow();
 		metricsWindow(game);
@@ -494,4 +496,7 @@ void gameEditor::renderEditor(gameMain *game) {
 		//entityEditorWindow(game);
 	}
 
+	if (showProfilerWindow) {
+		profilerWindow(game);
+	}
 }

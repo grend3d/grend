@@ -212,6 +212,11 @@ void gameEditor::menubar(gameMain *game) {
 		}
 
 		if (ImGui::BeginMenu("Debug")) {
+			if (ImGui::MenuItem("Open profiler")) {
+				showProfilerWindow = true;
+			}
+
+			ImGui::Separator();
 			ImGui::MenuItem("Dear ImGui demo window", NULL, &demo_window);
 			ImGui::EndMenu();
 		}

@@ -37,42 +37,50 @@ double sma_counter::get_sample(int i) {
 	return samples[(frameptr + i) % samples.size()];
 }
 
-#if 0
-// old implemention
-#define SMA_BUFSIZE 8
-#define TARGET_FPS 60.0
-static uint32_t frametimes[SMA_BUFSIZE];
-static uint32_t frameptr = 0;
+using namespace grendx::profile;
 
-static double fps_sma(uint32_t t) {
-	frametimes[frameptr] = t;
-	frameptr = (frameptr + 1) % SMA_BUFSIZE;
+static std::shared_ptr<group> frameGroup = nullptr;
+static std::vector<group*> groupStack;
 
-	uint32_t sum = 0;
-	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
-		sum += frametimes[(frameptr + i) % SMA_BUFSIZE];
-	}
+void grendx::profile::newFrame(void) {
+	frameGroup = std::make_shared<group>();
+	frameGroup->groupTimer.begin = std::chrono::high_resolution_clock::now();
+	frameGroup->groupTimer.active = true;
 
-	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
+	groupStack.clear();
+	groupStack.push_back(frameGroup.get());
 }
 
-static double fps_sma(void) {
-	uint32_t sum = 0;
-	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
-		sum += frametimes[i];
-	}
+void grendx::profile::endFrame(void) {
+	// TODO: error
+	if (!frameGroup) return;
 
-	return 1.f/(sum / (float)SMA_BUFSIZE / 1000.f);
+	frameGroup->groupTimer.end = std::chrono::high_resolution_clock::now();
+	frameGroup->groupTimer.active = false;
 }
 
-static std::pair<uint32_t, uint32_t> framems_minmax(void) {
-	uint32_t min = 0xffffffff, max = 0;
-
-	for (unsigned i = 0; i < SMA_BUFSIZE; i++) {
-		min = (frametimes[i] < min)? frametimes[i] : min;
-		max = (frametimes[i] > max)? frametimes[i] : max;
-	}
-
-	return {min, max};
+std::shared_ptr<group> grendx::profile::getFrame(void) {
+	return frameGroup;
 }
-#endif
+
+void grendx::profile::startGroup(std::string name) {
+	if (groupStack.empty()) return;
+
+	(groupStack.back())->subgroups[name] = group();
+	group& sub = (groupStack.back())->subgroups[name];
+
+	sub.groupTimer.begin  = std::chrono::high_resolution_clock::now();
+	sub.groupTimer.active = true;
+
+	groupStack.push_back(&sub);
+}
+
+void grendx::profile::endGroup(void) {
+	if (groupStack.empty()) return;
+
+	group& cur = *groupStack.back();
+	cur.groupTimer.end = std::chrono::high_resolution_clock::now();
+	cur.groupTimer.active = false;
+
+	groupStack.pop_back();
+}

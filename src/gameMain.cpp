@@ -1,6 +1,8 @@
 #include <grend-config.h>
 
 #include <grend/gameMain.hpp>
+#include <grend/timers.hpp>
+
 #include <string.h> // memset
 
 #ifdef __EMSCRIPTEN__
@@ -43,9 +45,11 @@ void gameMain::clearMetrics(void) {
 }
 
 int gameMain::step(void) {
+	// TODO: kinda disperate set of metrics, should unify/clean this up
 	frame_timer.stop();
 	frame_timer.start();
 	clearMetrics();
+	profile::newFrame();
 	handleInput();
 
 	if (running) {
@@ -63,18 +67,26 @@ int gameMain::step(void) {
 			running = false;
 		}
 
+		profile::startGroup("View");
 		view->logic(this, fticks);
+		profile::endGroup();
+
+		profile::startGroup("Syncronous jobs");
 		if (jobs != nullptr) {
 			jobs->runDeferred();
 		}
+		profile::endGroup();
 
+		profile::startGroup("Render");
 		setDefaultGlFlags();
 		rend->framebuffer->clear();
 		view->render(this);
 
 		SDL_GL_SwapWindow(ctx.window);
+		profile::endGroup();
 	}
 
+	profile::endFrame();
 	return running;
 }
 
@@ -125,6 +137,7 @@ void gameMain::handleInput(void) {
 }
 
 void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
+	profile::startGroup("renderWorld()");
 	assert(game->rend && game->rend->framebuffer);
 
 	int winsize_x, winsize_y;
@@ -136,10 +149,15 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 
 		DO_ERROR_CHECK();
 
+		profile::startGroup("Build queue");
 		que.add(game->state->rootnode, fticks);
 		que.add(game->state->physObjects);
+
+		profile::startGroup("Update lights/shadowmaps");
 		que.updateLights(game->rend);
 		que.updateReflections(game->rend);
+		profile::endGroup();
+		profile::endGroup();
 		DO_ERROR_CHECK();
 
 		game->rend->framebuffer->framebuffer->bind();
@@ -148,21 +166,33 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		DO_ERROR_CHECK();
 
-		// TODO: constants for texture bindings, no magic numbers floating around
 		flags.mainShader->bind();
 		flags.mainShader->set("time_ms", SDL_GetTicks() * 1.f);
 		DO_ERROR_CHECK();
 
+		profile::startGroup("Cull");
 		que.cull(game->rend->framebuffer->width,
 		         game->rend->framebuffer->height,
 		         game->rend->lightThreshold);
+		profile::endGroup();
+
+		profile::startGroup("Sort");
 		que.sort();
+		profile::endGroup();
+
+		profile::startGroup("Build light tilemap");
 		buildTilemap(que, game->rend);
+		profile::endGroup();
+
+		profile::startGroup("Draw");
 		que.updateReflectionProbe(game->rend);
 		game->metrics.drawnMeshes +=
 			que.flush(game->rend->framebuffer, game->rend, flags);
 		DO_ERROR_CHECK();
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 		DO_ERROR_CHECK();
+		profile::endGroup();
 	}
+
+	profile::endGroup();
 }

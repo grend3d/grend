@@ -124,6 +124,7 @@ class gameEditor : public gameView {
 		void entityEditorWindow(gameMain *game);
 		void entitySelectWindow(gameMain *game);
 		void metricsWindow(gameMain *game);
+		void profilerWindow(gameMain *game);
 
 		// populates map object tree
 		void addnodes(std::string name,
@@ -150,6 +151,7 @@ class gameEditor : public gameView {
 		bool showObjectSelectWindow = false;
 		bool showEntityEditorWindow = false;
 		bool showEntitySelectWindow = false;
+		bool showProfilerWindow = false;
 		bool showMetricsWindow = true;
 		bool showProbes = true;
 		bool showLights = true;
