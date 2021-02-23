@@ -330,43 +330,91 @@ void renderContext::setIrradianceProbe(gameIrradianceProbe::ptr probe,
 	}
 }
 
-// TODO: camelCase
 void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
-	material::materialFactors& mat = mesh->factors;
+	// XXX: avoid changing everything all at once
+	set_material(program, mesh->mat);
+}
 
-	// TODO: need a compiledMaterial object, that way can cache a pointer
-	//       to that to minimize material uniform updates...
-	program->set("anmaterial.diffuse",   mat.diffuse);
-	program->set("anmaterial.ambient",   mat.ambient);
-	program->set("anmaterial.specular",  mat.specular);
-	program->set("anmaterial.emissive",  mat.emissive);
-	program->set("anmaterial.roughness", mat.roughness);
-	program->set("anmaterial.metalness", mat.metalness);
-	program->set("anmaterial.opacity",   mat.opacity);
+// TODO: camelCase
+void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
+	if (!mat) {
+		//set_default_material(program);
+		// TODO: set default compiled material
+		return;
+	}
 
-	// TODO: with the new-found power of cacheObject, can keep track
-	//       of what texture object is currently bound
-	glActiveTexture(GL_TEXTURE0);
-	mesh->textures.diffuse? mesh->textures.diffuse->bind() : default_diffuse->bind();
+	if (program->cacheObject("current_material", mat.get())) {
+		program->set("anmaterial.diffuse",   mat->factors.diffuse);
+		program->set("anmaterial.ambient",   mat->factors.ambient);
+		program->set("anmaterial.specular",  mat->factors.specular);
+		program->set("anmaterial.emissive",  mat->factors.emissive);
+		program->set("anmaterial.roughness", mat->factors.roughness);
+		program->set("anmaterial.metalness", mat->factors.metalness);
+		program->set("anmaterial.opacity",   mat->factors.opacity);
 
-	glActiveTexture(GL_TEXTURE1);
-	mesh->textures.metalRoughness
-		? mesh->textures.metalRoughness->bind()
-		: default_metal_roughness->bind();
+		// with the new-found power of cacheObject, can keep track
+		// of which texture object is currently bound
+		Texture::ptr diffuse;
+		Texture::ptr metalrough;
+		Texture::ptr normal;
+		Texture::ptr ambientOcclusion;
+		Texture::ptr emissive;
+		Texture::ptr lightmap;
 
-	glActiveTexture(GL_TEXTURE2);
-	mesh->textures.normal? mesh->textures.normal->bind() : default_normmap->bind();
+		diffuse = mat->textures.diffuse
+			? mat->textures.diffuse
+			: default_diffuse;
 
-	glActiveTexture(GL_TEXTURE3);
-	mesh->textures.ambientOcclusion
-		? mesh->textures.ambientOcclusion->bind()
-		: default_aomap->bind();
+		metalrough = mat->textures.metalRoughness
+			? mat->textures.metalRoughness
+			: default_metal_roughness;
 
-	glActiveTexture(GL_TEXTURE4);
-	mesh->textures.emissive? mesh->textures.emissive->bind() : default_emissive->bind();
+		normal = mat->textures.normal
+			? mat->textures.normal
+			: default_normmap;
 
-	glActiveTexture(GL_TEXTURE5);
-	mesh->textures.lightmap? mesh->textures.lightmap->bind() : default_lightmap->bind();
+		ambientOcclusion = mat->textures.ambientOcclusion
+			? mat->textures.ambientOcclusion
+			: default_aomap;
+
+		emissive = mat->textures.emissive
+			? mat->textures.emissive
+			: default_emissive;
+
+		lightmap = mat->textures.lightmap
+			? mat->textures.lightmap
+			: default_lightmap;
+
+		if (program->cacheObject("material_diffuse", diffuse.get())) {
+			glActiveTexture(GL_TEXTURE0);
+			diffuse->bind();
+		}
+
+		if (program->cacheObject("material_metalrough", metalrough.get())) {
+			glActiveTexture(GL_TEXTURE1);
+			metalrough->bind();
+		}
+
+		if (program->cacheObject("material_normal", normal.get())) {
+			glActiveTexture(GL_TEXTURE2);
+			normal->bind();
+		}
+
+		if (program->cacheObject("material_ao", ambientOcclusion.get())) {
+			glActiveTexture(GL_TEXTURE3);
+			ambientOcclusion->bind();
+		}
+
+		if (program->cacheObject("material_emissive", emissive.get())) {
+			glActiveTexture(GL_TEXTURE4);
+			emissive->bind();
+		}
+
+		if (program->cacheObject("material_lightmap", lightmap.get())) {
+			glActiveTexture(GL_TEXTURE5);
+			lightmap->bind();
+		}
+	}
 
 	// XXX: reusing cacheObject to detect initialization, could have
 	//      a isInitialized()

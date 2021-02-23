@@ -256,16 +256,12 @@ bool Program::cached(std::string uniform) {
 bool Program::cacheObject(const char *name, void *obj) {
 	auto it = objCache.find(name);
 
-	if (it == objCache.end()) {
+	if (it == objCache.end() || it->second != obj) {
 		objCache[name] = obj;
 		return true;
-
-	} else if (it->second == obj) {
-		return false;
 
 	} else {
-		objCache[name] = obj;
-		return true;
+		return false;
 	}
 }
 

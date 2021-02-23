@@ -244,7 +244,7 @@ void renderQueue::sort(void) {
 	for (auto& it : meshes) {
 		auto [transform, inverted, mesh] = it;
 
-		if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
 			transparent.push_back(it);
 		} else {
 			opaque.push_back(it);
@@ -344,7 +344,7 @@ static void drawMesh(renderFlags& flags,
 
 	// enable()/disable() cache state, no need to worry about toggling
 	// too much state if queue is sorted
-	if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+	if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
 		// TODO: handle mask blends
 		enable(GL_BLEND);
 	} else {
@@ -398,7 +398,7 @@ static void drawMeshInstanced(renderFlags& flags,
 
 	// enable()/disable() cache state, no need to worry about toggling
 	// too much state if queue is sorted
-	if (mesh->comped_mesh->factors.blend != material::blend_mode::Opaque) {
+	if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
 		// TODO: handle mask blends
 		enable(GL_BLEND);
 	} else {

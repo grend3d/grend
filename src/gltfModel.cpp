@@ -249,14 +249,11 @@ gltf_accessor_aabb(tinygltf::Accessor& acc) {
 	}
 }
 
-static materialTexture::ptr
-gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
-	// XXX: basically reimplementing the other texcache, should this just load
-	//      directly into a texture object?
-
+typedef std::pair<size_t, int> cachekey;
+static size_t hashModel(tinygltf::Model& gltf_model) {
 	// XXX: big hacks: using field sizes as a unique identifier for the model
 	//      seriously this might not be good code :V
-	size_t hash =
+	return
 		(gltf_model.accessors.size()   << 12) +
 		(gltf_model.animations.size()  << 11) +
 		(gltf_model.buffers.size()     << 10) +
@@ -271,11 +268,13 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 		(gltf_model.cameras.size()     << 2)  +
 		(gltf_model.scenes.size()      << 1)  +
 		(gltf_model.lights.size());
+}
 
-	typedef std::pair<size_t, int> cachekey;
+static materialTexture::ptr
+gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 	static std::map<cachekey, materialTexture::weakptr> cache;
 	materialTexture::ptr ret;
-	cachekey key = {hash, tex_idx};
+	cachekey key = {hashModel(gltf_model), tex_idx};
 
 	if (cache.count(key) && (ret = cache[key].lock())) {
 		return ret;
@@ -308,88 +307,78 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 	}
 }
 
-static grendx::material::ptr
+static material::ptr
   gltf_load_material(tinygltf::Model& gltf_model, int material_idx)
 {
-	grendx::material::ptr ret = std::make_shared<grendx::material>();
-	auto& mat = gltf_material(gltf_model, material_idx);
+	static std::map<cachekey, material::weakptr> cache;
+	material::ptr ret;
+	cachekey key = {hashModel(gltf_model), material_idx};
 
-	std::string matidxname = ":" + std::to_string(material_idx);
+	if (cache.count(key) && (ret = cache[key].lock())) {
+		return ret;
 
-	auto& pbr = mat.pbrMetallicRoughness;
-	auto& base_color = pbr.baseColorFactor;
-	glm::vec4 mat_diffuse(base_color[0], base_color[1],
-			base_color[2], base_color[3]);
+	} else {
+		cache[key] = ret = std::make_shared<grendx::material>();
+		auto& mat = gltf_material(gltf_model, material_idx);
 
-	/*
-	std::cerr << "        + have material " << matidxname << std::endl;
-	std::cerr << "        + base color: "
-		<< mat_diffuse.x << ", " << mat_diffuse.y
-		<< ", " << mat_diffuse.z << ", " << mat_diffuse.w
-		<< std::endl;
-	std::cerr << "        + alphaMode: " << mat.alphaMode << std::endl;
-	std::cerr << "        + alphaCutoff: " << mat.alphaCutoff << std::endl;
+		auto& pbr = mat.pbrMetallicRoughness;
+		auto& base_color = pbr.baseColorFactor;
+		glm::vec4 mat_diffuse(base_color[0], base_color[1],
+				base_color[2], base_color[3]);
 
-	std::cerr << "        + pbr roughness: "
-		<< pbr.roughnessFactor << std::endl;
+		if (pbr.baseColorTexture.index >= 0) {
+			ret->maps.diffuse =
+				gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
+		}
 
-	std::cerr << "        + pbr metallic: "
-		<< pbr.metallicFactor << std::endl;
+		if (pbr.metallicRoughnessTexture.index >= 0) {
+			ret->maps.metalRoughness =
+				gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
+		}
 
-	std::cerr << "        + pbr base idx: "
-		<< pbr.baseColorTexture.index << std::endl;
-	std::cerr << "        + metal/roughness map idx: "
-		<< pbr.metallicRoughnessTexture.index << std::endl;
-	std::cerr << "        + normal map idx: "
-		<< mat.normalTexture.index << std::endl;
-	std::cerr << "        + occlusion map idx: "
-		<< mat.occlusionTexture.index << std::endl;
-		*/
 
-	if (pbr.baseColorTexture.index >= 0) {
-		ret->maps.diffuse =
-			gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
+		if (mat.normalTexture.index >= 0) {
+			ret->maps.normal =
+				gltf_load_texture(gltf_model, mat.normalTexture.index);
+		}
+
+		if (mat.occlusionTexture.index >= 0) {
+			ret->maps.ambientOcclusion =
+				gltf_load_texture(gltf_model, mat.occlusionTexture.index);
+		}
+
+		if (mat.emissiveTexture.index >= 0) {
+			ret->maps.emissive =
+				gltf_load_texture(gltf_model, mat.emissiveTexture.index);
+		}
+
+		if (mat.alphaMode == "BLEND") {
+			// XXX:
+			ret->factors.opacity = mat.alphaCutoff;
+			ret->factors.blend = grendx::material::blend_mode::Blend;
+
+		} else if (mat.alphaMode == "MASK") {
+			// XXX:
+			ret->factors.opacity = mat.alphaCutoff;
+			ret->factors.blend = grendx::material::blend_mode::Mask;
+		}
+
+		auto& ev = mat.emissiveFactor;
+		ret->factors.emissive  = glm::vec4(ev[0], ev[1], ev[2], 1.0);
+		ret->factors.roughness = pbr.roughnessFactor;
+		ret->factors.metalness = pbr.metallicFactor;
+		ret->factors.diffuse   = mat_diffuse;
+
+		// while we're here, clear expired cache entries
+		// TODO: duplicated code, could this be unified somehow
+		for (auto it = cache.begin(); it != cache.end();) {
+			auto& [key, ptr] = *it;
+
+			it = ptr.expired()? cache.erase(it) : std::next(it);
+		}
+
+		return ret;
 	}
-
-	if (pbr.metallicRoughnessTexture.index >= 0) {
-		ret->maps.metalRoughness =
-			gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
-	}
-
-
-	if (mat.normalTexture.index >= 0) {
-		ret->maps.normal =
-			gltf_load_texture(gltf_model, mat.normalTexture.index);
-	}
-
-	if (mat.occlusionTexture.index >= 0) {
-		ret->maps.ambientOcclusion =
-			gltf_load_texture(gltf_model, mat.occlusionTexture.index);
-	}
-
-	if (mat.emissiveTexture.index >= 0) {
-		ret->maps.emissive =
-			gltf_load_texture(gltf_model, mat.emissiveTexture.index);
-	}
-
-	if (mat.alphaMode == "BLEND") {
-		// XXX:
-		ret->factors.opacity = mat.alphaCutoff;
-		ret->factors.blend = grendx::material::blend_mode::Blend;
-
-	} else if (mat.alphaMode == "MASK") {
-		// XXX:
-		ret->factors.opacity = mat.alphaCutoff;
-		ret->factors.blend = grendx::material::blend_mode::Mask;
-	}
-
-	auto& ev = mat.emissiveFactor;
-	ret->factors.emissive  = glm::vec4(ev[0], ev[1], ev[2], 1.0);
-	ret->factors.roughness = pbr.roughnessFactor;
-	ret->factors.metalness = pbr.metallicFactor;
-	ret->factors.diffuse   = mat_diffuse;
-
-	return ret;
 }
 
 materialTexture::ptr load_gltf_lightmap(tinygltf::Model& tgltf_model) {

@@ -22,7 +22,12 @@ static std::set<GLenum> featureCache;
 static Vao::ptr currentVao;
 static GLenum   currentFaceOrder;
 
-std::map<uint32_t, Texture::weakptr> textureCache;
+static std::map<uint32_t, Texture::weakptr>           textureCache;
+static std::map<material*, compiledMaterial::weakptr> materialCache;
+
+compiledMaterial::~compiledMaterial() {
+	//SDL_Log("Freeing a compiledMaterial");
+}
 
 compiledMesh::~compiledMesh() {
 	//SDL_Log("Freeing a compiledMesh");
@@ -151,6 +156,52 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
 	return ret;
 }
 
+compiledMaterial::ptr matcache(material::ptr mat) {
+	if (!mat) {
+		return nullptr;
+	}
+
+	auto it = materialCache.find(mat.get());
+
+	if (it != materialCache.end()) {
+		if (auto observe = it->second.lock()) {
+			return observe;
+		}
+	}
+
+	compiledMaterial::ptr ret = std::make_shared<compiledMaterial>();
+
+	ret->factors = mat->factors;
+	auto& maps = mat->maps;
+
+	if (maps.diffuse && maps.diffuse->loaded()) {
+		ret->textures.diffuse = texcache(maps.diffuse, true);
+	}
+
+	if (maps.metalRoughness && maps.metalRoughness->loaded()) {
+		ret->textures.metalRoughness = texcache(maps.metalRoughness);
+	}
+
+	if (maps.normal && maps.normal->loaded()) {
+		ret->textures.normal = texcache(maps.normal);
+	}
+
+	if (maps.ambientOcclusion && maps.ambientOcclusion->loaded()) {
+		ret->textures.ambientOcclusion = texcache(maps.ambientOcclusion);
+	}
+
+	if (maps.emissive && maps.emissive->loaded()) {
+		ret->textures.emissive = texcache(maps.emissive, true);
+	}
+
+	if (maps.lightmap && maps.lightmap->loaded()) {
+		ret->textures.lightmap = texcache(maps.lightmap, true);
+	}
+
+	materialCache[mat.get()] = ret;
+	return ret;
+}
+
 compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
@@ -161,34 +212,9 @@ compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
 	foo->elements->buffer(mesh->faces.data(),
 						  mesh->faces.size() * sizeof(GLuint));
 
-	if (mesh->meshMaterial) {
-		foo->factors = mesh->meshMaterial->factors;
-		auto& maps = mesh->meshMaterial->maps;
-
-		if (maps.diffuse && maps.diffuse->loaded()) {
-			foo->textures.diffuse = texcache(maps.diffuse, true);
-		}
-
-		if (maps.metalRoughness && maps.metalRoughness->loaded()) {
-			foo->textures.metalRoughness = texcache(maps.metalRoughness);
-		}
-
-		if (maps.normal && maps.normal->loaded()) {
-			foo->textures.normal = texcache(maps.normal);
-		}
-
-		if (maps.ambientOcclusion && maps.ambientOcclusion->loaded()) {
-			foo->textures.ambientOcclusion = texcache(maps.ambientOcclusion);
-		}
-
-		if (maps.emissive && maps.emissive->loaded()) {
-			foo->textures.emissive = texcache(maps.emissive, true);
-		}
-
-		if (maps.lightmap && maps.lightmap->loaded()) {
-			foo->textures.lightmap = texcache(maps.lightmap, true);
-		}
-	}
+	// TODO: more consistent naming here
+	foo->mat   = matcache(mesh->meshMaterial);
+	foo->blend = foo->mat? foo->mat->factors.blend : material::blend_mode::Opaque;
 
 	return foo;
 }

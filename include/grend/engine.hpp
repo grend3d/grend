@@ -358,6 +358,7 @@ float light_extent(struct spot_light *s, float threshold=0.03);
 glm::mat4 model_to_world(glm::mat4 model);
 
 void set_material(Program::ptr program, compiledMesh::ptr mesh);
+void set_material(Program::ptr program, compiledMaterial::ptr mesh);
 void set_default_material(Program::ptr program);
 void invalidateLightMaps(gameObject::ptr tree);
 

@@ -317,16 +317,12 @@ class Framebuffer : public Obj {
 		std::map<GLenum, Texture::ptr> attachments;
 };
 
-// TODO: camelCase
-class compiledMesh {
+class compiledMaterial {
 	public:
-		typedef std::shared_ptr<compiledMesh> ptr;
-		typedef std::weak_ptr<compiledMesh> weakptr;
+		typedef std::shared_ptr<compiledMaterial> ptr;
+		typedef std::weak_ptr<compiledMaterial> weakptr;
 
-		~compiledMesh();
-
-		Vao::ptr vao;
-		Buffer::ptr elements;
+		~compiledMaterial();
 
 		material::materialFactors factors;
 		struct loadedTextures {
@@ -337,6 +333,20 @@ class compiledMesh {
 			Texture::ptr emissive;
 			Texture::ptr lightmap;
 		} textures;
+};
+
+// TODO: camelCase
+class compiledMesh {
+	public:
+		typedef std::shared_ptr<compiledMesh> ptr;
+		typedef std::weak_ptr<compiledMesh> weakptr;
+
+		~compiledMesh();
+
+		Vao::ptr vao;
+		Buffer::ptr elements;
+		compiledMaterial::ptr mat;
+		material::blend_mode blend;
 };
 
 // TODO: camelCase
@@ -356,6 +366,7 @@ class compiledModel {
 };
 
 Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
+compiledMaterial::ptr matcache(material::ptr mat);
 
 void initializeOpengl(void);
 //void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<gameMesh>>& meshies);
