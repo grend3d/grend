@@ -146,10 +146,10 @@ class skybox {
 
 class renderAtlases {
 	public:
-		renderAtlases(unsigned refSize = 2048,
-		              unsigned shadowSize = 2048,
-		              unsigned irradSize = 1024,
-		              unsigned coeffSize = 1024)
+		renderAtlases(unsigned refSize    = 2048,
+		              unsigned shadowSize = 4096,
+		              unsigned irradSize  = 1024,
+		              unsigned coeffSize  = 1024)
 		{
 			reflections = atlas::ptr(new atlas(refSize));
 			shadows     = atlas::ptr(new atlas(shadowSize, atlas::mode::Depth));

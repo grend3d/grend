@@ -2,6 +2,7 @@
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/textureAtlas.hpp>
+#include <grend/timers.hpp>
 
 using namespace grendx;
 
@@ -50,6 +51,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		return;
 	}
 
+	profile::startGroup("shadow cubemap : " + light->idString());
+
 	enable(GL_SCISSOR_TEST);
 	enable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
@@ -84,6 +87,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	}
 
 	light->have_map = true;
+	profile::endGroup();
 }
 
 // TODO: minimize duplicated code with drawReflectionProbe
@@ -103,6 +107,8 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 		// static probe already rendered, nothing to do
 		return;
 	}
+
+	profile::startGroup(light->idString());
 
 	enable(GL_SCISSOR_TEST);
 	enable(GL_DEPTH_TEST);
@@ -141,6 +147,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	light->have_map = true;
+	profile::endGroup();
 }
 
 static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
