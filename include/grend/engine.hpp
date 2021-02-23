@@ -199,6 +199,10 @@ class renderContext {
 
 		// XXX
 		struct renderFlags getLightingFlags(std::string name="main");
+		void setReflectionProbe(gameReflectionProbe::ptr probe,
+		                        Program::ptr program);
+		void setIrradianceProbe(gameIrradianceProbe::ptr probe,
+		                        Program::ptr program);
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -306,12 +310,6 @@ class renderQueue {
 	private:
 		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
 		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
-		void set_reflection_probe(gameReflectionProbe::ptr probe,
-		                          Program::ptr program,
-		                          renderAtlases& atlases);
-		void set_irradiance_probe(gameIrradianceProbe::ptr probe,
-		                          Program::ptr program,
-		                          renderAtlases& atlases);
 };
 
 renderFlags loadLightingShader(std::string fragmentPath, shaderOptions& opts);

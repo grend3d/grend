@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <utility>
 #include <set>
@@ -226,6 +227,7 @@ class Shader : public Obj {
 		bool reload(void);
 		std::string filepath = "";
 		shaderOptions compiledOptions;
+
 };
 
 class Program : public Obj {
@@ -260,6 +262,15 @@ class Program : public Obj {
 		GLuint lookupUniformBlock(std::string name);
 		GLuint lookupStorageBlock(std::string name);
 		bool cached(std::string uniform);
+		// TODO: valueCached, objectCached
+		// TODO: value caching still not implemented, should do that,
+		//       performance is becoming important
+		bool cacheObject(const char *name, void *obj);
+
+		// cache to keep track of objects set for this shader, eg.
+		// eg. irradiance, reflection probes, expensive to test each value
+		// for every mesh call compared to testing a pointer per mesh
+		std::unordered_map<const char *, void*> objCache;
 
 		std::map<std::string, GLint> uniforms;
 		std::map<std::string, GLuint> attributes;

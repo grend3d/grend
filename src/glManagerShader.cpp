@@ -245,5 +245,29 @@ bool Program::cached(std::string uniform) {
 	return false;
 }
 
+/**
+ * Set a cached object entry for the shader.
+ *
+ * @param name Key for the object cache.
+ * @param obj  Object to set as the current object, if not already the current.
+ *
+ * @return true if a new object was set, false if obj is the current object.
+ */
+bool Program::cacheObject(const char *name, void *obj) {
+	auto it = objCache.find(name);
+
+	if (it == objCache.end()) {
+		objCache[name] = obj;
+		return true;
+
+	} else if (it->second == obj) {
+		return false;
+
+	} else {
+		objCache[name] = obj;
+		return true;
+	}
+}
+
 // namespace grendx
 }

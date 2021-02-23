@@ -265,9 +265,77 @@ struct renderFlags renderContext::getLightingFlags(std::string name) {
 	return lightingShaders[name];
 }
 
+/**
+ * Set the reflection probe in a program.
+ *
+ * NOTE: This isn't used in OpenGL 3.3+ profiles, the reflection probe
+ *       is synced in the lighting UBO then.
+ */
+void renderContext::setReflectionProbe(gameReflectionProbe::ptr probe,
+                                       Program::ptr program)
+{
+	if (!probe) {
+		return;
+	}
+
+	if (program->cacheObject("reflection_probe", probe.get())) {
+		for (unsigned k = 0; k < 5; k++) {
+			for (unsigned i = 0; i < 6; i++) {
+				std::string sloc =
+					"reflection_probe["+std::to_string(k*6 + i)+"]";
+				glm::vec3 facevec;
+
+				if (k == 0) {
+					facevec = atlases.reflections->tex_vector(probe->faces[k][i]);
+				} else {
+					facevec = atlases.irradiance->tex_vector(probe->faces[k][i]);
+				}
+
+				program->set(sloc, facevec);
+				DO_ERROR_CHECK();
+			}
+		}
+
+		program->set("refboxMin",
+		             probe->transform.position + probe->boundingBox.min);
+		program->set("refboxMax",
+		             probe->transform.position + probe->boundingBox.max);
+		program->set("refprobePosition", probe->transform.position);
+	}
+}
+
+/**
+ * Set the irradiance probe in a program.
+ */
+void renderContext::setIrradianceProbe(gameIrradianceProbe::ptr probe,
+                                       Program::ptr program)
+{
+	if (!probe) {
+		return;
+	}
+
+	if (program->cacheObject("irradiance_probe", probe.get())) {
+		for (unsigned i = 0; i < 6; i++) {
+			std::string sloc = "irradiance_probe[" + std::to_string(i) + "]";
+			glm::vec3 facevec = atlases.irradiance->tex_vector(probe->faces[i]);
+			program->set(sloc, facevec);
+			DO_ERROR_CHECK();
+		}
+
+		program->set("radboxMin",
+		             probe->transform.position + probe->boundingBox.min);
+		program->set("radboxMax",
+		             probe->transform.position + probe->boundingBox.max);
+		program->set("radprobePosition", probe->transform.position);
+	}
+}
+
+// TODO: camelCase
 void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
 	material::materialFactors& mat = mesh->factors;
 
+	// TODO: need a compiledMaterial object, that way can cache a pointer
+	//       to that to minimize material uniform updates...
 	program->set("anmaterial.diffuse",   mat.diffuse);
 	program->set("anmaterial.ambient",   mat.ambient);
 	program->set("anmaterial.specular",  mat.specular);
@@ -276,6 +344,8 @@ void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
 	program->set("anmaterial.metalness", mat.metalness);
 	program->set("anmaterial.opacity",   mat.opacity);
 
+	// TODO: with the new-found power of cacheObject, can keep track
+	//       of what texture object is currently bound
 	glActiveTexture(GL_TEXTURE0);
 	mesh->textures.diffuse? mesh->textures.diffuse->bind() : default_diffuse->bind();
 
@@ -298,12 +368,16 @@ void grendx::set_material(Program::ptr program, compiledMesh::ptr mesh) {
 	glActiveTexture(GL_TEXTURE5);
 	mesh->textures.lightmap? mesh->textures.lightmap->bind() : default_lightmap->bind();
 
-	program->set("diffuse_map", 0);
-	program->set("specular_map", 1);
-	program->set("normal_map", 2);
-	program->set("ambient_occ_map", 3);
-	program->set("emissive_map", 4);
-	program->set("lightmap", 5);
+	// XXX: reusing cacheObject to detect initialization, could have
+	//      a isInitialized()
+	if (program->cacheObject("material_tex_units", nullptr)) {
+		program->set("diffuse_map", 0);
+		program->set("specular_map", 1);
+		program->set("normal_map", 2);
+		program->set("ambient_occ_map", 3);
+		program->set("emissive_map", 4);
+		program->set("lightmap", 5);
+	}
 
 	DO_ERROR_CHECK();
 }
@@ -321,28 +395,32 @@ void grendx::set_default_material(Program::ptr program) {
 
 	glActiveTexture(GL_TEXTURE0);
 	default_diffuse->bind();
-	program->set("diffuse_map", 0);
 
 	glActiveTexture(GL_TEXTURE1);
 	default_metal_roughness->bind();
 	// TODO: rename to metal_roughness_map in shaders
-	program->set("specular_map", 1);
 
 	glActiveTexture(GL_TEXTURE2);
 	default_normmap->bind();
-	program->set("normal_map", 2);
 
 	glActiveTexture(GL_TEXTURE3);
 	default_aomap->bind();
-	program->set("ambient_occ_map", 3);
 
 	glActiveTexture(GL_TEXTURE4);
 	default_emissive->bind();
-	program->set("emissive_map", 4);
 
 	glActiveTexture(GL_TEXTURE5);
 	default_lightmap->bind();
-	program->set("lightmap", 5);
+
+	// XXX: see above
+	if (program->cacheObject("material_tex_units", nullptr)) {
+		program->set("diffuse_map", 0);
+		program->set("specular_map", 1);
+		program->set("normal_map", 2);
+		program->set("ambient_occ_map", 3);
+		program->set("emissive_map", 4);
+		program->set("lightmap", 5);
+	}
 }
 
 glm::mat4 grendx::model_to_world(glm::mat4 model) {

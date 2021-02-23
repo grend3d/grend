@@ -471,10 +471,9 @@ unsigned renderQueue::flush(unsigned width,
 				}
 			}
 
-			set_irradiance_probe(
+			rctx->setIrradianceProbe(
 				nearest_irradiance_probe(applyTransform(transform)),
-				flags.skinnedShader,
-				rctx->atlases);
+				flags.skinnedShader);
 			drawMesh(flags, nullptr, flags.skinnedShader,
 			         transform, inverted, mesh);
 		}
@@ -490,9 +489,9 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("cameraPosition", cam->position());
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		set_irradiance_probe(
+		rctx->setIrradianceProbe(
 			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader, rctx->atlases);
+			flags.mainShader);
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -587,10 +586,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 				offset = 0.0;
 			}
 
-			set_irradiance_probe(
+			rctx->setIrradianceProbe(
 				nearest_irradiance_probe(applyTransform(transform)),
-				flags.skinnedShader,
-				rctx->atlases);
+				flags.skinnedShader);
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
 			drawnMeshes++;
 		}
@@ -607,9 +605,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		set_irradiance_probe(
+		rctx->setIrradianceProbe(
 			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader, rctx->atlases);
+			flags.mainShader);
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
 	}
@@ -622,9 +620,9 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.instancedShader, rctx);
 
 	for (auto& [transform, inverted, particleSystem, mesh] : instancedMeshes) {
-		set_irradiance_probe(
+		rctx->setIrradianceProbe(
 			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader, rctx->atlases);
+			flags.mainShader);
 		drawMeshInstanced(flags, fb, flags.instancedShader,
 		                  transform, inverted, particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
@@ -1052,54 +1050,4 @@ gameIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
 	}
 
 	return ret;
-}
-
-void renderQueue::set_reflection_probe(gameReflectionProbe::ptr probe,
-                                       Program::ptr program,
-                                       renderAtlases& atlases)
-{
-	if (!probe) {
-		return;
-	}
-
-	for (unsigned k = 0; k < 5; k++) {
-		for (unsigned i = 0; i < 6; i++) {
-			std::string sloc =
-				"reflection_probe["+std::to_string(k*6 + i)+"]";
-			glm::vec3 facevec;
-
-			if (k == 0) {
-				facevec = atlases.reflections->tex_vector(probe->faces[k][i]);
-			} else {
-				facevec = atlases.irradiance->tex_vector(probe->faces[k][i]);
-			}
-
-			program->set(sloc, facevec);
-			DO_ERROR_CHECK();
-		}
-	}
-
-	program->set("refboxMin",        probe->transform.position + probe->boundingBox.min);
-	program->set("refboxMax",        probe->transform.position + probe->boundingBox.max);
-	program->set("refprobePosition", probe->transform.position);
-}
-
-void renderQueue::set_irradiance_probe(gameIrradianceProbe::ptr probe,
-                                       Program::ptr program,
-                                       renderAtlases& atlases)
-{
-	if (!probe) {
-		return;
-	}
-
-	for (unsigned i = 0; i < 6; i++) {
-		std::string sloc = "irradiance_probe[" + std::to_string(i) + "]";
-		glm::vec3 facevec = atlases.irradiance->tex_vector(probe->faces[i]); 
-		program->set(sloc, facevec);
-		DO_ERROR_CHECK();
-	}
-
-	program->set("radboxMin",        probe->transform.position + probe->boundingBox.min);
-	program->set("radboxMax",        probe->transform.position + probe->boundingBox.max);
-	program->set("radprobePosition", probe->transform.position);
 }
