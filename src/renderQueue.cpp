@@ -340,15 +340,17 @@ static void drawMesh(renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	set_material(program, mesh->comped_mesh);
+	if (!flags.shadowmap) {
+		set_material(program, mesh->comped_mesh);
 
-	// enable()/disable() cache state, no need to worry about toggling
-	// too much state if queue is sorted
-	if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
-		// TODO: handle mask blends
-		enable(GL_BLEND);
-	} else {
-		disable(GL_BLEND);
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
 	}
 
 	// TODO: need to keep track of the model face order
@@ -394,15 +396,17 @@ static void drawMeshInstanced(renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	set_material(program, mesh->comped_mesh);
+	if (!flags.shadowmap) {
+		set_material(program, mesh->comped_mesh);
 
-	// enable()/disable() cache state, no need to worry about toggling
-	// too much state if queue is sorted
-	if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
-		// TODO: handle mask blends
-		enable(GL_BLEND);
-	} else {
-		disable(GL_BLEND);
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
 	}
 
 	// TODO: need to keep track of the model face order
@@ -471,9 +475,12 @@ unsigned renderQueue::flush(unsigned width,
 				}
 			}
 
-			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
-				flags.skinnedShader);
+			if (!flags.shadowmap) {
+				rctx->setIrradianceProbe(
+					nearest_irradiance_probe(applyTransform(transform)),
+					flags.skinnedShader);
+			}
+
 			drawMesh(flags, nullptr, flags.skinnedShader,
 			         transform, inverted, mesh);
 		}
@@ -489,9 +496,11 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("cameraPosition", cam->position());
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		rctx->setIrradianceProbe(
-			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader);
+		if (!flags.shadowmap) {
+			rctx->setIrradianceProbe(
+				nearest_irradiance_probe(applyTransform(transform)),
+				flags.mainShader);
+		}
 
 		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
@@ -586,9 +595,11 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 				offset = 0.0;
 			}
 
-			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
-				flags.skinnedShader);
+			if (!flags.shadowmap) {
+				rctx->setIrradianceProbe(
+					nearest_irradiance_probe(applyTransform(transform)),
+					flags.skinnedShader);
+			}
 			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
 			drawnMeshes++;
 		}
@@ -605,9 +616,12 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.mainShader, rctx);
 
 	for (auto& [transform, inverted, mesh] : meshes) {
-		rctx->setIrradianceProbe(
-			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader);
+		if (!flags.shadowmap) {
+			rctx->setIrradianceProbe(
+				nearest_irradiance_probe(applyTransform(transform)),
+				flags.mainShader);
+		}
+
 		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
 		drawnMeshes++;
 	}
@@ -620,9 +634,12 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	shaderSync(flags.instancedShader, rctx);
 
 	for (auto& [transform, inverted, particleSystem, mesh] : instancedMeshes) {
-		rctx->setIrradianceProbe(
-			nearest_irradiance_probe(applyTransform(transform)),
-			flags.mainShader);
+		if (!flags.shadowmap) {
+			rctx->setIrradianceProbe(
+				nearest_irradiance_probe(applyTransform(transform)),
+				flags.mainShader);
+		}
+
 		drawMeshInstanced(flags, fb, flags.instancedShader,
 		                  transform, inverted, particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;

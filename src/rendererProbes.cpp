@@ -64,6 +64,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
+	flags.shadowmap = true;
+	flags.stencil = false;
 
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
@@ -122,6 +124,8 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
+	flags.shadowmap = true;
+	flags.stencil = false;
 
 	if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap)) {
 		std::cerr
@@ -236,6 +240,8 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	cam->setFovx(90);
 
 	renderFlags flags = rctx->probeShaders["refprobe"];
+	flags.stencil = false;
+
 	glActiveTexture(GL_TEXTURE7);
 	rctx->atlases.shadows->depth_tex->bind();
 

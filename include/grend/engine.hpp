@@ -173,6 +173,7 @@ struct renderFlags {
 	bool stencil    = true;
 	bool depth      = true;
 	bool syncshader = true;
+	bool shadowmap  = false;
 };
 
 class renderContext {
