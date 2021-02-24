@@ -210,6 +210,7 @@ class projalphaView : public gameView {
 		projalphaView(gameMain *game);
 		virtual void logic(gameMain *game, float delta);
 		virtual void render(gameMain *game);
+		void load(gameMain *game, std::string map);
 		//void loadPlayer(void);
 
 		enum modes {
@@ -227,9 +228,11 @@ class projalphaView : public gameView {
 		std::unique_ptr<levelController> level;
 		landscapeGenerator landscape;
 		inputHandlerSystem::ptr inputSystem;
+		std::string currentMap = "no map!";
+		std::string loadedMap = "no map loaded either!";
 
 	private:
-		void drawMainMenu(int wx, int wy);
+		void drawMainMenu(gameMain *game, int wx, int wy);
 
 };
 
@@ -323,6 +326,13 @@ void projalphaView::logic(gameMain *game, float delta) {
 		return;
 	}
 
+	// big XXX
+	if (currentMap != loadedMap) {
+		loadedMap = currentMap;
+		load(game, currentMap);
+		//level->reset()
+	}
+
 	static glm::vec3 lastvel = glm::vec3(0);
 	static gameObject::ptr retval;
 
@@ -368,7 +378,7 @@ void projalphaView::render(gameMain *game) {
 		//input.setMode(modes::Move);
 
 		// TODO: function to do this
-		drawMainMenu(winsize_x, winsize_y);
+		drawMainMenu(game, winsize_x, winsize_y);
 
 	} else {
 		renderWorld(game, cam, flags);
@@ -393,21 +403,93 @@ void projalphaView::render(gameMain *game) {
 	}
 }
 
-void projalphaView::drawMainMenu(int wx, int wy) {
+static std::vector<std::pair<std::string, bool>> listdir(std::string path) {
+	std::vector<std::pair<std::string, bool>> ret;
+
+// XXX: older debian raspi is built on doesn't include c++17 filesystem functions,
+//      so leave the old posix code in for that... aaaaa
+#if defined(_WIN32)
+	if (fs::exists(currentDir) && fs::is_directory(path)) {
+		for (auto& p : fs::directory_iterator(currentDir)) {
+			ret.push_back({p.path().filename(), !fs::is_directory(p.path())});
+		}
+
+	} else {
+		SDL_Log("listdir: Invalid directory %s", path.c_str());
+	}
+
+#else
+	DIR *dirp;
+
+	if ((dirp = opendir(path.c_str()))) {
+		struct dirent *dent;
+
+		while ((dent = readdir(dirp))) {
+			ret.push_back({std::string(dent->d_name), dent->d_type != DT_DIR});
+		}
+
+		/*
+		std::sort(dirContents.begin(), dirContents.end(),
+			[&] (struct f_dirent& a, struct f_dirent& b) {
+				return (a.type != b.type)
+					? a.type < b.type
+					: a.name < b.name;
+			});
+			*/
+	}
+#endif
+
+	return ret;
+}
+
+void projalphaView::load(gameMain *game, std::string map) {
+	// avoid reloading if the target map is already loaded
+	if (true || map != currentMap) {
+		TRS staticPosition; // default
+		game->state->rootnode = nullptr; // XXX: clear old map before loading new map
+		game->state->rootnode = loadMap(game, map);
+		game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
+		currentMap = map;
+
+		setNode("entities",  game->state->rootnode, game->entities->root);
+	}
+
+	level->reset();
+}
+
+void projalphaView::drawMainMenu(gameMain *game, int wx, int wy) {
 	static int selected;
 	bool reset = false;
 
 	vgui.newFrame(wx, wy);
-	vgui.menuBegin(wx / 2 - 100, wy / 2 - 100, 200, "testing");
+	vgui.menuBegin(wx / 2 - 100, wy / 2 - 100, 200, "Level select");
 
-	if (vgui.menuEntry("Play", &selected)) {
-		if (vgui.clicked()) {
-			reset = true; // XXX:
-			input.setMode(modes::Move);
+	static auto maps = listdir("./assets/maps/");
+
+	for (auto& [name, is_file] : maps) {
+		if (is_file && vgui.menuEntry(name.c_str(), &selected)) {
+			if (vgui.clicked()) {
+				SDL_Log("clicked %s", name.c_str());
+				currentMap = "./assets/maps/" + name;
+				//load(game, name);
+				//reset = true; // XXX:
+				input.setMode(modes::Move);
+
+			} else if (vgui.hovered()) {
+				selected = vgui.menuCount();
+			}
 		}
 	}
 
-	vgui.menuEntry("Quit", &selected);
+	if (vgui.menuEntry("Quit", &selected)) {
+		if (vgui.clicked()) {
+			SDL_Log("Quiterino");
+
+		} else if (vgui.hovered()) {
+			selected = vgui.menuCount();
+		}
+	}
+
 	vgui.menuEnd();
 	vgui.endFrame();
 
@@ -473,15 +555,11 @@ int main(int argc, char *argv[]) try {
 	});
 	*/
 
-	TRS staticPosition; // default
-	game->state->rootnode = loadMap(game, mapfile);
-	game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
-
 	projalphaView::ptr view = std::make_shared<projalphaView>(game);
 	view->cam->setFar(1000.0);
 	view->cam->setFovx(70.0);
 	game->setView(view);
-	game->rend->lightThreshold = 0.1;
+	game->rend->lightThreshold = 0.2;
 
 	// JS flashbacks
 	view->level->addInit([=] () {
@@ -572,7 +650,6 @@ int main(int argc, char *argv[]) try {
 			return std::pair<bool, std::string>(players.size() == 0, "lol u died");
 		});
 
-	setNode("entities",  game->state->rootnode, game->entities->root);
 	SDL_Log("Got to game->run()!");
 
 	if (char *target = getenv("GREND_TEST_TARGET")) {
@@ -581,6 +658,7 @@ int main(int argc, char *argv[]) try {
 		if (strcmp(target, "default") == 0) {
 			SDL_Log("Default tester!");
 			game->running = true;
+			view->load(game, mapfile);
 			view->input.setMode(projalphaView::modes::Move);
 
 			for (unsigned i = 0; i < 256; i++) {
