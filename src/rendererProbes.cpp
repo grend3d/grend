@@ -118,6 +118,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	glDepthFunc(GL_LESS);
 
 	camera::ptr cam = camera::ptr(new camera());
+	profile::startGroup("Set flags, bind");
 	cam->setPosition(applyTransform(transform));
 	// TODO: light angle
 	cam->setFovx(90);
@@ -133,9 +134,13 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 			<< std::endl;
 		return;
 	}
+	profile::endGroup();
 
+	profile::startGroup("Clear");
 	glClear(GL_DEPTH_BUFFER_BIT);
+	profile::endGroup();
 
+	profile::startGroup("Build queue");
 	renderQueue porque = queue;
 	// TODO: texture atlas should have some tree wrappers, just for
 	//       clean encapsulation...
@@ -145,9 +150,17 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 
 	cam->setDirection(dir, up);
 	cam->setViewport(info.size, info.size);
+	profile::endGroup();
 
 	porque.setCamera(cam);
+
+	profile::startGroup("Cull");
+	porque.cull(info.size, info.size, 1.0);
+	profile::endGroup();
+
+	profile::startGroup("Draw");
 	porque.flush(info.size, info.size, rctx, flags);
+	profile::endGroup();
 	DO_ERROR_CHECK();
 
 	light->have_map = true;
