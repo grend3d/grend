@@ -20,9 +20,18 @@
 
 using namespace grendx;
 
+class gltfModel {
+	public:
+		gltfModel(tinygltf::Model& mod) : data(mod) {};
+		tinygltf::Model data;
+
+		std::map<int, materialTexture::weakptr> texcache;
+		std::map<int, material::weakptr>        matcache;
+};
+
 namespace grendx {
 // XXX: ...
-modelMap load_gltf_models(tinygltf::Model& tgltf_model);
+modelMap load_gltf_models(gltfModel& gltf);
 }
 
 template <class T>
@@ -90,19 +99,19 @@ static inline bool assert_nonzero(size_t x) {
 	return true;
 }
 
-static tinygltf::Material& gltf_material(tinygltf::Model& gltf_model, size_t idx) {
-	check_index(gltf_model.materials, idx);
-	return gltf_model.materials[idx];
+static tinygltf::Material& gltf_material(gltfModel& gltf, size_t idx) {
+	check_index(gltf.data.materials, idx);
+	return gltf.data.materials[idx];
 }
 
-static tinygltf::Texture& gltf_texture(tinygltf::Model& gltf_model, size_t idx) {
-	check_index(gltf_model.textures, idx);
-	return gltf_model.textures[idx];
+static tinygltf::Texture& gltf_texture(gltfModel& gltf, size_t idx) {
+	check_index(gltf.data.textures, idx);
+	return gltf.data.textures[idx];
 }
 
-static tinygltf::Image& gltf_image(tinygltf::Model& gltf_model, size_t idx) {
-	check_index(gltf_model.textures, idx);
-	return gltf_model.images[idx];
+static tinygltf::Image& gltf_image(gltfModel& gltf, size_t idx) {
+	check_index(gltf.data.textures, idx);
+	return gltf.data.images[idx];
 }
 
 static size_t gltf_buff_element_size(int component, int type) {
@@ -150,19 +159,19 @@ static size_t gltf_buff_element_size(int component, int type) {
 	return size_component * size_type;
 }
 
-static void *gltf_load_accessor(tinygltf::Model& tgltf_model, int idx) {
-	check_index(tgltf_model.accessors, idx);
-	auto& acc = tgltf_model.accessors[idx];
+static void *gltf_load_accessor(gltfModel& gltf, int idx) {
+	check_index(gltf.data.accessors, idx);
+	auto& acc = gltf.data.accessors[idx];
 
 	size_t elem_size =
 		gltf_buff_element_size(acc.componentType, acc.type);
 	size_t buff_size = acc.count * elem_size;
 	assert_nonzero(elem_size);
 
-	check_index(tgltf_model.bufferViews, acc.bufferView);
-	auto& view = tgltf_model.bufferViews[acc.bufferView];
-	check_index(tgltf_model.buffers, view.buffer);
-	auto& buffer = tgltf_model.buffers[view.buffer];
+	check_index(gltf.data.bufferViews, acc.bufferView);
+	auto& view = gltf.data.bufferViews[acc.bufferView];
+	check_index(gltf.data.buffers, view.buffer);
+	auto& buffer = gltf.data.buffers[view.buffer];
 
 	check_index(buffer.data,
 			view.byteOffset + acc.byteOffset + buff_size - 1);
@@ -170,16 +179,16 @@ static void *gltf_load_accessor(tinygltf::Model& tgltf_model, int idx) {
 };
 
 template<typename T>
-static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
+static void gltf_unpack_buffer(gltfModel& gltf,
                                int accessor,
                                std::vector<T>& vec)
 {
-	check_index(gltf_model.accessors, accessor);
-	auto& acc = gltf_model.accessors[accessor];
-	check_index(gltf_model.bufferViews, acc.bufferView);
-	auto& view = gltf_model.bufferViews[acc.bufferView];
+	check_index(gltf.data.accessors, accessor);
+	auto& acc = gltf.data.accessors[accessor];
+	check_index(gltf.data.bufferViews, acc.bufferView);
+	auto& view = gltf.data.bufferViews[acc.bufferView];
 
-	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf, accessor));
 	size_t emsz = view.byteStride
 		? view.byteStride
 		: gltf_buff_element_size(acc.componentType, acc.type);
@@ -192,13 +201,13 @@ static void gltf_unpack_buffer(tinygltf::Model& gltf_model,
 
 template<typename T>
 static accessorIterator<T>
-gltf_buffer_iterator(tinygltf::Model& gltf_model, int accessor) {
-	check_index(gltf_model.accessors, accessor);
-	auto& acc = gltf_model.accessors[accessor];
-	check_index(gltf_model.bufferViews, acc.bufferView);
-	auto& view = gltf_model.bufferViews[acc.bufferView];
+gltf_buffer_iterator(gltfModel& gltf, int accessor) {
+	check_index(gltf.data.accessors, accessor);
+	auto& acc = gltf.data.accessors[accessor];
+	check_index(gltf.data.bufferViews, acc.bufferView);
+	auto& view = gltf.data.bufferViews[acc.bufferView];
 
-	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf, accessor));
 	size_t emsz = view.byteStride
 		? view.byteStride
 		: gltf_buff_element_size(acc.componentType, acc.type);
@@ -207,16 +216,16 @@ gltf_buffer_iterator(tinygltf::Model& gltf_model, int accessor) {
 	return accessorIterator<T>(datas, acc.count, emsz);
 }
 
-static void gltf_unpack_ushort_to_uint(tinygltf::Model& gltf_model,
+static void gltf_unpack_ushort_to_uint(gltfModel& gltf,
                                        int accessor,
                                        std::vector<GLuint>& vec)
 {
-	check_index(gltf_model.accessors, accessor);
-	auto& acc = gltf_model.accessors[accessor];
-	check_index(gltf_model.bufferViews, acc.bufferView);
-	auto& view = gltf_model.bufferViews[acc.bufferView];
+	check_index(gltf.data.accessors, accessor);
+	auto& acc = gltf.data.accessors[accessor];
+	check_index(gltf.data.bufferViews, acc.bufferView);
+	auto& view = gltf.data.bufferViews[acc.bufferView];
 
-	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf_model, accessor));
+	uint8_t *datas = static_cast<uint8_t*>(gltf_load_accessor(gltf, accessor));
 	size_t emsz = view.byteStride
 		? view.byteStride
 		: gltf_buff_element_size(acc.componentType, acc.type);
@@ -249,43 +258,19 @@ gltf_accessor_aabb(tinygltf::Accessor& acc) {
 	}
 }
 
-typedef std::pair<size_t, int> cachekey;
-static size_t hashModel(tinygltf::Model& gltf_model) {
-	// XXX: big hacks: using field sizes as a unique identifier for the model
-	//      seriously this might not be good code :V
-	return
-		(gltf_model.accessors.size()   << 12) +
-		(gltf_model.animations.size()  << 11) +
-		(gltf_model.buffers.size()     << 10) +
-		(gltf_model.bufferViews.size() << 9)  +
-		(gltf_model.materials.size()   << 8)  +
-		(gltf_model.meshes.size()      << 7)  +
-		(gltf_model.nodes.size()       << 7)  +
-		(gltf_model.textures.size()    << 6)  +
-		(gltf_model.images.size()      << 5)  +
-		(gltf_model.skins.size()       << 4)  +
-		(gltf_model.samplers.size()    << 3)  +
-		(gltf_model.cameras.size()     << 2)  +
-		(gltf_model.scenes.size()      << 1)  +
-		(gltf_model.lights.size());
-}
-
-static materialTexture::ptr
-gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
-	static std::map<cachekey, materialTexture::weakptr> cache;
+static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 	materialTexture::ptr ret;
-	cachekey key = {hashModel(gltf_model), tex_idx};
 
-	if (cache.count(key) && (ret = cache[key].lock())) {
+	if (gltf.texcache.count(tex_idx) && (ret = gltf.texcache[tex_idx].lock())) {
 		return ret;
 
 	} else {
-		cache[key] = ret = std::make_shared<materialTexture>();
+		gltf.texcache[tex_idx] = ret = std::make_shared<materialTexture>();
 
-		auto& tex = gltf_texture(gltf_model, tex_idx);
+		auto& tex = gltf_texture(gltf, tex_idx);
 		//std::cerr << "        + texture source: " << tex.source << std::endl;
 
-		auto& img = gltf_image(gltf_model, tex.source);
+		auto& img = gltf_image(gltf, tex.source);
 		//std::cerr << "        + texture image source: " << img.uri << ", "
 		//	<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
@@ -296,30 +281,21 @@ gltf_load_texture(tinygltf::Model& gltf_model, int tex_idx) {
 		ret->channels = img.component;
 		ret->size = ret->width * ret->height * ret->channels;
 
-		// while we're here, clear expired cache entries
-		for (auto it = cache.begin(); it != cache.end();) {
-			auto& [key, ptr] = *it;
-
-			it = ptr.expired()? cache.erase(it) : std::next(it);
-		}
-
 		return ret;
 	}
 }
 
-static material::ptr
-  gltf_load_material(tinygltf::Model& gltf_model, int material_idx)
-{
-	static std::map<cachekey, material::weakptr> cache;
+static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 	material::ptr ret;
-	cachekey key = {hashModel(gltf_model), material_idx};
 
-	if (cache.count(key) && (ret = cache[key].lock())) {
+	if (gltf.matcache.count(material_idx)
+	    && (ret = gltf.matcache[material_idx].lock()))
+	{
 		return ret;
 
 	} else {
-		cache[key] = ret = std::make_shared<grendx::material>();
-		auto& mat = gltf_material(gltf_model, material_idx);
+		gltf.matcache[material_idx] = ret = std::make_shared<grendx::material>();
+		auto& mat = gltf_material(gltf, material_idx);
 
 		auto& pbr = mat.pbrMetallicRoughness;
 		auto& base_color = pbr.baseColorFactor;
@@ -328,28 +304,28 @@ static material::ptr
 
 		if (pbr.baseColorTexture.index >= 0) {
 			ret->maps.diffuse =
-				gltf_load_texture(gltf_model, pbr.baseColorTexture.index);
+				gltf_load_texture(gltf, pbr.baseColorTexture.index);
 		}
 
 		if (pbr.metallicRoughnessTexture.index >= 0) {
 			ret->maps.metalRoughness =
-				gltf_load_texture(gltf_model, pbr.metallicRoughnessTexture.index);
+				gltf_load_texture(gltf, pbr.metallicRoughnessTexture.index);
 		}
 
 
 		if (mat.normalTexture.index >= 0) {
 			ret->maps.normal =
-				gltf_load_texture(gltf_model, mat.normalTexture.index);
+				gltf_load_texture(gltf, mat.normalTexture.index);
 		}
 
 		if (mat.occlusionTexture.index >= 0) {
 			ret->maps.ambientOcclusion =
-				gltf_load_texture(gltf_model, mat.occlusionTexture.index);
+				gltf_load_texture(gltf, mat.occlusionTexture.index);
 		}
 
 		if (mat.emissiveTexture.index >= 0) {
 			ret->maps.emissive =
-				gltf_load_texture(gltf_model, mat.emissiveTexture.index);
+				gltf_load_texture(gltf, mat.emissiveTexture.index);
 		}
 
 		if (mat.alphaMode == "BLEND") {
@@ -369,21 +345,12 @@ static material::ptr
 		ret->factors.metalness = pbr.metallicFactor;
 		ret->factors.diffuse   = mat_diffuse;
 
-		// while we're here, clear expired cache entries
-		// TODO: duplicated code, could this be unified somehow
-		for (auto it = cache.begin(); it != cache.end();) {
-			auto& [key, ptr] = *it;
-
-			it = ptr.expired()? cache.erase(it) : std::next(it);
-		}
-
 		return ret;
 	}
 }
 
-materialTexture::ptr load_gltf_lightmap(tinygltf::Model& tgltf_model) {
-
-	for (auto& img : tgltf_model.images) {
+materialTexture::ptr load_gltf_lightmap(gltfModel& gltf) {
+	for (auto& img : gltf.data.images) {
 		if (img.name.find("grendLightmap") != std::string::npos) {
 			std::cerr << " GLTF > have lightmap: "
 				" name: " << img.name << ", "
@@ -405,11 +372,11 @@ materialTexture::ptr load_gltf_lightmap(tinygltf::Model& tgltf_model) {
 	return nullptr;
 }
 
-grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
+grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 	modelMap ret;
-	materialTexture::ptr lightmap = load_gltf_lightmap(tgltf_model);
+	materialTexture::ptr lightmap = load_gltf_lightmap(gltf);
 
-	for (auto& mesh : tgltf_model.meshes) {
+	for (auto& mesh : gltf.data.meshes) {
 		grendx::gameModel::ptr curModel =
 			grendx::gameModel::ptr(new grendx::gameModel());
 		ret[mesh.name] = curModel;
@@ -437,7 +404,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 
 			if (prim.material >= 0) {
 				modmesh->meshMaterial
-					= gltf_load_material(tgltf_model, prim.material);
+					= gltf_load_material(gltf, prim.material);
 			} else {
 				// XXX: a little wasteful
 				modmesh->meshMaterial = std::make_shared<material>();
@@ -493,18 +460,18 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			}
 
 			if (elements >= 0) {
-				check_index(tgltf_model.accessors, elements);
+				check_index(gltf.data.accessors, elements);
 
-				auto& acc = tgltf_model.accessors[elements];
+				auto& acc = gltf.data.accessors[elements];
 				assert_type(acc.type, TINYGLTF_TYPE_SCALAR);
 
 				size_t vsize = curModel->vertices.size();
 				auto& submesh = modmesh->faces;
 
 				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-					gltf_unpack_ushort_to_uint(tgltf_model, elements, submesh);
+					gltf_unpack_ushort_to_uint(gltf, elements, submesh);
 				} else if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-					gltf_unpack_buffer(tgltf_model, elements, submesh);
+					gltf_unpack_buffer(gltf, elements, submesh);
 				} else {
 					assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT);
 				}
@@ -518,7 +485,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			} else {
 				// identity-mapped indices
 				// std::cerr << "        generating indices..." << std::endl;
-				auto& acc = tgltf_model.accessors[position];
+				auto& acc = gltf.data.accessors[position];
 				auto& submesh = modmesh->faces;
 				size_t vsize = curModel->vertices.size();
 
@@ -535,55 +502,55 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			accessorIterator<glm::vec2> litIt;
 
 			if (normals >= 0) {
-				check_index(tgltf_model.accessors, normals);
+				check_index(gltf.data.accessors, normals);
 
-				auto& acc = tgltf_model.accessors[normals];
+				auto& acc = gltf.data.accessors[normals];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				//gltf_unpack_buffer(tgltf_model, normals, curModel->normals);
-				normalIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, normals);
+				//gltf_unpack_buffer(gltf, normals, curModel->normals);
+				normalIt = gltf_buffer_iterator<glm::vec3>(gltf, normals);
 				curModel->haveNormals = true;
 			}
 
 			if (tangents >= 0) {
-				check_index(tgltf_model.accessors, tangents);
+				check_index(gltf.data.accessors, tangents);
 				// std::cerr << "        have tangents... " << tangents << std::endl;
 
-				auto& acc = tgltf_model.accessors[tangents];
+				auto& acc = gltf.data.accessors[tangents];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				//gltf_unpack_buffer(tgltf_model, tangents, curModel->tangents);
+				//gltf_unpack_buffer(gltf, tangents, curModel->tangents);
 				// TODO: tangent is vec4!
-				tangentIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, tangents);
+				tangentIt = gltf_buffer_iterator<glm::vec3>(gltf, tangents);
 				curModel->haveTangents = true;
 			}
 
 			if (colors >= 0) {
-				check_index(tgltf_model.accessors, colors);
+				check_index(gltf.data.accessors, colors);
 				// std::cerr << "        have colors... " << colors << std::endl;
 
-				auto& acc = tgltf_model.accessors[colors];
+				auto& acc = gltf.data.accessors[colors];
 				// TODO: also vec3
 				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
 				// TODO: need to handle float and byte types
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 
-				//gltf_unpack_buffer(tgltf_model, colors, curModel->colors);
-				colorIt = gltf_buffer_iterator<usvec4>(tgltf_model, colors);
+				//gltf_unpack_buffer(gltf, colors, curModel->colors);
+				colorIt = gltf_buffer_iterator<usvec4>(gltf, colors);
 				curModel->haveColors = true;
 			}
 
 			if (position >= 0) {
-				check_index(tgltf_model.accessors, position);
+				check_index(gltf.data.accessors, position);
 
-				auto& acc = tgltf_model.accessors[position];
+				auto& acc = gltf.data.accessors[position];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC3);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				//gltf_unpack_buffer(tgltf_model, position, curModel->vertices);
-				positionIt = gltf_buffer_iterator<glm::vec3>(tgltf_model, position);
+				//gltf_unpack_buffer(gltf, position, curModel->vertices);
+				positionIt = gltf_buffer_iterator<glm::vec3>(gltf, position);
 
 				if (auto box = gltf_accessor_aabb(acc)) {
 					curModel->haveAABB = true;
@@ -592,26 +559,26 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			}
 
 			if (texcoord >= 0) {
-				check_index(tgltf_model.accessors, texcoord);
+				check_index(gltf.data.accessors, texcoord);
 
-				auto& acc = tgltf_model.accessors[texcoord];
+				auto& acc = gltf.data.accessors[texcoord];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				//gltf_unpack_buffer(tgltf_model, texcoord, curModel->texcoords);
-				uvIt = gltf_buffer_iterator<glm::vec2>(tgltf_model, texcoord);
+				//gltf_unpack_buffer(gltf, texcoord, curModel->texcoords);
+				uvIt = gltf_buffer_iterator<glm::vec2>(gltf, texcoord);
 				curModel->haveTexcoords = true;
 			}
 
 			if (lightmap >= 0) {
-				check_index(tgltf_model.accessors, lightmap);
+				check_index(gltf.data.accessors, lightmap);
 
-				auto& acc = tgltf_model.accessors[lightmap];
+				auto& acc = gltf.data.accessors[lightmap];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC2);
 				assert_type(acc.componentType, TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				//gltf_unpack_buffer(tgltf_model, lightmap, curModel->lightmap);
-				litIt = gltf_buffer_iterator<glm::vec2>(tgltf_model, lightmap);
+				//gltf_unpack_buffer(gltf, lightmap, curModel->lightmap);
+				litIt = gltf_buffer_iterator<glm::vec2>(gltf, lightmap);
 				curModel->haveLightmap = true;
 			}
 
@@ -644,22 +611,22 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 			accessorIterator<glm::vec4> weightIt;
 
 			if (joints >= 0 && weights >= 0) {
-				check_index(tgltf_model.accessors, joints);
-				check_index(tgltf_model.accessors, weights);
-				auto& jac = tgltf_model.accessors[joints];
-				auto& wac = tgltf_model.accessors[weights];
+				check_index(gltf.data.accessors, joints);
+				check_index(gltf.data.accessors, weights);
+				auto& jac = gltf.data.accessors[joints];
+				auto& wac = gltf.data.accessors[weights];
 
 				assert_type(jac.type, TINYGLTF_TYPE_VEC4);
 				assert_type(wac.type, TINYGLTF_TYPE_VEC4);
 
 				if (jac.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
 					jointType = jac.componentType;
-					jointItByte = gltf_buffer_iterator<ubvec4>(tgltf_model, joints);
+					jointItByte = gltf_buffer_iterator<ubvec4>(gltf, joints);
 				} else if (jac.componentType
 				           == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
 				{
 					jointType = jac.componentType;
-					jointItShort = gltf_buffer_iterator<usvec4>(tgltf_model, joints);
+					jointItShort = gltf_buffer_iterator<usvec4>(gltf, joints);
 				}
 
 				//assert_type(jac.componentType,
@@ -668,7 +635,7 @@ grendx::modelMap grendx::load_gltf_models(tinygltf::Model& tgltf_model) {
 				assert_type(wac.componentType,
 					TINYGLTF_COMPONENT_TYPE_FLOAT);
 
-				weightIt = gltf_buffer_iterator<glm::vec4>(tgltf_model, weights);
+				weightIt = gltf_buffer_iterator<glm::vec4>(gltf, weights);
 				curModel->haveJoints = true;
 				// std::cerr << "        have joints: " << joints << std::endl;
 			}
@@ -740,7 +707,7 @@ static void assert_componentType(tinygltf::Model& mod, int accidx, int expected)
 }
 
 static gameObject::ptr 
-load_gltf_skin_node_top(tinygltf::Model& gmod,
+load_gltf_skin_node_top(gltfModel& gltf,
                         animation_map& animations,
                         int nodeidx)
 {
@@ -752,7 +719,7 @@ load_gltf_skin_node_top(tinygltf::Model& gmod,
 
 	auto it = animations.find(nodeidx);
 	if (it != animations.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
 		ret->animations = it->second;
 	}
 
@@ -761,7 +728,7 @@ load_gltf_skin_node_top(tinygltf::Model& gmod,
 
 
 static gameObject::ptr 
-load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
+load_gltf_skin_nodes_rec(gltfModel& gltf,
                          animation_map& animations,
                          int nodeidx)
 {
@@ -770,25 +737,25 @@ load_gltf_skin_nodes_rec(tinygltf::Model& gmod,
 	}
 
 	// TODO: range checko
-	auto& node = gmod.nodes[nodeidx];
+	auto& node = gltf.data.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
 	auto it = animations.find(nodeidx); if (it != animations.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
 		ret->animations = it->second;
 	}
 
 	for (auto& idx : node.children) {
-		auto& cnode = gmod.nodes[idx];
+		auto& cnode = gltf.data.nodes[idx];
 		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
-		setNode(name, ret, load_gltf_skin_nodes_rec(gmod, animations, idx));
+		setNode(name, ret, load_gltf_skin_nodes_rec(gltf, animations, idx));
 	}
 
 	return ret;
 }
 
 static gameSkin::ptr
-load_gltf_skin_nodes(tinygltf::Model& gmod,
+load_gltf_skin_nodes(gltfModel& gltf,
                      animation_map& animations,
                      int nodeidx)
 {
@@ -797,7 +764,7 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 	}
 
 	// TODO: range checko
-	auto& skin = gmod.skins[nodeidx];
+	auto& skin = gltf.data.skins[nodeidx];
 	gameSkin::ptr   obj    = std::make_shared<gameSkin>();
 	gameObject::ptr sub    = std::make_shared<gameObject>();
 	gameObject::ptr joints = std::make_shared<gameObject>();
@@ -807,8 +774,8 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 
 	/*
 	for (auto& idx : skin.joints) {
-		auto& cnode = gmod.nodes[idx];
-		gameObject::ptr jnt = load_gltf_skin_nodes_rec(gmod, animations, idx);
+		auto& cnode = gltf.data.nodes[idx];
+		gameObject::ptr jnt = load_gltf_skin_nodes_rec(gltf, animations, idx);
 		obj->joints.push_back(jnt);
 	}
 	*/
@@ -816,13 +783,13 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 	std::map<int, gameObject::ptr> jointidxs;
 
 	for (auto& idx : skin.joints) {
-		gameObject::ptr jnt = load_gltf_skin_node_top(gmod, animations, idx);
+		gameObject::ptr jnt = load_gltf_skin_node_top(gltf, animations, idx);
 		obj->joints.push_back(jnt);
 		jointidxs[idx] = jnt;
 	}
 
 	for (auto& [idx, ptr] : jointidxs) {
-		auto& node = gmod.nodes[idx];
+		auto& node = gltf.data.nodes[idx];
 		for (auto& i : node.children) {
 			assert(jointidxs.find(i) != jointidxs.end());
 			std::string name = "joint["+std::to_string(i)+"]:" + node.name;
@@ -841,14 +808,14 @@ load_gltf_skin_nodes(tinygltf::Model& gmod,
 	/*
 	if (skin.skeleton >= 0) {
 		setNode("skeleton", sub,
-			load_gltf_skin_nodes_rec(gmod, animations, skin.skeleton));
+			load_gltf_skin_nodes_rec(gltf, animations, skin.skeleton));
 	}
 	*/
 
-	assert_accessor_type(gmod, skin.inverseBindMatrices, TINYGLTF_TYPE_MAT4);
-	assert_componentType(gmod, skin.inverseBindMatrices,
+	assert_accessor_type(gltf.data, skin.inverseBindMatrices, TINYGLTF_TYPE_MAT4);
+	assert_componentType(gltf.data, skin.inverseBindMatrices,
 	                      TINYGLTF_COMPONENT_TYPE_FLOAT);
-	gltf_unpack_buffer(gmod, skin.inverseBindMatrices, obj->inverseBind);
+	gltf_unpack_buffer(gltf, skin.inverseBindMatrices, obj->inverseBind);
 
 	return obj;
 }
@@ -882,7 +849,7 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	ptr->transform.scale = scale;
 }
 
-static void load_gltf_node_light(tinygltf::Model& gmod,
+static void load_gltf_node_light(gltfModel& gltf,
                                  tinygltf::Node& node,
                                  gameObject::ptr obj)
 {
@@ -903,12 +870,12 @@ static void load_gltf_node_light(tinygltf::Model& gmod,
 
 		int idx = val.GetNumberAsInt();
 
-		if ((unsigned)idx >= gmod.lights.size()) {
+		if ((unsigned)idx >= gltf.data.lights.size()) {
 			std::cerr << " GLTF > invalid light object index" << std::endl;
 			return;
 		}
 
-		auto& light = gmod.lights[idx];
+		auto& light = gltf.data.lights[idx];
 		std::cerr << " GLTF > node light! " << light.name << ": " << light.type << std::endl;
 
 		if (light.type == "point") {
@@ -943,25 +910,25 @@ static void load_gltf_node_light(tinygltf::Model& gmod,
 }
 
 static gameObject::ptr
-load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
+load_gltf_scene_nodes_rec(gltfModel& gltf,
                           modelMap& models,
                           animation_map& anims,
                           node_map& names,
                           int nodeidx)
 {
 	// TODO: range check
-	auto& node = gmod.nodes[nodeidx];
+	auto& node = gltf.data.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 	set_object_gltf_transform(ret, node);
-	load_gltf_node_light(gmod, node, ret);
+	load_gltf_node_light(gltf, node, ret);
 
 	auto it = anims.find(nodeidx); if (it != anims.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gmod, it->second);
+		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
 		ret->animations = it->second;
 	}
 
-	if (node.mesh >= 0 && (unsigned)node.mesh < gmod.meshes.size()) {
-		auto& mesh = gmod.meshes[node.mesh];
+	if (node.mesh >= 0 && (unsigned)node.mesh < gltf.data.meshes.size()) {
+		auto& mesh = gltf.data.meshes[node.mesh];
 
 		if (models.count(mesh.name)) {
 			setNode("mesh", ret, models[mesh.name]);
@@ -975,7 +942,7 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 	if (node.skin >= 0) {
 		// TODO: range check
 		// TODO: get skin node names
-		auto  obj = load_gltf_skin_nodes(gmod, anims, node.skin);
+		auto  obj = load_gltf_skin_nodes(gltf, anims, node.skin);
 		setNode("skin", ret, obj);
 	}
 
@@ -987,7 +954,7 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 
 	for (auto& x : node.children) {
 		std::string id = "node["+std::to_string(x)+"]";
-		setNode(id, ret, load_gltf_scene_nodes_rec(gmod, models, anims, names, x));
+		setNode(id, ret, load_gltf_scene_nodes_rec(gltf, models, anims, names, x));
 	}
 
 	if (!node.name.empty()) {
@@ -1005,7 +972,7 @@ load_gltf_scene_nodes_rec(tinygltf::Model& gmod,
 
 static void
 load_gltf_animation_channels(animationChannel::ptr cookedchan,
-                             tinygltf::Model& gmod,
+                             gltfModel& gltf,
                              tinygltf::Animation& anim,
                              tinygltf::AnimationChannel& chan)
 {
@@ -1019,8 +986,8 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 
 	// TODO: range check
 	auto& sampler = anim.samplers[chan.sampler];
-	assert_accessor_type(gmod, sampler.input, TINYGLTF_TYPE_SCALAR);
-	assert_componentType(gmod, sampler.input,
+	assert_accessor_type(gltf.data, sampler.input, TINYGLTF_TYPE_SCALAR);
+	assert_componentType(gltf.data, sampler.input,
 		TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 	animation::ptr chananim;
@@ -1031,11 +998,11 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 			std::make_shared<animationTranslation>();
 		chananim = objanim;
 
-		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-		assert_componentType(gmod, sampler.output,
+		assert_accessor_type(gltf.data, sampler.output, TINYGLTF_TYPE_VEC3);
+		assert_componentType(gltf.data, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
-		gltf_unpack_buffer(gmod, sampler.output, objanim->translations);
-		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+		gltf_unpack_buffer(gltf, sampler.output, objanim->translations);
+		gltf_unpack_buffer(gltf, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "rotation") {
 		// std::cerr << "GLTF: loading rotation animation" << std::endl;
@@ -1043,11 +1010,11 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 			std::make_shared<animationRotation>();
 		chananim = objanim;
 
-		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC4);
-		assert_componentType(gmod, sampler.output,
+		assert_accessor_type(gltf.data, sampler.output, TINYGLTF_TYPE_VEC4);
+		assert_componentType(gltf.data, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
-		gltf_unpack_buffer(gmod, sampler.output, objanim->rotations);
-		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+		gltf_unpack_buffer(gltf, sampler.output, objanim->rotations);
+		gltf_unpack_buffer(gltf, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "scale") {
 		// std::cerr << "GLTF: loading scale animation" << std::endl;
@@ -1055,11 +1022,11 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 			std::make_shared<animationScale>();
 		chananim = objanim;
 		
-		assert_accessor_type(gmod, sampler.output, TINYGLTF_TYPE_VEC3);
-		assert_componentType(gmod, sampler.output,
+		assert_accessor_type(gltf.data, sampler.output, TINYGLTF_TYPE_VEC3);
+		assert_componentType(gltf.data, sampler.output,
 			TINYGLTF_COMPONENT_TYPE_FLOAT);
-		gltf_unpack_buffer(gmod, sampler.output, objanim->scales);
-		gltf_unpack_buffer(gmod, sampler.input,  objanim->frametimes);
+		gltf_unpack_buffer(gltf, sampler.output, objanim->scales);
+		gltf_unpack_buffer(gltf, sampler.input,  objanim->frametimes);
 	}
 
 	cookedchan->animations.push_back(chananim);
@@ -1068,12 +1035,12 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 			  chananim->frametimes.back());
 }
 
-static animation_map collectAnimations(tinygltf::Model& gmod) {
+static animation_map collectAnimations(gltfModel& gltf) {
 	animation_map ret;
 	auto collection = std::make_shared<animationCollection>();
 
-	for (unsigned i = 0; i < gmod.animations.size(); i++) {
-		auto& anim = gmod.animations[i];
+	for (unsigned i = 0; i < gltf.data.animations.size(); i++) {
+		auto& anim = gltf.data.animations[i];
 		auto group = std::make_shared<animationGroup>();
 		// TODO: put this in constructor
 		group->name = anim.name.empty()
@@ -1097,7 +1064,7 @@ static animation_map collectAnimations(tinygltf::Model& gmod) {
 			chanptr->group = group;
 
 			//if (!chanset.count(chan.target_node)) {
-				load_gltf_animation_channels(chanptr, gmod, anim, chan);
+				load_gltf_animation_channels(chanptr, gltf, anim, chan);
 				ret[chan.target_node].push_back(chanptr);
 				chanset.insert(chan.target_node);
 			//}
@@ -1109,19 +1076,19 @@ static animation_map collectAnimations(tinygltf::Model& gmod) {
 
 static gameImport::ptr
 load_gltf_scene_nodes(std::string filename,
-                      tinygltf::Model& gmod,
+                      gltfModel& gltf,
                       modelMap& models)
 {
 	gameImport::ptr ret = std::make_shared<gameImport>(filename);
-	auto anims = collectAnimations(gmod);
+	auto anims = collectAnimations(gltf);
 	node_map names;
 
 	gameImport::ptr sceneobj = std::make_shared<gameImport>(filename);
-	for (auto& scene : gmod.scenes) {
+	for (auto& scene : gltf.data.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
 			setNode(id, sceneobj,
-				load_gltf_scene_nodes_rec(gmod, models, anims, names, nodeidx));
+				load_gltf_scene_nodes_rec(gltf, models, anims, names, nodeidx));
 		}
 	}
 
@@ -1138,10 +1105,10 @@ load_gltf_scene_nodes(std::string filename,
 	return ret;
 }
 
-static tinygltf::Model open_gltf_model(std::string filename) {
+static gltfModel open_gltf_model(std::string filename) {
 	// TODO: parse extension, handle binary format
 	tinygltf::TinyGLTF loader;
-	tinygltf::Model tgltf_model;
+	tinygltf::Model gltf;
 	std::string ext = filename_extension(filename);
 
 	std::string err;
@@ -1149,11 +1116,11 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 	bool loaded;
 
 	if (ext == ".glb") {
-		loaded = loader.LoadBinaryFromFile(&tgltf_model, &err, &warn, filename);
+		loaded = loader.LoadBinaryFromFile(&gltf, &err, &warn, filename);
 
 	} else {
 		// assume ascii otherwise
-		loaded = loader.LoadASCIIFromFile(&tgltf_model, &err, &warn, filename);
+		loaded = loader.LoadASCIIFromFile(&gltf, &err, &warn, filename);
 	}
 
 	if (!loaded) {
@@ -1169,7 +1136,7 @@ static tinygltf::Model open_gltf_model(std::string filename) {
 		std::cerr << "/!\\ WARNING: " << warn << std::endl;
 	}
 
-	return tgltf_model;
+	return gltfModel(gltf);
 }
 
 static void updateModelSources(grendx::modelMap& models, std::string filename) {
@@ -1179,8 +1146,8 @@ static void updateModelSources(grendx::modelMap& models, std::string filename) {
 }
 
 grendx::modelMap grendx::load_gltf_models(std::string filename) {
-	tinygltf::Model gmod = open_gltf_model(filename);
-	auto models = load_gltf_models(gmod);
+	gltfModel gltf = open_gltf_model(filename);
+	auto models = load_gltf_models(gltf);
 	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
 
 	updateModelSources(models, filename);
@@ -1190,11 +1157,11 @@ grendx::modelMap grendx::load_gltf_models(std::string filename) {
 std::pair<grendx::gameImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
 	SDL_Log("Opening gltf scene %s...", filename.c_str());
-	tinygltf::Model gmod = open_gltf_model(filename);
+	gltfModel gltf = open_gltf_model(filename);
 	SDL_Log("Loading gltf scene %s...", filename.c_str());
-	grendx::modelMap models = load_gltf_models(gmod);
+	grendx::modelMap models = load_gltf_models(gltf);
 	SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
-	gameImport::ptr ret = load_gltf_scene_nodes(filename, gmod, models);
+	gameImport::ptr ret = load_gltf_scene_nodes(filename, gltf, models);
 
 	SDL_Log("updating sources %s...", filename.c_str());
 	updateModelSources(models, filename);

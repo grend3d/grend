@@ -12,10 +12,7 @@
 using namespace grendx;
 
 material::ptr default_material;
-Texture::ptr default_diffuse, default_metal_roughness;
-Texture::ptr default_normmap, default_aomap;
-Texture::ptr default_emissive;
-Texture::ptr default_lightmap;
+compiledMaterial::ptr default_compiledMat;
 
 renderContext::renderContext(context& ctx) {
 	enable(GL_DEPTH_TEST);
@@ -36,14 +33,6 @@ renderContext::renderContext(context& ctx) {
 	spotTiles  = genBuffer(GL_UNIFORM_BUFFER);
 	spotTiles->bind();
 	spotTiles->allocate(sizeof(light_tiles_std140));
-
-	/*
-	for (auto& buf : {pointTiles, spotTiles}) {
-		buf->bind();
-		buf->allocate(sizeof(light_tiles_std140));
-	}
-	*/
-
 
 	memset(&lightBufferCtx, 0, sizeof(lightBufferCtx));
 	memset(&pointTilesCtx,  0, sizeof(pointTilesCtx));
@@ -95,19 +84,7 @@ renderContext::renderContext(context& ctx) {
 	default_material->maps.lightmap
 		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
 
-	default_diffuse         = genTexture();
-	default_metal_roughness = genTexture();
-	default_normmap         = genTexture();
-	default_aomap           = genTexture();
-	default_emissive        = genTexture();
-	default_lightmap        = genTexture();
-
-	default_diffuse->buffer(default_material->maps.diffuse, true);
-	default_emissive->buffer(default_material->maps.emissive, true);
-	default_lightmap->buffer(default_material->maps.lightmap, true);
-	default_metal_roughness->buffer(default_material->maps.metalRoughness);
-	default_normmap->buffer(default_material->maps.normal);
-	default_aomap->buffer(default_material->maps.ambientOcclusion);
+	default_compiledMat = matcache(default_material);
 
 	loadShaders();
 	SDL_Log("Initialized render context");
@@ -340,7 +317,7 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 	if (!mat) {
 		//set_default_material(program);
 		// TODO: set default compiled material
-		return;
+		mat = default_compiledMat;
 	}
 
 	if (program->cacheObject("current_material", mat.get())) {
@@ -363,27 +340,27 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 
 		diffuse = mat->textures.diffuse
 			? mat->textures.diffuse
-			: default_diffuse;
+			: default_compiledMat->textures.diffuse;
 
 		metalrough = mat->textures.metalRoughness
 			? mat->textures.metalRoughness
-			: default_metal_roughness;
+			: default_compiledMat->textures.metalRoughness;
 
 		normal = mat->textures.normal
 			? mat->textures.normal
-			: default_normmap;
+			: default_compiledMat->textures.normal;
 
 		ambientOcclusion = mat->textures.ambientOcclusion
 			? mat->textures.ambientOcclusion
-			: default_aomap;
+			: default_compiledMat->textures.ambientOcclusion;
 
 		emissive = mat->textures.emissive
 			? mat->textures.emissive
-			: default_emissive;
+			: default_compiledMat->textures.emissive;
 
 		lightmap = mat->textures.lightmap
 			? mat->textures.lightmap
-			: default_lightmap;
+			: default_compiledMat->textures.lightmap;
 
 		if (program->cacheObject("material_diffuse", diffuse.get())) {
 			glActiveTexture(GL_TEXTURE0);
@@ -431,44 +408,7 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 }
 
 void grendx::set_default_material(Program::ptr program) {
-	material::ptr mat = default_material;
-
-	program->set("anmaterial.diffuse",   mat->factors.diffuse);
-	program->set("anmaterial.ambient",   mat->factors.ambient);
-	program->set("anmaterial.specular",  mat->factors.specular);
-	program->set("anmaterial.emissive",  mat->factors.emissive);
-	program->set("anmaterial.roughness", mat->factors.roughness);
-	program->set("anmaterial.metalness", mat->factors.metalness);
-	program->set("anmaterial.opacity",   mat->factors.opacity);
-
-	glActiveTexture(GL_TEXTURE0);
-	default_diffuse->bind();
-
-	glActiveTexture(GL_TEXTURE1);
-	default_metal_roughness->bind();
-	// TODO: rename to metal_roughness_map in shaders
-
-	glActiveTexture(GL_TEXTURE2);
-	default_normmap->bind();
-
-	glActiveTexture(GL_TEXTURE3);
-	default_aomap->bind();
-
-	glActiveTexture(GL_TEXTURE4);
-	default_emissive->bind();
-
-	glActiveTexture(GL_TEXTURE5);
-	default_lightmap->bind();
-
-	// XXX: see above
-	if (program->cacheObject("material_tex_units", nullptr)) {
-		program->set("diffuse_map", 0);
-		program->set("specular_map", 1);
-		program->set("normal_map", 2);
-		program->set("ambient_occ_map", 3);
-		program->set("emissive_map", 4);
-		program->set("lightmap", 5);
-	}
+	set_material(program, default_compiledMat);
 }
 
 glm::mat4 grendx::model_to_world(glm::mat4 model) {
