@@ -66,7 +66,7 @@ class accessorIterator {
 };
 
 template <typename T>
-static inline bool check_index(std::vector<T> container, size_t idx) {
+static inline bool check_index(const std::vector<T>& container, size_t idx) {
 	if (idx >= container.size()) {
 		// TODO: toggle exceptions somehow
 		SDL_Log("EXCEPTION: check_index()");
@@ -606,7 +606,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 			accessorIterator<usvec4> jointItShort;
 			accessorIterator<ubvec4> jointItByte;
-			unsigned jointType;
+			unsigned jointType = 0;
 
 			accessorIterator<glm::vec4> weightIt;
 
