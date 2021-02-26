@@ -48,7 +48,7 @@ gameObject::ptr animatedCharacter::getObject(void) {
 player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager),
 	// TODO: don't keep strong reference to body
-	  body(new rigidBodySphere(manager, this, position, 10.0, 1.0))
+	  body(new rigidBodySphere(manager, this, position, 10.0, 0.5))
 {
 	static gameObject::ptr playerModel = nullptr;
 
@@ -67,7 +67,7 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 		playerModel->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
 
 		//playerModel->transform.scale = glm::vec3(0.16f);
-		//playerModel->transform.position = glm::vec3(0, -1, 0);
+		playerModel->transform.position = glm::vec3(0, -0.5, 0);
 		//bindCookedMeshes();
 		assert(playerModel != nullptr);
 		SDL_Log("got player model");
