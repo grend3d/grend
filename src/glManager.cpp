@@ -98,6 +98,24 @@ void initializeOpengl(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+// TODO: is this worth putting in it's own file?
+void Framebuffer::bind(void) {
+	glBindFramebuffer(GL_FRAMEBUFFER, obj);
+	DO_ERROR_CHECK();
+}
+
+Texture::ptr Framebuffer::attach(GLenum attachment,
+                                 Texture::ptr texture,
+                                 GLenum textarget)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(textarget, texture->obj);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, textarget, texture->obj, 0);
+
+	attachments[attachment] = texture;
+	return texture;
+}
+
 static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	uint32_t ret = 1543;
 
@@ -465,6 +483,7 @@ Texture::ptr genTextureColor(unsigned width, unsigned height, GLenum format) {
 	             GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return ret;
 }
@@ -479,9 +498,49 @@ genTextureDepthStencil(unsigned width, unsigned height, GLenum format) {
 	DO_ERROR_CHECK();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return ret;
 }
+
+#if defined(HAVE_MULTISAMPLE)
+Texture::ptr genTextureColorMultisample(unsigned width, unsigned height,
+                                        unsigned samples, GLenum format)
+{
+	Texture::ptr ret = genTexture();
+
+	DO_ERROR_CHECK();
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ret->obj);
+	DO_ERROR_CHECK();
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
+	                        width, height, GL_FALSE);
+	DO_ERROR_CHECK();
+	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+	DO_ERROR_CHECK();
+
+	return ret;
+}
+
+Texture::ptr
+genTextureDepthStencilMultisample(unsigned width,
+                                  unsigned height,
+                                  unsigned samples,
+                                  GLenum format)
+{
+	Texture::ptr ret = genTexture();
+
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ret->obj);
+	// NOTE: depth and color MS textures need the same settings for
+	//       fixed sample count, otherwise framebuffer will be incomplete
+	// TODO: what does fixedsamplecount do?
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
+	                        width, height, GL_FALSE);
+	DO_ERROR_CHECK();
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+	return ret;
+}
+#endif
 
 Vao::ptr getCurrentVao(void) {
 	return currentVao;

@@ -3,23 +3,19 @@
 
 using namespace grendx;
 
-renderFramebuffer::renderFramebuffer(int Width, int Height)
-	: width(Width), height(Height)
+renderFramebuffer::renderFramebuffer(int Width, int Height, unsigned Multisample)
+	: width(Width), height(Height), multisample(Multisample)
 {
 	framebuffer = genFramebuffer();
-	framebuffer->bind();
+
+#if defined(HAVE_MULTISAMPLE)
+	if (multisample) {
+		std::cerr << "Multisample! samples=" << multisample << std::endl;
+		framebufferMultisampled = genFramebuffer();
+	}
+#endif
 
 	setSize(Width, Height);
-	/*
-	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
-	            genTextureColor(width, height, rgbaf_if_supported()));
-	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
-	            genTextureDepthStencil(width, height));
-	 */
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		SDL_Die("incomplete!");
-	}
 }
 
 renderFramebuffer::renderFramebuffer(Framebuffer::ptr fb, int Width, int Height)
@@ -28,13 +24,50 @@ renderFramebuffer::renderFramebuffer(Framebuffer::ptr fb, int Width, int Height)
 	framebuffer = fb;
 }
 
+void renderFramebuffer::bind(void) {
+#if defined(HAVE_MULTISAMPLE)
+	if (multisample) {
+		framebufferMultisampled->bind();
+	} else {
+		framebuffer->bind();
+	}
+#else
+	framebuffer->bind();
+#endif
+}
+
 void renderFramebuffer::clear(void) {
 	drawn_meshes.clear();
+
 	framebuffer->bind();
 	glClearStencil(0);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	DO_ERROR_CHECK();
+
+#if defined(HAVE_MULTISAMPLE)
+	if (multisample) {
+		framebufferMultisampled->bind();
+
+		glClearStencil(0);
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		DO_ERROR_CHECK();
+	}
+#endif
+}
+
+void renderFramebuffer::resolve(void) {
+#if defined(HAVE_MULTISAMPLE)
+	if (multisample) {
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->obj);
+		glBlitFramebuffer(0, 0, width, height,
+		                  0, 0, width, height,
+		                  GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+		                  GL_NEAREST);
+	}
+#endif
 }
 
 void renderFramebuffer::setSize(int Width, int Height) {
@@ -43,9 +76,34 @@ void renderFramebuffer::setSize(int Width, int Height) {
 
 	framebuffer->bind();
 	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
-	            genTextureColor(w, h, rgbaf_if_supported()));
+			genTextureColor(w, h, rgbaf_if_supported()));
 	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
-	            genTextureDepthStencil(w, h));
+			genTextureDepthStencil(w, h));
+	DO_ERROR_CHECK();
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		SDL_Die("incomplete! (plain)");
+	}
+
+#if defined(HAVE_MULTISAMPLE)
+	if (multisample) {
+		framebufferMultisampled->bind();
+
+		framebufferMultisampled->attach(GL_COLOR_ATTACHMENT0,
+				genTextureColorMultisample(w, h, multisample, rgbaf_if_supported()),
+				GL_TEXTURE_2D_MULTISAMPLE);
+		framebufferMultisampled->attach(GL_DEPTH_STENCIL_ATTACHMENT,
+			genTextureDepthStencilMultisample(w, h, multisample),
+			GL_TEXTURE_2D_MULTISAMPLE);
+
+		DO_ERROR_CHECK();
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			SDL_Log("Current multisample: %u", multisample);
+			SDL_Die("incomplete! (multisampled)");
+		}
+	}
+#endif
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {

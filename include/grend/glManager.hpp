@@ -298,20 +298,9 @@ class Framebuffer : public Obj {
 		Framebuffer()         : Obj(0, Obj::type::Framebuffer) {};
 		Framebuffer(GLuint o) : Obj(o, Obj::type::Framebuffer) {};
 
-		void bind(void) {
-			glBindFramebuffer(GL_FRAMEBUFFER, obj);
-			DO_ERROR_CHECK();
-		}
-
-		Texture::ptr attach(GLenum attachment, Texture::ptr texture) {
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, texture->obj);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D,
-			                       texture->obj, 0);
-
-			attachments[attachment] = texture;
-			return texture;
-		}
+		void bind(void);
+		Texture::ptr attach(GLenum attachment, Texture::ptr texture,
+		                    GLenum textarget = GL_TEXTURE_2D);
 
 		// to prevent attachments from being free'd
 		std::map<GLenum, Texture::ptr> attachments;
@@ -407,7 +396,16 @@ static inline GLenum rgbaf_if_supported(void) { return GL_RGBA16F; }
 Texture::ptr genTextureColor(unsigned width, unsigned height,
 							   GLenum format=GL_RGBA);
 Texture::ptr genTextureDepthStencil(unsigned width, unsigned height,
-									   GLenum format=GL_DEPTH24_STENCIL8);
+                                    GLenum format=GL_DEPTH24_STENCIL8);
+
+#if defined(HAVE_MULTISAMPLE)
+Texture::ptr genTextureColorMultisample(unsigned width, unsigned height,
+                                        unsigned samples, GLenum format=GL_RGBA);
+Texture::ptr genTextureDepthStencilMultisample(unsigned width,
+                                               unsigned height,
+                                               unsigned samples,
+                                               GLenum format=GL_DEPTH24_STENCIL8);
+#endif
 
 Program::ptr loadProgram(std::string vert, std::string frag, shaderOptions& opts);
 

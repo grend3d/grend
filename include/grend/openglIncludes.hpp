@@ -4,6 +4,10 @@
 #if GLSL_VERSION == 100 || GLSL_VERSION == 300
 #define NO_FORMAT_CONVERSION
 #define NO_FLOATING_FB
+
+#else
+// include multisample textures/framebuffers in core profiles
+#define HAVE_MULTISAMPLE
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)

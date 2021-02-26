@@ -160,7 +160,7 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		profile::endGroup();
 		DO_ERROR_CHECK();
 
-		game->rend->framebuffer->framebuffer->bind();
+		game->rend->framebuffer->bind();
 		glClearStencil(0);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

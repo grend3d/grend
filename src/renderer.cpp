@@ -50,8 +50,7 @@ renderContext::renderContext(context& ctx) {
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 #endif
 
-	framebuffer =
-		renderFramebuffer::ptr(new renderFramebuffer(screen_x, screen_y));
+	framebuffer = std::make_shared<renderFramebuffer>(screen_x, screen_y, 4);
 
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");

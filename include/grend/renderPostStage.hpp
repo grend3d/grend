@@ -111,8 +111,8 @@ class renderPostStage : public Storage {
 		void draw(renderFramebuffer::ptr previous) {
 			this->framebuffer->bind();
 			program->bind();
-			glViewport(0, 0, this->width, this->height);
 
+			glViewport(0, 0, this->width, this->height);
 			bindVao(getScreenquadVao());
 
 			glActiveTexture(GL_TEXTURE6);
@@ -185,6 +185,7 @@ class renderPostChain {
 		}
 
 		void draw(renderFramebuffer::ptr fb) {
+			fb->resolve();
 			Texture::ptr current = fb->color;
 
 			for (auto& stage : prestages) {

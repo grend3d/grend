@@ -546,7 +546,8 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 
 	DO_ERROR_CHECK();
 	assert(fb != nullptr);
-	fb->framebuffer->bind();
+	//fb->framebuffer->bind();
+	fb->bind();
 
 	disable(GL_SCISSOR_TEST);
 	glViewport(0, 0, fb->width, fb->height);
