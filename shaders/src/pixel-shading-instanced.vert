@@ -11,12 +11,12 @@ precision mediump samplerCube;
 uniform mat4 m, v, p;
 
 void main(void) {
-	f_normal = normalize(v_normal);
-	f_tangent = normalize(v_tangent);
-	f_bitangent = normalize(cross(v_tangent, v_normal));
+	f_normal = v_normal;
+	f_tangent = v_tangent;
+	f_bitangent = vec4(cross(v_normal, v_tangent.xyz) * v_tangent.w, v_tangent.w);
 
-	vec3 T = normalize(vec3(m * vec4(f_tangent, 0)));
-	vec3 B = normalize(vec3(m * vec4(f_bitangent, 0)));
+	vec3 T = normalize(vec3(m * f_tangent));
+	vec3 B = normalize(vec3(m * f_bitangent));
 	vec3 N = normalize(vec3(m * vec4(f_normal, 0)));
 
 	TBN = mat3(T, B, N);

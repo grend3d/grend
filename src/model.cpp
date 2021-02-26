@@ -160,7 +160,8 @@ void gameModel::genTangents(void) {
 
 			vertices[elms[0]].tangent
 				= vertices[elms[1]].tangent
-				= vertices[elms[2]].tangent = glm::normalize(tangent);
+				= vertices[elms[2]].tangent
+				= glm::vec4(glm::normalize(tangent), 1.0);
 		}
 	}
 }

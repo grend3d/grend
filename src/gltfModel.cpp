@@ -497,7 +497,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			accessorIterator<usvec4>    colorIt;
 			accessorIterator<glm::vec3> positionIt;
 			accessorIterator<glm::vec3> normalIt;
-			accessorIterator<glm::vec3> tangentIt;
+			accessorIterator<glm::vec4> tangentIt;
 			accessorIterator<glm::vec2> uvIt;
 			accessorIterator<glm::vec2> litIt;
 
@@ -523,7 +523,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 				//gltf_unpack_buffer(gltf, tangents, curModel->tangents);
 				// TODO: tangent is vec4!
-				tangentIt = gltf_buffer_iterator<glm::vec3>(gltf, tangents);
+				tangentIt = gltf_buffer_iterator<glm::vec4>(gltf, tangents);
 				curModel->haveTangents = true;
 			}
 
