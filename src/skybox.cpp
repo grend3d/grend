@@ -13,7 +13,7 @@ skybox::skybox() {
 	bindModel(model);
 	//bindCookedMeshes();
 
-	shaderOptions nullopts; // XXX
+	Shader::parameters nullopts; // XXX
 	program = loadProgram(
 		GR_PREFIX "shaders/baked/skybox.vert",
 		GR_PREFIX "shaders/baked/dynamic-skybox.frag",

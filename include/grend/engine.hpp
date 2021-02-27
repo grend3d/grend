@@ -3,7 +3,6 @@
 #include <grend-config.h>
 
 #include <grend/renderFramebuffer.hpp>
-#include <grend/renderPostStage.hpp>
 #include <grend/gameObject.hpp>
 #include <grend/glManager.hpp>
 #include <grend/sdlContext.hpp>
@@ -217,7 +216,7 @@ class renderContext {
 
 		// global rendering state
 		renderAtlases atlases;
-		shaderOptions globalShaderOptions;
+		Shader::parameters globalShaderOptions;
 		enum lightingModes lightingMode = lightingModes::Tiled;
 
 		// maps 
@@ -232,6 +231,8 @@ class renderContext {
 		Buffer::ptr spotTiles;
 
 		float lightThreshold = 0.05;
+		float exposure       = 1.f;
+
 		lights_std140      lightBufferCtx;
 		light_tiles_std140 pointTilesCtx;
 		light_tiles_std140 spotTilesCtx;
@@ -313,14 +314,14 @@ class renderQueue {
 		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
 };
 
-renderFlags loadLightingShader(std::string fragmentPath, shaderOptions& opts);
-renderFlags loadProbeShader(std::string fragmentPath, shaderOptions& opts);
-Program::ptr loadPostShader(std::string fragmentPath, shaderOptions& opts);
+renderFlags loadLightingShader(std::string fragmentPath, Shader::parameters& opts);
+renderFlags loadProbeShader(std::string fragmentPath, Shader::parameters& opts);
+Program::ptr loadPostShader(std::string fragmentPath, Shader::parameters& opts);
 renderFlags loadShaderToFlags(std::string fragmentPath,
                               std::string mainVertex,
                               std::string skinnedVertex,
                               std::string instancedVertex,
-                              shaderOptions& opts);
+                              Shader::parameters& opts);
 
 // TODO: should this pass transform or position?
 //       sticking with transform for now

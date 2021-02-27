@@ -166,10 +166,11 @@ bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 	};
 }
 
-bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom) {
+bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float scale)
+{
 	return [=] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_MOUSEWHEEL) {
-			*zoom -= ev.wheel.y;
+			*zoom -= scale*ev.wheel.y;
 		}
 
 		return MODAL_NO_CHANGE;

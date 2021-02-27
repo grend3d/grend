@@ -1,6 +1,7 @@
 #pragma once
 
 #include <grend/engine.hpp>
+#include <grend/renderPostStage.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/gameObject.hpp>

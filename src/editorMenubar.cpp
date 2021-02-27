@@ -129,7 +129,8 @@ void gameEditor::menubar(gameMain *game) {
 			                  0.5f, 50.f, "%.1f");
 			ImGui::SliderFloat("Movement speed", &movementSpeed,
 			                  1.f, 100.f, "%.1f");
-			ImGui::SliderFloat("Exposure (tonemapping)", &exposure, 0.1, 10.f);
+			ImGui::SliderFloat("Exposure (tonemapping)", &game->rend->exposure,
+			                   0.1, 10.f);
 			ImGui::SliderFloat("Light threshold", &game->rend->lightThreshold,
 			                   0.001, 1.f);
 

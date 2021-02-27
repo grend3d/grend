@@ -171,6 +171,7 @@ void gameEditor::render(gameMain *game) {
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
+	post->setUniform("exposure", game->rend->exposure);
 	post->draw(game->rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason

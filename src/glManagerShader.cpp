@@ -16,7 +16,7 @@ namespace grendx {
 Shader::Shader(GLuint o)
 	: Obj(o, Obj::type::Shader) { }
 
-bool Shader::load(std::string filename, shaderOptions& options) {
+bool Shader::load(std::string filename, Shader::parameters& options) {
 	SDL_Log("loading shader: %s", filename.c_str());
 
 	std::string source    = load_file(filename);
@@ -62,7 +62,10 @@ bool Shader::reload(void) {
 	return false;
 }
 
-Program::ptr loadProgram(std::string vert, std::string frag, shaderOptions& opts) {
+Program::ptr loadProgram(std::string vert,
+                         std::string frag,
+                         Shader::parameters& opts)
+{
 	Program::ptr prog = genProgram();
 
 	prog->vertex = genShader(GL_VERTEX_SHADER);
@@ -170,6 +173,54 @@ bool Program::set(std::string uniform, glm::mat3 m3) {
 bool Program::set(std::string uniform, glm::mat4 m4) {
 	LOOKUP(uniform);
 	glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(m4));
+	return true;
+}
+
+// TODO: do the overloads still need to be here if this handles variants...
+bool Program::set(std::string uniform, Shader::value val) {
+	LOOKUP(uniform);
+	DO_ERROR_CHECK();
+
+	if (std::holds_alternative<GLint>(val)) {
+		//SDL_Log("Setting %s to int: %d", uniform.c_str(), std::get<GLint>(val));
+		glUniform1i(u, std::get<GLint>(val));
+	}
+
+	else if (std::holds_alternative<GLfloat>(val)) {
+		//SDL_Log("Setting %s to float: %g", uniform.c_str(), std::get<GLfloat>(val));
+		glUniform1f(u, std::get<GLfloat>(val));
+	}
+
+	else if (std::holds_alternative<glm::vec2>(val)) {
+		//SDL_Log("Setting %s to vec2", uniform.c_str());
+		glUniform2fv(u, 1, glm::value_ptr(std::get<glm::vec2>(val)));
+	}
+
+	else if (std::holds_alternative<glm::vec3>(val)) {
+		//SDL_Log("Setting %s to vec3", uniform.c_str());
+		glUniform3fv(u, 1, glm::value_ptr(std::get<glm::vec3>(val)));
+	}
+
+	else if (std::holds_alternative<glm::vec4>(val)) {
+		//SDL_Log("Setting %s to vec4", uniform.c_str());
+		glUniform4fv(u, 1, glm::value_ptr(std::get<glm::vec4>(val)));
+	}
+
+	else if (std::holds_alternative<glm::mat3>(val)) {
+		//SDL_Log("Setting %s to mat3", uniform.c_str());
+		glUniformMatrix3fv(u, 1, GL_FALSE, glm::value_ptr(std::get<glm::mat3>(val)));
+	}
+
+	else if (std::holds_alternative<glm::mat4>(val)) {
+		//SDL_Log("Setting %s to mat4", uniform.c_str());
+		glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(std::get<glm::mat4>(val)));
+	}
+
+	else {
+		return false;
+	}
+
+	DO_ERROR_CHECK();
 	return true;
 }
 

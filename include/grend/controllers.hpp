@@ -4,6 +4,7 @@
 #include <grend/gameObject.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/camera.hpp>
+#include <grend/renderPostStage.hpp>
 
 namespace grendx {
 namespace controller {
@@ -16,7 +17,7 @@ bindFunc camFPS(camera::ptr cam, gameMain *game);
 bindFunc camAngled2D(camera::ptr cam, gameMain *game, float angle);
 bindFunc camAngled2DFixed(camera::ptr cam, gameMain *game, float angle);
 bindFunc camFocus(camera::ptr cam, gameObject::ptr focus);
-bindFunc camScrollZoom(camera::ptr cam, float *zoom);
+bindFunc camScrollZoom(camera::ptr cam, float *zoom, float scale=1.f);
 
 // namespace controller
 }

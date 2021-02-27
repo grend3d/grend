@@ -7,7 +7,6 @@
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/bufferAllocator.hpp>
-#include <grend/shaderPreprocess.hpp>
 
 #include <vector>
 #include <map>
@@ -16,6 +15,7 @@
 #include <utility>
 #include <set>
 #include <memory>
+#include <variant>
 
 // XXX
 #include <iostream>
@@ -222,11 +222,20 @@ class Texture : public Obj {
 class Shader : public Obj {
 	public:
 		typedef std::shared_ptr<Shader> ptr;
+		// one variant to rule them all
+		typedef std::variant<
+			GLint, GLfloat,
+			glm::vec2, glm::vec3, glm::vec4,
+			glm::mat2, glm::mat3, glm::mat4
+		> value;
+
+		typedef std::map<std::string, value> parameters;
+
 		Shader(GLuint o);
-		bool load(std::string path, shaderOptions& options);
+		bool load(std::string path, parameters& options);
 		bool reload(void);
 		std::string filepath = "";
-		shaderOptions compiledOptions;
+		parameters compiledOptions;
 
 };
 
@@ -235,6 +244,8 @@ class Program : public Obj {
 
 	public:
 		typedef std::shared_ptr<Program> ptr;
+		typedef std::weak_ptr<Program>   weakptr;
+
 		Program(GLuint o) : Obj(o, Obj::type::Program) {}
 
 		bool good(void) { return linked; };
@@ -255,6 +266,8 @@ class Program : public Obj {
 		bool set(std::string uniform, glm::vec4 v4);
 		bool set(std::string uniform, glm::mat3 m3);
 		bool set(std::string uniform, glm::mat4 m4);
+		bool set(std::string uniform, Shader::value val);
+
 		bool setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding);
 		bool setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding);
 
@@ -272,23 +285,12 @@ class Program : public Obj {
 		// for every mesh call compared to testing a pointer per mesh
 		std::unordered_map<const char *, void*> objCache;
 
-		std::map<std::string, GLint> uniforms;
+		std::map<std::string, GLint>  uniforms;
 		std::map<std::string, GLuint> attributes;
 		std::map<std::string, GLuint> uniformBlocks;
 		std::map<std::string, GLuint> storageBlocks;
 
-		// XXX: little bit redundant for caching values, but there
-		//      should only be 10s of shader programs at most, and being
-		//      strongly-typed is better than some union thing
-		struct {
-			std::map<GLint, GLint>     ints;
-			std::map<GLint, GLfloat>   floats;
-			std::map<GLint, glm::vec2> vec2s;
-			std::map<GLint, glm::vec3> vec3s;
-			std::map<GLint, glm::vec4> vec4s;
-			std::map<GLint, glm::mat3> mat3s;
-			std::map<GLint, glm::mat4> mat4s;
-		} cache;
+		Shader::parameters valueCache;
 };
 
 class Framebuffer : public Obj {
@@ -407,7 +409,9 @@ Texture::ptr genTextureDepthStencilMultisample(unsigned width,
                                                GLenum format=GL_DEPTH24_STENCIL8);
 #endif
 
-Program::ptr loadProgram(std::string vert, std::string frag, shaderOptions& opts);
+Program::ptr loadProgram(std::string vert,
+                         std::string frag,
+                         Shader::parameters& opts);
 
 GLenum surfaceGlFormat(SDL_Surface *surf);
 GLenum surfaceGlFormat(int channels);

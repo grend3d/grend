@@ -93,7 +93,7 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
                                       std::string mainVertex,
                                       std::string skinnedVertex,
                                       std::string instancedVertex,
-                                      shaderOptions& options)
+                                      Shader::parameters& options)
 {
 	renderFlags ret;
 
@@ -131,7 +131,7 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
 }
 
 renderFlags grendx::loadLightingShader(std::string fragmentPath,
-                                       shaderOptions& options)
+                                       Shader::parameters& options)
 {
 	return loadShaderToFlags(fragmentPath,
 		GR_PREFIX "shaders/baked/pixel-shading.vert",
@@ -141,7 +141,7 @@ renderFlags grendx::loadLightingShader(std::string fragmentPath,
 }
 
 renderFlags grendx::loadProbeShader(std::string fragmentPath,
-                                    shaderOptions& options)
+                                    Shader::parameters& options)
 {
 	return loadShaderToFlags(fragmentPath,
 		// TODO: rename
@@ -152,7 +152,7 @@ renderFlags grendx::loadProbeShader(std::string fragmentPath,
 }
 
 Program::ptr grendx::loadPostShader(std::string fragmentPath,
-                                    shaderOptions& options)
+                                    Shader::parameters& options)
 {
 	Program::ptr ret = loadProgram(
 		GR_PREFIX "shaders/baked/postprocess.vert",

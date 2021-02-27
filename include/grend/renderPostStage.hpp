@@ -135,6 +135,14 @@ class renderPostStage : public Storage {
 			program = prog;
 		}
 
+		void setUniforms(Shader::parameters& uniforms) {
+			program->bind();
+
+			for (auto& [key, val] : uniforms) {
+				program->set(key, val);
+			}
+		}
+
 		Program::ptr program;
 
 	private:
@@ -148,8 +156,6 @@ class renderPostStage : public Storage {
 
 			program->set("screen_x", (float)this->width);
 			program->set("screen_y", (float)this->height);
-			// TODO: parameters
-			program->set("exposure", 1.f);
 
 			DO_ERROR_CHECK();
 			drawScreenquad();
@@ -189,10 +195,12 @@ class renderPostChain {
 			Texture::ptr current = fb->color;
 
 			for (auto& stage : prestages) {
+				stage->setUniforms(uniforms);
 				stage->draw(current, fb->depth);
 				current = stage->renderTexture;
 			}
 
+			output->setUniforms(uniforms);
 			output->draw(current, fb->depth);
 		}
 
@@ -204,9 +212,14 @@ class renderPostChain {
 			output->setSize(fb_x, fb_y);
 		}
 
+		void setUniform(std::string name, Shader::value val) {
+			uniforms[name] = val;
+		}
+
 	private:
 		std::vector<renderPostStage<rStage>::ptr> prestages;
 		renderPostStage<rOutput>::ptr output;
+		Shader::parameters uniforms;
 };
 
 // NOTE: assumes the given program is not already linked

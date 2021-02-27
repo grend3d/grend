@@ -80,7 +80,9 @@ static std::string preprocess(std::string& sourcestr,
 	return processed;
 }
 
-std::string grendx::preprocessShader(std::string& source, shaderOptions& opts) {
+std::string grendx::preprocessShader(std::string& source,
+                                     Shader::parameters& opts)
+{
 	std::string version = std::string("#version ") + GLSL_STRING + "\n";
 
 	std::string defines =
