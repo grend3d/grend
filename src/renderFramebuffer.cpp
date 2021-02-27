@@ -107,12 +107,11 @@ void renderFramebuffer::setSize(int Width, int Height) {
 }
 
 gameMesh::ptr renderFramebuffer::index(float x, float y) {
-#ifdef __EMSCRIPTEN__
-	// seems reading from the stencil buffer isn't supported in webgl...
-	// no way to get pixel-perfect object picking in the current setup,
-	// could have a fallback picking pass (which could be higher resolution anyway)
+#if GLSL_VERSION == 100 || GLSL_VERSION == 300
+	// can't read from the stencil buffer in gles profiles,
+	// could have a fallback picking pass (which could handle more objects anyway)
 	return nullptr;
-#endif
+#else
 
 	// TODO: use these at some point
 	//GLbyte color[4];
@@ -126,10 +125,11 @@ gameMesh::ptr renderFramebuffer::index(float x, float y) {
 	framebuffer->bind();
 	//glReadPixels(adx, ady, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, color);
 	//glReadPixels(adx, ady, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-	//glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &idx);
+	glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &idx);
 	DO_ERROR_CHECK();
 
 	return index(idx);
+#endif
 }
 
 gameMesh::ptr renderFramebuffer::index(unsigned idx) {
