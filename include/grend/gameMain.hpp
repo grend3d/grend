@@ -44,8 +44,8 @@ class gameMain {
 		std::shared_ptr<audioMixer>    audio = nullptr;
 		std::shared_ptr<jobQueue>      jobs  = nullptr;
 		// ECS state
-		std::shared_ptr<ecs::entityManager>      entities    = nullptr;
-		std::shared_ptr<ecs::serializerRegistry> serializers = nullptr;
+		std::shared_ptr<ecs::entityManager> entities    = nullptr;
+		std::shared_ptr<ecs::factories>     factories = nullptr;
 
 		// FPS info
 		sma_counter frame_timer;

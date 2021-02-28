@@ -221,6 +221,46 @@ void entityManager::registerComponent(entity *ent,
 	componentEntities.insert({ptr, ent});
 }
 
+nlohmann::json entity::serialize(entityManager *manager) {
+	nlohmann::json components = {};
+
+	for (auto& [key, comp] : manager->getEntityComponents(this)) {
+		// entities have themselves as components, don't recurse infinitely
+		if (comp != this) {
+			components.push_back({ key, comp->serialize(manager) });
+		}
+	}
+
+	return {
+		{"type",        "entity"},
+		{"entity-type", typeString()},
+
+		{"node", {
+			{"position",
+				{
+					node->transform.position.x,
+					node->transform.position.y,
+					node->transform.position.z,
+				}},
+			{"rotation",
+				{
+					node->transform.rotation.w,
+					node->transform.rotation.x,
+					node->transform.rotation.y,
+					node->transform.rotation.z,
+				}},
+			{"scale",
+				{
+					node->transform.scale.x,
+					node->transform.scale.y,
+					node->transform.scale.z,
+				}},
+		}},
+
+		{"components",  components}, 
+	};
+}
+
 bool intersects(std::multimap<std::string, component*>& entdata,
                 std::initializer_list<std::string> test)
 {

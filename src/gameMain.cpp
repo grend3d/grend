@@ -36,8 +36,8 @@ gameMain::gameMain(std::string name)
 	audio  = std::make_shared<audioMixer>(ctx);
 	jobs   = std::make_shared<jobQueue>();
 
-	entities    = std::make_shared<ecs::entityManager>(this);
-	serializers = std::make_shared<ecs::serializerRegistry>();
+	entities  = std::make_shared<ecs::entityManager>(this);
+	factories = std::make_shared<ecs::factories>();
 }
 
 void gameMain::clearMetrics(void) {

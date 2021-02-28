@@ -7,15 +7,27 @@ namespace grendx::ecs {
 
 class rigidBody : public component {
 	public:
+		constexpr static const char *serializedType = "rigidBody";
+
 		rigidBody(entityManager *manager, entity *ent, float _mass)
 			: component(manager, ent)
 		{
-			manager->registerComponent(ent, "rigidBody", this);
+			manager->registerComponent(ent, serializedType, this);
 			mass = _mass;
 		}
 
+		rigidBody(entityManager *manager,
+		          entity *ent,
+		          nlohmann::json properties = {
+		          	{"mass", 0.f},
+		          }) 
+			: component(manager, ent, properties)
+		{
+			// TODO
+		}
+
 		virtual ~rigidBody();
-		virtual const char* typeString(void) const { return "rigidBody"; };
+		virtual const char* typeString(void) const { return serializedType; };
 
 		void registerCollisionQueue(std::shared_ptr<std::vector<collision>> queue) {
 			if (phys) {
@@ -30,6 +42,8 @@ class rigidBody : public component {
 
 class rigidBodySphere : public rigidBody {
 	public:
+		constexpr static const char *serializedType = "rigidBodySphere";
+
 		rigidBodySphere(entityManager *manager,
 		                entity *ent,
 		                glm::vec3 _position,
@@ -40,13 +54,13 @@ class rigidBodySphere : public rigidBody {
 			  mass(_mass),
 			  radius(_radius)
 		{
-			manager->registerComponent(ent, "rigidBodySphere", this);
+			manager->registerComponent(ent, serializedType, this);
 			//setRadius(radius);
 			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
 		}
 
 		virtual ~rigidBodySphere();
-		virtual const char* typeString(void) const { return "rigidBodySphere"; };
+		virtual const char* typeString(void) const { return serializedType; };
 
 		virtual void setRadius(float r) {
 			// XXX: if the object has moved since it was added, this will reset
@@ -63,6 +77,8 @@ class rigidBodySphere : public rigidBody {
 
 class rigidBodyBox : public rigidBody {
 	public:
+		constexpr static const char *serializedType = "rigidBodyBox";
+
 		rigidBodyBox(entityManager *manager,
 		             entity *ent,
 		             glm::vec3 position,
@@ -70,63 +86,79 @@ class rigidBodyBox : public rigidBody {
 		             AABBExtent& box)
 			: rigidBody(manager, ent, mass)
 		{
-			manager->registerComponent(ent, "rigidBodyBox", this);
+			manager->registerComponent(ent, serializedType, this);
 			phys = manager->engine->phys->addBox(ent, position, mass, box);
 		}
 
 		virtual ~rigidBodyBox();
-		virtual const char* typeString(void) const { return "rigidBodyBox"; };
+		virtual const char* typeString(void) const { return serializedType; };
 };
 
 class syncRigidBody : public component {
 	public:
-		syncRigidBody(entityManager *manager, entity *ent)
-			: component(manager, ent)
+		constexpr static const char *serializedType = "syncRigidBody";
+
+		syncRigidBody(entityManager *manager,
+		              entity *ent,
+		              nlohmann::json properties={})
+			: component(manager, ent, properties)
 		{
-			manager->registerComponent(ent, "syncRigidBody", this);
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual ~syncRigidBody();
-		virtual const char* typeString(void) const { return "syncRigidBody"; };
+		virtual const char* typeString(void) const { return serializedType; };
 		virtual void sync(entityManager *manager, entity *ent) = 0;
 };
 
 class syncRigidBodyTransform : public syncRigidBody {
 	public:
-		syncRigidBodyTransform(entityManager *manager, entity *ent)
-			: syncRigidBody(manager, ent)
+		constexpr static const char *serializedType = "syncRigidBodyTransform";
+
+		syncRigidBodyTransform(entityManager *manager,
+		                       entity *ent,
+		                       nlohmann::json properties={})
+			: syncRigidBody(manager, ent, properties)
 		{
-			manager->registerComponent(ent, "syncRigidBodyTransform", this);
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual ~syncRigidBodyTransform();
-		virtual const char* typeString(void) const { return "syncRigidBodyTransform"; };
+		virtual const char* typeString(void) const { return serializedType; };
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
 class syncRigidBodyPosition : public syncRigidBody {
 	public:
-		syncRigidBodyPosition(entityManager *manager, entity *ent)
-			: syncRigidBody(manager, ent)
+		constexpr static const char *serializedType = "syncRigidBodyPosition";
+
+		syncRigidBodyPosition(entityManager *manager,
+		                      entity *ent,
+		                      nlohmann::json properties={})
+			: syncRigidBody(manager, ent, properties)
 		{
-			manager->registerComponent(ent, "syncRigidBodyPosition", this);
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual ~syncRigidBodyPosition();
-		virtual const char* typeString(void) const { return "syncRigidBodyPosition"; };
+		virtual const char* typeString(void) const { return serializedType; };
 		virtual void sync(entityManager *manager, entity *ent);
 };
 
 class syncRigidBodyXZVelocity : public syncRigidBody {
 	public:
-		syncRigidBodyXZVelocity(entityManager *manager, entity *ent)
+		constexpr static const char *serializedType = "syncRigidBodyXZVelocity";
+
+		syncRigidBodyXZVelocity(entityManager *manager,
+		                        entity *ent,
+		                        nlohmann::json properties={})
 			: syncRigidBody(manager, ent)
 		{
-			manager->registerComponent(ent, "syncRigidBodyXZVelocity", this);
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual ~syncRigidBodyXZVelocity();
-		virtual const char* typeString(void) const { return "syncRigidBodyXZVelocity"; };
+		virtual const char* typeString(void) const { return serializedType; };
 		virtual void sync(entityManager *manager, entity *ent);
 };
 

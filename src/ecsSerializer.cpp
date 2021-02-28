@@ -9,6 +9,23 @@ using namespace grendx;
 using namespace grendx::ecs;
 using namespace nlohmann;
 
+abstractFactory::~abstractFactory() {};
+
+entity *factories::build(entityManager *manager,
+                         json serialized)
+{
+	return nullptr;
+}
+
+component *factories::build(entityManager *manager,
+                            entity *ent,
+                            json serialized)
+{
+	return nullptr;
+}
+
+
+/*
 json serializerRegistry::serializeEntity(entityManager *manager, entity *ent) {
 	std::map<component*, std::set<std::string>> compmap;
 	auto components = manager->getEntityComponents(ent);
@@ -57,3 +74,4 @@ json serializerRegistry::serializeEntities(entityManager *manager) {
 void serializerRegistry::deserializeEntity(entityManager *manager, entity *ent) {
 	// TODO:
 }
+*/

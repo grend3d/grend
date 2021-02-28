@@ -1,6 +1,7 @@
 #pragma once
 
 #include <grend/gameObject.hpp>
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 #include <map>
@@ -73,12 +74,18 @@ class entityManager {
 
 class component {
 	public:
-		component(entityManager *manager, entity *ent) {
-			manager->registerComponent(ent, "component", this);
+		constexpr static const char *serializedType = "component";
+
+		component(entityManager *manager,
+		          entity *ent,
+		          nlohmann::json properties = {})
+		{
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual ~component();
-		virtual const char* typeString(void) const { return "component"; };
+		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager) { return {}; };
 
 		// draw the imgui widgets for this component, TODO
 		// also, this class needs a polymorphic member in order to upcast,
@@ -88,10 +95,13 @@ class component {
 
 class entity : public component {
 	public:
+		constexpr static const char *serializedType = "entity";
+
 		typedef std::shared_ptr<entity> ptr;
 		typedef std::weak_ptr<entity>   weakptr;
 
-		entity(entityManager *manager)
+		entity(entityManager *manager,
+		       nlohmann::json properties = {})
 			: component(manager, this)
 		{
 			manager->registerComponent(this, "entity", this);
@@ -99,6 +109,7 @@ class entity : public component {
 
 		virtual ~entity();
 		virtual const char* typeString(void) const { return "entity"; };
+		virtual nlohmann::json serialize(entityManager *manager);
 
 		virtual void update(entityManager *manager, float delta) = 0;
 		virtual gameObject::ptr getNode(void) { return node; };

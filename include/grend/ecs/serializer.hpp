@@ -15,60 +15,61 @@
 
 namespace grendx::ecs {
 
-class componentSerializer {
+// abstract component bean serializer factory
+// OOP to the max
+//
+// (ftr I'm not a big fan of this, but it seems like the least crap way to
+//  deal with (de)serialization in the ECS I've set up here, which I do like,
+//  so eh...)
+class abstractFactory {
 	public:
-		typedef std::shared_ptr<componentSerializer> ptr;
-		typedef std::weak_ptr<componentSerializer>   weakptr;
+		typedef std::shared_ptr<abstractFactory> ptr;
+		typedef std::weak_ptr<abstractFactory>   weakptr;
 
-		// this is to make linking the serializer to the registry less of a pain,
-		// so don't need to worry about accessing this from derived classes
-		// TODO: is there a way to avoid having this be visible from derived classes,
-		//       but still accessible externally?
-		//constexpr static const char *serializedType = "component";
+		virtual ~abstractFactory();
+		virtual component *allocate(entityManager *manager,
+		                            entity *ent,
+		                            nlohmann::json properties={}) = 0;
+};
 
-		componentSerializer() {};
-		virtual ~componentSerializer() {};
+template <class T>
+class factory : public abstractFactory {
+	public:
+		factory() {};
+		virtual ~factory() {};
 
 		virtual component *allocate(entityManager *manager,
 		                            entity *ent,
-		                            nlohmann::json source)
+		                            nlohmann::json properties={})
 		{
-			return new component(manager, ent);
-		}
-
-		virtual nlohmann::json serialize(component *comp) {
-			return {};
-		}
-
-		virtual void deserialize(component *comp, nlohmann::json source) {
-			// deserialize stuff here
+			return new T(manager, ent, properties);
 		}
 };
 
-class serializerRegistry {
+class factories {
 	public:
-		typedef std::shared_ptr<serializerRegistry> ptr;
-		typedef std::weak_ptr<serializerRegistry>   weakptr;
+		typedef std::shared_ptr<factories> ptr;
+		typedef std::weak_ptr<factories>   weakptr;
 
-		void add(std::string name, componentSerializer::ptr ser) {
-			serializers[name] = ser;
+		void add(std::string name, abstractFactory::ptr ser) {
+			factories[name] = ser;
 		}
 
 		template <class T>
 		void add() {
-			/*
-			static_assert(T::serializedType != "component",
-			              "you need to specify serializedType in your derived serializer class!");
-						  */
-			std::cerr << "Registered serializer " << T::serializedType << std::endl;
-			componentSerializer::ptr ser = std::make_shared<T>();
-			serializers[T::serializedType] = ser;
+			std::cerr << "Registering factory for component "
+				<< T::serializedType
+				<< std::endl;
+
+			factories[T::serializedType] = std::make_shared<factory<T>>();
 		}
 
-		nlohmann::json serializeEntity(entityManager *manager, entity *ent);
-		nlohmann::json serializeEntities(entityManager *manager);
-		void deserializeEntity(entityManager *manager, entity *ent);
-		std::map<std::string, componentSerializer::ptr> serializers;
+		entity    *build(entityManager *manager, nlohmann::json serialized);
+		component *build(entityManager *manager,
+		                 entity *ent,
+		                 nlohmann::json serialized);
+
+		std::map<std::string, abstractFactory::ptr> factories;
 };
 
 // namespace grendx::ecs

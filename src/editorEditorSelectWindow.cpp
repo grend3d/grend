@@ -34,7 +34,7 @@ static void addEntityWindow(gameMain *game, bool *show) {
 	std::vector<std::string> names;
 
 	size_t n = 0;
-	for (auto& [name, _] : game->serializers->serializers) {
+	for (auto& [name, _] : game->factories->factories) {
 		names.push_back(name);
 
 		if (n + name.length() + 2 < bufsize) {
