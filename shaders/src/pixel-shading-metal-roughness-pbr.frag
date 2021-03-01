@@ -36,8 +36,7 @@ void main(void) {
 	vec3 view_dir = normalize(view_pos - f_position.xyz);
 	mat4 mvp = p*v*m;
 
-	vec3 metal_roughness_idx =
-		anmaterial.metalness*texture2D(specular_map, f_texcoord).rgb;
+	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
 	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 
@@ -69,6 +68,15 @@ void main(void) {
 	float a = alpha(roughness);
 	vec3 posws = f_position.xyz;
 
+	vec3 altdir = reflect(-view_dir, normal_dir);
+	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
+	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
+	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
+	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
+	total_light += 0.5 * (1.0 - max(0.0, a - 0.5)) * env * Fb;
+
+	// TODO: leave refraction in? might be better as a seperate shader
+	/*
 	vec3 test[6] = vec3[](
 		reflection_probe[0].xyz,
 		reflection_probe[1].xyz,
@@ -78,15 +86,6 @@ void main(void) {
 		reflection_probe[5].xyz
 	);
 
-	vec3 altdir = reflect(-view_dir, normal_dir);
-	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
-	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
-	vec3 env = reflectionLinearMip(posws, view_pos, normal_dir, roughness).rgb;
-	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
-	total_light += 0.5 * (1.0 - max(0.0, a - 0.5)) * env * Fb;
-
-/*
-	// TODO: leave refraction in? might be better as a seperate shader
 	vec3 ref_light = vec3(0);
 
 	if (anmaterial.opacity < 1.0) {

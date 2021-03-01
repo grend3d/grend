@@ -65,7 +65,7 @@ vec3 f_thing(vec3 spec, vec3 N, vec3 L, vec3 V) {
 }
 
 vec3 f_diffuse(vec3 F, vec3 c_diff) {
-	return max(vec3(0), (1.0 - F) * (c_diff / PI));
+	return (1.0 - F) * (c_diff / PI);
 }
 
 vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
@@ -78,22 +78,22 @@ vec3 mrp_lighting(vec3 light_pos, vec4 light_color, vec3 pos, vec3 view,
 	vec3 light_dir = normalize(light_vertex / dist);
 	vec3 half_dir = normalize(light_dir + view);
 
-	vec3 base = light_color.w * vec3(light_color) * albedo;
+	vec3 base = vec3(light_color) * albedo;
 
 	vec3 Fa = F(f_0(base, metallic), view, half_dir);
 	vec3 ca = c_diff(base, metallic);
 	vec3 fa_diff = f_diffuse(Fa, c_diff(base, metallic));
 	vec3 fa_spec = f_specular(Fa, G(a, normal, light_dir, view),
 			D(a, normal, half_dir))
-			* vec3(light_color) * light_color.w;
+			* vec3(light_color);
 	fa_spec = f_thing(fa_spec, normal, light_dir, view);
 
 	// TODO; configurable
 	//return PI*max(0.0, dot(normal, light_dir)) * (fa_diff+fa_spec);
 	//return fa_diff + 0.5*fa_spec;
 #ifdef MRP_USE_LAMBERT_DIFFUSE
-	return lambert_diffuse(roughness, light_dir, normal, view)*(fa_diff+fa_spec);
+	return lambert_diffuse(a, light_dir, normal, view)*(fa_diff+fa_spec);
 #else
-	return oren_nayar_diffuse(roughness, light_dir, normal, view)*(fa_diff + fa_spec);
+	return oren_nayar_diffuse(a, light_dir, normal, view)*(fa_diff + fa_spec);
 #endif
 }
