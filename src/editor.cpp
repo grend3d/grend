@@ -321,14 +321,37 @@ gameImport::ptr grendx::loadScene(std::string path) {
 }
 
 void gameEditor::reloadShaders(gameMain *game) {
+	// push everything into one vector for simplicity, this will be
+	// run only from the editor so it doesn't need to be really efficient
+	std::vector<std::pair<std::string, Program::ptr>> shaders;
+
+	for (auto& [name, flags] : game->rend->lightingShaders) {
+		shaders.push_back({name, flags.mainShader});
+		shaders.push_back({name, flags.skinnedShader});
+		shaders.push_back({name, flags.instancedShader});
+	}
+
+	for (auto& [name, flags] : game->rend->probeShaders) {
+		shaders.push_back({name, flags.mainShader});
+		shaders.push_back({name, flags.skinnedShader});
+		shaders.push_back({name, flags.instancedShader});
+	}
+
+	for (auto& [name, prog] : game->rend->postShaders) {
+		shaders.push_back({name, prog});
+	}
+
 	/*
-	// TODO: reimplement
-	for (auto& [name, shader] : game->rend->shaders) {
-		if (!shader->reload()) {
+	for (auto& [name, prog] : game->rend->internalShaders) {
+		shaders.push_back({name, prog});
+	}
+	*/
+
+	for (auto& [name, prog] : shaders) {
+		if (!prog->reload()) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
 		}
 	}
-	*/
 }
 
 void gameEditor::setMode(enum mode newmode) {

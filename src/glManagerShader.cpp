@@ -117,6 +117,8 @@ bool Program::reload(void) {
 			uniforms.clear();
 			uniformBlocks.clear();
 			storageBlocks.clear();
+			objCache.clear();
+			valueCache.clear();
 
 			return link();
 		}
