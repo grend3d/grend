@@ -7,6 +7,15 @@
 
 using namespace grendx;
 
+// non-pure virtual destructors for rtti
+physicsObject::~physicsObject() {
+	std::cerr << "BBBBBBB : removing physics object!!!!!! " << std::endl;
+};
+bulletObject::~bulletObject() {
+	std::cerr << "AAAAAAA : removing bullet object!!!!!! " << std::endl;
+	this->removeSelf();
+}
+
 bulletPhysics::bulletPhysics() {
 	collisionConfig = new btDefaultCollisionConfiguration();
 	dispatcher      = new btCollisionDispatcher(collisionConfig);
@@ -115,7 +124,7 @@ bulletPhysics::addStaticModels(void *data,
 			gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
 			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
 
-			if (mesh && model) {
+			if (mesh && model && !mesh->physObj) {
 				// XXX: physObj here to prevent losing the reference to
 				//      the returned physicsObject
 				mesh->physObj = addStaticMesh(data, transform, model, mesh);

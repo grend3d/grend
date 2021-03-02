@@ -34,9 +34,7 @@ class physicsObject {
 		typedef std::shared_ptr<physicsObject> ptr;
 		typedef std::weak_ptr<physicsObject>   weakptr;
 
-		virtual ~physicsObject() {
-			// implementation-specific removal stuff in derived destructors
-		};
+		virtual ~physicsObject();
 
 		virtual void setTransform(TRS& transform) = 0;
 		virtual TRS  getTransform(void) = 0;

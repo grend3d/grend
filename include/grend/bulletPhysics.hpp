@@ -27,10 +27,7 @@ class bulletObject : public physicsObject {
 		typedef std::shared_ptr<bulletObject> ptr;
 		typedef std::weak_ptr<bulletObject>   weakptr;
 
-		virtual ~bulletObject() {
-			std::cerr << "AAAAAAA : removing bullet object!!!!!! " << std::endl;
-			this->removeSelf();
-		}
+		virtual ~bulletObject();
 
 		virtual void setTransform(TRS& transform);
 		virtual TRS  getTransform(void);
