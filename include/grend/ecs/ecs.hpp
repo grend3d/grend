@@ -75,10 +75,13 @@ class entityManager {
 class component {
 	public:
 		constexpr static const char *serializedType = "component";
+		static const nlohmann::json defaultProperties(void) {
+			return {};
+		};
 
 		component(entityManager *manager,
 		          entity *ent,
-		          nlohmann::json properties = {})
+		          nlohmann::json properties = defaultProperties())
 		{
 			manager->registerComponent(ent, serializedType, this);
 		}
@@ -96,12 +99,19 @@ class component {
 class entity : public component {
 	public:
 		constexpr static const char *serializedType = "entity";
+		static const nlohmann::json defaultProperties(void) {
+			return {"node",
+				{"position", {0.f, 0.f, 0.f}},
+				{"rotation", {1.f, 0.f, 0.f, 0.f}},
+				{"scale",    {1.f, 1.f, 1.f}},
+			};
+		};
 
 		typedef std::shared_ptr<entity> ptr;
 		typedef std::weak_ptr<entity>   weakptr;
 
 		entity(entityManager *manager,
-		       nlohmann::json properties = {})
+		       nlohmann::json properties = defaultProperties())
 			: component(manager, this)
 		{
 			manager->registerComponent(this, "entity", this);

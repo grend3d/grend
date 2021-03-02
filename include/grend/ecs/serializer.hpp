@@ -62,6 +62,24 @@ class factories {
 				<< std::endl;
 
 			factories[T::serializedType] = std::make_shared<factory<T>>();
+			defaults[T::serializedType]  = T::defaultProperties();
+		}
+
+		bool has(std::string name) {
+			auto f = factories.find(name);
+			auto d = defaults.find(name);
+
+			return f != factories.end() && d != defaults.end();
+		}
+
+		nlohmann::json properties(std::string name) {
+			auto it = defaults.find(name);
+
+			if (it != defaults.end()) {
+				return it->second;
+			}
+
+			return {};
 		}
 
 		entity    *build(entityManager *manager, nlohmann::json serialized);
@@ -70,6 +88,7 @@ class factories {
 		                 nlohmann::json serialized);
 
 		std::map<std::string, abstractFactory::ptr> factories;
+		std::map<std::string, nlohmann::json> defaults;
 };
 
 // namespace grendx::ecs

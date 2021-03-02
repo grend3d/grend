@@ -51,6 +51,7 @@ void entityManager::update(float delta) {
 }
 
 void entityManager::add(entity *ent) {
+	SDL_Log("Adding entity %s", ent->typeString());
 	setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
 	entities.insert(ent);
 	added.insert(ent);
@@ -233,7 +234,7 @@ nlohmann::json entity::serialize(entityManager *manager) {
 
 	return {
 		{"type",        "entity"},
-		{"entity-type", typeString()},
+		{"entity-type", this->typeString()},
 
 		{"node", {
 			{"position",

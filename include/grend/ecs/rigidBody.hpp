@@ -8,6 +8,10 @@ namespace grendx::ecs {
 class rigidBody : public component {
 	public:
 		constexpr static const char *serializedType = "rigidBody";
+		static const nlohmann::json defaultProperties(void) {
+			// mass of 0 means the body is static
+			return {"mass", 0.f};
+		};
 
 		rigidBody(entityManager *manager, entity *ent, float _mass)
 			: component(manager, ent)
@@ -18,9 +22,7 @@ class rigidBody : public component {
 
 		rigidBody(entityManager *manager,
 		          entity *ent,
-		          nlohmann::json properties = {
-		          	{"mass", 0.f},
-		          }) 
+		          nlohmann::json properties)
 			: component(manager, ent, properties)
 		{
 			// TODO
@@ -43,6 +45,9 @@ class rigidBody : public component {
 class rigidBodySphere : public rigidBody {
 	public:
 		constexpr static const char *serializedType = "rigidBodySphere";
+		static const nlohmann::json defaultProperties(void) {
+			return {"radius", 1.f};
+		};
 
 		rigidBodySphere(entityManager *manager,
 		                entity *ent,
