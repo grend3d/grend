@@ -33,6 +33,36 @@ enemySpawner::enemySpawner(entityManager *manager, gameMain *game, glm::vec3 pos
 	setNode("model", node, spawnerModel);
 }
 
+enemySpawner::enemySpawner(entityManager *manager,
+                           entity *ent,
+                           nlohmann::json properties) 
+	: entity(manager, properties)
+{
+	static gameObject::ptr spawnerModel = nullptr;
+
+	new health(manager, this, 1.f, 1000.f);
+	new worldHealthbar(manager, this);
+	new projectileCollision(manager, this);
+	auto body = new rigidBodySphere(manager, this, node->transform.position,
+	                                0.0, 1.0);
+
+	manager->registerComponent(this, "enemySpawner", this);
+
+	// TODO: resource manager
+	if (!spawnerModel) {
+		spawnerModel = loadScene("assets/obj/enemy-spawner.glb");
+		bindCookedMeshes();
+	}
+
+	// TODO: this should just be done as part of creating a rigidBody...
+	body->registerCollisionQueue(manager->collisions);
+	setNode("model", node, spawnerModel);
+}
+
+nlohmann::json enemySpawner::serialize(entityManager *manager) {
+	return entity::serialize(manager);
+}
+
 void enemySpawner::update(entityManager *manager, float delta) {
 	float curTime = SDL_GetTicks() / 1000.f;
 

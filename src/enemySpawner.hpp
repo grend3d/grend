@@ -16,6 +16,16 @@ class enemySpawner : public entity {
 
 	public:
 		enemySpawner(entityManager *manager, gameMain *game, glm::vec3 position);
+		enemySpawner(entityManager *manager, entity *ent, nlohmann::json properties);
 		virtual ~enemySpawner();
 		virtual void update(entityManager *manager, float delta);
+
+		// serialization stuff
+		constexpr static const char *serializedType = "enemySpawner";
+		static const nlohmann::json defaultProperties(void) {
+			return entity::defaultProperties();
+		}
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager); 
 };

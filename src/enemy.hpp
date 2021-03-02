@@ -14,12 +14,19 @@ using namespace grendx::ecs;
 class enemy : public entity {
 	public:
 		enemy(entityManager *manager, gameMain *game, glm::vec3 position);
+		enemy(entityManager *manager, entity *ent, nlohmann::json properties);
+
+		virtual ~enemy();
 		virtual void update(entityManager *manager, float delta);
 		virtual gameObject::ptr getNode(void) { return node; };
 
-		std::shared_ptr<std::vector<collision>> collisions
-			= std::make_shared<std::vector<collision>>();
+		// serialization stuff
+		constexpr static const char *serializedType = "enemy";
+		static const nlohmann::json defaultProperties(void) {
+			return entity::defaultProperties();
+		}
 
-		rigidBody *body;
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager); 
 };
 

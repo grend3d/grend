@@ -34,10 +34,21 @@ class animatedCharacter {
 class player : public entity {
 	public:
 		player(entityManager *manager, gameMain *game, glm::vec3 position);
+		player(entityManager *manager, entity *ent, nlohmann::json properties);
+		virtual ~player();
+
 		virtual void update(entityManager *manager, float delta);
 		virtual gameObject::ptr getNode(void) { return node; };
 
 		animatedCharacter::ptr character;
 		rigidBody *body;
-};
 
+		// serialization stuff
+		constexpr static const char *serializedType = "player";
+		static const nlohmann::json defaultProperties(void) {
+			return entity::defaultProperties();
+		}
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager); 
+};

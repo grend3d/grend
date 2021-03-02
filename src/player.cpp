@@ -1,6 +1,8 @@
 #include <grend/gameEditor.hpp>
 #include "player.hpp"
 
+player::~player() {};
+
 // TODO: only returns one collection, object tree could have any number
 animationCollection::ptr findAnimations(gameObject::ptr obj) {
 	if (!obj) {
@@ -89,6 +91,18 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 	character->setAnimation("idle");
 
 	body->registerCollisionQueue(manager->collisions);
+}
+
+player::player(entityManager *manager,
+               entity *ent,
+               nlohmann::json properties)
+	: entity(manager, properties)
+{
+	// TODO:
+}
+
+nlohmann::json player::serialize(entityManager *manager) {
+	return entity::serialize(manager);
 }
 
 void player::update(entityManager *manager, float delta) {

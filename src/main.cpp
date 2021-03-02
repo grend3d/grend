@@ -10,7 +10,6 @@
 #include <grend/ecs/rigidBody.hpp>
 #include <grend/ecs/collision.hpp>
 #include <grend/ecs/serializer.hpp>
-#include <grend/ecs/rigidBodySerializer.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -244,16 +243,27 @@ projalphaView::projalphaView(gameMain *game)
 	: gameView(),
 	  level(new levelController)
 {
+#ifdef NO_FLOATING_FB
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
 		                game->rend->globalShaderOptions)},
-		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+#else
+	post = renderPostChain::ptr(new renderPostChain(
+		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+#endif
 
-	game->serializers->add<rigidBodySphereSerializer>();
-	game->serializers->add<syncRigidBodyTransformSerializer>();
-	game->serializers->add<syncRigidBodyPositionSerializer>();
-	game->serializers->add<syncRigidBodyXZVelocitySerializer>();
+	game->factories->add<rigidBody>();
+	game->factories->add<syncRigidBodyTransform>();
+	game->factories->add<syncRigidBodyPosition>();
+	game->factories->add<syncRigidBodyXZVelocity>();
+
+	game->factories->add<player>();
+	game->factories->add<enemy>();
+	game->factories->add<enemySpawner>();
+	game->factories->add<health>();
+	game->factories->add<team>();
 
 	// TODO: names are kinda pointless here
 	// TODO: should systems be a state object in gameMain as well?
@@ -292,7 +302,7 @@ projalphaView::projalphaView(gameMain *game)
 	// movement controller needs to be MODAL_ALL_MODES to avoid dropping
 	// keystrokes and missing state changes
 	input.bind(MODAL_ALL_MODES, controller::camMovement2D(cam, 15.f));
-	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom));
+	input.bind(modes::Move, controller::camScrollZoom(cam, &zoom, 3.f));
 	input.bind(modes::Move, inputMapper(inputSystem->inputs, cam));
 #endif
 
@@ -303,15 +313,19 @@ projalphaView::projalphaView(gameMain *game)
 	});
 
 	input.bind(MODAL_ALL_MODES,
-		[&, this] (SDL_Event& ev, unsigned flags) {
+		[=, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
-				// TODO: log interface
-				/*
-				std::cerr << "Got here! serializing stuff" << std::endl;
-				std::cerr
-					<< game->serializers->serializeEntities((game->entities.get())).dump(4)
-					<< std::endl;
-					*/
+				nlohmann::json compJson;
+
+				for (auto& ent : game->entities->entities) {
+					//std::cerr << ent->typeString() << std::endl;
+					if (game->factories->has(ent->typeString())) {
+						compJson.push_back(ent->serialize(game->entities.get()));
+					}
+				}
+
+
+				std::cerr << compJson.dump(4) << std::endl;
 			}
 
 			return MODAL_NO_CHANGE;
