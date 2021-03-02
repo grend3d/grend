@@ -5,7 +5,6 @@ precision mediump sampler2D;
 precision mediump samplerCube;
 
 // TODO: maybe make this a uniform (probably not though)
-#define NORMAL_WEIGHT 0.85
 //#define MRP_USE_SCHLICK_GGX
 //#define MRP_USE_LAMBERT_DIFFUSE
 //#define DEBUG_CLUSTERS
@@ -29,30 +28,35 @@ precision mediump samplerCube;
 void main(void) {
 	uint cluster = CURRENT_CLUSTER();
 
-	vec3 normidx = texture2D(normal_map, f_texcoord).rgb;
+	// 
+	vec4  texcolor            = texture2D(diffuse_map, f_texcoord);
+	vec3  metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
+	float aoidx               = texture2D(ambient_occ_map, f_texcoord).r;
+	vec3  emissive            = texture2D(emissive_map, f_texcoord).rgb;
+	vec3  lightmapped         = texture2D(lightmap, f_lightmap).rgb;
+	vec3  normidx             = texture2D(normal_map, f_texcoord).rgb;
+
 	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
 
-	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
-	vec3 view_dir = normalize(view_pos - f_position.xyz);
-	mat4 mvp = p*v*m;
-
-	vec3 metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
-	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 
 	vec3 albedo = f_color.rgb
 		* anmaterial.diffuse.rgb
 		* texcolor.rgb
-		* anmaterial.diffuse.w * f_color.w;
+		* anmaterial.diffuse.w
+		* f_color.w;
 
 	float opacity = texcolor.a * anmaterial.opacity;
 
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
-	float aoidx = pow(texture2D(ambient_occ_map, f_texcoord).r, 2.0);
-	vec3 emissive = texture2D(emissive_map, f_texcoord).rgb;
-	vec3 lightmapped = texture2D(lightmap, f_lightmap).rgb;
 
+	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
+	vec3 view_dir = normalize(view_pos - f_position.xyz);
+
+	// TODO: get rid of redundant fresnel calculations, also calculated in lighting
+	//       could just pass F to lighting
+	// TODO: also, should pass NdotV, NdotL, etc to lighting functions
 	vec3 Fspec = F(f_0(albedo, metallic), view_dir, normalize(view_dir + normal_dir));
 	vec3 Fdiff = 1.0 - Fspec;
 
@@ -62,12 +66,9 @@ void main(void) {
 		+ (anmaterial.emissive.rgb * emissive.rgb)
 		+ lightmapped;
 
-	LIGHT_LOOP(cluster, f_position.xyz, view_dir, albedo,
-	           normal_dir, metallic, roughness, aoidx);
-
+	// reflections
 	float a = alpha(roughness);
 	vec3 posws = f_position.xyz;
-
 	vec3 altdir = reflect(-view_dir, normal_dir);
 	vec3 refdir = correctParallax(posws, view_pos, normal_dir);
 	//vec3 env = textureCubeAtlas(reflection_atlas, test, refdir).rgb;
@@ -75,8 +76,25 @@ void main(void) {
 	vec3 Fb = F(f_0(albedo, metallic), view_dir, normalize(view_dir + altdir));
 	total_light += 0.5 * (1.0 - max(0.0, a - 0.5)) * env * Fb;
 
-	// TODO: leave refraction in? might be better as a seperate shader
-	/*
+	LIGHT_LOOP(cluster, f_position.xyz, view_dir, albedo,
+	           normal_dir, metallic, roughness, aoidx);
+
+	// apply tonemapping here if there's no postprocessing step afterwards
+	total_light = EARLY_TONEMAP(total_light, 1.0);
+
+#ifdef DEBUG_CLUSTERS
+	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);
+	const float thresh = 0.75;
+	const float invthresh = thresh / 1.0;
+	FRAG_COLOR = vec4(total_light +
+		vec3(invthresh * max(0.0, N - thresh), 1.0 - N, N), opacity);
+#else
+	FRAG_COLOR = vec4(total_light, opacity);
+#endif
+}
+
+// TODO: seperate refraction shader for glass, water, etc
+/*
 	vec3 test[6] = vec3[](
 		reflection_probe[0].xyz,
 		reflection_probe[1].xyz,
@@ -97,17 +115,3 @@ void main(void) {
 
 	total_light += ref_light;
 */
-
-	// apply tonemapping here if there's no postprocessing step afterwards
-	total_light = EARLY_TONEMAP(total_light, 1.0);
-
-#ifdef DEBUG_CLUSTERS
-	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);
-	const float thresh = 0.75;
-	const float invthresh = thresh / 1.0;
-	FRAG_COLOR = vec4(total_light +
-		vec3(invthresh * max(0.0, N - thresh), 1.0 - N, N), opacity);
-#else
-	FRAG_COLOR = vec4(total_light, opacity);
-#endif
-}
