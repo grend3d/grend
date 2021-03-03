@@ -47,17 +47,18 @@ gameObject::ptr animatedCharacter::getObject(void) {
 	return objects;
 }
 
+// TODO: might as well have a resource component
+static gameObject::ptr playerModel = nullptr;
+
 player::player(entityManager *manager, gameMain *game, glm::vec3 position)
-	: entity(manager),
-	// TODO: don't keep strong reference to body
-	  body(new rigidBodySphere(manager, this, position, 10.0, 0.5))
+	: entity(manager)
 {
-	static gameObject::ptr playerModel = nullptr;
 
 	new boxSpawner(manager, this);
 	new movementHandler(manager, this);
 	new projectileCollision(manager, this);
 	new syncRigidBodyPosition(manager, this);
+	rigidBody *body = new rigidBodySphere(manager, this, position, 10.0, 0.5);
 
 	manager->registerComponent(this, "player", this);
 
@@ -98,7 +99,33 @@ player::player(entityManager *manager,
                nlohmann::json properties)
 	: entity(manager, properties)
 {
-	// TODO:
+	if (!playerModel) {
+		// TODO: resource cache
+		//playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
+		SDL_Log("Loading player model...");
+		playerModel = loadScene("assets/obj/buff-dude-testanim.glb");
+		playerModel->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
+
+		//playerModel->transform.scale = glm::vec3(0.16f);
+		playerModel->transform.position = glm::vec3(0, -0.5, 0);
+		//bindCookedMeshes();
+		assert(playerModel != nullptr);
+		SDL_Log("got player model");
+	}
+
+	setNode("model", node, playerModel);
+	//setNode("light", node, std::make_shared<gameLightPoint>());
+	//setNode("light", node, std::make_shared<gameLightPoint>());
+	//auto lit = std::make_shared<gameLightPoint>();
+	auto lit = std::make_shared<gameLightSpot>();
+	lit->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
+	lit->transform.position = glm::vec3(0, 0, 1);
+	lit->intensity = 200;
+	lit->is_static = false;
+	lit->casts_shadows = true;
+	setNode("light", node, lit);
+	character = std::make_shared<animatedCharacter>(playerModel);
+	character->setAnimation("idle");
 }
 
 nlohmann::json player::serialize(entityManager *manager) {
@@ -106,15 +133,10 @@ nlohmann::json player::serialize(entityManager *manager) {
 }
 
 void player::update(entityManager *manager, float delta) {
+	rigidBody *body = castEntityComponent<rigidBody*>(manager, this, "rigidBody");
+	if (!body) return;
+
 	glm::vec3 vel = body->phys->getVelocity();
-
-	/*
-	TRS physTransform = body->phys->getTransform();
-	node->transform.position = physTransform.position;
-	node->transform.rotation =
-		glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
-		*/
-
 	if (glm::length(vel) < 2.0) {
 		character->setAnimation("idle");
 	} else {

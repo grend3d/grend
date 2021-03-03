@@ -18,7 +18,10 @@ class boxBullet : public projectile {
 
 class boxSpawner : public inputHandler {
 	public:
-		boxSpawner(entityManager *manager, entity *ent)
+		// TODO: could set firing rate, bullet amount, etc in properties
+		boxSpawner(entityManager *manager,
+		           entity *ent,
+		           nlohmann::json properties={})
 			: inputHandler(manager, ent)
 		{
 			manager->registerComponent(ent, "boxSpawner", this);
@@ -26,4 +29,10 @@ class boxSpawner : public inputHandler {
 
 		virtual void
 		handleInput(entityManager *manager, entity *ent, inputEvent& ev);
+
+		// serialization stuff
+		constexpr static const char *serializedType = "player";
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
 };

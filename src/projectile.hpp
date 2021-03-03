@@ -13,7 +13,7 @@ class projectile : public entity {
 	public:
 		projectile(entityManager *manager, gameMain *game, glm::vec3 position);
 
-		virtual ~projectile() {};
+		virtual ~projectile();
 		virtual void update(entityManager *manager, float delta);
 
 		// TODO:
@@ -28,7 +28,11 @@ class projectileCollision : public collisionHandler {
 			manager->registerComponent(ent, "projectileCollision", this);
 		}
 
-		virtual ~projectileCollision() {};
+		projectileCollision(entityManager *manager,
+		                    entity *ent,
+		                    nlohmann::json properties);
+
+		virtual ~projectileCollision();
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
@@ -50,6 +54,12 @@ class projectileCollision : public collisionHandler {
 				}
 			}
 		};
+
+		// serialization stuff
+		constexpr static const char *serializedType = "player";
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager); 
 };
 
 class projectileDestruct : public collisionHandler {
@@ -60,7 +70,7 @@ class projectileDestruct : public collisionHandler {
 			manager->registerComponent(ent, "projectileDestruct", this);
 		}
 
-		virtual ~projectileDestruct() {};
+		virtual ~projectileDestruct();
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,

@@ -2,6 +2,22 @@
 #include "projectile.hpp"
 #include "timedLifetime.hpp"
 
+projectile::~projectile() {};
+projectileCollision::~projectileCollision() {};
+projectileDestruct::~projectileDestruct() {};
+
+projectileCollision::projectileCollision(entityManager *manager,
+                                         entity *ent,
+                                         nlohmann::json properties)
+	: collisionHandler(manager, ent, {"projectile"})
+{
+	// TODO:
+}
+
+nlohmann::json projectileCollision::serialize(entityManager *manager) {
+	return {};
+}
+
 projectile::projectile(entityManager *manager, gameMain *game, glm::vec3 position)
 	: entity(manager)
 {

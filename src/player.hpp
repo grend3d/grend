@@ -41,7 +41,6 @@ class player : public entity {
 		virtual gameObject::ptr getNode(void) { return node; };
 
 		animatedCharacter::ptr character;
-		rigidBody *body;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "player";

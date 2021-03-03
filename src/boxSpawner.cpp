@@ -58,3 +58,8 @@ void boxSpawner::handleInput(entityManager *manager, entity *ent, inputEvent& ev
 		//manager->engine->audio->add(ch);
 	}
 }
+
+nlohmann::json boxSpawner::serialize(entityManager *manager) {
+	// TODO: actually serialize
+	return defaultProperties();
+}

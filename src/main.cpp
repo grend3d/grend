@@ -254,16 +254,25 @@ projalphaView::projalphaView(gameMain *game)
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #endif
 
-	game->factories->add<rigidBody>();
-	game->factories->add<syncRigidBodyTransform>();
-	game->factories->add<syncRigidBodyPosition>();
-	game->factories->add<syncRigidBodyXZVelocity>();
+	// TODO: less redundant way to do this
+#define SERIALIZABLE(T) game->factories->add<T>()
+	SERIALIZABLE(rigidBody);
+	SERIALIZABLE(rigidBodySphere);
+	SERIALIZABLE(rigidBodyBox);
+	SERIALIZABLE(syncRigidBodyTransform);
+	SERIALIZABLE(syncRigidBodyPosition);
+	SERIALIZABLE(syncRigidBodyXZVelocity);
+	//SERIALIZABLE(collisionHandler);
 
-	game->factories->add<player>();
-	game->factories->add<enemy>();
-	game->factories->add<enemySpawner>();
-	game->factories->add<health>();
-	game->factories->add<team>();
+	SERIALIZABLE(player);
+	SERIALIZABLE(enemy);
+	SERIALIZABLE(enemySpawner);
+	SERIALIZABLE(health);
+	SERIALIZABLE(team);
+	SERIALIZABLE(boxSpawner);
+	SERIALIZABLE(movementHandler);
+	SERIALIZABLE(projectileCollision);
+#undef SERIALIZABLE
 
 	// TODO: names are kinda pointless here
 	// TODO: should systems be a state object in gameMain as well?
@@ -312,6 +321,8 @@ projalphaView::projalphaView(gameMain *game)
 		return MODAL_NO_CHANGE;
 	});
 
+	static nlohmann::json testthing = {};
+
 	input.bind(MODAL_ALL_MODES,
 		[=, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
@@ -324,8 +335,29 @@ projalphaView::projalphaView(gameMain *game)
 					}
 				}
 
-
 				std::cerr << compJson.dump(4) << std::endl;
+				testthing = compJson;
+			}
+
+			return MODAL_NO_CHANGE;
+		});
+
+	input.bind(MODAL_ALL_MODES,
+		[=, this] (SDL_Event& ev, unsigned flags) {
+			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_i) {
+				for (auto& entprops : testthing) {
+					entity *ent =
+						game->factories->build(game->entities.get(), entprops);
+
+					std::cerr
+						<< "Loading entity, properties: "
+						<< entprops.dump(4)
+						<< std::endl;
+
+					if (ent) {
+						game->entities->add(ent);
+					}
+				}
 			}
 
 			return MODAL_NO_CHANGE;

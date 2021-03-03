@@ -103,7 +103,14 @@ class movementHandler : public inputHandler {
 		movementHandler(entityManager *manager, entity *ent)
 			: inputHandler(manager, ent)
 		{
-			manager->registerComponent(ent, "movementHandler", this);
+			manager->registerComponent(ent, serializedType, this);
+		}
+
+		// nothing special for deserializing construction
+		movementHandler(entityManager *manager, entity *ent, nlohmann::json _)
+			: inputHandler(manager, ent)
+		{
+			manager->registerComponent(ent, serializedType, this);
 		}
 
 		virtual void
@@ -120,6 +127,10 @@ class movementHandler : public inputHandler {
 		}
 
 		glm::vec3 lastvel;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "movementHandler";
+		virtual const char *typeString(void) const { return serializedType; };
 };
 
 class mouseRotationPoller : public inputPoller {
@@ -134,9 +145,6 @@ class mouseRotationPoller : public inputPoller {
 };
 
 class touchMovementHandler : public rawEventHandler {
-	inputQueue inputs;
-	camera::ptr cam;
-
 	public:
 		glm::vec2 touchpos;
 		glm::vec2 center;
@@ -152,12 +160,13 @@ class touchMovementHandler : public rawEventHandler {
 		virtual ~touchMovementHandler() {};
 
 		virtual void handleEvent(entityManager *manager, entity *ent, SDL_Event& ev);
+
+	private:
+		inputQueue inputs;
+		camera::ptr cam;
 };
 
 class touchRotationHandler : public rawEventHandler {
-	inputQueue inputs;
-	camera::ptr cam;
-
 	public:
 		glm::vec2 touchpos;
 		glm::vec2 center;
@@ -173,6 +182,10 @@ class touchRotationHandler : public rawEventHandler {
 		virtual ~touchRotationHandler() {};
 
 		virtual void handleEvent(entityManager *manager, entity *ent, SDL_Event& ev);
+
+	private:
+		inputQueue inputs;
+		camera::ptr cam;
 };
 
 bindFunc inputMapper(inputQueue q, camera::ptr cam);
