@@ -7,12 +7,6 @@ namespace grendx::ecs {
 
 class rigidBody : public component {
 	public:
-		constexpr static const char *serializedType = "rigidBody";
-		static const nlohmann::json defaultProperties(void) {
-			// mass of 0 means the body is static
-			return {"mass", 0.f};
-		};
-
 		rigidBody(entityManager *manager, entity *ent, float _mass)
 			: component(manager, ent)
 		{
@@ -22,14 +16,9 @@ class rigidBody : public component {
 
 		rigidBody(entityManager *manager,
 		          entity *ent,
-		          nlohmann::json properties)
-			: component(manager, ent, properties)
-		{
-			// TODO
-		}
+		          nlohmann::json properties);
 
 		virtual ~rigidBody();
-		virtual const char* typeString(void) const { return serializedType; };
 
 		void registerCollisionQueue(std::shared_ptr<std::vector<collision>> queue) {
 			if (phys) {
@@ -40,15 +29,14 @@ class rigidBody : public component {
 
 		physicsObject::ptr phys = nullptr;
 		float mass;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "rigidBody";
+		virtual const char* typeString(void) const { return serializedType; };
 };
 
 class rigidBodySphere : public rigidBody {
 	public:
-		constexpr static const char *serializedType = "rigidBodySphere";
-		static const nlohmann::json defaultProperties(void) {
-			return {"radius", 1.f};
-		};
-
 		rigidBodySphere(entityManager *manager,
 		                entity *ent,
 		                glm::vec3 _position,
@@ -64,8 +52,11 @@ class rigidBodySphere : public rigidBody {
 			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
 		}
 
+		rigidBodySphere(entityManager *manager,
+		                entity *ent,
+		                nlohmann::json properties);
+
 		virtual ~rigidBodySphere();
-		virtual const char* typeString(void) const { return serializedType; };
 
 		virtual void setRadius(float r) {
 			// XXX: if the object has moved since it was added, this will reset
@@ -78,12 +69,25 @@ class rigidBodySphere : public rigidBody {
 		glm::vec3 position;
 		float mass;
 		float radius;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "rigidBodySphere";
+		static const nlohmann::json defaultProperties(void) {
+			auto ret = component::defaultProperties();
+
+			ret.update({
+				{"radius", 1.f},
+			});
+
+			return ret;
+		};
+
+		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
 };
 
 class rigidBodyBox : public rigidBody {
 	public:
-		constexpr static const char *serializedType = "rigidBodyBox";
-
 		rigidBodyBox(entityManager *manager,
 		             entity *ent,
 		             glm::vec3 position,
@@ -95,8 +99,26 @@ class rigidBodyBox : public rigidBody {
 			phys = manager->engine->phys->addBox(ent, position, mass, box);
 		}
 
+		rigidBodyBox(entityManager *manager,
+		             entity *ent,
+		             nlohmann::json properties);
+
 		virtual ~rigidBodyBox();
+
+		// serialization stuff
+		constexpr static const char *serializedType = "rigidBodyBox";
+		static const nlohmann::json defaultProperties(void) {
+			auto ret = component::defaultProperties();
+
+			ret.update({
+				{"radius", 1.f},
+			});
+
+			return ret;
+		};
+
 		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
 };
 
 class syncRigidBody : public component {

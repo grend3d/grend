@@ -7,6 +7,40 @@ namespace grendx::ecs {
 collisionHandler::~collisionHandler() {};
 entitySystemCollision::~entitySystemCollision() {};
 
+/*
+collisionHandler::collisionHandler(entityManager *manager, entity *ent,
+                                   std::vector<std::string> _tags)
+	: component(manager, ent),
+	  tags(_tags)
+{
+	manager->registerComponent(ent, "collisionHandler", this);
+}
+*/
+
+collisionHandler::collisionHandler(entityManager *manager,
+                                   entity *ent,
+                                   nlohmann::json properties)
+	: component(manager, ent)
+{
+	manager->registerComponent(ent, "collisionHandler", this);
+
+	for (auto& it : properties) {
+		if (it.is_string()) {
+			tags.push_back(it.get<std::string>());
+		}
+	}
+}
+
+nlohmann::json collisionHandler::serialize(entityManager *manager) {
+	nlohmann::json tagsjson = {};
+
+	for (auto& tag : tags) {
+		tagsjson.push_back(tag);
+	}
+
+	return {{"tags", tagsjson}};
+}
+
 void entitySystemCollision::update(entityManager *manager, float delta) {
 	for (auto& col : *manager->collisions) {
 		if (col.adata && col.bdata) {

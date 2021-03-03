@@ -17,6 +17,41 @@ syncRigidBodyPosition::~syncRigidBodyPosition() {};
 syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
 syncRigidBodySystem::~syncRigidBodySystem() {};
 
+
+rigidBody::rigidBody(entityManager *manager,
+                     entity *ent,
+                     nlohmann::json properties)
+	: component(manager, ent, properties)
+{
+	// TODO
+}
+
+rigidBodySphere::rigidBodySphere(entityManager *manager,
+                                 entity *ent,
+                                 nlohmann::json properties)
+	: rigidBody(manager, ent, properties)
+{
+	// TODO
+}
+
+rigidBodyBox::rigidBodyBox(entityManager *manager,
+                           entity *ent,
+                           nlohmann::json properties)
+	: rigidBody(manager, ent, properties)
+{
+	// TODO
+}
+
+nlohmann::json rigidBodySphere::serialize(entityManager *manager) {
+	// TODO: actually serialize
+	return defaultProperties();
+}
+
+nlohmann::json rigidBodyBox::serialize(entityManager *manager) {
+	// TODO: actually serialize
+	return defaultProperties();
+}
+
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");

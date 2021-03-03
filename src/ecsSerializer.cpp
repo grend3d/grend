@@ -14,7 +14,50 @@ abstractFactory::~abstractFactory() {};
 entity *factories::build(entityManager *manager,
                          json serialized)
 {
-	return nullptr;
+	auto components = serialized.find("components");
+	auto enttype    = serialized.find("entity-type");
+	auto node       = serialized.find("node");
+	auto type       = serialized.find("type");
+
+	bool complete =
+		components != serialized.end()
+		&& enttype != serialized.end()
+		&& node    != serialized.end()
+		&& type    != serialized.end();
+
+	if (!complete) {
+		return nullptr;
+	}
+
+	// TODO: exception handling
+	std::string typestr = enttype->get<std::string>();
+	SDL_Log("Build entity: %s", typestr.c_str());
+
+	entity *ret = nullptr;
+
+	if (has(typestr)) {
+		component *built = factories[typestr]->allocate(manager, nullptr, serialized);
+		ret = dynamic_cast<entity*>(built);
+	}
+
+	if (!ret) {
+		return nullptr;
+	}
+
+	for (auto& comp : *components) {
+		if (comp.is_array() && comp.size() >= 2) {
+			std::string type = comp[0].get<std::string>();
+
+			if (has(type)) {
+				SDL_Log("Adding component %s to entity %s",
+				        type.c_str(), typestr.c_str());
+
+				build(manager, ret, comp[1]);
+			}
+		}
+	}
+
+	return ret;
 }
 
 component *factories::build(entityManager *manager,

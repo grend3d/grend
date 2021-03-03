@@ -225,10 +225,15 @@ void entityManager::registerComponent(entity *ent,
 nlohmann::json entity::serialize(entityManager *manager) {
 	nlohmann::json components = {};
 
-	for (auto& [key, comp] : manager->getEntityComponents(this)) {
+	auto comps = manager->getEntityComponents(this);
+	auto uniq  = comps.equal_range("component");
+
+	for (auto it = uniq.first; it != uniq.second; it++) {
+		auto& [_, comp] = *it;
+
 		// entities have themselves as components, don't recurse infinitely
 		if (comp != this) {
-			components.push_back({ key, comp->serialize(manager) });
+			components.push_back({ comp->typeString(), comp->serialize(manager) });
 		}
 	}
 

@@ -6,22 +6,25 @@ namespace grendx::ecs {
 
 class collisionHandler : public component {
 	public:
-		collisionHandler(entityManager *manager, entity *ent,
-		                 std::vector<std::string> _tags)
-			: component(manager, ent),
-			  tags(_tags)
-		{
-			manager->registerComponent(ent, "collisionHandler", this);
-		}
+		// XXX: hmm, need some way to avoid ambiguous constructors when
+		//      initializing with std::vector<std::string> tag list
+		collisionHandler(entityManager *manager,
+		                 entity *ent,
+		                 nlohmann::json properties);
 
 		virtual ~collisionHandler();
-		virtual const char* typeString(void) const { return "collisionHandler"; };
 
 		virtual void
 		onCollision(entityManager *manager, entity *ent,
 		            entity *other, collision& col) = 0;
 
 		std::vector<std::string> tags;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "collisionHandler";
+
+		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
 };
 
 class entitySystemCollision : public entitySystem {
