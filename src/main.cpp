@@ -256,6 +256,9 @@ projalphaView::projalphaView(gameMain *game)
 
 	// TODO: less redundant way to do this
 #define SERIALIZABLE(T) game->factories->add<T>()
+	SERIALIZABLE(entity);
+	SERIALIZABLE(component);
+
 	SERIALIZABLE(rigidBody);
 	SERIALIZABLE(rigidBodySphere);
 	SERIALIZABLE(rigidBodyBox);
