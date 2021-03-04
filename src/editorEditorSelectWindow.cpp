@@ -23,6 +23,40 @@ static void drawSelectableLabel(const char *txt) {
 	}
 }
 
+static void drawJson(nlohmann::json& value) {
+	if (value.is_array()) {
+		for (unsigned i = 0; i < value.size(); i++) {
+			std::string name = "[" + std::to_string(i) + "]";
+
+			if (ImGui::TreeNode(name.c_str())) {
+				drawJson(value[i]);
+				ImGui::TreePop();
+			}
+		}
+	}
+
+	else if (value.is_object()) {
+		for (auto& [name, em] : value.items()) {
+			if (ImGui::TreeNode(name.c_str())) {
+				drawJson(em);
+				ImGui::TreePop();
+			}
+		}
+	}
+
+	else if (value.is_number_float()) {
+		auto ptr = value.get_ptr<nlohmann::json::number_float_t*>();
+		float p = *ptr;
+		ImGui::SliderFloat("float", &p, 0.f, 10.f);
+
+		*ptr = p;
+	}
+
+	else if (value.is_string()) {
+		ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+	}
+}
+
 // TODO: might want to expose this in the menubar
 static void addEntityWindow(gameMain *game, bool *show) {
 	static char comboBuf[0x1000];
@@ -55,33 +89,30 @@ static void addEntityWindow(gameMain *game, bool *show) {
 	comboBuf[bufsize] = '\0';
 	comboBuf[bufsize - 1] = '\0';
 
-	static int baseIndex;
+	static int baseIndex = -1;
 	static std::vector<int> componentIndexes;
+	static nlohmann::json curjson;
 
-	ImGui::Combo("Base entity", &baseIndex, comboBuf);
+	static int curidx = 0;
+	ImGui::Combo("Base entity", &curidx, comboBuf);
 	ImGui::Separator();
+
+	if (curidx != baseIndex) {
+		curjson = game->factories->properties(names[curidx]);
+		baseIndex = curidx;
+		// XXX
+		curjson["entity-type"] = names[curidx];
+	}
+
 
 	float footer = ImGui::GetStyle().ItemSpacing.y
 		+ ImGui::GetFrameHeightWithSpacing();
 	float sidebuttons = ImGui::GetStyle().ItemSpacing.x
 		+ ImGui::GetFrameHeightWithSpacing();
-	
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, sidebuttons);
-	ImGui::BeginChild("buttons", ImVec2(sidebuttons, -footer));
-	if (ImGui::Button("+")) {
-		componentIndexes.push_back(0);
-	}
-
-	if (ImGui::Button("-") && !componentIndexes.empty()) {
-		if (!componentIndexes.empty()) {
-			componentIndexes.pop_back();
-		}
-	}
-	ImGui::EndChild();
-	ImGui::NextColumn();
 
 	ImGui::BeginChild("components", ImVec2(0, -footer));
+	drawJson(curjson);
+#if 0
 	for (unsigned i = 0; i < componentIndexes.size(); i++) {
 		std::string compstr = "attachment " + std::to_string(i);
 		std::string popupstr = "popup " + std::to_string(i);
@@ -100,12 +131,40 @@ static void addEntityWindow(gameMain *game, bool *show) {
 			ImGui::EndPopup();
 		}
 	}
+#endif
+
+	ImGui::Separator();
+
+	static int addidx = 0;
+	ImGui::Combo("Add component", &addidx, comboBuf);
+
+	ImGui::SameLine();
+	if (ImGui::Button("+")) {
+		auto props = game->factories->properties(names[addidx]);
+
+		curjson["components"].push_back({
+			names[addidx],
+			props
+		});
+	}
+
+	/*
+	ImGui::SameLine();
+	if (ImGui::Button("-") && !componentIndexes.empty()) {
+		if (!componentIndexes.empty()) {
+			componentIndexes.pop_back();
+		}
+	}
+	*/
 	ImGui::EndChild();
-	ImGui::Columns(1);
 	ImGui::Separator();
 
 	if (ImGui::Button("OK")) {
-		// TODO:
+		ecs::entity *ent = game->factories->build(game->entities.get(), curjson);
+
+		if (ent) {
+			game->entities->add(ent);
+		}
 	}
 
 	ImGui::SameLine();

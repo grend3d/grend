@@ -100,10 +100,15 @@ class entity : public component {
 	public:
 		constexpr static const char *serializedType = "entity";
 		static const nlohmann::json defaultProperties(void) {
-			return {"node",
-				{"position", {0.f, 0.f, 0.f}},
-				{"rotation", {1.f, 0.f, 0.f, 0.f}},
-				{"scale",    {1.f, 1.f, 1.f}},
+			return {
+				{"type",        "entity"},
+				{"entity-type", serializedType},
+				{"node", {
+					{"position", {0.f, 0.f, 0.f}},
+					{"rotation", {1.f, 0.f, 0.f, 0.f}},
+					{"scale",    {1.f, 1.f, 1.f}},
+				}},
+				{"components", {}},
 			};
 		};
 
@@ -111,11 +116,7 @@ class entity : public component {
 		typedef std::weak_ptr<entity>   weakptr;
 
 		entity(entityManager *manager,
-		       nlohmann::json properties = defaultProperties())
-			: component(manager, this)
-		{
-			manager->registerComponent(this, "entity", this);
-		}
+		       nlohmann::json properties = defaultProperties());
 
 		virtual ~entity();
 		virtual const char* typeString(void) const { return "entity"; };

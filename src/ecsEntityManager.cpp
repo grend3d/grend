@@ -14,6 +14,31 @@ entity::~entity() {};
 entitySystem::~entitySystem() {};
 entityEventSystem::~entityEventSystem() {};
 
+
+entity::entity(entityManager *manager,
+		       nlohmann::json properties)
+	: component(manager, this)
+{
+	manager->registerComponent(this, "entity", this);
+
+	glm::vec3 pos(properties["node"]["position"][0],
+	              properties["node"]["position"][1],
+	              properties["node"]["position"][2]);
+
+	glm::quat rot(properties["node"]["rotation"][0],
+	              properties["node"]["rotation"][1],
+	              properties["node"]["rotation"][2],
+	              properties["node"]["rotation"][3]);
+
+	glm::vec3 scale(properties["node"]["scale"][0],
+	                properties["node"]["scale"][1],
+	                properties["node"]["scale"][2]);
+
+	node->transform.position = pos;
+	node->transform.rotation = rot;
+	node->transform.scale    = scale;
+}
+
 void entityManager::update(float delta) {
 	for (auto& [name, system] : systems) {
 		if (system) {

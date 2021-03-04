@@ -23,7 +23,7 @@ rigidBody::rigidBody(entityManager *manager,
                      nlohmann::json properties)
 	: component(manager, ent, properties)
 {
-	// TODO
+	manager->registerComponent(ent, serializedType, this);
 }
 
 rigidBodySphere::rigidBodySphere(entityManager *manager,
@@ -31,7 +31,10 @@ rigidBodySphere::rigidBodySphere(entityManager *manager,
                                  nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	// TODO
+	manager->registerComponent(ent, serializedType, this);
+	phys = manager->engine->phys->addSphere(ent, ent->node->transform.position,
+	                                        1.f, properties["radius"]);
+	registerCollisionQueue(manager->collisions);
 }
 
 rigidBodyBox::rigidBodyBox(entityManager *manager,

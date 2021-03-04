@@ -45,16 +45,7 @@ entity *factories::build(entityManager *manager,
 	}
 
 	for (auto& comp : *components) {
-		if (comp.is_array() && comp.size() >= 2) {
-			std::string type = comp[0].get<std::string>();
-
-			if (has(type)) {
-				SDL_Log("Adding component %s to entity %s",
-				        type.c_str(), typestr.c_str());
-
-				build(manager, ret, comp[1]);
-			}
-		}
+		build(manager, ret, comp);
 	}
 
 	return ret;
@@ -64,7 +55,25 @@ component *factories::build(entityManager *manager,
                             entity *ent,
                             json serialized)
 {
-	return nullptr;
+	if (!serialized.is_array() /*|| serialized.size() < 2*/) {
+		return nullptr;
+	}
+
+	std::string type = serialized[0].get<std::string>();
+	SDL_Log("Attempting to add component %s to entity %p...",
+	        type.c_str(), ent);
+
+	if (!has(type)) {
+		return nullptr;
+	}
+
+	SDL_Log("Found component type %s", type.c_str());
+
+	nlohmann::json props = serialized[1].is_null()
+		? properties(type)
+		: serialized[1];
+
+	return factories[type]->allocate(manager, ent, props);
 }
 
 

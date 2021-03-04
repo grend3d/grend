@@ -386,7 +386,8 @@ void gameEditor::logic(gameMain *game, float delta) {
 		|| mode == mode::AddSpotLight
 		|| mode == mode::AddDirectionalLight
 		|| mode == mode::AddReflectionProbe
-		|| mode == mode::AddIrradianceProbe;
+		|| mode == mode::AddIrradianceProbe
+		|| showEntityEditorWindow;
 
 	if (selectedNode) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
