@@ -31,7 +31,7 @@ class boxSpawner : public inputHandler {
 		handleInput(entityManager *manager, entity *ent, inputEvent& ev);
 
 		// serialization stuff
-		constexpr static const char *serializedType = "player";
+		constexpr static const char *serializedType = "boxSpawner";
 
 		virtual const char *typeString(void) const { return serializedType; };
 		virtual nlohmann::json serialize(entityManager *manager);

@@ -56,7 +56,7 @@ class projectileCollision : public collisionHandler {
 		};
 
 		// serialization stuff
-		constexpr static const char *serializedType = "player";
+		constexpr static const char *serializedType = "projectileCollision";
 
 		virtual const char *typeString(void) const { return serializedType; };
 		virtual nlohmann::json serialize(entityManager *manager); 

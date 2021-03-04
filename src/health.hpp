@@ -16,6 +16,12 @@ class health : public component {
 			manager->registerComponent(ent, "health", this);
 		}
 
+		health(entityManager *manager, entity *ent, nlohmann::json properties)
+			: component(manager, ent, properties)
+		{
+			manager->registerComponent(ent, "health", this);
+		};
+
 		virtual float damage(float damage) {
 			amount = max(0.0, amount - damage/hp);
 			return amount*hp;
@@ -38,4 +44,15 @@ class health : public component {
 
 		float amount;
 		float hp;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "health";
+		static const nlohmann::json defaultProperties(void) {
+			return component::defaultProperties();
+		}
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager) {
+			return component::defaultProperties();
+		};
 };

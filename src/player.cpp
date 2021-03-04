@@ -99,6 +99,8 @@ player::player(entityManager *manager,
                nlohmann::json properties)
 	: entity(manager, properties)
 {
+	manager->registerComponent(this, "player", this);
+
 	if (!playerModel) {
 		// TODO: resource cache
 		//playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");

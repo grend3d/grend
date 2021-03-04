@@ -19,4 +19,13 @@ class team : public component {
 		virtual bool operator==(const team& other) const;
 
 		std::string name;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "team";
+		static const nlohmann::json defaultProperties(void) {
+			return component::defaultProperties();
+		}
+
+		virtual const char *typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
 };
