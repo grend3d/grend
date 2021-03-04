@@ -24,11 +24,21 @@ static void drawSelectableLabel(const char *txt) {
 }
 
 static void drawJson(nlohmann::json& value) {
+	static ImGuiTreeNodeFlags flags
+		= ImGuiTreeNodeFlags_Bullet
+		| ImGuiTreeNodeFlags_DefaultOpen
+		/*
+		| ImGuiTreeNodeFlags_OpenOnArrow
+		| ImGuiTreeNodeFlags_OpenOnDoubleClick
+		| ImGuiTreeNodeFlags_SpanAvailWidth
+		*/
+		;
+
 	if (value.is_array()) {
 		for (unsigned i = 0; i < value.size(); i++) {
 			std::string name = "[" + std::to_string(i) + "]";
 
-			if (ImGui::TreeNode(name.c_str())) {
+			if (ImGui::TreeNodeEx(name.c_str(), flags)) {
 				drawJson(value[i]);
 				ImGui::TreePop();
 			}
@@ -37,7 +47,7 @@ static void drawJson(nlohmann::json& value) {
 
 	else if (value.is_object()) {
 		for (auto& [name, em] : value.items()) {
-			if (ImGui::TreeNode(name.c_str())) {
+			if (ImGui::TreeNodeEx(name.c_str(), flags)) {
 				drawJson(em);
 				ImGui::TreePop();
 			}
@@ -47,13 +57,21 @@ static void drawJson(nlohmann::json& value) {
 	else if (value.is_number_float()) {
 		auto ptr = value.get_ptr<nlohmann::json::number_float_t*>();
 		float p = *ptr;
+
+		ImGui::SameLine();
 		ImGui::SliderFloat("float", &p, 0.f, 10.f);
 
 		*ptr = p;
 	}
 
 	else if (value.is_string()) {
+		ImGui::SameLine();
 		ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+	}
+
+	else if (value.is_null()) {
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "<null>");
 	}
 }
 
@@ -64,7 +82,7 @@ static void addEntityWindow(gameMain *game, bool *show) {
 
 	*comboBuf = '\0'; // reset every frame
 
-	ImGui::Begin("Add entity", show);
+	ImGui::Begin("Add entity", show, ImGuiWindowFlags_MenuBar);
 	std::vector<std::string> names;
 
 	size_t n = 0;
@@ -93,6 +111,25 @@ static void addEntityWindow(gameMain *game, bool *show) {
 	static std::vector<int> componentIndexes;
 	static nlohmann::json curjson;
 
+	// TODO
+	if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMenu("Templates")) {
+			if (ImGui::MenuItem("Save as new template")) {
+
+				static char templateSave[256] = "Template";
+				ImGui::InputText("## template save", templateSave, sizeof(templateSave));
+				ImGui::SameLine();
+				if (ImGui::Button("Save as template")) {
+					// TODO:
+				}
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMenuBar();
+	}
+
 	static int curidx = 0;
 	ImGui::Combo("Base entity", &curidx, comboBuf);
 	ImGui::Separator();
@@ -104,42 +141,23 @@ static void addEntityWindow(gameMain *game, bool *show) {
 		curjson["entity-type"] = names[curidx];
 	}
 
-
-	float footer = ImGui::GetStyle().ItemSpacing.y
-		+ ImGui::GetFrameHeightWithSpacing();
+	float footer =
+		2.f * (ImGui::GetStyle().ItemSpacing.y
+		       + ImGui::GetFrameHeightWithSpacing());
 	float sidebuttons = ImGui::GetStyle().ItemSpacing.x
 		+ ImGui::GetFrameHeightWithSpacing();
 
 	ImGui::BeginChild("components", ImVec2(0, -footer));
+	ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Properties");
+	ImGui::Separator();
 	drawJson(curjson);
-#if 0
-	for (unsigned i = 0; i < componentIndexes.size(); i++) {
-		std::string compstr = "attachment " + std::to_string(i);
-		std::string popupstr = "popup " + std::to_string(i);
-
-		ImGui::Combo(compstr.c_str(), componentIndexes.data() + i, comboBuf);
-
-		if (ImGui::BeginPopupContextItem(popupstr.c_str())) {
-			ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Remove?");
-			ImGui::Separator();
-
-			if (ImGui::Selectable("Yes")) {
-				componentIndexes.erase(componentIndexes.begin() + i);
-			}
-
-			if (ImGui::Selectable("No")) { /* Nop */ }
-			ImGui::EndPopup();
-		}
-	}
-#endif
+	ImGui::EndChild();
 
 	ImGui::Separator();
-
 	static int addidx = 0;
-	ImGui::Combo("Add component", &addidx, comboBuf);
-
+	ImGui::Combo("##Component Type", &addidx, comboBuf);
 	ImGui::SameLine();
-	if (ImGui::Button("+")) {
+	if (ImGui::Button("Add component")) {
 		auto props = game->factories->properties(names[addidx]);
 
 		curjson["components"].push_back({
@@ -148,18 +166,8 @@ static void addEntityWindow(gameMain *game, bool *show) {
 		});
 	}
 
-	/*
-	ImGui::SameLine();
-	if (ImGui::Button("-") && !componentIndexes.empty()) {
-		if (!componentIndexes.empty()) {
-			componentIndexes.pop_back();
-		}
-	}
-	*/
-	ImGui::EndChild();
 	ImGui::Separator();
-
-	if (ImGui::Button("OK")) {
+	if (ImGui::Button("Create")) {
 		ecs::entity *ent = game->factories->build(game->entities.get(), curjson);
 
 		if (ent) {
