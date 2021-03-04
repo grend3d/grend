@@ -26,7 +26,7 @@ void gameEditor::handleSelectObject(gameMain *game) {
 		clickDepth = glm::distance(clicked->transform.position, cam->position());
 
 		if (isUIObject(clicked)) {
-			entbuf = selectedNode->transform;
+			transformBuf = selectedNode->transform;
 			std::cerr << "It's a UI model" << std::endl;
 
 		} else {
@@ -59,7 +59,7 @@ static void handleAddNode(gameEditor *editor,
 {
 	assert(editor->selectedNode != nullptr);
 
-	obj->transform = editor->entbuf;
+	obj->transform = editor->cursorBuf;
 	setNode(name, editor->selectedNode, obj);
 	editor->selectedNode = obj;
 };
@@ -286,7 +286,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::MoveSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				entbuf = selectedNode->transform;
+				transformBuf = selectedNode->transform;
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::MoveX;
@@ -303,7 +303,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::RotateSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				entbuf = selectedNode->transform;
+				transformBuf = selectedNode->transform;
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::RotateX;
@@ -320,7 +320,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::ScaleSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				entbuf = selectedNode->transform;
+				transformBuf = selectedNode->transform;
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::ScaleX;
@@ -370,8 +370,8 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 				// XXX: put bounding box in position/scale transform...
 				// TODO: don't do that
-				entbuf.position = probe->boundingBox.min;
-				entbuf.scale    = probe->boundingBox.max;
+				transformBuf.position = probe->boundingBox.min;
+				transformBuf.scale    = probe->boundingBox.max;
 
 				// XXX: no mouse click, pretend there was a click at the center
 				//      for movement purposes
@@ -474,39 +474,39 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 
 	switch (mode) {
 		case mode::MoveX:
-			rot = glm::mat3_cast(entbuf.rotation);
+			rot = glm::mat3_cast(transformBuf.rotation);
 			dir = rot * glm::vec3(1, 0, 0); 
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
-				entbuf.position
+				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
 			break;
 
 		case mode::MoveY:
-			rot = glm::mat3_cast(entbuf.rotation);
+			rot = glm::mat3_cast(transformBuf.rotation);
 			dir = rot * glm::vec3(0, 1, 0); 
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
-				entbuf.position
+				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
 			break;
 
 		case mode::MoveZ:
-			rot = glm::mat3_cast(entbuf.rotation);
+			rot = glm::mat3_cast(transformBuf.rotation);
 			dir = rot * glm::vec3(0, 0, 1); 
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
 			selectedNode->transform.position =
-				entbuf.position
+				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
@@ -517,39 +517,39 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 		//       for the spinner
 		case mode::RotateX:
 			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
+				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
 			break;
 
 		case mode::RotateY:
 			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
+				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
 			break;
 
 		case mode::RotateZ:
 			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(entbuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
+				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
 			break;
 
 		// scale, unlike the others, has a mouse handler for the select mode,
 		// similar to blender
 		case mode::ScaleSomething:
 			selectedNode->transform.scale =
-				entbuf.scale + glm::vec3(TAUF*amount);
+				transformBuf.scale + glm::vec3(TAUF*amount);
 			break;
 
 		case mode::ScaleX:
 			selectedNode->transform.scale =
-				entbuf.scale + glm::vec3(TAUF*amount, 0, 0);
+				transformBuf.scale + glm::vec3(TAUF*amount, 0, 0);
 			break;
 
 		case mode::ScaleY:
 			selectedNode->transform.scale =
-				entbuf.scale + glm::vec3(0, TAUF*amount, 0);
+				transformBuf.scale + glm::vec3(0, TAUF*amount, 0);
 			break;
 
 		case mode::ScaleZ:
 			selectedNode->transform.scale =
-				entbuf.scale + glm::vec3(0, 0, TAUF*amount);
+				transformBuf.scale + glm::vec3(0, 0, TAUF*amount);
 			break;
 
 		default:
@@ -568,42 +568,42 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 		switch (mode) {
 			case mode::MoveAABBPosX:
 				probe->boundingBox.max =
-					entbuf.scale 
+					transformBuf.scale 
 						+ glm::vec3(1, 0, 0)*depth*amount_x*reversed_x
 						+ glm::vec3(1, 0, 0)*depth*amount_y*reversed_y;
 				break;
 
 			case mode::MoveAABBPosY:
 				probe->boundingBox.max =
-					entbuf.scale
+					transformBuf.scale
 						+ glm::vec3(0, 1, 0)*depth*amount_x*reversed_x
 						+ glm::vec3(0, 1, 0)*depth*amount_y*reversed_y;
 				break;
 
 			case mode::MoveAABBPosZ:
 				probe->boundingBox.max =
-					entbuf.scale
+					transformBuf.scale
 						+ glm::vec3(0, 0, 1)*depth*amount_x*reversed_z
 						+ glm::vec3(0, 0, 1)*depth*amount_y*reversed_y*reversed_z;
 				break;
 
 			case mode::MoveAABBNegX:
 				probe->boundingBox.min =
-					entbuf.position
+					transformBuf.position
 						+ glm::vec3(1, 0, 0)*depth*amount_x*reversed_x
 						+ glm::vec3(1, 0, 0)*depth*amount_y*reversed_y;
 				break;
 
 			case mode::MoveAABBNegY:
 				probe->boundingBox.min =
-					entbuf.position
+					transformBuf.position
 						+ glm::vec3(0, 1, 0)*depth*amount_x*reversed_x
 						+ glm::vec3(0, 1, 0)*depth*amount_y*reversed_y;
 				break;
 
 			case mode::MoveAABBNegZ:
 				probe->boundingBox.min =
-					entbuf.position
+					transformBuf.position
 						+ glm::vec3(0, 0, 1)*depth*amount_x*reversed_z
 						+ glm::vec3(0, 0, 1)*depth*amount_y*reversed_y*reversed_z;
 				break;

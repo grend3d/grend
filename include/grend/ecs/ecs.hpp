@@ -118,11 +118,15 @@ class entity : public component {
 		entity(entityManager *manager,
 		       nlohmann::json properties = defaultProperties());
 
+		entity(entityManager *manager,
+		       entity *ent,
+		       nlohmann::json properties);
+
 		virtual ~entity();
 		virtual const char* typeString(void) const { return "entity"; };
 		virtual nlohmann::json serialize(entityManager *manager);
 
-		virtual void update(entityManager *manager, float delta) = 0;
+		virtual void update(entityManager *manager, float delta) {};
 		virtual gameObject::ptr getNode(void) { return node; };
 
 		gameObject::ptr node = std::make_shared<gameObject>();

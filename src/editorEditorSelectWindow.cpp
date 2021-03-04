@@ -10,7 +10,6 @@
 using namespace grendx;
 
 static char searchBuffer[0x1000] = "";
-static bool showAddEntityWindow = false;
 
 static void drawSelectableLabel(const char *txt) {
 	if (ImGui::Selectable(txt)) {
@@ -76,13 +75,13 @@ static void drawJson(nlohmann::json& value) {
 }
 
 // TODO: might want to expose this in the menubar
-static void addEntityWindow(gameMain *game, bool *show) {
+void gameEditor::addEntityWindow(gameMain *game) {
 	static char comboBuf[0x1000];
 	static const size_t bufsize = sizeof(comboBuf) - 1;
 
 	*comboBuf = '\0'; // reset every frame
 
-	ImGui::Begin("Add entity", show, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Add entity", &showAddEntityWindow, ImGuiWindowFlags_MenuBar);
 	std::vector<std::string> names;
 
 	size_t n = 0;
@@ -110,6 +109,7 @@ static void addEntityWindow(gameMain *game, bool *show) {
 	static int baseIndex = -1;
 	static std::vector<int> componentIndexes;
 	static nlohmann::json curjson;
+	static bool syncToCursor = true;
 
 	// TODO
 	if (ImGui::BeginMenuBar()) {
@@ -124,6 +124,11 @@ static void addEntityWindow(gameMain *game, bool *show) {
 				}
 			}
 
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Entity properties")) {
+			ImGui::Checkbox("Sync node properties to cursor", &syncToCursor);
 			ImGui::EndMenu();
 		}
 
@@ -166,12 +171,48 @@ static void addEntityWindow(gameMain *game, bool *show) {
 		});
 	}
 
+	if (syncToCursor) {
+		// TODO: could have function to serialize any TRS
+		curjson["node"] = {
+			{"position",
+				{
+					cursorBuf.position.x,
+					cursorBuf.position.y,
+					cursorBuf.position.z,
+				}},
+			{"rotation",
+				{
+					cursorBuf.rotation.w,
+					cursorBuf.rotation.x,
+					cursorBuf.rotation.y,
+					cursorBuf.rotation.z,
+				}},
+			{"scale",
+				{
+					cursorBuf.scale.x,
+					cursorBuf.scale.y,
+					cursorBuf.scale.z,
+				}},
+		};
+	}
+
 	ImGui::Separator();
+
+	static bool attach = false;
+	ImGui::Checkbox("Attach to selected node", &attach);
+
+	ImGui::SameLine();
 	if (ImGui::Button("Create")) {
 		ecs::entity *ent = game->factories->build(game->entities.get(), curjson);
 
 		if (ent) {
+			if (attach && selectedNode) {
+				setNode("entity-original-node", selectedNode, ent->node);
+				ent->node = selectedNode;
+			}
+
 			game->entities->add(ent);
+			selectedNode = ent->node;
 		}
 	}
 
@@ -179,7 +220,7 @@ static void addEntityWindow(gameMain *game, bool *show) {
 	if (ImGui::Button("Cancel")) {
 		componentIndexes.clear();
 		baseIndex = 0;
-		*show = false;
+		showAddEntityWindow = false;
 	}
 
 	ImGui::End();
@@ -280,8 +321,4 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	ImGui::EndChild();
 	ImGui::Columns(1);
 	ImGui::End();
-
-	if (showAddEntityWindow) {
-		addEntityWindow(game, &showAddEntityWindow);
-	}
 }

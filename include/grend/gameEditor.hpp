@@ -110,7 +110,9 @@ class gameEditor : public gameView {
 		float exposure = 1.f;
 		float lightThreshold = 0.03;
 		float editDistance = 5;
-		TRS entbuf;
+
+		TRS cursorBuf;
+		TRS transformBuf;
 
 		// Map editing things
 		// TODO: don't need dynamic_models anymore
@@ -124,6 +126,7 @@ class gameEditor : public gameView {
 		void objectSelectWindow(gameMain *game);
 		void entityEditorWindow(gameMain *game);
 		void entitySelectWindow(gameMain *game);
+		void addEntityWindow(gameMain *game);
 		void metricsWindow(gameMain *game);
 		void profilerWindow(gameMain *game);
 
@@ -152,6 +155,7 @@ class gameEditor : public gameView {
 		bool showObjectSelectWindow = false;
 		bool showEntityEditorWindow = false;
 		bool showEntitySelectWindow = false;
+		bool showAddEntityWindow = false;
 		bool showProfilerWindow = false;
 		bool showMetricsWindow = true;
 		bool showProbes = true;

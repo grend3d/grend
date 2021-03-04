@@ -17,7 +17,7 @@ entityEventSystem::~entityEventSystem() {};
 
 entity::entity(entityManager *manager,
 		       nlohmann::json properties)
-	: component(manager, this)
+	: component(manager, this, properties)
 {
 	manager->registerComponent(this, "entity", this);
 
@@ -37,6 +37,15 @@ entity::entity(entityManager *manager,
 	node->transform.position = pos;
 	node->transform.rotation = rot;
 	node->transform.scale    = scale;
+}
+
+// TODO: register entities as components of other entities...
+entity::entity(entityManager *manager,
+               entity *ent,
+               nlohmann::json properties)
+	: entity(manager, properties)
+{
+	
 }
 
 void entityManager::update(float delta) {

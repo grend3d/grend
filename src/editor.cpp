@@ -362,7 +362,7 @@ void gameEditor::setMode(enum mode newmode) {
 void gameEditor::handleCursorUpdate(gameMain *game) {
 	// TODO: reuse this for cursor code
 	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
-	entbuf.position = glm::vec3(
+	cursorBuf.position = glm::vec3(
 		align(cam->direction().x*editDistance + cam->position().x),
 		align(cam->direction().y*editDistance + cam->position().y),
 		align(cam->direction().z*editDistance + cam->position().z));
@@ -387,7 +387,7 @@ void gameEditor::logic(gameMain *game, float delta) {
 		|| mode == mode::AddDirectionalLight
 		|| mode == mode::AddReflectionProbe
 		|| mode == mode::AddIrradianceProbe
-		|| showEntityEditorWindow;
+		|| showAddEntityWindow;
 
 	if (selectedNode) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
@@ -423,6 +423,17 @@ void gameEditor::logic(gameMain *game, float delta) {
 		handleMoveRotate(game);
 	}
 
+
+	{
+		auto ptr = UIObjects->getNode("Cursor-Placement");
+
+		if (ptr) {
+			handleCursorUpdate(game);
+			ptr->transform.position = cursorBuf.position;
+		}
+	}
+
+	/*
 	switch (mode) {
 		case mode::AddObject:
 		case mode::AddPointLight:
@@ -439,6 +450,7 @@ void gameEditor::logic(gameMain *game, float delta) {
 			}
 		default: break;
 	}
+	*/
 }
 
 
@@ -514,6 +526,10 @@ void gameEditor::renderEditor(gameMain *game) {
 
 	if (showEntitySelectWindow) {
 		entitySelectWindow(game);
+	}
+
+	if (showAddEntityWindow) {
+		addEntityWindow(game);
 	}
 
 	if (showEntityEditorWindow) {

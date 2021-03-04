@@ -148,17 +148,15 @@ void gameEditor::menubar(gameMain *game) {
 			ENABLE_GL_ERROR_CHECK(checkGL);
 		}
 
-		if (ImGui::BeginMenu("Objects")) {
-			if (ImGui::MenuItem("Map editor", "o"))
+		if (ImGui::BeginMenu("Scene")) {
+			if (ImGui::MenuItem("Scene graph", "o"))
 				showMapWindow = true;
-			if (ImGui::MenuItem("Render object editor", "r"))
+
+			if (ImGui::MenuItem("Node object editor", "r"))
 				showObjectEditorWindow = true;
-			if (ImGui::MenuItem("Render object selection"))
+
+			if (ImGui::MenuItem("Node object selection"))
 				showObjectSelectWindow = true;
-			if (ImGui::MenuItem("Entity editor"))
-				showEntityEditorWindow = true;
-			if (ImGui::MenuItem("Entity selection"))
-				showEntitySelectWindow = true;
 
 			if (ImGui::MenuItem("Material editor", "CTRL+M")) {}
 
@@ -185,6 +183,26 @@ void gameEditor::menubar(gameMain *game) {
 
 			if (ImGui::MenuItem("Add irradiance probe", "li")) {
 				setMode(mode::AddIrradianceProbe);
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Entities")) {
+			if (ImGui::MenuItem("Entity editor"))
+				showEntityEditorWindow = true;
+
+			if (ImGui::MenuItem("Entity selection"))
+				showEntitySelectWindow = true;
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Add Entity")) {
+				showAddEntityWindow = true;
+			}
+
+			if (ImGui::MenuItem("Edit Entity")) {
+				// TODO:
 			}
 
 			ImGui::EndMenu();
