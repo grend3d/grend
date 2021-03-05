@@ -189,6 +189,7 @@ void gameEditor::render(gameMain *game) {
 	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
 	post->setUniform("exposure", game->rend->exposure);
+	post->setUniform("time_ms", SDL_GetTicks() * 1.f);
 	post->draw(game->rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
