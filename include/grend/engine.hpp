@@ -170,7 +170,8 @@ struct renderFlags {
 	bool cull_faces = true;
 	bool sort       = true;
 	bool stencil    = true;
-	bool depth      = true;
+	bool depthTest  = true;
+	bool depthMask  = true;
 	bool syncshader = true;
 	bool shadowmap  = false;
 };

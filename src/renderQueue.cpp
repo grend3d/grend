@@ -534,15 +534,13 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
-	if (flags.depth) {
+	if (flags.depthTest) {
 		enable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LESS);
-
 	} else {
 		disable(GL_DEPTH_TEST);
-		glDepthMask(GL_FALSE);
 	}
+
+	glDepthMask(flags.depthMask? GL_TRUE : GL_FALSE);
 
 	DO_ERROR_CHECK();
 	assert(fb != nullptr);

@@ -187,6 +187,11 @@ void renderContext::loadShaders(void) {
 			GR_PREFIX "shaders/baked/unshaded.frag",
 			globalShaderOptions);
 
+	lightingShaders["constant-color"] =
+		loadLightingShader(
+			GR_PREFIX "shaders/baked/constant-color.frag",
+			globalShaderOptions);
+
 	probeShaders["refprobe"] =
 		loadProbeShader(
 			GR_PREFIX "shaders/baked/ref_probe.frag",

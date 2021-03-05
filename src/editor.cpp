@@ -158,13 +158,30 @@ void gameEditor::render(gameMain *game) {
 	//       object buffer has more than the stencil buffer can hold...
 	//       also current stencil buffer access results in syncronizing the pipeline,
 	//       need an overall better solution for clickable things
-	// TODO: maybe attach shaders to gameObjects
-	// TODO: skinned unshaded shader
-	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
-	unshadedFlags.depth = false;
 
 	que.add(UIObjects);
-	que.flush(game->rend->framebuffer, game->rend, unshadedFlags);
+
+	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
+	renderFlags constantFlags = game->rend->getLightingFlags("constant-color");
+	unshadedFlags.depthTest = constantFlags.depthTest = true;
+	unshadedFlags.depthMask = constantFlags.depthMask = false;
+
+	renderQueue por = que;
+	for (auto& prog : {constantFlags.mainShader,
+	                   constantFlags.skinnedShader,
+	                   constantFlags.instancedShader})
+	{
+		prog->bind();
+		prog->set("outputColor", glm::vec4(0.2, 0.05, 0.0, 0.5));
+	}
+
+	// TODO: depth mode in render flags
+	glDepthFunc(GL_GEQUAL);
+	por.flush(game->rend->framebuffer, game->rend, constantFlags);
+
+	por = que;
+	glDepthFunc(GL_LESS);
+	por.flush(game->rend->framebuffer, game->rend, unshadedFlags);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
