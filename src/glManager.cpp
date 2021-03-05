@@ -71,7 +71,7 @@ void initializeOpengl(void) {
 	SDL_Log(" OpenGL max uniform block bindings: %d", maxUBOBindings);
 	SDL_Log(" OpenGL max uniform block size: %d", maxUBOSize);
 
-	if (maxImageUnits < 8) {
+	if (maxImageUnits < TEXU_MAX) {
 		throw std::logic_error("This GPU doesn't allow enough texture bindings!");
 	}
 
@@ -108,7 +108,7 @@ Texture::ptr Framebuffer::attach(GLenum attachment,
                                  Texture::ptr texture,
                                  GLenum textarget)
 {
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(TEX_GL_SCRATCH);
 	glBindTexture(textarget, texture->obj);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, textarget, texture->obj, 0);
 
@@ -602,8 +602,8 @@ void setDefaultGlFlags(void) {
 	enable(GL_CULL_FACE, true);;
 	// TODO: other flags
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(TEX_GL_SCRATCH);
+	glBindTexture(GL_TEXTURE_2D, TEXU_SCRATCH);
 	glBindVertexArray(0);
 }
 

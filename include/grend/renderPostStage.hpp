@@ -86,15 +86,15 @@ class renderPostStage : public Storage {
 			bindVao(getScreenquadVao());
 
 			if (previous) {
-				glActiveTexture(GL_TEXTURE6);
+				glActiveTexture(TEX_GL_SCRATCH);
 				previous->bind();
-				program->set("render_fb", 6);
+				program->set("render_fb", TEXU_SCRATCH);
 			}
 
 			if (depth) {
-				glActiveTexture(GL_TEXTURE7);
+				glActiveTexture(TEX_GL_SCRATCHB);
 				depth->bind();
-				program->set("render_depth", 7);
+				program->set("render_depth", TEXU_SCRATCHB);
 			}
 
 			// No scaling for previous postprocessing stages, although that
@@ -115,13 +115,13 @@ class renderPostStage : public Storage {
 			glViewport(0, 0, this->width, this->height);
 			bindVao(getScreenquadVao());
 
-			glActiveTexture(GL_TEXTURE6);
+			glActiveTexture(TEX_GL_SCRATCH);
 			previous->color->bind();
-			program->set("render_fb", 6);
+			program->set("render_fb", TEXU_SCRATCH);
 
-			glActiveTexture(GL_TEXTURE7);
+			glActiveTexture(TEX_GL_SCRATCHB);
 			previous->depth->bind();
-			program->set("render_depth", 7);
+			program->set("render_depth", TEXU_SCRATCHB);
 
 			program->set("scale_x", previous->scale.x);
 			program->set("scale_y", previous->scale.y);

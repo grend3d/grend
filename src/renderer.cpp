@@ -362,32 +362,32 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 			: default_compiledMat->textures.lightmap;
 
 		if (program->cacheObject("material_diffuse", diffuse.get())) {
-			glActiveTexture(GL_TEXTURE0);
+			glActiveTexture(TEX_GL_DIFFUSE);
 			diffuse->bind();
 		}
 
 		if (program->cacheObject("material_metalrough", metalrough.get())) {
-			glActiveTexture(GL_TEXTURE1);
+			glActiveTexture(TEX_GL_METALROUGH);
 			metalrough->bind();
 		}
 
 		if (program->cacheObject("material_normal", normal.get())) {
-			glActiveTexture(GL_TEXTURE2);
+			glActiveTexture(TEX_GL_NORMAL);
 			normal->bind();
 		}
 
 		if (program->cacheObject("material_ao", ambientOcclusion.get())) {
-			glActiveTexture(GL_TEXTURE3);
+			glActiveTexture(TEX_GL_AO);
 			ambientOcclusion->bind();
 		}
 
 		if (program->cacheObject("material_emissive", emissive.get())) {
-			glActiveTexture(GL_TEXTURE4);
+			glActiveTexture(TEX_GL_EMISSIVE);
 			emissive->bind();
 		}
 
 		if (program->cacheObject("material_lightmap", lightmap.get())) {
-			glActiveTexture(GL_TEXTURE5);
+			glActiveTexture(TEX_GL_LIGHTMAP);
 			lightmap->bind();
 		}
 	}
@@ -395,12 +395,12 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 	// XXX: reusing cacheObject to detect initialization, could have
 	//      a isInitialized()
 	if (program->cacheObject("material_tex_units", nullptr)) {
-		program->set("diffuse_map", 0);
-		program->set("specular_map", 1);
-		program->set("normal_map", 2);
-		program->set("ambient_occ_map", 3);
-		program->set("emissive_map", 4);
-		program->set("lightmap", 5);
+		program->set("diffuse_map",     TEXU_DIFFUSE);
+		program->set("specular_map",    TEXU_METALROUGH);
+		program->set("normal_map",      TEXU_NORMAL);
+		program->set("ambient_occ_map", TEXU_AO);
+		program->set("emissive_map",    TEXU_EMISSIVE);
+		program->set("lightmap",        TEXU_LIGHTMAP);
 	}
 
 	DO_ERROR_CHECK();

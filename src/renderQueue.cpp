@@ -1023,18 +1023,18 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 	program->set("renderHeight", (float)rctx->framebuffer->height);
 	program->set("lightThreshold", rctx->lightThreshold);
 
-	glActiveTexture(GL_TEXTURE6);
+	glActiveTexture(TEX_GL_REFLECTIONS);
 	rctx->atlases.reflections->color_tex->bind();
-	program->set("reflection_atlas", 6);
+	program->set("reflection_atlas", TEXU_REFLECTIONS);
 
-	glActiveTexture(GL_TEXTURE7);
+	glActiveTexture(TEX_GL_SHADOWS);
 	rctx->atlases.shadows->depth_tex->bind();
-	program->set("shadowmap_atlas", 7);
+	program->set("shadowmap_atlas", TEXU_SHADOWS);
 	DO_ERROR_CHECK();
 
-	glActiveTexture(GL_TEXTURE8);
+	glActiveTexture(TEX_GL_IRRADIANCE);
 	rctx->atlases.irradiance->color_tex->bind();
-	program->set("irradiance_atlas", 8);
+	program->set("irradiance_atlas", TEXU_IRRADIANCE);
 	DO_ERROR_CHECK();
 }
 

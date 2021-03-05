@@ -77,6 +77,39 @@ enum {
 	UBO_END_BINDINGS,
 };
 
+enum {
+	TEX_GL_SCRATCH     = GL_TEXTURE0,
+	TEX_GL_SCRATCHB    = GL_TEXTURE1,
+	TEX_GL_DIFFUSE     = GL_TEXTURE2,
+	TEX_GL_METALROUGH  = GL_TEXTURE3,
+	TEX_GL_NORMAL      = GL_TEXTURE4,
+	TEX_GL_AO          = GL_TEXTURE5,
+	TEX_GL_EMISSIVE    = GL_TEXTURE6,
+	TEX_GL_LIGHTMAP    = GL_TEXTURE11,
+	TEX_GL_REFLECTIONS = GL_TEXTURE7,
+	TEX_GL_SHADOWS     = GL_TEXTURE8,
+	TEX_GL_IRRADIANCE  = GL_TEXTURE9,
+	TEX_GL_SKYBOX      = GL_TEXTURE10,
+};
+
+// Hmm... has to be a better way to do this
+enum {
+	TEXU_SCRATCH     = 0,
+	TEXU_SCRATCHB    = 1,
+	TEXU_DIFFUSE     = 2,
+	TEXU_METALROUGH  = 3,
+	TEXU_NORMAL      = 4,
+	TEXU_AO          = 5,
+	TEXU_EMISSIVE    = 6,
+	TEXU_LIGHTMAP    = 11,
+	TEXU_REFLECTIONS = 7,
+	TEXU_SHADOWS     = 8,
+	TEXU_IRRADIANCE  = 9,
+	TEXU_SKYBOX      = 10,
+	// TODO: automatic
+	TEXU_MAX = 12,
+};
+
 // XXX: metrics for debugging/optimization
 // TODO: not global variables
 inline size_t dbgGlmanBuffered = 0;

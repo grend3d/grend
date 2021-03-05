@@ -176,9 +176,9 @@ static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
 
 	std::cout << "convolve level " << level << std::endl;
 
-	glActiveTexture(GL_TEXTURE6);
+	glActiveTexture(TEX_GL_REFLECTIONS);
 	rctx->atlases.reflections->color_tex->bind();
-	convolve->set("reflection_atlas", 6);
+	convolve->set("reflection_atlas", TEXU_REFLECTIONS);
 	DO_ERROR_CHECK();
 
 	for (unsigned i = 0; i < 6; i++) {
@@ -255,7 +255,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	renderFlags flags = rctx->probeShaders["refprobe"];
 	flags.stencil = false;
 
-	glActiveTexture(GL_TEXTURE7);
+	glActiveTexture(TEX_GL_SHADOWS);
 	rctx->atlases.shadows->depth_tex->bind();
 
 	for (Program::ptr prog : {flags.mainShader,
@@ -264,7 +264,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	{
 		prog->bind();
 		queue.shaderSync(prog, rctx);
-		prog->set("shadowmap_atlas", 7);
+		prog->set("shadowmap_atlas", TEXU_SHADOWS);
 
 	}
 
@@ -331,9 +331,9 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 	Program::ptr convolve = rctx->postShaders["irradiance-convolve"];
 	convolve->bind();
 
-	glActiveTexture(GL_TEXTURE6);
+	glActiveTexture(TEX_GL_REFLECTIONS);
 	rctx->atlases.reflections->color_tex->bind();
-	convolve->set("reflection_atlas", 6);
+	convolve->set("reflection_atlas", TEXU_REFLECTIONS);
 	DO_ERROR_CHECK();
 
 	for (unsigned i = 0; i < 6; i++) {
