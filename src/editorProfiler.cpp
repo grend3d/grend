@@ -9,6 +9,7 @@ using namespace grendx;
 
 static const ImGuiTreeNodeFlags base_flags
 	= ImGuiTreeNodeFlags_OpenOnArrow
+	| ImGuiTreeNodeFlags_DefaultOpen
 	| ImGuiTreeNodeFlags_OpenOnDoubleClick
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
