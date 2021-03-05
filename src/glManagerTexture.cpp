@@ -25,7 +25,9 @@ static inline void srgb_to_linear(uint8_t *pixels, size_t length) {
 
 static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 	for (size_t i = 0; i < pixels.size(); i++) {
-		pixels[i] = 0xff * pow((pixels[i]/256.0), 2.2);
+		//pixels[i] = 0xff * pow((pixels[i]/256.0), 2.2);
+		float a = pixels[i]/255.f;
+		pixels[i] = 0xff * a*a; // close enough :P (way faster)
 	}
 }
 
@@ -37,7 +39,6 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	bind();
 
 #ifdef NO_FORMAT_CONVERSION
-	/*
 	// XXX: need something more efficient
 	std::vector<uint8_t> temp = tex->pixels;
 
@@ -50,11 +51,12 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 	             0, texformat, tex->width, tex->height,
 	             0, texformat, GL_UNSIGNED_BYTE, temp.data());
-				 */
 
+	/*
 	glTexImage2D(GL_TEXTURE_2D,
 	             0, texformat, tex->width, tex->height,
 	             0, texformat, GL_UNSIGNED_BYTE, tex->pixels.data());
+				 */
 
 #else
 	glTexImage2D(GL_TEXTURE_2D,

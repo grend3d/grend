@@ -31,7 +31,10 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+		//{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
+		 //               game->rend->globalShaderOptions)},
+		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+		{game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #endif
 
@@ -189,6 +192,7 @@ void gameEditor::render(gameMain *game) {
 	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
 	post->setUniform("exposure", game->rend->exposure);
+	// TODO: need to do this in player views too
 	post->setUniform("time_ms", SDL_GetTicks() * 1.f);
 	post->draw(game->rend->framebuffer);
 

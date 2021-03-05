@@ -80,7 +80,7 @@ void main(void) {
 	           normal_dir, metallic, roughness, aoidx);
 
 	// apply tonemapping here if there's no postprocessing step afterwards
-	total_light = EARLY_TONEMAP(total_light, 1.0);
+	total_light = vec3(EARLY_TONEMAP(vec4(total_light, 1.0), 1.0, f_texcoord));
 
 #ifdef DEBUG_CLUSTERS
 	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);

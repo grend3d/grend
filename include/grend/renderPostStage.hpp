@@ -191,7 +191,7 @@ class renderPostChain {
 		}
 
 		void draw(renderFramebuffer::ptr fb) {
-			fb->resolve();
+			fb->resolve(uniforms);
 			Texture::ptr current = fb->color;
 
 			for (auto& stage : prestages) {

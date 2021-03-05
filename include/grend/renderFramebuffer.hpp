@@ -20,7 +20,9 @@ class renderFramebuffer {
 
 		void bind(void);
 		void clear(void);
-		void resolve(void);
+		// XXX: default parameters, need to pass uniforms for tonemapping
+		// TODO: reference/optional, avoid copying
+		void resolve(Shader::parameters options = {});
 		void setSize(int Width, int Height);
 		gameMesh::ptr index(float x, float y);
 		gameMesh::ptr index(unsigned idx);
@@ -29,7 +31,11 @@ class renderFramebuffer {
 		Framebuffer::ptr framebufferMultisampled;
 		Texture::ptr colorMultisampled;
 		Texture::ptr color;
+		Texture::ptr depthMultisampled;
 		Texture::ptr depth;
+
+		// shader to blit multisampled buffer to a normal framebuffer
+		Program::ptr msaaResolver = nullptr;
 
 		int width = -1, height = -1;
 		unsigned multisample = 0;

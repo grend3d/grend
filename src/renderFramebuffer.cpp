@@ -1,5 +1,8 @@
 #include <grend/renderFramebuffer.hpp>
 #include <grend/utility.hpp>
+// for loadPostShader, etc
+// those functions could be put into glManager...
+#include <grend/engine.hpp>
 
 using namespace grendx;
 
@@ -13,6 +16,19 @@ renderFramebuffer::renderFramebuffer(int Width, int Height, unsigned Multisample
 		std::cerr << "Multisample! samples=" << multisample << std::endl;
 		framebufferMultisampled = genFramebuffer();
 	}
+
+	// TODO: option here
+	Shader::parameters nullopts; // XXX: no options
+	msaaResolver =
+		loadPostShader(GR_PREFIX "shaders/baked/msaa-tonemapped-blit.frag",
+		               nullopts);
+
+	if (!msaaResolver) {
+		throw std::logic_error("Couldn't load msaa blitter shader");
+	}
+
+	msaaResolver->bind();
+	msaaResolver->set("samples", int(multisample));
 #endif
 
 	setSize(Width, Height);
@@ -57,9 +73,56 @@ void renderFramebuffer::clear(void) {
 #endif
 }
 
-void renderFramebuffer::resolve(void) {
+void renderFramebuffer::resolve(Shader::parameters options) {
 #if defined(HAVE_MULTISAMPLE)
-	if (multisample) {
+	if (!multisample) {
+		// regular old framebuffer, nothing to do
+		return;
+	}
+
+	if (msaaResolver) {
+		// custom resolver, for tonemapping in particular
+		// TODO: could this be unified with the postprocessing code
+		framebuffer->bind();
+		msaaResolver->bind();
+		DO_ERROR_CHECK();
+
+		glActiveTexture(TEX_GL_SCRATCH);
+		colorMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		msaaResolver->set("colorMS", TEXU_SCRATCH);
+		DO_ERROR_CHECK();
+
+		glActiveTexture(TEX_GL_SCRATCHB);
+		depthMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		msaaResolver->set("depthMS", TEXU_SCRATCHB);
+		DO_ERROR_CHECK();
+
+		for (auto& [key, val] : options) {
+			msaaResolver->set(key, val);
+		}
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		DO_ERROR_CHECK();
+		glDepthMask(GL_TRUE);
+		DO_ERROR_CHECK();
+		disable(GL_DEPTH_TEST);
+		DO_ERROR_CHECK();
+
+		DO_ERROR_CHECK();
+		drawScreenquad();
+
+#ifdef GREND_BUILD_DEBUG
+		// XXX: is there a way to copy stencil info in the shader only?
+		//      leaving this in debug mode only for now, that way it can at
+		//      least be stripped out for production...
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->obj);
+		glBlitFramebuffer(0, 0, width, height,
+		                  0, 0, width, height,
+		                  GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+#endif
+
+	} else {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->obj);
 		glBlitFramebuffer(0, 0, width, height,
@@ -89,12 +152,17 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	if (multisample) {
 		framebufferMultisampled->bind();
 
+		colorMultisampled = genTextureColorMultisample(w, h, multisample,
+		                                               rgbaf_if_supported());
+		depthMultisampled = genTextureDepthStencilMultisample(w, h, multisample);
+
 		framebufferMultisampled->attach(GL_COLOR_ATTACHMENT0,
-				genTextureColorMultisample(w, h, multisample, rgbaf_if_supported()),
-				GL_TEXTURE_2D_MULTISAMPLE);
+		                                colorMultisampled,
+		                                GL_TEXTURE_2D_MULTISAMPLE);
+
 		framebufferMultisampled->attach(GL_DEPTH_STENCIL_ATTACHMENT,
-			genTextureDepthStencilMultisample(w, h, multisample),
-			GL_TEXTURE_2D_MULTISAMPLE);
+		                                depthMultisampled,
+		                                GL_TEXTURE_2D_MULTISAMPLE);
 
 		DO_ERROR_CHECK();
 

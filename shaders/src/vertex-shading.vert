@@ -44,7 +44,7 @@ void main(void) {
 	LIGHT_LOOP(cluster, position, view_dir, anmaterial.diffuse.xyz,
 	           normal_dir, anmaterial.metalness, roughness, 1.0);
 
-	ex_Color = EARLY_TONEMAP(vec3(total_light), 1.0); 
+	ex_Color = total_light;
 	f_texcoord = texcoord;
 	gl_Position = mvp * vec4(in_Position, 1.0);
 	//gl_Position = mvp * vec4(in_Position, 0.25);

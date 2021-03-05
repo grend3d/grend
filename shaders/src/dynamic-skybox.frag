@@ -5,6 +5,7 @@ precision mediump sampler2D;
 precision mediump samplerCube;
 
 #include <lib/compat.glsl>
+#include <lib/tonemapping.glsl>
 
 IN vec3 f_texcoord;
 uniform samplerCube skytexture;
@@ -28,9 +29,12 @@ void main(void) {
 	vec3 suncolor = vec3(1.0, 1.0, 1.0);
 	vec3 skycolor = skyblue; // TODO: color based on sun position
 
-	vec3 corona = vec3(((1.0 / max(0.01, abs(coord.y)))) * 0.01 * (0.1 + 0.9*dirlight));
+	vec3 corona = vec3(((1.0 / max(0.1, abs(coord.y)))) * 0.1 * (0.1 + 0.4*dirlight));
 	vec3 light = suncolor * (pow(dirlight, 3.0))*0.5;
-	vec3 sky = (skycolor * (sign(dirup) * (1.0 / max(0.02, coord.y)) * 0.02)) * 16.0;
+	vec3 sky = (skycolor * (sign(dirup) * (1.0 / max(0.02, coord.y)) * 0.02)) * 8.0;
 
-	FRAG_COLOR = vec4(corona + sky + light, 1.0);
+	vec4 total = vec4(corona + sky + light, 1.0);
+	vec2 uv2d = vec2(f_texcoord.x + f_texcoord.y, f_texcoord.y + f_texcoord.z);
+
+	FRAG_COLOR = EARLY_TONEMAP(total, 1.0, uv2d);
 }

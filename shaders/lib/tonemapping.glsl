@@ -22,8 +22,27 @@ vec3 gamma_correct(vec3 color) {
 	return pow(color, vec3(1.0/2.2));
 }
 
+vec4 doTonemap(in vec4 samp, float exposure, in vec2 noisevec) {
+	vec3 dither = vec3(noisevec.x, noisevec.y, 0.5 - noisevec.y) * (2.0 / 256.0);
+
+	//FRAG_COLOR = vec4(reinhard_hdr_modified(color.rgb, exposure), 1.0);
+	// TODO: curve editor
+	vec3 mapped =
+		reinhard_hdr_modified(samp.rgb, 0.5*exposure) +
+		reinhard_hdr_modified(samp.rgb, 0.8*exposure) +
+		reinhard_hdr_modified(samp.rgb, 1.2*exposure) +
+		reinhard_hdr_modified(samp.rgb, 1.5*exposure);
+
+	return vec4((mapped / 4.0) + dither, 1.0);
+}
+
 #if defined(NO_POSTPROCESSING) || defined(SOFT_ANTIALIASING)
-#define EARLY_TONEMAP(color, exposure) (reinhard_hdr_modified(color, exposure))
+#include <lib/noise.glsl>
+//#define EARLY_TONEMAP(color, exposure) (reinhard_hdr_modified(color, exposure))
+// TODO: UV parameter, not implicit uniform dependency
+#define EARLY_TONEMAP(color, exposure, uv) \
+	doTonemap(color, exposure, uniformNoise(uv, 0.0))
+
 #else
-#define EARLY_TONEMAP(color, exposure) color;
+#define EARLY_TONEMAP(color, exposure, uv) (color)
 #endif
