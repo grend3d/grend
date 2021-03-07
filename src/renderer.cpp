@@ -170,10 +170,21 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
 void renderContext::loadShaders(void) {
 	SDL_Log("Loading shaders");
 
+	/*
 	lightingShaders["main"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/baked/pixel-shading-metal-roughness-pbr.frag",
 			globalShaderOptions);
+	*/
+
+	lightingShaders["main-vertex"] =
+		loadShaderToFlags(GR_PREFIX "shaders/baked/vertex-shading.frag",
+			GR_PREFIX "shaders/baked/vertex-shading.vert",
+			GR_PREFIX "shaders/baked/vertex-shading-skinned.vert",
+			GR_PREFIX "shaders/baked/vertex-shading-instanced.vert",
+			globalShaderOptions);
+
+	lightingShaders["main"] = lightingShaders["main-vertex"];
 
 	/*
 	lightingShaders["main"] =

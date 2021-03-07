@@ -8,6 +8,7 @@
 #include <lib/shading-uniforms.glsl>
 #include <lib/attenuation.glsl>
 #include <lib/shading-varying.glsl>
+#include <lib/skinning-uniforms.glsl>
 #include <lib/tonemapping.glsl>
 
 //#define LIGHT_FUNCTION blinn_phong_lighting
@@ -38,9 +39,15 @@ void main(void) {
 	f_tangent = v_tangent;
 	f_bitangent = vec4(cross(v_normal, v_tangent.xyz) * v_tangent.w, v_tangent.w);
 
-	vec3 T = normalize(vec3(m * v_tangent));
-	vec3 B = normalize(vec3(m * f_bitangent));
-	vec3 N = normalize(vec3(m * vec4(v_normal, 0)));
+	mat4 skinMatrix =
+		a_weights.x * joints[int(a_joints.x)]
+		+ a_weights.y * joints[int(a_joints.y)]
+		+ a_weights.z * joints[int(a_joints.z)]
+		+ a_weights.w * joints[int(a_joints.w)];
+
+	vec3 T = normalize(vec3(m * skinMatrix * v_tangent));
+	vec3 B = normalize(vec3(m * skinMatrix * f_bitangent));
+	vec3 N = normalize(vec3(m * skinMatrix * vec4(v_normal, 0)));
 
 	TBN = mat3(T, B, N);
 
@@ -61,7 +68,7 @@ void main(void) {
 
 	ex_Color = total_light;
 
-	f_position = m * vec4(in_Position, 1);
+	f_position = m * skinMatrix * vec4(in_Position, 1);
 	f_texcoord = texcoord;
 	f_lightmap = a_lightmap;
 	f_color    = v_color;

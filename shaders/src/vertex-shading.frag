@@ -11,5 +11,16 @@ precision mediump samplerCube;
 IN vec3 ex_Color;
 
 void main(void) {
-	FRAG_COLOR = texture2D(diffuse_map, f_texcoord) * vec4(ex_Color, 1.0);
+	vec3 lightmapped = texture2D(lightmap, f_lightmap).rgb;
+	vec4 texcolor = texture2D(diffuse_map, f_texcoord);
+	vec3 emissive =
+		texture2D(emissive_map, f_texcoord).rgb
+		* anmaterial.emissive.rgb;
+
+	float opacity = texcolor.a * anmaterial.opacity;
+	vec3 color =
+		texcolor.rgb * ex_Color * anmaterial.diffuse.rgb
+		+ lightmapped + emissive;
+
+	FRAG_COLOR = vec4(color, opacity);
 }
