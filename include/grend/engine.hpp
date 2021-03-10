@@ -199,11 +199,16 @@ class renderContext {
 		void setArrayMode(enum lightingModes mode);
 
 		// XXX
-		struct renderFlags getLightingFlags(std::string name="main");
+		struct renderFlags getLightingFlags(std::string name="");
 		void setReflectionProbe(gameReflectionProbe::ptr probe,
 		                        Program::ptr program);
 		void setIrradianceProbe(gameIrradianceProbe::ptr probe,
 		                        Program::ptr program);
+
+		// TODO: would be ideal to have "low", "medium", "high" or something
+		//       categories, so lighting settings could be easily mapped to
+		//       graphics settings
+		void setDefaultLightModel(std::string name);
 
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
@@ -220,8 +225,9 @@ class renderContext {
 		Shader::parameters globalShaderOptions;
 		enum lightingModes lightingMode = lightingModes::Tiled;
 
+
 		// maps 
-		// XXX: loaded shaders, here so they can be accessed from the editor
+		std::string defaultLighting = "main";
 		std::map<std::string, renderFlags> lightingShaders;
 		std::map<std::string, renderFlags> probeShaders;
 		std::map<std::string, Program::ptr> postShaders;

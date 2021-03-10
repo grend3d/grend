@@ -227,6 +227,19 @@ void gameEditor::menubar(gameMain *game) {
 				}
 			}
 
+			ImGui::Separator();
+
+			static int lightMode = -1;
+			int i = 0;
+			for (auto& [key, _] : game->rend->lightingShaders) {
+				ImGui::RadioButton(key.c_str(), &lightMode, i);
+				if (lightMode == i) {
+					game->rend->setDefaultLightModel(key);
+				}
+
+				i++;
+			}
+
 			ImGui::EndMenu();
 		}
 

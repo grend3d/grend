@@ -170,28 +170,29 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
 void renderContext::loadShaders(void) {
 	SDL_Log("Loading shaders");
 
-	/*
-	lightingShaders["main"] =
+	lightingShaders["pixel-metalroughness"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/baked/pixel-shading-metal-roughness-pbr.frag",
 			globalShaderOptions);
-	*/
 
-	lightingShaders["main-vertex"] =
+	lightingShaders["pixel-normal"] =
+		loadLightingShader(
+			GR_PREFIX "shaders/baked/normals.frag",
+			globalShaderOptions);
+
+	lightingShaders["vertex-metalroughness"] =
 		loadShaderToFlags(GR_PREFIX "shaders/baked/vertex-shading.frag",
 			GR_PREFIX "shaders/baked/vertex-shading.vert",
 			GR_PREFIX "shaders/baked/vertex-shading-skinned.vert",
 			GR_PREFIX "shaders/baked/vertex-shading-instanced.vert",
 			globalShaderOptions);
 
-	lightingShaders["main"] = lightingShaders["main-vertex"];
+	lightingShaders["main"] = lightingShaders["pixel-metalroughness"];
 
-	/*
-	lightingShaders["main"] =
+	lightingShaders["pixel-blinn-phong"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/baked/pixel-shading.frag",
 			globalShaderOptions);
-			*/
 
 	lightingShaders["unshaded"] = 
 		loadLightingShader(
@@ -253,8 +254,13 @@ void renderContext::setArrayMode(enum lightingModes mode) {
 }
 
 struct renderFlags renderContext::getLightingFlags(std::string name) {
-	// TODO: handle name not being in lightingShaders
-	return lightingShaders[name];
+	if (name.empty()) {
+		return lightingShaders[defaultLighting];
+
+	} else {
+		// TODO: handle name not being in lightingShaders
+		return lightingShaders[name];
+	}
 }
 
 /**
@@ -319,6 +325,14 @@ void renderContext::setIrradianceProbe(gameIrradianceProbe::ptr probe,
 		program->set("radboxMax",
 		             probe->transform.position + probe->boundingBox.max);
 		program->set("radprobePosition", probe->transform.position);
+	}
+}
+
+void renderContext::setDefaultLightModel(std::string name) {
+	auto it = lightingShaders.find(name);
+
+	if (it != lightingShaders.end()) {
+		defaultLighting = name;
 	}
 }
 
