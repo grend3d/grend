@@ -66,14 +66,87 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 
 	DO_ERROR_CHECK();
 
+	// initialize with defaults just in case, should never be needed
+	GLenum min = GL_LINEAR_MIPMAP_LINEAR;
+	GLenum mag = GL_LINEAR;
+	GLenum wrapS = GL_REPEAT;
+	GLenum wrapT = GL_REPEAT;
+
+	// TODO: tweakable max settings
+	switch (tex->minFilter) {
+		case materialTexture::filter::Nearest:
+			min = GL_NEAREST;
+			break;
+		case materialTexture::filter::Linear:
+			min = GL_LINEAR;
+			break;
+
+		// TODO: probably want to choose one of these regardless
+		//       of what the format specifies, needs to be tweakable
+		//       for performance/visuals, blender seems to export with
+		//       "nearest_mipmap_linear" which looks terrible
+		case materialTexture::filter::NearestMipmapNearest:
+			min = GL_NEAREST_MIPMAP_NEAREST;
+			break;
+		case materialTexture::filter::NearestMipmapLinear:
+			min = GL_NEAREST_MIPMAP_LINEAR;
+			break;
+		case materialTexture::filter::LinearMipmapNearest:
+			min = GL_LINEAR_MIPMAP_NEAREST;
+			break;
+		case materialTexture::filter::LinearMipmapLinear:
+			min = GL_LINEAR_MIPMAP_LINEAR;
+			break;
+
+		default: break;
+	}
+
+	switch (tex->magFilter) {
+		case materialTexture::filter::Nearest:
+			mag = GL_NEAREST;
+			break;
+		case materialTexture::filter::Linear:
+			mag = GL_LINEAR;
+			break;
+		default:
+			break;
+	}
+
+	auto wrapGLFlags = [](materialTexture::wrap flag) {
+		switch (flag) {
+			case materialTexture::wrap::ClampToEdge:    return GL_CLAMP_TO_EDGE;
+			case materialTexture::wrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
+			case materialTexture::wrap::Repeat:         return GL_REPEAT;
+			default:                                    return GL_REPEAT;
+		}
+	};
+
+	wrapS = wrapGLFlags(tex->wrapS);
+	wrapT = wrapGLFlags(tex->wrapT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+
+	// if format uses mipmap filtering, generate mipmaps
+	if (tex->minFilter >= materialTexture::filter::NearestMipmaps) {
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	/*
 #if ENABLE_MIPMAPS
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	DO_ERROR_CHECK();
 	glGenerateMipmap(GL_TEXTURE_2D);
 #else
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 #endif
 	DO_ERROR_CHECK();
+	*/
 
 	/*
 	SDL_FreeSurface(texture);
@@ -84,6 +157,7 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	//textureCache[texhash] = temp;
 	//return temp;
 
+	// debug info
 	size_t roughsize = tex->pixels.size() * 1.33;
 	currentSize = glmanDbgUpdateTextures(currentSize, roughsize);
 }

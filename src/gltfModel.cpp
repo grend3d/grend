@@ -114,6 +114,11 @@ static tinygltf::Image& gltf_image(gltfModel& gltf, size_t idx) {
 	return gltf.data.images[idx];
 }
 
+static tinygltf::Sampler& gltf_sampler(gltfModel& gltf, size_t idx) {
+	check_index(gltf.data.samplers, idx);
+	return gltf.data.samplers[idx];
+}
+
 static size_t gltf_buff_element_size(int component, int type) {
 	size_t size_component = 0, size_type = 0;
 
@@ -263,26 +268,64 @@ static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 
 	if (gltf.texcache.count(tex_idx) && (ret = gltf.texcache[tex_idx].lock())) {
 		return ret;
+	}
 
-	} else {
-		gltf.texcache[tex_idx] = ret = std::make_shared<materialTexture>();
+	gltf.texcache[tex_idx] = ret = std::make_shared<materialTexture>();
 
-		auto& tex = gltf_texture(gltf, tex_idx);
-		//std::cerr << "        + texture source: " << tex.source << std::endl;
+	auto& tex = gltf_texture(gltf, tex_idx);
+	//std::cerr << "        + texture source: " << tex.source << std::endl;
 
+	if (tex.source >= 0) {
 		auto& img = gltf_image(gltf, tex.source);
 		//std::cerr << "        + texture image source: " << img.uri << ", "
 		//	<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
-
 		ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
-		ret->width = img.width;
-		ret->height = img.height;
+		ret->width    = img.width;
+		ret->height   = img.height;
 		ret->channels = img.component;
-		ret->size = ret->width * ret->height * ret->channels;
-
-		return ret;
+		ret->size     = ret->width * ret->height * ret->channels;
 	}
+
+	if (tex.sampler >= 0) {
+		auto& sampler = gltf_sampler(gltf, tex.sampler);
+
+		switch (sampler.minFilter) {
+			case TINYGLTF_TEXTURE_FILTER_NEAREST:
+				ret->minFilter = materialTexture::filter::Nearest;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_LINEAR:
+				ret->minFilter = materialTexture::filter::Linear;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+				ret->minFilter = materialTexture::filter::NearestMipmapNearest;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
+				ret->minFilter = materialTexture::filter::NearestMipmapLinear;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+				ret->minFilter = materialTexture::filter::LinearMipmapNearest;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
+				ret->minFilter = materialTexture::filter::LinearMipmapLinear;
+				break;
+			default: break;
+		}
+
+		switch (sampler.magFilter) {
+			case TINYGLTF_TEXTURE_FILTER_NEAREST:
+				ret->magFilter = materialTexture::filter::Nearest;
+				break;
+			case TINYGLTF_TEXTURE_FILTER_LINEAR:
+				ret->magFilter = materialTexture::filter::Linear;
+				break;
+			default: break;
+		}
+
+		// TODO: wrap
+	}
+
+	return ret;
 }
 
 static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
