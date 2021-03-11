@@ -1,6 +1,7 @@
 #pragma once
 #include <lib/shading-uniforms.glsl>
 #include <lib/shadows.glsl>
+#include <lib/attenuation.glsl>
 
 #ifndef LIGHT_FUNCTION
 #error "You need to define LIGHT_FUNCTION!"

@@ -22,8 +22,10 @@ using namespace grendx;
 
 class gltfModel {
 	public:
-		gltfModel(tinygltf::Model& mod) : data(mod) {};
+		gltfModel(tinygltf::Model& mod, std::string fname)
+			: data(mod), filename(fname) {};
 		tinygltf::Model data;
+		std::string filename;
 
 		std::map<int, materialTexture::weakptr> texcache;
 		std::map<int, material::weakptr>        matcache;
@@ -263,6 +265,44 @@ gltf_accessor_aabb(tinygltf::Accessor& acc) {
 	}
 }
 
+// TODO: make this a generic function, .obj loader needs this too
+void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string uri)
+{
+	std::string dir  = dirnameStr(gltf.filename);
+	std::string texname = dir + "/" + uri;
+	std::string vecname = texname + ".vectex";
+	// TODO: pkm, ktx, uuuuuuhhhhh.....
+	std::string pkmname = texname + ".pkm";
+
+	uint8_t *px = nullptr;
+
+	// try vector texture first
+	// TODO: might want to split these into multiple functions
+	px = stbi_load(vecname.c_str(), &tex->width, &tex->height,
+	               &tex->channels, 0);
+	tex->type = materialTexture::imageType::VecTex;
+
+	if (!px) {
+	// otherwise try plain image
+		px = stbi_load(texname.c_str(), &tex->width, &tex->height,
+		               &tex->channels, 0);
+		tex->type = materialTexture::imageType::Plain;
+	}
+
+	if (!px) {
+		SDL_Log("Couldn't load texture: uri: %s, location: %s\n",
+				uri.c_str(), texname.c_str());
+		return;
+	}
+
+	size_t size = (tex->channels * tex->width + 1) * tex->height;
+	tex->pixels.insert(tex->pixels.end(), px, px + size);
+	tex->size = size;
+
+	SDL_Log("Loaded external texture: uri: %s, size: %lu, location: %s\n",
+	        uri.c_str(), size, texname.c_str());
+}
+
 static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 	materialTexture::ptr ret;
 
@@ -277,14 +317,22 @@ static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 
 	if (tex.source >= 0) {
 		auto& img = gltf_image(gltf, tex.source);
-		//std::cerr << "        + texture image source: " << img.uri << ", "
-		//	<< img.width << "x" << img.height << ":" << img.component << std::endl;
+		std::cerr << "        + texture image source: " << img.uri << ", "
+			<< img.width << "x" << img.height << ":" << img.component << std::endl;
 
-		ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
-		ret->width    = img.width;
-		ret->height   = img.height;
-		ret->channels = img.component;
-		ret->size     = ret->width * ret->height * ret->channels;
+		if (img.component < 0 || img.height < 0 || img.width < 0) {
+			// external image, do checks for compressed formats, etc
+			gltf_load_external(gltf, ret, img.uri);
+
+		} else {
+			ret->pixels.insert(ret->pixels.end(),
+			                   img.image.begin(), img.image.end());
+
+			ret->width    = img.width;
+			ret->height   = img.height;
+			ret->channels = img.component;
+			ret->size     = ret->width * ret->height * ret->channels;
+		}
 	}
 
 	if (tex.sampler >= 0) {
@@ -1179,7 +1227,7 @@ static gltfModel open_gltf_model(std::string filename) {
 		std::cerr << "/!\\ WARNING: " << warn << std::endl;
 	}
 
-	return gltfModel(gltf);
+	return gltfModel(gltf, filename);
 }
 
 static void updateModelSources(grendx::modelMap& models, std::string filename) {

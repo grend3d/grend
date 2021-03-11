@@ -306,7 +306,7 @@ bool Program::cached(std::string uniform) {
  *
  * @return true if a new object was set, false if obj is the current object.
  */
-bool Program::cacheObject(const char *name, void *obj) {
+bool Program::cacheObject(const char *name, uintptr_t obj) {
 	auto it = objCache.find(name);
 
 	if (it == objCache.end() || it->second != obj) {
@@ -316,6 +316,11 @@ bool Program::cacheObject(const char *name, void *obj) {
 	} else {
 		return false;
 	}
+}
+
+bool Program::cacheObject(const char *name, void *obj) {
+	// cram it g++ >:[
+	return cacheObject(name, (uintptr_t)obj);
 }
 
 // namespace grendx

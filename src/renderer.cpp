@@ -392,6 +392,13 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 			: default_compiledMat->textures.lightmap;
 
 		if (program->cacheObject("material_diffuse", diffuse.get())) {
+			// TODO: could have setter functions for simple types
+			//       (or just do value caching in set())
+			bool is_vec = diffuse->type == materialTexture::imageType::VecTex;
+			if (program->cacheObject("diffuse-is-vec", is_vec)) {
+				program->set("diffuse_vec", is_vec);
+			}
+
 			glActiveTexture(TEX_GL_DIFFUSE);
 			diffuse->bind();
 		}
@@ -412,6 +419,11 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 		}
 
 		if (program->cacheObject("material_emissive", emissive.get())) {
+			bool is_vec = emissive->type == materialTexture::imageType::VecTex;
+			if (program->cacheObject("emissive-is-vec", is_vec)) {
+				program->set("emissive_vec", is_vec);
+			}
+
 			glActiveTexture(TEX_GL_EMISSIVE);
 			emissive->bind();
 		}

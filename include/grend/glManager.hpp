@@ -250,6 +250,8 @@ class Texture : public Obj {
 		void bind(GLenum target = GL_TEXTURE_2D) {
 			glBindTexture(target, obj);
 		}
+
+		materialTexture::imageType type;
 };
 
 class Shader : public Obj {
@@ -311,12 +313,13 @@ class Program : public Obj {
 		// TODO: valueCached, objectCached
 		// TODO: value caching still not implemented, should do that,
 		//       performance is becoming important
+		bool cacheObject(const char *name, uintptr_t obj);
 		bool cacheObject(const char *name, void *obj);
 
 		// cache to keep track of objects set for this shader, eg.
 		// eg. irradiance, reflection probes, expensive to test each value
 		// for every mesh call compared to testing a pointer per mesh
-		std::unordered_map<const char *, void*> objCache;
+		std::unordered_map<const char *, uintptr_t> objCache;
 
 		std::map<std::string, GLint>  uniforms;
 		std::map<std::string, GLuint> attributes;

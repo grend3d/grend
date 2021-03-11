@@ -32,5 +32,15 @@ static inline std::string basenameStr(std::string filename) {
 	return filename;
 }
 
+static inline std::string dirnameStr(std::string filename) {
+	std::size_t found = filename.rfind("/");
+
+	if (found != std::string::npos) {
+		return filename.substr(0, found);
+	}
+
+	return "./";
+}
+
 // namespace grendx
 }

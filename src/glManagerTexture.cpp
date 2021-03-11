@@ -38,6 +38,12 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	GLenum texformat = surfaceGlFormat(tex->channels);
 	bind();
 
+	type = tex->type;
+	if (type == materialTexture::imageType::VecTex) {
+		// vectex relies on exact pixel colors, avoid srgb conversion
+		srgb = false;
+	}
+
 #ifdef NO_FORMAT_CONVERSION
 	// XXX: need something more efficient
 	std::vector<uint8_t> temp = tex->pixels;
@@ -133,29 +139,6 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	if (tex->minFilter >= materialTexture::filter::NearestMipmaps) {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
-
-	/*
-#if ENABLE_MIPMAPS
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	DO_ERROR_CHECK();
-	glGenerateMipmap(GL_TEXTURE_2D);
-#else
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-#endif
-	DO_ERROR_CHECK();
-	*/
-
-	/*
-	SDL_FreeSurface(texture);
-
-	textureCache[filename] = temp;
-	*/
-	// TODO:
-	//textureCache[texhash] = temp;
-	//return temp;
 
 	// debug info
 	size_t roughsize = tex->pixels.size() * 1.33;

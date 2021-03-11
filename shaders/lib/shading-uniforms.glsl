@@ -2,6 +2,54 @@
 #include <lib/compat.glsl>
 #include <lib/shading-varying.glsl>
 
+struct material {
+	vec4 diffuse;
+	vec4 ambient;
+	vec4 specular;
+	vec4 emissive;
+	float roughness;
+	float metalness;
+	float opacity;
+};
+
+// light maps
+uniform sampler2D diffuse_map;
+// TODO: this is the metal-roughness map, need to rename things
+//       camelCase while we're at it
+uniform sampler2D specular_map;
+uniform sampler2D normal_map;
+uniform sampler2D ambient_occ_map;
+// TODO: don't think alpha map is being used anywhere, can remove
+uniform sampler2D alpha_map;
+uniform sampler2D emissive_map;
+uniform sampler2D lightmap;
+
+uniform sampler2D shadowmap_atlas;
+uniform sampler2D reflection_atlas;
+uniform sampler2D irradiance_atlas;
+
+uniform bool diffuse_vec;
+uniform bool emissive_vec;
+
+// TODO: could be in the light info UBO
+uniform vec3  cameraPosition;
+uniform float renderWidth;
+uniform float renderHeight;
+uniform float lightThreshold;
+
+uniform vec3 irradiance_probe[6];
+uniform vec3 radboxMin;
+uniform vec3 radboxMax;
+uniform vec3 radprobePosition;
+
+uniform mat4 m, v, p;
+uniform mat3 m_3x3_inv_transp;
+uniform mat4 v_inv;
+
+// TODO: UBO for material (except on gles2...)
+uniform material anmaterial;
+uniform float time_ms;
+
 struct point_light {
 	vec4 position;
 	vec4 diffuse;
@@ -33,44 +81,6 @@ struct directional_light {
 	vec4 shadowmap;
 };
 
-struct material {
-	vec4 diffuse;
-	vec4 ambient;
-	vec4 specular;
-	vec4 emissive;
-	float roughness;
-	float metalness;
-	float opacity;
-};
-
-// light maps
-uniform sampler2D diffuse_map;
-// TODO: this is the metal-roughness map, need to rename things
-//       camelCase while we're at it
-uniform sampler2D specular_map;
-uniform sampler2D normal_map;
-uniform sampler2D ambient_occ_map;
-uniform sampler2D alpha_map;
-uniform sampler2D emissive_map;
-uniform sampler2D lightmap;
-
-uniform sampler2D shadowmap_atlas;
-uniform sampler2D reflection_atlas;
-uniform sampler2D irradiance_atlas;
-
-uniform vec3  cameraPosition;
-uniform float renderWidth;
-uniform float renderHeight;
-uniform float lightThreshold;
-
-uniform vec3 irradiance_probe[6];
-uniform vec3 radboxMin;
-uniform vec3 radboxMax;
-uniform vec3 radprobePosition;
-
-uniform mat4 m, v, p;
-uniform mat3 m_3x3_inv_transp;
-uniform mat4 v_inv;
 
 // per cluster, tile, whatever, maximum lights that will be evaluated per fragment
 #ifndef MAX_LIGHTS
@@ -299,7 +309,3 @@ uniform directional_light directional_lights[MAX_LIGHTS];
 #else
 #error "No light array layout specified! (see shaders/lib/shading-uniforms.glsl)"
 #endif
-
-// TODO: UBO for material (except on gles2...)
-uniform material anmaterial;
-uniform float time_ms;

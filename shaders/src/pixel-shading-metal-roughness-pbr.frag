@@ -14,25 +14,29 @@ precision mediump samplerCube;
 #include <lib/compat.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/shading-varying.glsl>
-#include <lib/attenuation.glsl>
-#include <lib/shadows.glsl>
 #include <lib/tonemapping.glsl>
 #include <lib/atlas_cubemap.glsl>
-#include <lib/constants.glsl>
 // TODO: actually, rename this to parallax-correct, or probe-parallax-correct?
 #include <lib/parallax-cube.glsl>
 #include <lighting/metal-roughness-pbr.glsl>
 #include <lighting/lightingLoop.glsl>
 #include <lib/reflectionMipmap.glsl>
+#include <lib/vecdecoder.glsl>
 
 void main(void) {
 	uint cluster = CURRENT_CLUSTER();
 
-	// 
-	vec4  texcolor            = texture2D(diffuse_map, f_texcoord);
+	// diffuse and emissive maps can be vector textures
+	vec4  texcolor = diffuse_vec
+		? decode_vec(diffuse_map, f_texcoord)
+		: texture2D(diffuse_map, f_texcoord);
+	vec3  emissive = emissive_vec
+		? decode_vec(emissive_map, f_texcoord).rgb
+		: texture2D(emissive_map, f_texcoord).rgb;
+
+	//vec4  texcolor            = decode_vec(diffuse_map, f_texcoord);
 	vec3  metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
 	float aoidx               = texture2D(ambient_occ_map, f_texcoord).r;
-	vec3  emissive            = texture2D(emissive_map, f_texcoord).rgb;
 	vec3  lightmapped         = texture2D(lightmap, f_lightmap).rgb;
 	vec3  normidx             = texture2D(normal_map, f_texcoord).rgb;
 
