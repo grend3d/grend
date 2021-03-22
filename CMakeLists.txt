@@ -69,6 +69,8 @@ set(LANDSCAPE_DEMO_SRC
 	src/area.cpp
 	src/levelController.cpp
 	src/killedParticles.cpp
+
+	src/targetArea.cpp
 )
 
 message(STATUS "CMake host: ${CMAKE_HOST_SYSTEM_NAME}")

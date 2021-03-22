@@ -32,6 +32,7 @@
 using namespace grendx;
 using namespace grendx::ecs;
 
+// TODO: should include less stuff
 #include "player.hpp"
 #include "enemy.hpp"
 #include "inputHandler.hpp"
@@ -48,6 +49,8 @@ using namespace grendx::ecs;
 #include "enemySpawner.hpp"
 #include "levelController.hpp"
 #include "killedParticles.hpp"
+
+#include "targetArea.hpp"
 
 class landscapeEventSystem : public entitySystem {
 	public:
@@ -250,7 +253,8 @@ projalphaView::projalphaView(gameMain *game)
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
-		{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
+		{game->rend->postShaders["psaa"]},
+		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #endif
 
@@ -275,6 +279,8 @@ projalphaView::projalphaView(gameMain *game)
 	SERIALIZABLE(boxSpawner);
 	SERIALIZABLE(movementHandler);
 	SERIALIZABLE(projectileCollision);
+	SERIALIZABLE(targetArea);
+	SERIALIZABLE(areaAddScore);
 #undef SERIALIZABLE
 
 	// TODO: names are kinda pointless here
@@ -649,6 +655,7 @@ int main(int argc, char *argv[]) try {
 		new healthPickupCollision(game->entities.get(), playerEnt);
 		new flagPickup(game->entities.get(), playerEnt);
 		new team(game->entities.get(), playerEnt, "blue");
+		new areaAddScore(game->entities.get(), playerEnt, {});
 
 #if defined(__ANDROID__)
 		int wx = game->rend->screen_x;

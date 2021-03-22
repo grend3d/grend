@@ -1,3 +1,5 @@
+#pragma once
+
 #include <grend/gameObject.hpp>
 #include <grend/boundingBox.hpp>
 #include <grend/ecs/ecs.hpp>
