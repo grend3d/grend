@@ -23,8 +23,7 @@ enemySpawner::enemySpawner(entityManager *manager, gameMain *game, glm::vec3 pos
 
 	// TODO: resource manager
 	if (!spawnerModel) {
-		spawnerModel = loadScene("assets/obj/enemy-spawner.glb");
-		bindCookedMeshes();
+		spawnerModel = loadSceneAsyncCompiled(manager->engine, "assets/obj/enemy-spawner.glb");
 	}
 
 	node->transform.position = position;
@@ -50,8 +49,7 @@ enemySpawner::enemySpawner(entityManager *manager,
 
 	// TODO: resource manager
 	if (!spawnerModel) {
-		spawnerModel = loadScene("assets/obj/enemy-spawner.glb");
-		bindCookedMeshes();
+		spawnerModel = loadSceneAsyncCompiled(manager->engine, "assets/obj/enemy-spawner.glb");
 	}
 
 	// TODO: this should just be done as part of creating a rigidBody...

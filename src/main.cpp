@@ -219,6 +219,7 @@ class projalphaView : public gameView {
 			MainMenu,
 			Move,
 			Pause,
+			Loading,
 		};
 
 		renderPostChain::ptr post = nullptr;
@@ -333,7 +334,7 @@ projalphaView::projalphaView(gameMain *game)
 	static nlohmann::json testthing = {};
 
 	input.bind(MODAL_ALL_MODES,
-		[=, this] (SDL_Event& ev, unsigned flags) {
+		[=] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_h) {
 				nlohmann::json compJson;
 
@@ -352,7 +353,7 @@ projalphaView::projalphaView(gameMain *game)
 		});
 
 	input.bind(MODAL_ALL_MODES,
-		[=, this] (SDL_Event& ev, unsigned flags) {
+		[=] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_i) {
 				for (auto& entprops : testthing) {
 					entity *ent =
@@ -376,7 +377,7 @@ projalphaView::projalphaView(gameMain *game)
 };
 
 void projalphaView::logic(gameMain *game, float delta) {
-	if (input.mode != modes::Move) {
+	if (input.mode == modes::MainMenu || input.mode == modes::Pause) {
 		// XXX:
 		return;
 	}
@@ -385,7 +386,15 @@ void projalphaView::logic(gameMain *game, float delta) {
 	if (currentMap != loadedMap) {
 		loadedMap = currentMap;
 		load(game, currentMap);
-		//level->reset()
+	}
+
+	if (input.mode == modes::Loading) {
+		if (!game->state->rootnode->hasNode("asyncLoaded")) {
+			return;
+
+		} else {
+			input.setMode(modes::Move);
+		}
 	}
 
 	static glm::vec3 lastvel = glm::vec3(0);
@@ -435,7 +444,40 @@ void projalphaView::render(gameMain *game) {
 		// TODO: function to do this
 		drawMainMenu(game, winsize_x, winsize_y);
 
+	} else if (input.mode == modes::Loading) {
+		// render loading screen
+		Framebuffer().bind();
+		setDefaultGlFlags();
+		disable(GL_DEPTH_TEST);
+		disable(GL_SCISSOR_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+
+		nvgBeginFrame(vgui.nvg, game->rend->screen_x, game->rend->screen_y, 1.0);
+		nvgSave(vgui.nvg);
+
+		int wx = game->rend->screen_x;
+		int wy = game->rend->screen_y;
+		float ticks = SDL_GetTicks() / 1000.f;
+
+		nvgFontSize(vgui.nvg, 48.f);
+		nvgFontFace(vgui.nvg, "sans-bold");
+		nvgFontBlur(vgui.nvg, 0);
+		nvgTextAlign(vgui.nvg, NVG_ALIGN_LEFT);
+		nvgFillColor(vgui.nvg, nvgRGBA(0xf0, 0x60, 0x60, 160));
+		nvgText(vgui.nvg, wx / 2 - 48, wy / 2 - 48*cos(ticks), "Loading!", NULL);
+
+		nvgBeginPath(vgui.nvg);
+		nvgRect(vgui.nvg, wx / 2 - 64*cos(ticks), wy / 2 - 64*sin(ticks), 48, 48);
+		nvgFillColor(vgui.nvg, nvgRGBA(30, 30, 0xff, 0xff));
+		nvgRotate(vgui.nvg, cos(ticks));
+		nvgFill(vgui.nvg);
+
+		nvgRestore(vgui.nvg);
+		nvgEndFrame(vgui.nvg);
+
 	} else {
+		// main game mode
 		renderWorld(game, cam, flags);
 		post->draw(game->rend->framebuffer);
 
@@ -501,15 +543,33 @@ void projalphaView::load(gameMain *game, std::string map) {
 	// avoid reloading if the target map is already loaded
 	if (true || map != currentMap) {
 		TRS staticPosition; // default
-		game->state->rootnode = nullptr; // XXX: clear old map before loading new map
-		game->state->rootnode = loadMap(game, map);
-		game->phys->addStaticModels(nullptr, game->state->rootnode, staticPosition);
+		gameObject::ptr newroot
+			= game->state->rootnode
+			= std::make_shared<gameObject>();
+
 		currentMap = map;
+		//game->state->rootnode = loadMapCompiled(game, map);
+		game->jobs->addAsync([=] () {
+			auto [node, models] = loadMapData(game, map);
 
-		setNode("entities",  game->state->rootnode, game->entities->root);
+			game->phys->addStaticModels(nullptr, // TODO: some sort of world entity
+			                            node,
+			                            staticPosition);
+
+			game->jobs->addDeferred([=] () {
+				compileModels(models);
+
+				level->reset();
+				game->state->rootnode = node;
+				setNode("asyncLoaded", node, std::make_shared<gameObject>());
+				setNode("entities", node, game->entities->root);
+
+				return true;
+			});
+
+			return true;
+		});
 	}
-
-	level->reset();
 }
 
 void projalphaView::drawMainMenu(gameMain *game, int wx, int wy) {
@@ -528,7 +588,7 @@ void projalphaView::drawMainMenu(gameMain *game, int wx, int wy) {
 				currentMap = "./assets/maps/" + name;
 				//load(game, name);
 				//reset = true; // XXX:
-				input.setMode(modes::Move);
+				input.setMode(modes::Loading);
 
 			} else if (vgui.hovered()) {
 				selected = vgui.menuCount();

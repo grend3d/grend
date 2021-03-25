@@ -19,10 +19,8 @@ flag::flag(entityManager *manager, gameMain *game,
 	// TODO: resource manager
 	static gameObject::ptr flagModel = nullptr;
 	if (!flagModel) {
-		flagModel = loadScene("assets/obj/flag.glb");
+		flagModel = loadSceneCompiled("assets/obj/flag.glb");
 		flagModel->transform.scale = glm::vec3(2.0);
-		// TODO: only bind loaded meshes
-		bindCookedMeshes();
 	}
 
 	node->transform.position = position;

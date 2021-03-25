@@ -25,9 +25,8 @@ enemy::enemy(entityManager *manager, gameMain *game, glm::vec3 position)
 
 	// TODO:
 	if (!enemyModel) {
-		enemyModel = loadScene("assets/obj/test-enemy.glb");
+		enemyModel = loadSceneAsyncCompiled(manager->engine, "assets/obj/test-enemy.glb");
 		enemyModel->transform.scale = glm::vec3(0.25);
-		bindCookedMeshes();
 	}
 
 	setNode("model", node, enemyModel);
@@ -51,9 +50,8 @@ enemy::enemy(entityManager *manager, entity *ent, nlohmann::json properties)
 
 	// TODO:
 	if (!enemyModel) {
-		enemyModel = loadScene("assets/obj/test-enemy.glb");
+		enemyModel = loadSceneAsyncCompiled(manager->engine, "assets/obj/test-enemy.glb");
 		enemyModel->transform.scale = glm::vec3(0.25);
-		bindCookedMeshes();
 	}
 
 	setNode("model", node, enemyModel);

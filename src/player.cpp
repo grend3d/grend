@@ -66,12 +66,11 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 		// TODO: resource cache
 		//playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
 		SDL_Log("Loading player model...");
-		playerModel = loadScene("assets/obj/buff-dude-testanim.glb");
+		playerModel = loadSceneCompiled("assets/obj/buff-dude-testanim.glb");
 		playerModel->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
 
 		//playerModel->transform.scale = glm::vec3(0.16f);
 		playerModel->transform.position = glm::vec3(0, -0.5, 0);
-		//bindCookedMeshes();
 		assert(playerModel != nullptr);
 		SDL_Log("got player model");
 	}
@@ -105,7 +104,7 @@ player::player(entityManager *manager,
 		// TODO: resource cache
 		//playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
 		SDL_Log("Loading player model...");
-		playerModel = loadScene("assets/obj/buff-dude-testanim.glb");
+		playerModel = loadSceneCompiled("assets/obj/buff-dude-testanim.glb");
 		playerModel->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
 
 		//playerModel->transform.scale = glm::vec3(0.16f);

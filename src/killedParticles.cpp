@@ -39,24 +39,7 @@ boxParticles::boxParticles(entityManager *manager, glm::vec3 pos)
 	parts->update();
 
 	if (!model) {
-		/*
-		gameModel::ptr mod = generate_cuboid(0.5, 0.5, 0.5);
-		model = std::make_shared<gameObject>();
-		compileModel("boxProjectile", mod);
-		setNode("model", model, mod);
-		*/
-		model = loadScene("assets/obj/emissive-cube.glb");
-
-		/*
-		auto mesh = std::dynamic_pointer_cast<gameMesh>(mod->getNode("mesh"));
-
-		if (mesh) {
-			SDL_Log("adding a material to the farticles");
-			mesh->meshMaterial = std::make_shared<material>();
-			//mesh->meshMaterial->factors.emissive = {0.3, 0.5, 0.8, 1.0};
-			mesh->meshMaterial->factors.emissive = {1, 1, 1, 1};
-		}
-		*/
+		model = loadSceneAsyncCompiled(manager->engine, "assets/obj/emissive-cube.glb");
 	}
 
 	setNode("model", parts, model);
