@@ -164,7 +164,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 					case SDLK_i:
 						// TODO: need function to set clear state + set new root
 						clear(game);
-						selectedNode = game->state->rootnode = loadMap(game);
+						selectedNode = game->state->rootnode = loadMapCompiled(game);
 						break;
 					case SDLK_o: saveMap(game, game->state->rootnode); break;
 					case SDLK_DELETE: selectedNode = unlink(selectedNode); break;

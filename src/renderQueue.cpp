@@ -244,8 +244,11 @@ void renderQueue::sort(void) {
 	for (auto& it : meshes) {
 		auto [transform, inverted, mesh] = it;
 
-		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
+		if (mesh->comped_mesh
+		    && mesh->comped_mesh->blend != material::blend_mode::Opaque)
+		{
 			transparent.push_back(it);
+
 		} else {
 			opaque.push_back(it);
 		}
@@ -324,6 +327,12 @@ static void drawMesh(renderFlags& flags,
                      bool inverted,
                      gameMesh::ptr mesh)
 {
+	if (!mesh->comped_mesh) {
+		// mesh not compiled, can't draw
+		// TODO: toggleable warnings
+		return;
+	}
+
 	if (fb != nullptr && flags.stencil) {
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);
@@ -345,7 +354,8 @@ static void drawMesh(renderFlags& flags,
 
 		// enable()/disable() cache state, no need to worry about toggling
 		// too much state if queue is sorted
-		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
+		if (mesh->comped_mesh->blend != material::blend_mode::Opaque)
+		{
 			// TODO: handle mask blends
 			enable(GL_BLEND);
 		} else {
@@ -380,6 +390,11 @@ static void drawMeshInstanced(renderFlags& flags,
                               gameParticles::ptr particles,
                               gameMesh::ptr mesh)
 {
+	if (!mesh->comped_mesh) {
+		// mesh not compiled, nothing to draw
+		return;
+	}
+
 	if (fb != nullptr && flags.stencil) {
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);

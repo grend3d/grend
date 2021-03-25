@@ -191,38 +191,52 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	return ret;
 }
 
-gameObject::ptr grendx::loadMap(gameMain *game, std::string name) {
+std::pair<gameObject::ptr, modelMap>
+grendx::loadMapData(gameMain *game, std::string name) {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 
 	if (!foo.good()) {
 		std::cerr << "couldn't open save file" << name << std::endl;
-		return gameObject::ptr(new gameObject());
+		return {std::make_shared<gameObject>(), {}};
 	}
-
-	json j;
-	modelMap models;
 
 	try {
 		gameObject::ptr ret = nullptr;
+		json j;
 		foo >> j;
 
 		// XXX: again TODO
 		modelCache cache;
+		modelMap retmodels;
 		ret = loadNodes(cache, "", j["root"]);
 
-		for (auto& [_, models] : cache.sources) {
-			compileModels(models);
+		for (auto& [name, ptr] : cache.sources) {
+			// TODO: prepend with name to avoid collisions
+			//       also don't need name info anymore for compiling,
+			//       could just return a model set
+			retmodels.insert(ptr.begin(), ptr.end());
 		}
-		return ret;
+
+		return {ret, retmodels};
 
 	} catch (std::exception& e) {
 		std::cerr << "loadMap(): couldn't parse " << name
 			<< ": " << e.what() << std::endl;
 
 		// return empty map instead
-		return gameObject::ptr(new gameObject());
+		return {std::make_shared<gameObject>(), {}};
 	}
+}
+
+gameObject::ptr grendx::loadMapCompiled(gameMain *game, std::string name) {
+	auto [obj, models] = loadMapData(game, name);
+
+	if (obj) {
+		compileModels(models);
+	}
+
+	return obj;
 }
 
 template <typename T>

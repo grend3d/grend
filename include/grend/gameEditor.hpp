@@ -27,7 +27,10 @@ gameImport::ptr loadSceneAsyncCompiled(gameMain *game, std::string path);
 void saveMap(gameMain *game,
 			 gameObject::ptr root,
 			 std::string name="save.map");
-gameObject::ptr loadMap(gameMain *game, std::string name="save.map");
+std::pair<gameObject::ptr, modelMap> loadMapData(gameMain *game,
+                                                 std::string name="save.map");
+gameObject::ptr loadMapCompiled(gameMain *game, std::string name="save.map");
+gameObject::ptr loadMapAsyncCompiled(gameMain *game, std::string name="save.map");
 
 class gameEditor : public gameView {
 	public:

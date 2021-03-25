@@ -25,7 +25,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		// TODO: need function to clear state + set new root node
 		editor->clear(game);
 		editor->selectedNode = game->state->rootnode
-			= loadMap(game, open_dialog.selection);
+			= loadMapCompiled(game, open_dialog.selection);
 	}
 
 	if (save_as_dialog.promptFilename()) {
@@ -64,7 +64,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_map_dialog.selection << std::endl;
 		import_map_dialog.clear();
 
-		auto obj = loadMap(game, import_map_dialog.selection);
+		auto obj = loadMapCompiled(game, import_map_dialog.selection);
 		std::string name = "map["+std::to_string(obj->id)+"]";
 		setNode(name, editor->selectedNode, obj);
 		//bindCookedMeshes();
