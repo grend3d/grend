@@ -45,11 +45,9 @@ static modelMap xxx_load_model(std::string filename, std::string objName) {
 	if (ext == ".obj") {
 		auto model = load_object(filename);
 		models[objName] = model;
-		compileModel(objName, model);
 
 	} else if (ext == ".gltf") {
 		models = load_gltf_models(filename);
-		compileModels(models);
 	}
 
 	return models;
@@ -73,7 +71,9 @@ class modelCache {
 
 		gameImport::ptr getScene(std::string source) {
 			if (scenes.find(source) == scenes.end()) {
-				scenes[source] = loadScene(source);
+				auto [objs, models] = loadSceneData(source);
+				scenes[source]  = objs;
+				sources[source] = models;
 			}
 
 			return scenes[source];
@@ -211,8 +211,9 @@ gameObject::ptr grendx::loadMap(gameMain *game, std::string name) {
 		modelCache cache;
 		ret = loadNodes(cache, "", j["root"]);
 
-		// assume there were new loaded models
-		bindCookedMeshes();
+		for (auto& [_, models] : cache.sources) {
+			compileModels(models);
+		}
 		return ret;
 
 	} catch (std::exception& e) {

@@ -297,50 +297,82 @@ void gameEditor::initImgui(gameMain *game) {
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
-gameObject::ptr grendx::loadModel(std::string path) {
+std::pair<gameObject::ptr, modelMap> grendx::loadModel(std::string path) {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
 		//model m(path);
 		gameModel::ptr m = load_object(path);
-		compileModel(path, m);
+		//compileModel(path, m);
 
 		// add the model at 0,0
 		auto obj = gameObject::ptr(new gameObject());
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 		setNode(fname, obj, m);
-		return obj;
+		//return obj;
+		modelMap models = {{ fname, m }};
+		return {obj, models};
 	}
 
 	else if (ext == ".gltf" || ext == ".glb") {
 		modelMap mods = load_gltf_models(path);
-		compileModels(mods);
+		auto obj = std::make_shared<gameObject>();
+		//compileModels(mods);
 
 		for (auto& [name, model] : mods) {
 			// add the models at 0,0
-			auto obj = gameObject::ptr(new gameObject());
 			setNode(name, obj, model);
-			return obj;
 		}
+
+		return {obj, mods};
 	}
 
-	return nullptr;
+	return {nullptr, {}};
 }
 
-gameImport::ptr grendx::loadScene(std::string path) {
+std::pair<gameImport::ptr, modelMap> grendx::loadSceneData(std::string path) {
 	std::string ext = filename_extension(path);
 
 	if (ext == ".gltf" || ext == ".glb") {
 		std::cerr << "load_scene(): loading scene" << std::endl;
-		auto [objs, mods] = load_gltf_scene(path);
-
-		std::string import_name = "import["+std::to_string(objs->id)+"]";
-		compileModels(mods);
-		return objs;
+		// TODO: this is kind of redundant now, unless I want this to also
+		//       be able to load .map files from here... could be useful
+		return load_gltf_scene(path);
 	}
 
-	return nullptr;
+	return {nullptr, {}};
 }
+
+gameImport::ptr grendx::loadSceneCompiled(std::string path) {
+	auto [obj, models] = loadSceneData(path);
+
+	if (obj) {
+		compileModels(models);
+	}
+
+	return obj;
+}
+
+gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
+	auto ret = std::make_shared<gameImport>(path);
+
+	auto fut = game->jobs->addAsync([=] () {
+		auto [obj, models] = loadSceneData(path);
+
+		if (obj) {
+			game->jobs->addDeferred([=] () {
+				compileModels(models);
+				setNode("asyncLoaded", ret, obj);
+				return true;
+			});
+		}
+
+		return obj != nullptr;
+	});
+
+	return ret;
+}
+
 
 void gameEditor::reloadShaders(gameMain *game) {
 	// push everything into one vector for simplicity, this will be

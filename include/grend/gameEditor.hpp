@@ -17,8 +17,13 @@
 
 namespace grendx {
 
-gameObject::ptr loadModel(std::string path);
-gameImport::ptr loadScene(std::string path);
+std::pair<gameObject::ptr, modelMap> loadModel(std::string path);
+std::pair<gameImport::ptr, modelMap> loadSceneData(std::string path);
+gameImport::ptr loadSceneCompiled(std::string path);
+// TODO: should this return an {object, future} pair?
+//       could also just check for an asyncLoaded node, that's probably fine
+gameImport::ptr loadSceneAsyncCompiled(gameMain *game, std::string path);
+
 void saveMap(gameMain *game,
 			 gameObject::ptr root,
 			 std::string name="save.map");

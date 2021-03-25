@@ -399,7 +399,7 @@ void initializeOpengl(void);
 //void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<gameMesh>>& meshies);
 compiledMesh::ptr compileMesh(std::shared_ptr<gameMesh>& mesh);
 compiledModel::ptr compileModel(std::string name, std::shared_ptr<gameModel> mod);
-void compileModels(std::map<std::string, std::shared_ptr<gameModel>>& models);
+void compileModels(const std::map<std::string, std::shared_ptr<gameModel>>& models);
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh);
 Vao::ptr preloadModelVao(compiledModel::ptr obj);
 void bindModel(std::shared_ptr<gameModel> model);

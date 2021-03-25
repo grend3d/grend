@@ -267,7 +267,7 @@ compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
 	return obj;
 }
 
-void compileModels(modelMap& models) {
+void compileModels(const modelMap& models) {
 	for (const auto& x : models) {
 		compileModel(x.first, x.second);
 	}
