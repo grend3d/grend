@@ -283,7 +283,7 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 	tex->type = materialTexture::imageType::VecTex;
 
 	if (!px) {
-	// otherwise try plain image
+		// otherwise try plain image
 		px = stbi_load(texname.c_str(), &tex->width, &tex->height,
 		               &tex->channels, 0);
 		tex->type = materialTexture::imageType::Plain;
@@ -295,12 +295,14 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 		return;
 	}
 
-	size_t size = (tex->channels * tex->width + 1) * tex->height;
+	size_t size = (tex->channels * tex->width) * tex->height;
 	tex->pixels.insert(tex->pixels.end(), px, px + size);
 	tex->size = size;
 
 	SDL_Log("Loaded external texture: uri: %s, size: %lu, location: %s\n",
 	        uri.c_str(), size, texname.c_str());
+
+	stbi_image_free(px);
 }
 
 static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
