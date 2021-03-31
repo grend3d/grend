@@ -135,6 +135,20 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 
+#if defined(GL_TEXTURE_MAX_ANISOTROPY_EXT)
+#if GLSL_VERSION == 100 || GLSL_VERSION == 300
+// TODO: not using glew on embedded profiles, might as well just write
+//       my own thing to parse available extensions
+#else
+	if (glewIsSupported("GL_EXT_texture_filter_anisotropic")) {
+		// anisotropic filtering extension
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+		DO_ERROR_CHECK();
+	}
+#endif
+// defined(GL_TEXTURE_MAX_ANISOTROPY_EXT)
+#endif
+
 	// if format uses mipmap filtering, generate mipmaps
 	if (tex->minFilter >= materialTexture::filter::NearestMipmaps) {
 		glGenerateMipmap(GL_TEXTURE_2D);
