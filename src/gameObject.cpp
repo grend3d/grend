@@ -121,6 +121,29 @@ float gameLightDirectional::extent(float threshold) {
 	return HUGE_VALF;
 }
 
+static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
+                        float tim,
+                        gameObject *root,
+                        gameObject *ptr)
+{
+	auto it = cache.find(ptr);
+
+	if (it == cache.end()) {
+		gameObject::ptr parent = ptr->parent.lock();
+		glm::mat4 mat(1);
+
+		if (ptr != root && parent) {
+			mat = lookup(cache, tim, root, parent.get()) * ptr->getTransform(tim);
+		}
+
+		cache[ptr] = mat;
+		return mat;
+
+	} else {
+		return it->second;
+	}
+}
+
 void gameSkin::sync(Program::ptr program) { 
 	size_t numjoints = min(inverseBind.size(), 1024);
 
@@ -136,14 +159,12 @@ void gameSkin::sync(Program::ptr program) {
 	}
 #endif
 
+	float tim = SDL_GetTicks()/1000.f;
+	std::map<gameObject*, glm::mat4> accumTransforms;
+
 	for (unsigned i = 0; i < inverseBind.size(); i++) {
 		gameObject::ptr temp = joints[i];
-		glm::mat4 accum = glm::mat4(1);
-		float tim = SDL_GetTicks()/1000.f;
-
-		for (; temp.get() != this && temp; temp = temp->parent.lock()) {
-			accum = temp->getTransform(tim)*accum;
-		}
+		glm::mat4 accum = lookup(accumTransforms, tim, this, joints[i].get());
 
 		transforms[i] = accum*inverseBind[i];
 	}
