@@ -30,21 +30,25 @@ void renderQueue::add(gameObject::ptr obj,
 
 	if (obj->type == gameObject::objType::Mesh) {
 		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-		meshes.push_back({adjTrans, inverted, mesh});
+		glm::vec3 center = applyTransform(adjTrans, boxCenter(mesh->boundingBox));
+		meshes.push_back({adjTrans, center, inverted, mesh});
 
 	} else if (obj->type == gameObject::objType::Light) {
 		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
-		lights.push_back({adjTrans, inverted, light});
+		glm::vec3 center = applyTransform(adjTrans);
+		lights.push_back({adjTrans, center, inverted, light});
 
 	} else if (obj->type == gameObject::objType::ReflectionProbe) {
 		gameReflectionProbe::ptr probe =
 			std::dynamic_pointer_cast<gameReflectionProbe>(obj);
-		probes.push_back({adjTrans, inverted, probe});
+		glm::vec3 center = applyTransform(adjTrans);
+		probes.push_back({adjTrans, center, inverted, probe});
 
 	} else if (obj->type == gameObject::objType::IrradianceProbe) {
 		gameIrradianceProbe::ptr probe =
 			std::dynamic_pointer_cast<gameIrradianceProbe>(obj);
-		irradProbes.push_back({adjTrans, inverted, probe});
+		glm::vec3 center = applyTransform(adjTrans);
+		irradProbes.push_back({adjTrans, center, inverted, probe});
 	}
 
 	if (obj->type == gameObject::objType::None
@@ -80,7 +84,8 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 
 	if (obj->type == gameObject::objType::Mesh) {
 		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
-		skinnedMeshes[skin].push_back({trans, inverted, m});
+		glm::vec3 center = applyTransform(trans, boxCenter(m->boundingBox));
+		skinnedMeshes[skin].push_back({trans, center, inverted, m});
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
@@ -118,16 +123,16 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 
 void renderQueue::updateLights(renderContext::ptr rctx) {
 	// TODO: should probably apply the transform to light position
-	for (auto& [trans, __, light] : lights) {
-		if (!light->casts_shadows) {
+	for (auto& light : lights) {
+		if (!light.data->casts_shadows) {
 			continue;
 		}
 
-		if (light->lightType == gameLight::lightTypes::Point) {
+		if (light.data->lightType == gameLight::lightTypes::Point) {
 			// TODO: check against view frustum to see if this light is visible,
 			//       avoid rendering shadow maps if not
 			gameLightPoint::ptr plit =
-				std::dynamic_pointer_cast<gameLightPoint>(light);
+				std::dynamic_pointer_cast<gameLightPoint>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			for (unsigned i = 0; i < 6; i++) {
@@ -137,11 +142,11 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 				}
 			}
 
-			drawShadowCubeMap(*this, plit, trans, rctx);
+			drawShadowCubeMap(*this, plit, light.transform, rctx);
 
-		} else if (light->lightType == gameLight::lightTypes::Spot) {
+		} else if (light.data->lightType == gameLight::lightTypes::Spot) {
 			gameLightSpot::ptr slit =
-				std::dynamic_pointer_cast<gameLightSpot>(light);
+				std::dynamic_pointer_cast<gameLightSpot>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			if (!shatree.valid(slit->shadowmap)) {
@@ -149,9 +154,9 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 				slit->shadowmap = shatree.alloc(256);
 			}
 
-			drawSpotlightShadow(*this, slit, trans, rctx);
+			drawSpotlightShadow(*this, slit, light.transform, rctx);
 
-		} else if (light->lightType == gameLight::lightTypes::Directional) {
+		} else if (light.data->lightType == gameLight::lightTypes::Directional) {
 			// TODO: orthoganal shadow map
 		}
 	}
@@ -159,93 +164,76 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 
 void
 renderQueue::updateReflections(renderContext::ptr rctx) {
-	for (auto& [trans, __, probe] : probes) {
-		auto& reftree = rctx->atlases.reflections->tree;
-		auto& radtree = rctx->atlases.irradiance->tree;
+	auto& reftree = rctx->atlases.reflections->tree;
+	auto& radtree = rctx->atlases.irradiance->tree;
 
+	for (auto& probe : probes) {
 		// allocate from reflection atlas for top level reflections
 		for (unsigned i = 0; i < 6; i++) {
-			if (!reftree.valid(probe->faces[0][i])) {
+			if (!reftree.valid(probe.data->faces[0][i])) {
 				// TODO: configurable size
-				probe->faces[0][i] = reftree.alloc(128);
+				probe.data->faces[0][i] = reftree.alloc(128);
 			}
 		}
 
 		// allocate from irradiance atlas for lower level (blurrier) reflections
 		for (unsigned k = 1; k < 5; k++) {
 			for (unsigned i = 0; i < 6; i++) {
-				if (!radtree.valid(probe->faces[k][i])) {
+				if (!radtree.valid(probe.data->faces[k][i])) {
 					// TODO: configurable size
-					probe->faces[k][i] = radtree.alloc(128 >> k);
+					probe.data->faces[k][i] = radtree.alloc(128 >> k);
 				}
 			}
 		}
 
-		probe->have_convolved = true;
-		drawReflectionProbe(*this, probe, trans, rctx);
+		probe.data->have_convolved = true;
+		drawReflectionProbe(*this, probe.data, probe.transform, rctx);
 	}
 
-	for (auto& [trans, __, radprobe] : irradProbes) {
-		auto& radtree = rctx->atlases.irradiance->tree;
-		auto& reftree = rctx->atlases.reflections->tree;
-
+	for (auto& radprobe : irradProbes) {
 		for (unsigned i = 0; i < 6; i++) {
 			// TODO: configurable size
-			if (!radtree.valid(radprobe->faces[i])) {
-				radprobe->faces[i] = radtree.alloc(16);
+			if (!radtree.valid(radprobe.data->faces[i])) {
+				radprobe.data->faces[i] = radtree.alloc(16);
 			}
 
 			// TODO: coefficients
 
-			if (!reftree.valid(radprobe->source->faces[0][i])) {
-				radprobe->source->faces[0][i] = reftree.alloc(64);
+			if (!reftree.valid(radprobe.data->source->faces[0][i])) {
+				radprobe.data->source->faces[0][i] = reftree.alloc(64);
 			}
 		}
 
-		radprobe->source->have_convolved = false;
-		drawIrradianceProbe(*this, radprobe, trans, rctx);
+		radprobe.data->source->have_convolved = false;
+		drawIrradianceProbe(*this, radprobe.data, radprobe.transform, rctx);
 	}
 }
 
 void renderQueue::sort(void) {
-	typedef std::tuple<glm::mat4, bool, gameMesh::ptr>  draw_ent;
-	typedef std::tuple<glm::mat4, bool, gameLight::ptr> light_ent;
+	//typedef std::tuple<glm::mat4, bool, gameMesh::ptr>  draw_ent;
+	//typedef std::tuple<glm::mat4, bool, gameLight::ptr> light_ent;
 
 	// TODO: better way to do this, in-place?
-	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> transparent;
-	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> opaque;
+	std::vector<queueEnt<gameMesh::ptr>> transparent;
+	std::vector<queueEnt<gameMesh::ptr>> opaque;
 
 	std::sort(lights.begin(), lights.end(),
-		[&] (light_ent& a, light_ent& b) {
-			// TODO: why not just define a struct
-			auto& [a_trans, _,  a_mesh] = a;
-			auto& [b_trans, __, b_mesh] = b;
-
-			glm::vec3 va = applyTransform(a_trans);
-			glm::vec3 vb = applyTransform(b_trans);
-
-			return glm::distance(cam->position(), va)
-				< glm::distance(cam->position(), vb);
+		[&] (queueEnt<gameLight::ptr>& a, queueEnt<gameLight::ptr>& b) {
+			return glm::distance(cam->position(), a.center)
+			     < glm::distance(cam->position(), b.center);
 		});
 
 	std::sort(meshes.begin(), meshes.end(),
-		[&] (draw_ent& a, draw_ent& b) {
-			// TODO: why not just define a struct
-			auto& [a_trans, _,  a_mesh] = a;
-			auto& [b_trans, __, b_mesh] = b;
-
-			glm::vec3 va = applyTransform(a_trans, boxCenter(a_mesh->boundingBox));
-			glm::vec3 vb = applyTransform(b_trans, boxCenter(b_mesh->boundingBox));
-
-			return glm::distance(cam->position(), va)
-				< glm::distance(cam->position(), vb);
+		[&] (queueEnt<gameMesh::ptr>& a, queueEnt<gameMesh::ptr>& b) {
+			return glm::distance(cam->position(), a.center)
+			     < glm::distance(cam->position(), b.center);
 		});
 
 	for (auto& it : meshes) {
-		auto [transform, inverted, mesh] = it;
+		//auto [transform, inverted, mesh] = it;
 
-		if (mesh->comped_mesh
-		    && mesh->comped_mesh->blend != material::blend_mode::Opaque)
+		if (it.data->comped_mesh
+		    && it.data->comped_mesh->blend != material::blend_mode::Opaque)
 		{
 			transparent.push_back(it);
 
@@ -268,10 +256,11 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	// XXX: need vector for sorting, deleting elements from vector for culling
 	//      would make this quadratic in the worst case... copying isn't
 	//      ideal, but should be fast enough, still linear time complexity
-	std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempMeshes;
+	//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempMeshes;
+	std::vector<queueEnt<gameMesh::ptr>> tempMeshes;
 
 	for (auto it = meshes.begin(); it != meshes.end(); it++) {
-		auto& [trans, _, mesh] = *it;
+		auto& [trans, _, __, mesh] = *it;
 		auto obb = trans * mesh->boundingBox;
 
 		if (cam->boxInFrustum(obb)) {
@@ -282,10 +271,11 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	meshes = tempMeshes;
 
 	for (auto& [skin, skmeshes] : skinnedMeshes) {
-		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempSkinned;
+		//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempSkinned;
+		std::vector<queueEnt<gameMesh::ptr>> tempSkinned;
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
-			auto& [trans, _, mesh] = *it;
+			auto& [trans, _, __, mesh] = *it;
 			auto obb = (trans) * mesh->boundingBox;
 
 			if (cam->boxInFrustum(obb)) {
@@ -296,9 +286,10 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 		skmeshes = tempSkinned;
 	}
 
-	std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> tempLights;
+	//std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> tempLights;
+	std::vector<queueEnt<gameLight::ptr>> tempLights;
 	for (auto it = lights.begin(); it != lights.end(); it++) {
-		auto& [trans, _, lit] = *it;
+		auto& [trans, _, __, lit] = *it;
 
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
@@ -470,17 +461,17 @@ unsigned renderQueue::flush(unsigned width,
 	flags.skinnedShader->set("cameraPosition", cam->position());
 
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
-		for (auto& [transform, inverted, mesh] : drawinfo) {
+		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(
-					nearest_irradiance_probe(applyTransform(transform)),
+					nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
 
 			drawMesh(flags, nullptr, flags.skinnedShader,
-			         transform, inverted, mesh);
+			         mesh.transform, mesh.inverted, mesh.data);
 		}
 
 		// TODO: check whether this skin is already synced
@@ -493,14 +484,15 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("v_inv", v_inv);
 	flags.mainShader->set("cameraPosition", cam->position());
 
-	for (auto& [transform, inverted, mesh] : meshes) {
+	//for (auto& [transform, inverted, mesh] : meshes) {
+	for (auto& mesh : meshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
+				nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
-		drawMesh(flags, nullptr, flags.mainShader, transform, inverted, mesh);
+		drawMesh(flags, nullptr, flags.mainShader, mesh.transform, mesh.inverted, mesh.data);
 		drawnMeshes++;
 	}
 
@@ -565,15 +557,15 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
 		float offset = -1.0;
 
-		for (auto& [transform, inverted, mesh] : drawinfo) {
+		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(
-					nearest_irradiance_probe(applyTransform(transform)),
+					nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
-			drawMesh(flags, fb, flags.skinnedShader, transform, inverted, mesh);
+			drawMesh(flags, fb, flags.skinnedShader, mesh.transform, mesh.inverted, mesh.data);
 			drawnMeshes++;
 		}
 
@@ -588,14 +580,15 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.mainShader->set("cameraPosition", cam->position());
 	shaderSync(flags.mainShader, rctx);
 
-	for (auto& [transform, inverted, mesh] : meshes) {
+	//for (auto& [transform, inverted, mesh] : meshes) {
+	for (auto& mesh : meshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
+				nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
-		drawMesh(flags, fb, flags.mainShader, transform, inverted, mesh);
+		drawMesh(flags, fb, flags.mainShader, mesh.transform, mesh.inverted, mesh.data);
 		drawnMeshes++;
 	}
 
@@ -867,42 +860,41 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 		}
 	};
 
-	for (auto& [trans, _, lit] : queue.lights) {
-		glm::vec3 pos = applyTransform(trans);
-
+	//for (auto& [trans, _, lit] : queue.lights) {
+	for (auto& lit : queue.lights) {
 		if (activePoints < MAX_POINT_LIGHT_OBJECTS_TILED &&
-		    lit->lightType == gameLight::lightTypes::Point)
+		    lit.data->lightType == gameLight::lightTypes::Point)
 		{
 			gameLightPoint::ptr plit =
-				std::dynamic_pointer_cast<gameLightPoint>(lit);
+				std::dynamic_pointer_cast<gameLightPoint>(lit.data);
 
 			packLight(plit,
 					  lightbuf.upoint_lights + activePoints,
-					  rctx, trans);
-			buildTiles(lit, trans, activePoints);
+					  rctx, lit.transform);
+			buildTiles(lit.data, lit.transform, activePoints);
 			activePoints++;
 
 		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS_TILED
-		           && lit->lightType == gameLight::lightTypes::Spot)
+		           && lit.data->lightType == gameLight::lightTypes::Spot)
 		{
 			gameLightSpot::ptr slit =
-				std::dynamic_pointer_cast<gameLightSpot>(lit);
+				std::dynamic_pointer_cast<gameLightSpot>(lit.data);
 
 			packLight(slit,
 					  lightbuf.uspot_lights + activeSpots,
-					  rctx, trans);
-			buildTiles(lit, trans, activeSpots);
+					  rctx, lit.transform);
+			buildTiles(lit.data, lit.transform, activeSpots);
 			activeSpots++;
 
 		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
-		          && lit->lightType == gameLight::lightTypes::Directional)
+		          && lit.data->lightType == gameLight::lightTypes::Directional)
 		{
 			gameLightDirectional::ptr dlit =
-				std::dynamic_pointer_cast<gameLightDirectional>(lit);
+				std::dynamic_pointer_cast<gameLightDirectional>(lit.data);
 
 			packLight(dlit,
 					  lightbuf.udirectional_lights + activeDirs,
-					  rctx, trans);
+					  rctx, lit.transform);
 			activeDirs++;
 		}
 	}
@@ -953,29 +945,30 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 		spotList  spot_lights;
 		dirList   directional_lights;
 
-		for (auto& [trans, _, light] : lights) {
-			switch (light->lightType) {
+		//for (auto& [trans, _, light] : lights) {
+		for (auto& light : lights) {
+			switch (light.data->lightType) {
 				case gameLight::lightTypes::Point:
 					{
 						gameLightPoint::ptr plit =
-							std::dynamic_pointer_cast<gameLightPoint>(light);
-						point_lights.push_back({trans, plit});
+							std::dynamic_pointer_cast<gameLightPoint>(light.data);
+						point_lights.push_back({light.transform, plit});
 					}
 					break;
 
 				case gameLight::lightTypes::Spot:
 					{
 						gameLightSpot::ptr slit =
-							std::dynamic_pointer_cast<gameLightSpot>(light);
-						spot_lights.push_back({trans, slit});
+							std::dynamic_pointer_cast<gameLightSpot>(light.data);
+						spot_lights.push_back({light.transform, slit});
 					}
 					break;
 
 				case gameLight::lightTypes::Directional:
 					{
 						gameLightDirectional::ptr dlit =
-							std::dynamic_pointer_cast<gameLightDirectional>(light);
-						directional_lights.push_back({trans, dlit});
+							std::dynamic_pointer_cast<gameLightDirectional>(light.data);
+						directional_lights.push_back({light.transform, dlit});
 					}
 					break;
 
@@ -1015,11 +1008,11 @@ gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 	float mindist = HUGE_VALF;
 
 	// TODO: optimize this, O(N) is meh
-	for (auto& [_, __, p] : probes) {
-		float dist = glm::distance(pos, p->transform.position);
+	for (auto& p : probes) {
+		float dist = glm::distance(pos, p.data->transform.position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
-			ret = p;
+			ret = p.data;
 		}
 	}
 
@@ -1031,11 +1024,11 @@ gameIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
 	float mindist = HUGE_VALF;
 
 	// TODO: optimize this, O(N) is meh
-	for (auto& [_, __, p] : irradProbes) {
-		float dist = glm::distance(pos, p->transform.position);
+	for (auto& p : irradProbes) {
+		float dist = glm::distance(pos, p.data->transform.position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
-			ret = p;
+			ret = p.data;
 		}
 	}
 

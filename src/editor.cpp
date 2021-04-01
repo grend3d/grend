@@ -231,8 +231,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 		refShader->bind();
 
-		for (auto& [trans, __, probe] : tempque.probes) {
-			probeObj->transform.position = applyTransform(trans);
+		for (auto& [_, center, __, probe] : tempque.probes) {
+			probeObj->transform.position = center;
 			probeObj->transform.scale    = glm::vec3(0.5);
 
 			for (unsigned i = 0; i < 6; i++) {
@@ -252,8 +252,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			probeFlags.instancedShader = irradShader;
 		irradShader->bind();
 
-		for (auto& [trans, __, probe] : tempque.irradProbes) {
-			probeObj->transform.position = applyTransform(trans);
+		for (auto& [_, center, __, probe] : tempque.irradProbes) {
+			probeObj->transform.position = center;
 			probeObj->transform.scale    = glm::vec3(0.5);
 
 			for (unsigned i = 0; i < 6; i++) {
@@ -271,11 +271,11 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	if (showLights) {
 		renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 
-		for (auto& [trans, __, light] : tempque.lights) {
-			glm::vec3 pos = applyTransform(trans);
+		for (auto& [_, center, __, light] : tempque.lights) {
+			glm::vec3 pos = center;
 
 			if (cam->sphereInFrustum(pos, 0.5)) {
-				probeObj->transform.position = applyTransform(trans);
+				probeObj->transform.position = center;
 				probeObj->transform.scale = glm::vec3(0.5);
 				que.add(probeObj);
 				que.flush(game->rend->framebuffer, game->rend, unshadedFlags);

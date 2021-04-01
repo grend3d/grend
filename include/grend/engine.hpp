@@ -276,6 +276,14 @@ class renderQueue {
 			cam           = other.cam;
 		}
 
+		template <typename T>
+		struct queueEnt {
+			glm::mat4 transform;
+			glm::vec3 center;
+			bool      inverted;
+			T         data;
+		};
+
 		void add(gameObject::ptr obj,
 		         float animTime = 0.0,
 		         glm::mat4 trans = glm::mat4(1),
@@ -307,11 +315,11 @@ class renderQueue {
 
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
-		std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> meshes;
-		std::map<gameSkin::ptr, std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>>> skinnedMeshes;
-		std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> lights;
-		std::vector<std::tuple<glm::mat4, bool, gameReflectionProbe::ptr>> probes;
-		std::vector<std::tuple<glm::mat4, bool, gameIrradianceProbe::ptr>> irradProbes;
+		std::vector<queueEnt<gameMesh::ptr>> meshes;
+		std::map<gameSkin::ptr, std::vector<queueEnt<gameMesh::ptr>>> skinnedMeshes;
+		std::vector<queueEnt<gameLight::ptr>> lights;
+		std::vector<queueEnt<gameReflectionProbe::ptr>> probes;
+		std::vector<queueEnt<gameIrradianceProbe::ptr>> irradProbes;
 		// TODO: hmm, having types that line wrap might be a code smell...
 		std::vector<std::tuple<glm::mat4, bool, gameParticles::ptr,
 		                       gameMesh::ptr>> instancedMeshes;
