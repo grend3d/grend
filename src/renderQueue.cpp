@@ -471,24 +471,7 @@ unsigned renderQueue::flush(unsigned width,
 
 	for (auto& [skin, drawinfo] : skinnedMeshes) {
 		for (auto& [transform, inverted, mesh] : drawinfo) {
-			for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
-				float tim = SDL_GetTicks()/1000.f;
-				gameObject::ptr temp = skin->joints[i];
-				glm::mat4 accum = glm::mat4(1);
-
-				for (; temp != skin && temp; temp = temp->parent.lock()) {
-					accum = temp->getTransform(tim)*accum;
-				}
-				auto mat = accum*skin->inverseBind[i];
-
-				std::string sloc = "joints["+std::to_string(i)+"]";
-				if (!flags.skinnedShader->set(sloc, mat)) {
-					std::cerr <<
-						"NOTE: couldn't set joint matrix " << i
-						<< ", too many joints/wrong shader?" << std::endl;
-					break;
-				}
-			}
+			skin->sync(flags.skinnedShader);
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(
@@ -583,31 +566,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 		float offset = -1.0;
 
 		for (auto& [transform, inverted, mesh] : drawinfo) {
-			// TODO: have time offset field for animated meshes
-			if (offset != 0.0) {
-				for (unsigned i = 0; i < skin->inverseBind.size(); i++) {
-					float tim = SDL_GetTicks()/1000.f;
-					gameObject::ptr temp = skin->joints[i];
-					glm::mat4 accum = glm::mat4(1);
-
-					for (; temp != skin && temp; temp = temp->parent.lock()) {
-						accum = temp->getTransform(tim)*accum;
-					}
-
-					auto mat = accum*skin->inverseBind[i];
-					std::string sloc = "joints["+std::to_string(i)+"]";
-
-					if (!flags.skinnedShader->set(sloc, mat)) {
-						std::cerr <<
-							"NOTE: couldn't set joint matrix " << i
-							<< ", too many joints/wrong shader?" << std::endl;
-						break;
-					}
-				}
-
-				// TODO: s/0.0/current offset
-				offset = 0.0;
-			}
+			skin->sync(flags.skinnedShader);
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(

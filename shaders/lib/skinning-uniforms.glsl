@@ -1,11 +1,25 @@
 #pragma once
+
+// no UBOs on gles2
+#if GLSL_VERSION < 300
 #ifndef MAX_JOINTS
 #define MAX_JOINTS 32
-#warning "Maximum number of joints should be defined in SHADER_FLAGS"
 #endif
 
-#include <lib/compat.glsl>
 uniform mat4 joints[MAX_JOINTS];
+
+// use UBOs on gles3, core profiles
+#else
+// TODO: should be configurable, lots of newer GPUs have 64kb UBOs
+#define MAX_JOINTS 1024
+
+layout (std140) uniform jointTransforms {
+	mat4 joints[MAX_JOINTS];
+};
+#endif /* GLSL_VERSION */
+
+#include <lib/compat.glsl>
+
 // affecting joints and weights
 IN vec4 a_joints;
-IN vec4  a_weights;
+IN vec4 a_weights;

@@ -150,6 +150,11 @@ class gameImport : public gameObject {
 		std::string sourceFile;
 };
 
+// forward declaration defined in glManager.hpp
+// ugh, this is becoming a maze of forward declarations...
+class Buffer;
+class Program;
+
 class gameSkin : public gameObject {
 	public:
 		typedef std::shared_ptr<gameSkin> ptr;
@@ -162,14 +167,15 @@ class gameSkin : public gameObject {
 			return "Skin";
 		}
 
+		void sync(std::shared_ptr<Program> prog);
+
 		std::vector<glm::mat4> inverseBind;
+		std::vector<glm::mat4> transforms;
 		// keep internal pointers to joints, same nodes as in the tree
 		std::vector<gameObject::ptr> joints;
-};
 
-// forward declaration defined in glManager.hpp
-// ugh, this is becoming a maze of forward declarations...
-class Buffer;
+		std::shared_ptr<Buffer> ubuffer = nullptr;
+};
 
 class gameParticles : public gameObject {
 	public:
