@@ -227,7 +227,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto& irradShader = game->rend->internalShaders["irradprobe_debug"];
 
 		probeFlags.mainShader = probeFlags.skinnedShader =
-			probeFlags.instancedShader = refShader;
+			probeFlags.instancedShader = probeFlags.billboardShader = refShader;
 
 		refShader->bind();
 

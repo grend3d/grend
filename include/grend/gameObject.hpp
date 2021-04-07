@@ -31,16 +31,17 @@ class gameObject {
 		// used for type checking, dynamically-typed tree here
 		enum objType {
 			None,
-			Import,          // Imported model, indicates where to stop saving
-			                 // + where to load from
-			Model,           // generic model, static/dynamic/etc subclasses
-			Mesh,            // meshes that make up a model
-			Skin,            // Skinning info
-			Particles,       // particle system
-			Light,           // Light object, has Point/Spot/etc subclasses
-			ReflectionProbe, // Full reflection probe
-			IrradianceProbe, // diffuse light probe
-			Camera,          // TODO: camera position marker
+			Import,             // Imported model, indicates where to stop saving
+			                    // + where to load from
+			Model,              // generic model, static/dynamic/etc subclasses
+			Mesh,               // meshes that make up a model
+			Skin,               // Skinning info
+			Particles,          // particle system
+			BillboardParticles, // particle system
+			Light,              // Light object, has Point/Spot/etc subclasses
+			ReflectionProbe,    // Full reflection probe
+			IrradianceProbe,    // diffuse light probe
+			Camera,             // TODO: camera position marker
 		} type = objType::None;
 
 		typedef std::shared_ptr<gameObject> ptr;
@@ -193,6 +194,33 @@ class gameParticles : public gameObject {
 		void syncBuffer(void);
 
 		std::vector<glm::mat4> positions;
+		// approximate bounding sphere for instances in this object,
+		// used for culling
+		float radius;
+		bool synced = false;
+		unsigned activeInstances;
+		unsigned maxInstances;
+
+		std::shared_ptr<Buffer> ubuffer = nullptr;
+};
+
+class gameBillboardParticles : public gameObject {
+	public:
+		typedef std::shared_ptr<gameBillboardParticles> ptr;
+		typedef std::weak_ptr<gameBillboardParticles>   weakptr;
+
+		gameBillboardParticles(unsigned _maxInstances = 1024);
+		virtual ~gameBillboardParticles();
+
+		virtual std::string typeString(void) {
+			return "Particle system";
+		}
+
+		void update(void);
+		void syncBuffer(void);
+
+		std::vector<glm::vec4> positions; /* xyz position, w scale */
+
 		// approximate bounding sphere for instances in this object,
 		// used for culling
 		float radius;

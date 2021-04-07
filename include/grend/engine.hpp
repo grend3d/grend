@@ -166,6 +166,7 @@ struct renderFlags {
 	Program::ptr mainShader;
 	Program::ptr skinnedShader;
 	Program::ptr instancedShader;
+	Program::ptr billboardShader;
 
 	bool cull_faces = true;
 	bool sort       = true;
@@ -297,6 +298,10 @@ class renderQueue {
 		                  gameParticles::ptr particles,
 		                  glm::mat4 trans = glm::mat4(1),
 		                  bool inverted = false);
+		void addBillboards(gameObject::ptr obj,
+		                   gameBillboardParticles::ptr particles,
+		                   glm::mat4 trans = glm::mat4(1),
+		                   bool inverted = false);
 		void updateLights(renderContext::ptr rctx);
 		void updateReflections(renderContext::ptr rctx);
 		void updateReflectionProbe(renderContext::ptr rctx);
@@ -323,6 +328,8 @@ class renderQueue {
 		// TODO: hmm, having types that line wrap might be a code smell...
 		std::vector<std::tuple<glm::mat4, bool, gameParticles::ptr,
 		                       gameMesh::ptr>> instancedMeshes;
+		std::vector<std::tuple<glm::mat4, bool, gameBillboardParticles::ptr,
+		                       gameMesh::ptr>> billboardMeshes;
 
 	private:
 		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
@@ -336,6 +343,7 @@ renderFlags loadShaderToFlags(std::string fragmentPath,
                               std::string mainVertex,
                               std::string skinnedVertex,
                               std::string instancedVertex,
+                              std::string billboardVertex,
                               Shader::parameters& opts);
 
 // TODO: should this pass transform or position?

@@ -93,17 +93,21 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
                                       std::string mainVertex,
                                       std::string skinnedVertex,
                                       std::string instancedVertex,
+                                      std::string billboardVertex,
                                       Shader::parameters& options)
 {
 	renderFlags ret;
 
+	SDL_Log("\nLoading shaders for fragment shader %s", fragmentPath.c_str());
 	ret.mainShader = loadProgram(mainVertex, fragmentPath, options);
 	ret.skinnedShader = loadProgram(skinnedVertex, fragmentPath, options);
 	ret.instancedShader = loadProgram(instancedVertex, fragmentPath, options);
+	ret.billboardShader = loadProgram(billboardVertex, fragmentPath, options);
 
 	for (Program::ptr prog : {ret.mainShader,
 	                          ret.skinnedShader,
-	                          ret.instancedShader})
+	                          ret.instancedShader,
+	                          ret.billboardShader})
 	{
 		// TODO: consistent naming, just go with "a_*" since that's what's in
 		//       gltf docs, as good a convention as any
@@ -121,7 +125,8 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
 
 	for (Program::ptr prog : {ret.mainShader,
 	                          ret.skinnedShader,
-	                          ret.instancedShader})
+	                          ret.instancedShader,
+	                          ret.billboardShader})
 	{
 		prog->link();
 		DO_ERROR_CHECK();
@@ -137,6 +142,7 @@ renderFlags grendx::loadLightingShader(std::string fragmentPath,
 		GR_PREFIX "shaders/baked/pixel-shading.vert",
 		GR_PREFIX "shaders/baked/pixel-shading-skinned.vert",
 		GR_PREFIX "shaders/baked/pixel-shading-instanced.vert",
+		GR_PREFIX "shaders/baked/pixel-shading-billboard.vert",
 		options);
 }
 
@@ -148,6 +154,7 @@ renderFlags grendx::loadProbeShader(std::string fragmentPath,
 		GR_PREFIX "shaders/baked/ref_probe.vert",
 		GR_PREFIX "shaders/baked/ref_probe-skinned.vert",
 		GR_PREFIX "shaders/baked/ref_probe-instanced.vert",
+		GR_PREFIX "shaders/baked/ref_probe-billboard.vert",
 		options);
 }
 
@@ -185,6 +192,7 @@ void renderContext::loadShaders(void) {
 			GR_PREFIX "shaders/baked/vertex-shading.vert",
 			GR_PREFIX "shaders/baked/vertex-shading-skinned.vert",
 			GR_PREFIX "shaders/baked/vertex-shading-instanced.vert",
+			GR_PREFIX "shaders/baked/vertex-shading-billboard.vert",
 			globalShaderOptions);
 
 	lightingShaders["main"] = lightingShaders["pixel-metalroughness"];

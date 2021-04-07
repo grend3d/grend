@@ -25,6 +25,11 @@ bool Shader::load(std::string filename, Shader::parameters& options) {
 	const char *temp = processed.c_str();
 	int compiled;
 
+	if (source.empty()) {
+		SDL_Log("%s: Source file is empty, couldn't load!", filename.c_str());
+		return false;
+	}
+
 	glShaderSource(obj, 1, (const GLchar**)&temp, 0);
 	DO_ERROR_CHECK();
 	glCompileShader(obj);

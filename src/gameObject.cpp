@@ -17,6 +17,7 @@ gameObject::~gameObject() {
 gameImport::~gameImport() {};
 gameSkin::~gameSkin() {};
 gameParticles::~gameParticles() {};
+gameBillboardParticles::~gameBillboardParticles() {};
 gameLight::~gameLight() {};
 gameLightPoint::~gameLightPoint() {};
 gameLightSpot::~gameLightSpot() {};
@@ -208,6 +209,36 @@ void gameParticles::update(void) {
 
 gameParticles::gameParticles(unsigned _maxInstances)
 	: gameObject(objType::Particles)
+{
+	positions.reserve(_maxInstances);
+	positions.resize(positions.capacity());
+
+	maxInstances = _maxInstances;
+	activeInstances = 0;
+};
+
+void gameBillboardParticles::syncBuffer(void) {
+	if (!ubuffer) {
+		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
+		ubuffer->allocate(sizeof(GLfloat[4*maxInstances]));
+	}
+
+	if (!synced) {
+		ubuffer->update(positions.data(), 0, sizeof(GLfloat[4*activeInstances]));
+		synced = true;
+	}
+}
+
+void gameBillboardParticles::update(void) {
+	// just set a flag indicating that the buffer isn't synced,
+	// will get synced in the render loop somewhere
+	// (need to do it this way since things will be updated in threads, and
+	// can't do anything to opengl state from non-main threads)
+	synced = false;
+}
+
+gameBillboardParticles::gameBillboardParticles(unsigned _maxInstances)
+	: gameObject(objType::BillboardParticles)
 {
 	positions.reserve(_maxInstances);
 	positions.resize(positions.capacity());

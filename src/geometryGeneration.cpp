@@ -3,6 +3,15 @@
 
 namespace grendx {
 
+gameModel::ptr generatePlaneMesh(int sx, int sy, int w, int h) {
+	gameModel::ptr ret  = std::make_shared<gameModel>();
+	gameMesh::ptr  mesh = std::make_shared<gameMesh>();
+
+	setNode("mesh", ret, mesh);
+
+	return ret;
+}
+
 gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
                                  float x, float y, heightFunction func)
 {

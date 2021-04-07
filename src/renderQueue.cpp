@@ -62,6 +62,10 @@ void renderQueue::add(gameObject::ptr obj,
 		auto p = std::dynamic_pointer_cast<gameParticles>(obj);
 		addInstanced(obj, p, adjTrans, inverted);
 
+	} else if (obj->type == gameObject::objType::BillboardParticles) {
+		auto p = std::dynamic_pointer_cast<gameBillboardParticles>(obj);
+		addBillboards(obj, p, adjTrans, inverted);
+
 	} else {
 		for (auto& [name, ptr] : obj->nodes) {
 			//std::cerr << "add(): subnode " << name << std::endl;
@@ -118,6 +122,34 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 
 	for (auto& [name, ptr] : obj->nodes) {
 		addInstanced(ptr, particles, adjTrans, inverted);
+	}
+}
+
+void renderQueue::addBillboards(gameObject::ptr obj,
+                                gameBillboardParticles::ptr particles,
+                                glm::mat4 trans,
+                                bool inverted)
+{
+	if (obj == nullptr || !obj->visible) {
+		return;
+	}
+
+	glm::mat4 adjTrans = trans*obj->getTransform(0);
+
+	unsigned invcount = 0;
+	for (unsigned i = 0; i < 3; i++)
+		invcount += obj->transform.scale[i] < 0;
+
+	// only want to invert face order if flipped an odd number of times
+	inverted ^= invcount & 1;
+
+	if (obj->type == gameObject::objType::Mesh) {
+		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		billboardMeshes.push_back({adjTrans, inverted, particles, m});
+	}
+
+	for (auto& [name, ptr] : obj->nodes) {
+		addBillboards(ptr, particles, adjTrans, inverted);
 	}
 }
 
@@ -439,6 +471,65 @@ static void drawMeshInstanced(renderFlags& flags,
 #endif
 }
 
+static void drawBillboards(renderFlags& flags,
+                           renderFramebuffer::ptr fb,
+                           Program::ptr program,
+                           glm::mat4& transform,
+                           bool inverted,
+                           gameBillboardParticles::ptr particles,
+                           gameMesh::ptr mesh)
+{
+	if (!mesh->comped_mesh) {
+		// mesh not compiled, nothing to draw
+		return;
+	}
+
+	if (!flags.shadowmap) {
+		set_material(program, mesh->comped_mesh);
+
+		// enable()/disable() cache state, no need to worry about toggling
+		// too much state if queue is sorted
+		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
+			// TODO: handle mask blends
+			enable(GL_BLEND);
+		} else {
+			disable(GL_BLEND);
+		}
+	}
+
+	glm::mat3 m_3x3_inv_transp =
+		glm::transpose(glm::inverse(model_to_world(transform)));
+
+	program->set("m", transform);
+	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
+
+	enable(GL_BLEND);
+
+	if (flags.cull_faces) {
+		setFaceOrder(inverted? GL_CW : GL_CCW);
+	}
+
+	bindVao(mesh->comped_mesh->vao);
+
+#if GLSL_VERSION >= 140
+	//SDL_Log("Drawing billboard mesh... %u instances", particles->activeInstances);
+	particles->syncBuffer();
+	program->setUniformBlock("billboardPositions", particles->ubuffer,
+	                         UBO_INSTANCE_TRANSFORMS);
+	glDrawElementsInstanced(
+		GL_TRIANGLES,
+		mesh->comped_mesh->elements->currentSize,
+		GL_UNSIGNED_INT, 0, particles->activeInstances);
+	DO_ERROR_CHECK();
+
+#else
+	for (unsigned i = 0; i < particles->activeInstances; i++) {
+		// TODO: fallback
+	}
+#endif
+}
+
+
 unsigned renderQueue::flush(unsigned width,
                             unsigned height,
                             renderContext::ptr rctx,
@@ -501,6 +592,7 @@ unsigned renderQueue::flush(unsigned width,
 	probes.clear();
 	skinnedMeshes.clear();
 	instancedMeshes.clear();
+	billboardMeshes.clear();
 
 	return drawnMeshes;
 }
@@ -603,12 +695,37 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
 				nearest_irradiance_probe(applyTransform(transform)),
-				flags.mainShader);
+				flags.instancedShader);
 		}
 
 		drawMeshInstanced(flags, fb, flags.instancedShader,
 		                  transform, inverted, particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
+	}
+
+	glDepthMask(GL_FALSE);
+
+	flags.billboardShader->bind();
+	DO_ERROR_CHECK();
+	flags.billboardShader->set("v", view);
+	flags.billboardShader->set("p", projection);
+	flags.billboardShader->set("v_inv", v_inv);
+	flags.billboardShader->set("cameraPosition", cam->position());
+	DO_ERROR_CHECK();
+	shaderSync(flags.billboardShader, rctx);
+	DO_ERROR_CHECK();
+
+	for (auto& [transform, inverted, particleSystem, mesh] : billboardMeshes) {
+		if (!flags.shadowmap) {
+			rctx->setIrradianceProbe(
+				nearest_irradiance_probe(applyTransform(transform)),
+				flags.billboardShader);
+		}
+
+		drawBillboards(flags, fb, flags.billboardShader,
+		               transform, inverted, particleSystem, mesh);
+		drawnMeshes += particleSystem->activeInstances;
+		DO_ERROR_CHECK();
 	}
 
 	// TODO: clear()
@@ -617,6 +734,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	probes.clear();
 	skinnedMeshes.clear();
 	instancedMeshes.clear();
+	billboardMeshes.clear();
 
 	return drawnMeshes;
 }
