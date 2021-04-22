@@ -454,47 +454,6 @@
                 ],
                 "type": "gameObject"
             },
-            "helmet": {
-                "nodes": {
-                    "import[2779]": {
-                        "position": [
-                            0.0,
-                            0.0,
-                            0.0
-                        ],
-                        "rotation": [
-                            1.0,
-                            0.0,
-                            0.0,
-                            0.0
-                        ],
-                        "scale": [
-                            1.0,
-                            1.0,
-                            1.0
-                        ],
-                        "sourceFile": "/media/stuff/flux/glstuff/glTF-Sample-Models/2.0/DamagedHelmet/glTF-Binary//DamagedHelmet.glb",
-                        "type": "Imported file"
-                    }
-                },
-                "position": [
-                    0.0,
-                    3.0,
-                    0.0
-                ],
-                "rotation": [
-                    1.0,
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "type": "gameObject"
-            },
             "irradiance probe E141": {
                 "boundingBox": {
                     "max": [

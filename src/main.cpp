@@ -249,7 +249,7 @@ projalphaView::projalphaView(gameMain *game)
 {
 #ifdef NO_FLOATING_FB
 	post = renderPostChain::ptr(new renderPostChain(
-		{loadPostShader(GR_PREFIX "shaders/src/texpresent.frag",
+		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
 		                game->rend->globalShaderOptions)},
 		SCREEN_SIZE_X, SCREEN_SIZE_Y));
 #else
@@ -550,7 +550,10 @@ void projalphaView::load(gameMain *game, std::string map) {
 		currentMap = map;
 		//game->state->rootnode = loadMapCompiled(game, map);
 		game->jobs->addAsync([=] () {
-			auto [node, models] = loadMapData(game, map);
+			//auto [node, models] = loadMapData(game, map);
+			auto mapdata = loadMapData(game, map);
+			auto node = mapdata.first;
+			auto models = mapdata.second;
 
 			game->phys->addStaticModels(nullptr, // TODO: some sort of world entity
 			                            node,
