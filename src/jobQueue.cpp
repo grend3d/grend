@@ -3,9 +3,14 @@
 using namespace grendx;
 
 jobQueue::jobQueue(unsigned concurrency) {
+#ifdef __EMSCRIPTEN__
+	// TOOO: some way to do background tasks on webgl, it's JS after all
+
+#else
 	for (unsigned i = 0; i < concurrency; i++) {
 		workers.push_back(std::thread(&jobQueue::worker, this));
 	}
+#endif
 	//workers.push_back(std::thread(&jobQueue::worker, this));
 	//workers.push_back(std::thread(&jobQueue::worker, this));
 }
@@ -20,7 +25,11 @@ jobQueue::~jobQueue() {
 }
 
 std::future<bool> jobQueue::addAsync(std::function<bool()> job) {
+#ifdef __EMSCRIPTEN__
+	return addDeferred(std::packaged_task<bool()>(job));
+#else
 	return addAsync(std::packaged_task<bool()>(job));
+#endif
 }
 
 std::future<bool> jobQueue::addDeferred(std::function<bool()> job) {
@@ -30,8 +39,12 @@ std::future<bool> jobQueue::addDeferred(std::function<bool()> job) {
 std::future<bool> jobQueue::addAsync(std::packaged_task<bool()> job) {
 	std::lock_guard<std::mutex> g(mtx);
 	auto fut = job.get_future();
+#ifdef __EMSCRIPTEN__
+	deferredJobs.push_back(std::move(job));
+#else
 	asyncJobs.push_back(std::move(job));
 	waiters.notify_one(); // wake up a thread, if any are available
+#endif
 	return fut;
 }
 

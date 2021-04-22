@@ -9,6 +9,13 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# for building grend as a library, including bullet as part of it
+if (NOT BULLET_PHYSICS_SOURCE_DIR AND EXISTS ${PROJECT_SOURCE_DIR}/bullet)
+	message(STATUS "Found bullet subdirectory, using that as library")
+	set(BULLET_PHYSICS_SOURCE_DIR "${PROJECT_SOURCE_DIR}/bullet")
+	add_subdirectory(${BULLET_PHYSICS_SOURCE_DIR})
+endif()
+
 set(CMAKE_CXX_FLAGS         "-Wall")
 set(CMAKE_CXX_FLAGS_DEBUG   "-DGREND_BUILD_DEBUG=1 -Og -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1")
@@ -34,158 +41,12 @@ add_subdirectory(libs/nanovg)
 set(GREND_LINK_LIBS)
 set(GR_PREFIX)
 ## used in the grend.pc file, so things can know which GL library to link
+set(GREND_PKG)
 set(GREND_GL_PKG)
 
 if (PORTABLE_BUILD)
 	set(GR_PREFIX "./")
 endif()
-
-if (ANDROID)
-	message(STATUS "Target: Android")
-	# TODO: how's this going to work in production, just require assets
-	#       be unpacked onto the SD card? I'm definitely not rewriting
-	#       every library that touches C/C++ file i/o
-	#add_compile_options(-DGR_PREFIX="/sdcard/grend/")
-	if (NOT PORTABLE_BUILD)
-		set(GR_PREFIX "/sdcard/grend/")
-	endif()
-
-	add_compile_options(-DMAX_LIGHTS=8)
-	# TODO: toggleable for old adreno only...?
-	#add_compile_options(-DUSE_SINGLE_UBO)
-	add_compile_options(-DBROKEN_UINTS)
-
-	# TODO: ideally this could be deduplicated
-	if (GLSL_VERSION EQUAL 100)
-		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
-		find_library(GLESv2 GLESv2)
-		list(APPEND GREND_LINK_LIBS GLESv2)
-	elseif(GLSL_VERSION EQUAL 300)
-		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
-		find_library(GLESv3 GLESv3)
-		list(APPEND GREND_LINK_LIBS GLESv3)
-	else()
-		message(FATAL_ERROR "Invalid GLSL version for android")
-	endif()
-
-	find_library(SDL2 SDL2)
-	find_library(BulletCollision Bullet3Collision)
-	find_library(BulletDynamics  Bullet3Dynamics)
-	find_library(BulletSoftBody  BulletSoftBody)
-	find_library(LinearMath      LinearMath)
-	find_library(glm             glm)
-
-	list(APPEND GREND_LINK_LIBS
-	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath glm)
-
-elseif (MINGW OR WIN32 OR CYGWIN)
-	message(STATUS "Target: Windows")
-
-	if (NOT PORTABLE_BUILD)
-		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
-	endif()
-
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
-	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
-
-	# only have glew on windows
-	pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
-	message(STATUS "GL: Using glew")
-	set(GREND_GL_PKG "glew")
-	add_compile_options(-D_WIN32) # mingw doesn't seem to define this?
-	                              # might as well explicitly define it
-	add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
-
-	# use in-tree library on windows, bullet packaged with msys2 seems
-	# to be a bit borked (function signatures don't match, should submit
-	# a bug report/fix...)
-	find_library(BulletCollision Bullet3Collision)
-	find_library(BulletDynamics  Bullet3Dynamics)
-	find_library(BulletSoftBody  BulletSoftBody)
-	find_library(LinearMath      LinearMath)
-	find_library(opengl32        opengl32)
-
-	list(APPEND GREND_LINK_LIBS
-		PkgConfig::SDL2
-		PkgConfig::Glew
-		#PkgConfig::Bullet
-		BulletCollision BulletDynamics BulletSoftBody LinearMath
-		pthread
-		opengl32
-	)
-
-# TODO: assume unixen, presumably there'll be different library lookup
-#       stuff for windows/etc
-else()
-	message(STATUS "Target: Unix-ish")
-	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
-	if (NOT PORTABLE_BUILD)
-		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
-	endif()
-
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
-	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
-	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
-
-	list(APPEND GREND_LINK_LIBS
-		PkgConfig::SDL2
-		PkgConfig::Bullet
-		BulletCollision BulletDynamics BulletSoftBody LinearMath
-		pthread
-	)
-
-	if (GLSL_VERSION EQUAL 100)
-		message(STATUS "GL: Using GLESv2")
-		set(GREND_GL_PKG "glesv2")
-
-		add_compile_options(-DIMGUI_IMPL_OPENGL_ES2)
-		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
-		list(APPEND GREND_LINK_LIBS GLESv2)
-
-	elseif(GLSL_VERSION EQUAL 300)
-		message(STATUS "GL: Using GLESv3")
-		set(GREND_GL_PKG "glesv2")
-
-		add_compile_options(-DIMGUI_IMPL_OPENGL_ES3)
-		# seems gles3 is part of the gles2 library
-		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
-		list(APPEND GREND_LINK_LIBS PkgConfig::GLESv2)
-
-	else()
-		message(STATUS "GL: Using glew")
-		set(GREND_GL_PKG "glew")
-
-		add_compile_options(-DIMGUI_IMPL_OPENGL_LOADER_GLEW)
-		pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
-		list(APPEND GREND_LINK_LIBS PkgConfig::Glew)
-	endif()
-endif()
-
-set(INCLUDES include/grend)
-set(LIBRARY_INCLUDES 
-	libs
-	libs/tinygltf
-	libs/nanovg/src
-	libs/imgui
-	libs/json/single_include
-	libs/stb)
-
-#include_directories(include)
-#include_directories(${LIBRARY_INCLUDES})
-#include_directories(PkgConfig::GLM)
-
-#[[
-add_compile_definitions(
-	GLSL_VERSION=${GLSL_VERSION}
-	IMGUI_IMPL_OPENGL_LOADER_GLEW
-	GREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
-	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
-	# TODO: this obviously breaks portable installs
-	GR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
-)
-]]
 
 if (PHYSICS_BULLET)
 	#add_compile_definitions(PHYSICS_BULLET)
@@ -265,6 +126,205 @@ add_library(Grend
 	libs/stb/stbi.cpp
 	libs/stb/stb_vorbis.c
 )
+
+if (ANDROID)
+	message(STATUS "Target: Android")
+	# TODO: how's this going to work in production, just require assets
+	#       be unpacked onto the SD card? I'm definitely not rewriting
+	#       every library that touches C/C++ file i/o
+	#add_compile_options(-DGR_PREFIX="/sdcard/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "/sdcard/grend/")
+	endif()
+
+	target_compile_options(Grend PUBLIC -DMAX_LIGHTS=8)
+	# TODO: toggleable for old adreno only...?
+	#add_compile_options(-DUSE_SINGLE_UBO)
+	target_compile_options(Grend PUBLIC -DBROKEN_UINTS)
+
+	# TODO: ideally this could be deduplicated
+	if (GLSL_VERSION EQUAL 100)
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES2)
+		find_library(GLESv2 GLESv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
+	elseif(GLSL_VERSION EQUAL 300)
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES3)
+		find_library(GLESv3 GLESv3)
+		list(APPEND GREND_LINK_LIBS GLESv3)
+	else()
+		message(FATAL_ERROR "Invalid GLSL version for android")
+	endif()
+
+	find_library(SDL2 SDL2)
+	find_library(BulletCollision Bullet3Collision)
+	find_library(BulletDynamics  Bullet3Dynamics)
+	find_library(BulletSoftBody  BulletSoftBody)
+	find_library(LinearMath      LinearMath)
+	find_library(glm             glm)
+	set(GREND_PKG) # empty, shouldn't be using pkg-config on android
+
+	list(APPEND GREND_LINK_LIBS
+	     SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath glm)
+
+elseif (MINGW OR WIN32 OR CYGWIN)
+	message(STATUS "Target: Windows")
+
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	endif()
+
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
+	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+
+	# only have glew on windows
+	pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
+	message(STATUS "GL: Using glew")
+	set(GREND_GL_PKG "glew")
+	target_compile_options(Grend PUBLIC -D_WIN32) # mingw doesn't seem to define this?
+	                              # might as well explicitly define it
+	target_compile_options(Grend -DIMGUI_IMPL_OPENGL_LOADER_GLEW)
+
+	# use in-tree library on windows, bullet packaged with msys2 seems
+	# to be a bit borked (function signatures don't match, should submit
+	# a bug report/fix...)
+	find_library(BulletCollision Bullet3Collision)
+	find_library(BulletDynamics  Bullet3Dynamics)
+	find_library(BulletSoftBody  BulletSoftBody)
+	find_library(LinearMath      LinearMath)
+	find_library(opengl32        opengl32)
+	set(GREND_PKG "sdl2 bullet glm")
+
+	list(APPEND GREND_LINK_LIBS
+		PkgConfig::SDL2
+		PkgConfig::Glew
+		#PkgConfig::Bullet
+		BulletCollision BulletDynamics BulletSoftBody LinearMath
+		pthread
+		opengl32
+	)
+
+elseif (EMSCRIPTEN)
+	message(STATUS "Target: Emscripten")
+	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "./share/grend/")
+	endif()
+
+	find_library(SDL2 SDL2)
+	find_library(BulletCollision Bullet3Collision)
+	find_library(BulletDynamics  Bullet3Dynamics)
+	find_library(BulletSoftBody  BulletSoftBody)
+	find_library(LinearMath      LinearMath)
+	#find_library(glm             glm)
+	set(GREND_PKG "bullet") # only bullet, which should be built as part of grend...
+
+	set(EMSCRIPTEN_USE_STUFF
+		-sUSE_SDL=2
+		-sUSE_WEBGL2=1
+		-sMIN_WEBGL_VERSION=2
+		-sMAX_WEBGL_VERSION=2
+		-sERROR_ON_UNDEFINED_SYMBOLS=0
+		-sTOTAL_MEMORY=1048576000
+		-sOFFSCREEN_FRAMEBUFFER=1
+		-sFULL_ES3=1
+	)
+
+	target_compile_options(Grend PUBLIC ${EMSCRIPTEN_USE_STUFF})
+	target_link_options(Grend PUBLIC ${EMSCRIPTEN_USE_STUFF})
+
+	#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSCRIPTEN_USE_STUFF}")
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_USE_STUFF}")
+	set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+	# TODO: ideally this could be deduplicated
+	if (GLSL_VERSION EQUAL 100)
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES2)
+		find_library(GLESv2 GLESv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
+	elseif(GLSL_VERSION EQUAL 300)
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES3)
+		find_library(GLESv3 GLESv3)
+		#list(APPEND GREND_LINK_LIBS GLESv3)
+	else()
+		message(FATAL_ERROR "Invalid GLSL version for android")
+	endif()
+
+	list(APPEND GREND_LINK_LIBS
+		 SDL2 BulletCollision BulletDynamics BulletSoftBody LinearMath)
+
+# TODO: assume unixen, presumably there'll be different library lookup
+#       stuff for windows/etc
+else()
+	message(STATUS "Target: Unix-ish")
+	#add_compile_options(-DGR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/")
+	if (NOT PORTABLE_BUILD)
+		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
+	endif()
+
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
+	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
+	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+
+	list(APPEND GREND_LINK_LIBS
+		PkgConfig::SDL2
+		PkgConfig::Bullet
+		BulletCollision BulletDynamics BulletSoftBody LinearMath
+		pthread
+	)
+	set(GREND_PKG "sdl2 bullet glm")
+
+	if (GLSL_VERSION EQUAL 100)
+		message(STATUS "GL: Using GLESv2")
+		set(GREND_GL_PKG "glesv2")
+
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES2)
+		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
+		list(APPEND GREND_LINK_LIBS GLESv2)
+
+	elseif(GLSL_VERSION EQUAL 300)
+		message(STATUS "GL: Using GLESv3")
+		set(GREND_GL_PKG "glesv2")
+
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_ES3)
+		# seems gles3 is part of the gles2 library
+		pkg_check_modules(GLESv2 REQUIRED IMPORTED_TARGET glesv2)
+		list(APPEND GREND_LINK_LIBS PkgConfig::GLESv2)
+
+	else()
+		message(STATUS "GL: Using glew")
+		set(GREND_GL_PKG "glew")
+
+		target_compile_options(Grend PUBLIC -DIMGUI_IMPL_OPENGL_LOADER_GLEW)
+		pkg_check_modules(Glew REQUIRED IMPORTED_TARGET glew)
+		list(APPEND GREND_LINK_LIBS PkgConfig::Glew)
+	endif()
+endif()
+
+set(INCLUDES include/grend)
+set(LIBRARY_INCLUDES 
+	libs
+	libs/tinygltf
+	libs/nanovg/src
+	libs/imgui
+	libs/json/single_include
+	libs/stb)
+
+#include_directories(include)
+#include_directories(${LIBRARY_INCLUDES})
+#include_directories(PkgConfig::GLM)
+
+#[[
+add_compile_definitions(
+	GLSL_VERSION=${GLSL_VERSION}
+	IMGUI_IMPL_OPENGL_LOADER_GLEW
+	GREND_ERROR_CHECK=1 # TODO: use cmake debug/release build modes
+	#GR_PREFIX="${PROJECT_SOURCE_DIR}/test-install/share/grend/"
+	# TODO: this obviously breaks portable installs
+	GR_PREFIX="${CMAKE_INSTALL_PREFIX}/share/grend/"
+)
+]]
 
 target_include_directories(Grend PUBLIC
 	"${PROJECT_BINARY_DIR}"
