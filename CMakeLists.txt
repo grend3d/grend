@@ -9,8 +9,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS         "-Wall")
-set(CMAKE_CXX_FLAGS_DEBUG   "-DGAME_BUILD_DEBUG=1 -Og -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-DGAME_BUILD_RELEASE=1")
+set(CMAKE_CXX_FLAGS_DEBUG   "-DGAME_BUILD_DEBUG=1")
+set(CMAKE_CXX_FLAGS_RELEASE "-DGAME_BUILD_RELEASE=1 -O2")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(PORTABLE_BUILD "Portable build, include all dependancies in the install" OFF)
@@ -42,6 +42,18 @@ if (ANDROID OR GREND_PATH)
 	# everything needed should be pulled in here
 	find_library(Grend Grend)
 	list(APPEND DEMO_LINK_LIBS Grend)
+
+elseif(EMSCRIPTEN)
+	#link_directories("${CMAKE_INSTALL_PREFIX}/lib")
+	#find_library(Grend Grend)
+	#list(APPEND DEMO_LINK_LIBS Grend)
+
+	set(CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
+	set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_PREFIX_PATH}")
+	message("PREFIX PATH: $ENV{PKG_CONFIG_PATH}")
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(Grend REQUIRED IMPORTED_TARGET grend)
+	list(APPEND DEMO_LINK_LIBS PkgConfig::Grend)
 
 # TODO: assume unixen, presumably there'll be different library lookup
 #       stuff for windows/etc
@@ -82,6 +94,11 @@ if (ANDROID)
 	list(APPEND DEMO_LINK_LIBS SDL2 SDL2main)
 
 else()
+	message(STATUS "Setting standalone executable")
+	set(TARGET_NAME landscape-demo)
+	add_executable(landscape-demo ${LANDSCAPE_DEMO_SRC})
+	install(TARGETS landscape-demo DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 	if(MINGW OR WIN32 OR CYGWIN)
 		message(STATUS "Building for/on windows")
 		#add_compile_options(-lopengl32)
@@ -89,16 +106,43 @@ else()
 		add_compile_options(-D_WIN32)
 		find_library(opengl32 opengl32)
 		list(APPEND DEMO_LINK_LIBS opengl32)
+
+	elseif (EMSCRIPTEN)
+		message(STATUS "Building for emscripten")
+		set(EMSCRIPTEN_MORE_STUFF
+			--preload-file=/tmp/webbuild/share/grend@/
+			--preload-file=${PROJECT_SOURCE_DIR}/assets/@/assets
+			--shell-file=${PROJECT_SOURCE_DIR}/shell.html
+		)
+
+		set(EMSCRIPTEN_USE_STUFF
+			-sUSE_SDL=2
+			-sMIN_WEBGL_VERSION=2
+			-sMAX_WEBGL_VERSION=2
+			-sUSE_WEBGL2=1
+			-sERROR_ON_UNDEFINED_SYMBOLS=0
+			-sTOTAL_MEMORY=1048576000
+			-sOFFSCREEN_FRAMEBUFFER=1
+			-sFULL_ES3=1
+		)
+
+		set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+		target_link_directories(landscape-demo PUBLIC "${CMAKE_INSTALL_PREFIX}/lib")
+
+		#find_library(Grend Grend)
+		#find_library(bullet bullet)
+		#list(APPEND DEMO_LINK_LIBS Grend bullet)
+
+		#target_link_libraries(landscape-demo PUBLIC ${DEMO_LINK_LIBS})
+		target_compile_options(landscape-demo PUBLIC ${EMSCRIPTEN_USE_STUFF} ${EMSCRIPTEN_MORE_STUFF})
+		target_link_options(landscape-demo  PUBLIC ${EMSCRIPTEN_USE_STUFF} ${EMSCRIPTEN_MORE_STUFF})
+
 	else()
 		# pthreads on unixen
 		message(STATUS "Building for/on unixen, adding -pthread")
 		list(APPEND DEMO_LINK_OPTIONS -pthread)
 	endif()
-
-	message(STATUS "Setting standalone executable")
-	set(TARGET_NAME landscape-demo)
-	add_executable(landscape-demo ${LANDSCAPE_DEMO_SRC})
-	install(TARGETS landscape-demo DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 ### TODO: configurable data path
