@@ -26,7 +26,6 @@
 #elif GLSL_VERSION == 300
 #define GL3_PROTOTYPES 1
 #include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
 
 #else
 #include <GL/glew.h>

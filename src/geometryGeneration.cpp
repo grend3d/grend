@@ -245,7 +245,7 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 	for (unsigned i = 0; i < 24; i += 4) {
 		for (unsigned k = 0; k < 4; k++) {
 			ret->vertices[i+k].position = verts[i+k];
-			ret->vertices[i+k].uv       = uvs[i+k];
+			ret->vertices[i+k].uv       = uvs[k];
 		}
 
 		mesh->faces.push_back(i);

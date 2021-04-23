@@ -359,10 +359,15 @@ gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path)
 	auto fut = game->jobs->addAsync([=] () {
 		auto [obj, models] = loadSceneData(path);
 
+		// apparently you can't (officially) capture destructured bindings, only variables...
+		// ffs
+		gameImport::ptr objptr = obj;
+		modelMap modelptr = models;
+
 		if (obj) {
 			game->jobs->addDeferred([=] () {
-				compileModels(models);
-				setNode("asyncLoaded", ret, obj);
+				compileModels(modelptr);
+				setNode("asyncLoaded", ret, objptr);
 				return true;
 			});
 		}

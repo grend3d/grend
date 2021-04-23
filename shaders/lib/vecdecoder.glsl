@@ -1,16 +1,12 @@
 #pragma once
 
-precision highp float;
-precision mediump sampler2D;
-precision mediump samplerCube;
-
 #include <lib/compat.glsl>
 
 vec4 decode_r332(int c) {
 	return vec4(
-		((((c) >> 5) & 7)) / 7.0,
-		((((c) >> 2) & 7)) / 7.0,
-		((((c))      & 3)) / 3.0,
+		float((((c) >> 5) & 7)) / 7.0,
+		float((((c) >> 2) & 7)) / 7.0,
+		float((((c))      & 3)) / 3.0,
 		// no alpha channel
 		1.0
 	);
@@ -27,8 +23,8 @@ ivec4 decode_r332_int(int c) {
 
 vec4 decode_vec(in sampler2D tex, vec2 uv) {
 	// TODO: don't have these two functions on gles2, need fallbacks
-	ivec2 size = textureSize(tex, 0);
-	vec4 samp = textureLod(tex, uv, 0);
+	vec2 size = vec2(textureSize(tex, 0));
+	vec4 samp = texture(tex, uv);
 
 	vec2 pos = fract(size * uv)*2.0 - 1.0;
 	float rads = 3.1415926*samp.b;
@@ -65,8 +61,8 @@ vec4 decode_vec_blur(in sampler2D tex, vec2 uv) {
 
 vec4 decode_vec_edges(in sampler2D tex, vec2 uv) {
 	// TODO: don't have these two functions on gles2, need fallbacks
-	ivec2 size = textureSize(tex, 0);
-	vec4 samp = textureLod(tex, uv, 0);
+	vec2 size = vec2(textureSize(tex, 0));
+	vec4 samp = texture(tex, uv);
 
 	vec2 pos = fract(size * uv)*2.0 - 1.0;
 	float rads = 3.1415926*samp.b;

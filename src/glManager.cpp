@@ -111,6 +111,7 @@ Texture::ptr Framebuffer::attach(GLenum attachment,
 	glActiveTexture(TEX_GL_SCRATCH);
 	glBindTexture(textarget, texture->obj);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, textarget, texture->obj, 0);
+	DO_ERROR_CHECK();
 
 	attachments[attachment] = texture;
 	return texture;
@@ -223,6 +224,11 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
+	if (mesh->faces.size() == 0) {
+		SDL_Log("Mesh has no indices!\n");
+		return foo;
+	}
+
 	mesh->comped_mesh = foo;
 	mesh->compiled = true;
 
@@ -290,8 +296,8 @@ void compileModels(const modelMap& models) {
 
 
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
-	if (mesh == nullptr) {
-		SDL_Log("/!\\ Have broken mesh name...");
+	if (mesh == nullptr || !mesh->elements) {
+		SDL_Log("/!\\ Have broken mesh...");
 		return currentVao;
 	}
 
@@ -367,6 +373,11 @@ void bindCookedMeshes(void) {
 	*/
 }
 
+struct quadent {
+	glm::vec3 position;
+	glm::vec2 uv;
+};
+
 static std::vector<GLfloat> screenquad_data = {
 	-1, -1,  0, 0, 0,
 	 1, -1,  0, 1, 0,
@@ -378,18 +389,17 @@ static std::vector<GLfloat> screenquad_data = {
 };
 
 void preloadScreenquad(void) {
-	screenquadVbo = genBuffer(GL_ARRAY_BUFFER);
 	Vao::ptr orig_vao = currentVao;
 	screenquadVao = bindVao(genVao());
+	screenquadVbo = genBuffer(GL_ARRAY_BUFFER);
 
+	screenquadVbo->bind();
 	screenquadVbo->buffer(screenquad_data);
 	glEnableVertexAttribArray(VAO_QUAD_VERTICES);
-	glVertexAttribPointer(VAO_QUAD_VERTICES,
-	                      3, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
+	SET_VAO_ENTRY(VAO_QUAD_VERTICES, quadent, position);
+
 	glEnableVertexAttribArray(VAO_QUAD_TEXCOORDS);
-	glVertexAttribPointer(VAO_QUAD_TEXCOORDS,
-	                      2, GL_FLOAT, GL_FALSE, 5*sizeof(float),
-	                      (void*)(3 * sizeof(float)));
+	SET_VAO_ENTRY(VAO_QUAD_TEXCOORDS, quadent, uv);
 
 	bindVao(orig_vao);
 }
