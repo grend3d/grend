@@ -1,11 +1,12 @@
 #include <grend/gameEditor.hpp>
 
+#include <components/health.hpp>
+#include <components/healthbar.hpp>
+#include <components/team.hpp>
+
+#include <entities/projectile.hpp>
+#include <entities/enemy.hpp>
 #include "enemySpawner.hpp"
-#include "projectile.hpp"
-#include "enemy.hpp"
-#include "health.hpp"
-#include "healthbar.hpp"
-#include "team.hpp"
 
 enemySpawner::~enemySpawner() {};
 

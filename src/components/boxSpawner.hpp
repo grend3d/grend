@@ -5,8 +5,8 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
 
-#include "inputHandler.hpp"
-#include "projectile.hpp"
+#include <components/inputHandler.hpp>
+#include <entities/projectile.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;

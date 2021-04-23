@@ -4,7 +4,8 @@
 #include <grend/animation.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/collision.hpp>
-#include "health.hpp"
+
+#include <components/health.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;

@@ -1,5 +1,5 @@
 #include "flag.hpp"
-#include "team.hpp"
+#include <components/team.hpp>
 
 #include <grend/gameEditor.hpp>
 

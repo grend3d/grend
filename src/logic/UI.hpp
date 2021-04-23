@@ -1,7 +1,7 @@
 #pragma once
 
-#include "health.hpp"
-#include "levelController.hpp"
+#include <components/health.hpp>
+#include <logic/levelController.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/camera.hpp>

@@ -2,7 +2,7 @@
 
 #include <grend/gameObject.hpp>
 #include <grend/ecs/ecs.hpp>
-#include "area.hpp"
+#include <components/area.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;

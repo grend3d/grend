@@ -53,24 +53,24 @@ else()
 endif()
 
 set(LANDSCAPE_DEMO_SRC
-	src/boxSpawner.cpp
-	src/boxSpawner.hpp
-	src/enemy.cpp
-	src/enemySpawner.cpp
-	src/healthbar.cpp
-	src/inputHandler.cpp
-	src/landscapeGenerator.cpp
-	src/main.cpp
-	src/player.cpp
-	src/projectile.cpp
-	src/UI.cpp
-	src/flag.cpp
-	src/team.cpp
-	src/area.cpp
-	src/levelController.cpp
-	src/killedParticles.cpp
+	src/components/healthbar.cpp
+	src/components/area.cpp
+	src/components/inputHandler.cpp
+	src/components/boxSpawner.cpp
+	src/components/team.cpp
 
-	src/targetArea.cpp
+	src/entities/enemy.cpp
+	src/entities/enemySpawner.cpp
+	src/entities/flag.cpp
+	src/entities/player.cpp
+	src/entities/targetArea.cpp
+	src/entities/projectile.cpp
+	src/entities/killedParticles.cpp
+
+	src/logic/main.cpp
+	src/logic/landscapeGenerator.cpp
+	src/logic/UI.cpp
+	src/logic/levelController.cpp
 )
 
 message(STATUS "CMake host: ${CMAKE_HOST_SYSTEM_NAME}")
@@ -105,6 +105,7 @@ endif()
 install(DIRECTORY assets DESTINATION ${CMAKE_INSTALL_DATADIR}/proj)
 
 target_include_directories(${TARGET_NAME} PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(${TARGET_NAME} PUBLIC src)
 target_include_directories(${TARGET_NAME} PUBLIC Grend)
 target_link_libraries(${TARGET_NAME} ${DEMO_LINK_LIBS})
 target_link_options(${TARGET_NAME} PUBLIC ${DEMO_LINK_OPTIONS})

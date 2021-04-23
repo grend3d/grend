@@ -33,24 +33,25 @@ using namespace grendx;
 using namespace grendx::ecs;
 
 // TODO: should include less stuff
-#include "player.hpp"
-#include "enemy.hpp"
-#include "inputHandler.hpp"
-#include "landscapeGenerator.hpp"
-#include "projectile.hpp"
-#include "health.hpp"
-#include "healthbar.hpp"
-#include "enemyCollision.hpp"
-#include "healthPickup.hpp"
-#include "timedLifetime.hpp"
-#include "UI.hpp"
-#include "flag.hpp"
-#include "team.hpp"
-#include "enemySpawner.hpp"
-#include "levelController.hpp"
-#include "killedParticles.hpp"
+#include <components/inputHandler.hpp>
+#include <components/health.hpp>
+#include <components/healthbar.hpp>
+#include <components/timedLifetime.hpp>
+#include <components/team.hpp>
 
-#include "targetArea.hpp"
+#include <entities/player.hpp>
+#include <entities/enemy.hpp>
+#include <entities/projectile.hpp>
+#include <entities/enemyCollision.hpp>
+#include <entities/healthPickup.hpp>
+#include <entities/flag.hpp>
+#include <entities/enemySpawner.hpp>
+#include <entities/killedParticles.hpp>
+#include <entities/targetArea.hpp>
+
+#include <logic/landscapeGenerator.hpp>
+#include <logic/UI.hpp>
+#include <logic/levelController.hpp>
 
 class landscapeEventSystem : public entitySystem {
 	public:

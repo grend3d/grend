@@ -1,10 +1,10 @@
 #include <grend/geometryGeneration.hpp>
 #include <grend/gameEditor.hpp>
 
-#include "projectile.hpp"
+#include <components/health.hpp>
+#include <components/healthbar.hpp>
+#include <entities/projectile.hpp>
 #include "enemy.hpp"
-#include "health.hpp"
-#include "healthbar.hpp"
 
 enemy::~enemy() {};
 

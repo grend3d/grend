@@ -8,8 +8,8 @@
 #include <memory>
 #include <vector>
 
-#include "boxSpawner.hpp"
-#include "inputHandler.hpp"
+#include <components/boxSpawner.hpp>
+#include <components/inputHandler.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;

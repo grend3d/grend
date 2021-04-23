@@ -3,7 +3,7 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/collision.hpp>
 #include <grend/ecs/rigidBody.hpp>
-#include "health.hpp"
+#include <components/health.hpp>
 
 using namespace grendx;
 using namespace grendx::ecs;

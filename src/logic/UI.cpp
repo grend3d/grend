@@ -1,6 +1,6 @@
 #include "UI.hpp"
-#include "inputHandler.hpp"
-#include "healthbar.hpp"
+#include <components/inputHandler.hpp>
+#include <components/healthbar.hpp>
 #include <grend/interpolation.hpp>
 
 void drawPlayerHealthbar(entityManager *manager,

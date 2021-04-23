@@ -1,5 +1,5 @@
 #include "targetArea.hpp"
-#include "health.hpp"
+#include <components/health.hpp>
 
 #include <grend/gameEditor.hpp>
 

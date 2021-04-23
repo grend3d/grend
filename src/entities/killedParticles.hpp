@@ -20,7 +20,7 @@ class boxParticles : public entity {
 		boxParticles(entityManager *manager, glm::vec3 pos);
 		virtual void update(entityManager *manager, float delta);
 
-		gameParticles::ptr parts;
+		gameBillboardParticles::ptr parts;
 		float velocities[32];
 		float offsets[32];
 		float time = 0.0;

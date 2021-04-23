@@ -1,6 +1,6 @@
 #include <grend/ecs/rigidBody.hpp>
 #include "projectile.hpp"
-#include "timedLifetime.hpp"
+#include <components/timedLifetime.hpp>
 
 projectile::~projectile() {};
 projectileCollision::~projectileCollision() {};

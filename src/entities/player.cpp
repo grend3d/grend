@@ -67,6 +67,7 @@ player::player(entityManager *manager, gameMain *game, glm::vec3 position)
 		//playerModel = loadScene(GR_PREFIX "assets/obj/TestGuy/rigged-lowpolyguy.glb");
 		SDL_Log("Loading player model...");
 		playerModel = loadSceneCompiled("assets/obj/buff-dude-testanim.glb");
+		//playerModel = loadSceneCompiled("/home/flux/blender/objects/lowpoly-cc0-guy/low-poly-cc0-guy-fixedimport.gltf");
 		playerModel->transform.rotation = glm::quat(glm::vec3(0, -M_PI/2, 0));
 
 		//playerModel->transform.scale = glm::vec3(0.16f);
