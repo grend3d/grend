@@ -57,7 +57,7 @@ class bulletPhysics : public physics {
 		typedef std::weak_ptr<bulletPhysics>   weakptr;
 
 		bulletPhysics();
-		~bulletPhysics();
+		virtual ~bulletPhysics();
 
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree

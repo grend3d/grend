@@ -24,6 +24,7 @@ class gameView;
 class gameMain {
 	public:
 		gameMain(std::string name="grendx");
+		virtual ~gameMain();
 
 		virtual int step(void);
 		virtual int run(void);

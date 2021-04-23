@@ -9,7 +9,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS         "-Wall")
+set(CMAKE_CXX_FLAGS         "-Wall -Wnon-virtual-dtor")
 set(CMAKE_CXX_FLAGS_DEBUG   "-DGREND_BUILD_DEBUG=1 -Og -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
@@ -24,7 +24,7 @@ message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 
 # GLSL version is also used to determine OpenGL API version
 #set(GLSL_VERSION 100) # OpenGL ES 2.0
-set(GLSL_VERSION 300) # OpenGL ES 3.0
+option(GLSL_VERSION "GL shading language version (determines target opengl version)" 300) # OpenGL ES 3.0
 #set(GLSL_VERSION 330)  # OpenGL core 3.30
 #set(GLSL_VERSION 430) # OpenGL core 4.30
 
@@ -37,7 +37,7 @@ set(GR_PREFIX)
 set(GREND_GL_PKG)
 
 if (PORTABLE_BUILD)
-	set(GR_PREFIX "./")
+	set(GR_PREFIX "./share/grend/")
 endif()
 
 if (ANDROID)
@@ -226,6 +226,7 @@ add_library(Grend
 	src/modalSDLInput.cpp
 	src/model.cpp
 	src/renderer.cpp
+	src/renderPostStage.cpp
 	src/rendererProbes.cpp
 	src/sdlContext.cpp
 	src/spatialAudioChannel.cpp

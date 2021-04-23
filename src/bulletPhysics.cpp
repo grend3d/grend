@@ -8,6 +8,9 @@
 using namespace grendx;
 
 // non-pure virtual destructors for rtti
+// TODO: move physics* objects to own source file
+physics::~physics() {};
+
 physicsObject::~physicsObject() {
 	std::cerr << "BBBBBBB : removing physics object!!!!!! " << std::endl;
 };

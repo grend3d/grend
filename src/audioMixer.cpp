@@ -5,6 +5,11 @@
 
 using namespace grendx;
 
+// non-pure virtual destructors for rtti
+audioChannel::~audioChannel() {};
+stereoAudioChannel::~stereoAudioChannel() {};
+spatialAudioChannel::~spatialAudioChannel() {};
+
 void audioChannel::restart(void) {
 	audioPosition = 0;
 	playState = state::Playing;

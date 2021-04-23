@@ -13,6 +13,8 @@ class gameView {
 		typedef std::shared_ptr<gameView> ptr;
 		typedef std::weak_ptr<gameView> weakptr;
 
+		virtual ~gameView();
+
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void logic(gameMain *game, float delta) = 0;
 		virtual void render(gameMain *game) = 0;

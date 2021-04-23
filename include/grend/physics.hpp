@@ -55,6 +55,7 @@ class physics {
 		typedef std::shared_ptr<physics> ptr;
 		typedef std::weak_ptr<physics>   weakptr;
 
+		virtual ~physics();
 		virtual size_t numObjects(void) = 0;
 
 		// add non-moveable geometry

@@ -7,6 +7,12 @@ using namespace grendx;
 
 //#define DUMP_ANIMATION_INFO
 
+// non-pure virtual destructors for rtti
+animation::~animation() {};
+animationTranslation::~animationTranslation() {};
+animationRotation::~animationRotation() {};
+animationScale::~animationScale() {};
+
 #ifdef DUMP_ANIMATION_INFO
 #define FERR(...) fprintf(stderr, __VA_ARGS__)
 #else

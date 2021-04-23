@@ -18,6 +18,9 @@
 
 using namespace grendx;
 
+// non-pure virtual destructors for rtti
+gameMain::~gameMain() {};
+
 gameMain::gameMain(std::string name)
 	: ctx(name.c_str())
 {

@@ -11,6 +11,8 @@ class rUninitialized {
 			// nop
 		}
 
+		virtual ~rUninitialized();
+
 		// not an abstract function since it may be good to be able
 		// to make a postprocessing stage with no underlying storage
 		virtual void setSize(unsigned fb_x, unsigned fb_y) {
@@ -37,6 +39,7 @@ class rOutput : public rUninitialized {
 			framebuffer = Framebuffer::ptr(new Framebuffer());
 			setSize(fb_x, fb_y);
 		}
+		virtual ~rOutput();
 
 		virtual void setSize(unsigned fb_x, unsigned fb_y) {
 			width = fb_x;
@@ -49,6 +52,7 @@ class rStage : public rUninitialized {
 		rStage(unsigned fb_x, unsigned fb_y) : rUninitialized(fb_x, fb_y) {
 			setSize(fb_x, fb_y);
 		}
+		virtual ~rStage();
 
 		virtual void setSize(unsigned fb_x, unsigned fb_y) {
 			framebuffer = genFramebuffer();
@@ -73,6 +77,7 @@ class renderPostStage : public Storage {
 		{
 			setShader(program);
 		}
+		virtual ~renderPostStage() {};
 
 		void draw(void) {
 			draw(nullptr, nullptr);

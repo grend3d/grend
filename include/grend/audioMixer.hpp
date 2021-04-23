@@ -41,6 +41,7 @@ class audioChannel {
 		typedef std::shared_ptr<audioChannel> ptr;
 		typedef std::weak_ptr<audioChannel> weakptr;
 		audioChannel(enum mode m) : loopMode(m) {};
+		virtual ~audioChannel();
 
 		virtual std::pair<int16_t, int16_t> getSample(camera::ptr cam) = 0;
 		virtual void restart(void);
@@ -59,6 +60,7 @@ class stereoAudioChannel : public audioChannel {
 
 		stereoAudioChannel(channelBuffers_ptr channels,
 		                   enum audioChannel::mode m = mode::OneShot);
+		virtual ~stereoAudioChannel();
 
 		virtual std::pair<int16_t, int16_t> getSample(camera::ptr cam);
 
@@ -72,6 +74,7 @@ class spatialAudioChannel : public audioChannel {
 
 		spatialAudioChannel(channelBuffers_ptr buffer,
 		                    enum mode m = mode::OneShot);
+		virtual ~spatialAudioChannel();
 
 		virtual std::pair<int16_t, int16_t> getSample(camera::ptr cam);
 

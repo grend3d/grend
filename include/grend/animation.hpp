@@ -25,6 +25,8 @@ class animation {
 		typedef std::shared_ptr<animation> ptr;
 		typedef std::weak_ptr<animation>   weakptr;
 
+		virtual ~animation();
+
 		virtual void applyTransform(struct TRS& thing, float delta, float end) = 0;
 		size_t findKeyframe(float delta);
 		// TODO: handle different interpolation methods
@@ -73,6 +75,7 @@ class animationTranslation : public animation {
 		typedef std::shared_ptr<animationTranslation> ptr;
 		typedef std::weak_ptr<animationTranslation>   weakptr;
 
+		virtual ~animationTranslation();
 		virtual void applyTransform(struct TRS& thing, float delta, float end);
 		std::vector<glm::vec3> translations;
 };
@@ -82,6 +85,7 @@ class animationRotation : public animation {
 		typedef std::shared_ptr<animationRotation> ptr;
 		typedef std::weak_ptr<animationRotation>   weakptr;
 
+		virtual ~animationRotation();
 		virtual void applyTransform(struct TRS& thing, float delta, float end);
 		std::vector<glm::quat> rotations;
 };
@@ -91,6 +95,7 @@ class animationScale : public animation {
 		typedef std::shared_ptr<animationScale> ptr;
 		typedef std::weak_ptr<animationScale>   weakptr;
 
+		virtual ~animationScale();
 		virtual void applyTransform(struct TRS& thing, float delta, float end);
 		std::vector<glm::vec3> scales;
 };
