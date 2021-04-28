@@ -302,11 +302,11 @@ void renderContext::setReflectionProbe(gameReflectionProbe::ptr probe,
 			}
 		}
 
-		program->set("refboxMin",
-		             probe->transform.position + probe->boundingBox.min);
-		program->set("refboxMax",
-		             probe->transform.position + probe->boundingBox.max);
-		program->set("refprobePosition", probe->transform.position);
+		TRS transform = probe->getTransformTRS();
+
+		program->set("refboxMin", transform.position + probe->boundingBox.min);
+		program->set("refboxMax", transform.position + probe->boundingBox.max);
+		program->set("refprobePosition", transform.position);
 	}
 }
 
@@ -328,11 +328,10 @@ void renderContext::setIrradianceProbe(gameIrradianceProbe::ptr probe,
 			DO_ERROR_CHECK();
 		}
 
-		program->set("radboxMin",
-		             probe->transform.position + probe->boundingBox.min);
-		program->set("radboxMax",
-		             probe->transform.position + probe->boundingBox.max);
-		program->set("radprobePosition", probe->transform.position);
+		TRS transform = probe->getTransformTRS();
+		program->set("radboxMin", transform.position + probe->boundingBox.min);
+		program->set("radboxMax", transform.position + probe->boundingBox.max);
+		program->set("radprobePosition", transform.position);
 	}
 }
 
@@ -519,7 +518,7 @@ void grendx::packLight(gameLightDirectional::ptr light,
 {
 	glm::vec3 rpos = applyTransform(trans);
 	glm::vec3 rotvec =
-		glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+		glm::mat3_cast(light->getTransformTRS().rotation) * glm::vec3(1, 0, 0);
 
 	memcpy(p->position, glm::value_ptr(rpos), sizeof(float[3]));
 	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
@@ -545,7 +544,7 @@ void grendx::packRefprobe(gameReflectionProbe::ptr probe,
 
 	// TODO: translation
 	//glm::vec3 rpos = applyTransform(trans);
-	glm::vec3 rpos = probe->transform.position;
+	glm::vec3 rpos = probe->getTransformTRS().position;
 
 	// TODO: configurable number of mipmap levels
 	for (unsigned k = 0; k < 5; k++) {

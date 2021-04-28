@@ -232,8 +232,10 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		refShader->bind();
 
 		for (auto& [_, center, __, probe] : tempque.probes) {
-			probeObj->transform.position = center;
-			probeObj->transform.scale    = glm::vec3(0.5);
+			probeObj->setTransform((TRS) {
+				.position = center,
+				.scale    = glm::vec3(0.5),
+			});
 
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
@@ -253,8 +255,10 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		irradShader->bind();
 
 		for (auto& [_, center, __, probe] : tempque.irradProbes) {
-			probeObj->transform.position = center;
-			probeObj->transform.scale    = glm::vec3(0.5);
+			probeObj->setTransform((TRS) {
+				.position = center,
+				.scale    = glm::vec3(0.5),
+			});
 
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
@@ -275,8 +279,11 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			glm::vec3 pos = center;
 
 			if (cam->sphereInFrustum(pos, 0.5)) {
-				probeObj->transform.position = center;
-				probeObj->transform.scale = glm::vec3(0.5);
+				probeObj->setTransform((TRS) {
+					.position = center,
+					.scale    = glm::vec3(0.5),
+				});
+
 				que.add(probeObj);
 				que.flush(game->rend->framebuffer, game->rend, unshadedFlags);
 			}
@@ -454,24 +461,27 @@ void gameEditor::logic(gameMain *game, float delta) {
 		{
 			auto ptr = orientation->getNode(str);
 
-			ptr->transform = selectedNode->transform;
-			//ptr->transform.scale = glm::vec3(1, 1, 1); // don't use selected scale
-			ptr->transform.scale = glm::vec3(glm::distance(ptr->transform.position, cam->position()) * 0.22);
+			TRS newtrans = selectedNode->getTransformTRS();
+			newtrans.scale = glm::vec3(glm::distance(newtrans.position, cam->position()) * 0.22);
+			ptr->setTransform(newtrans);
 		}
 
 		if (selectedNode->type == gameObject::objType::ReflectionProbe) {
 			auto bbox = UIObjects->getNode("Bounding-Box");
 			auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
 
-			glm::vec3 bmin = probe->transform.position + probe->boundingBox.min;
-			glm::vec3 bmax = probe->transform.position + probe->boundingBox.max;
+			TRS transform = probe->getTransformTRS();
+			glm::vec3 bmin = transform.position + probe->boundingBox.min;
+			glm::vec3 bmax = transform.position + probe->boundingBox.max;
 			glm::vec3 center = 0.5f*(bmax + bmin);
 			glm::vec3 extent = (bmax - bmin);
 
 			assert(bbox != nullptr);
 			bbox->visible = true;
-			bbox->transform.position = center;
-			bbox->transform.scale    = extent;
+			bbox->setTransform((TRS) {
+				.position = center,
+				.scale    = extent,
+			});
 
 		} else {
 			auto bbox = UIObjects->getNode("Bounding-Box");
@@ -488,7 +498,7 @@ void gameEditor::logic(gameMain *game, float delta) {
 
 		if (ptr) {
 			handleCursorUpdate(game);
-			ptr->transform.position = cursorBuf.position;
+			ptr->setTransform((TRS) { .position = cursorBuf.position, });
 		}
 	}
 

@@ -136,7 +136,7 @@ bulletPhysics::addStaticModels(void *data,
 	}
 
 	for (auto& [name, node] : obj->nodes) {
-		TRS adjTrans = addTRS(transform, node->transform);
+		TRS adjTrans = addTRS(transform, node->getTransformTRS());
 		addStaticModels(data, node, adjTrans);
 	}
 
@@ -406,7 +406,8 @@ void bulletPhysics::stepSimulation(float delta) {
 
 		if (ptr->mass != 0) {
 			if (auto ref = ptr->obj.lock()) {
-				ref->transform = ptr->getTransform();
+				//ref->transform = ptr->getTransform();
+				ref->setTransform(ptr->getTransform());
 			}
 		}
 	}

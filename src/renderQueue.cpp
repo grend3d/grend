@@ -14,14 +14,16 @@ void renderQueue::add(gameObject::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransform(animTime);
-	//glm::mat4 adjTrans = obj->getTransform();
+	glm::mat4 adjTrans =
+		// default transform is identity, so no need to waste
+		// cycles on the matrix multiply
+		obj->hasDefaultTransform()
+			? trans
+			: trans*obj->getTransformMatrix(animTime);
 
-	//std::cerr << "add(): push" << std::endl;
-	
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->transform.scale[i] < 0;
+		invcount += obj->getTransformTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	if (invcount&1) {
@@ -30,7 +32,7 @@ void renderQueue::add(gameObject::ptr obj,
 
 	if (obj->type == gameObject::objType::Mesh) {
 		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-		glm::vec3 center = applyTransform(adjTrans, boxCenter(mesh->boundingBox));
+		glm::vec3 center = applyTransform(adjTrans);
 		meshes.push_back({adjTrans, center, inverted, mesh});
 
 	} else if (obj->type == gameObject::objType::Light) {
@@ -106,11 +108,11 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransform(0);
+	glm::mat4 adjTrans = trans*obj->getTransformMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->transform.scale[i] < 0;
+		invcount += obj->getTransformTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
@@ -134,11 +136,11 @@ void renderQueue::addBillboards(gameObject::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransform(0);
+	glm::mat4 adjTrans = trans*obj->getTransformMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->transform.scale[i] < 0;
+		invcount += obj->getTransformTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
@@ -764,7 +766,7 @@ static void syncPlainUniforms(Program::ptr program,
 	for (size_t i = 0; i < pactive; i++) {
 		//gameLightPoint::ptr light = points[i];
 		auto& [trans, light] = points[i];
-		glm::vec3 pos = applyTransform(trans, light->transform.position);
+		glm::vec3 pos = applyTransform(trans, light->getTransformTRS().position);
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
@@ -797,12 +799,12 @@ static void syncPlainUniforms(Program::ptr program,
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
+		TRS transform = light->getTransformTRS();
 		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
 		// light points toward +X by default
-		glm::vec3 rotvec =
-			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+		glm::vec3 rotvec = glm::mat3_cast(transform.rotation) * glm::vec3(1, 0, 0);
 
-		program->set(locstr + ".position",      glm::vec4(light->transform.position, 1.0));
+		program->set(locstr + ".position",      glm::vec4(transform.position, 1.0));
 		DO_ERROR_CHECK();
 		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
 		DO_ERROR_CHECK();
@@ -831,14 +833,14 @@ static void syncPlainUniforms(Program::ptr program,
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
 		//       moving point lights... maybe look into how uniform buffer objects work
+		TRS transform = light->getTransformTRS();
 		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
 		// light points toward +X by default
-		glm::vec3 rotvec =
-			glm::mat3_cast(light->transform.rotation) * glm::vec3(1, 0, 0);
+		glm::vec3 rotvec = glm::mat3_cast(transform.rotation) * glm::vec3(1, 0, 0);
 
 		// position is ignored in the shader, but might as well set it anyway
 		// TODO: probably remove position member from directional lights
-		program->set(locstr + ".position",      glm::vec4(light->transform.position, 0.0));
+		program->set(locstr + ".position",      glm::vec4(transform.position, 0.0));
 		DO_ERROR_CHECK();
 		program->set(locstr + ".diffuse",       glm::vec4(light->diffuse));
 		DO_ERROR_CHECK();
@@ -1127,7 +1129,7 @@ gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 
 	// TODO: optimize this, O(N) is meh
 	for (auto& p : probes) {
-		float dist = glm::distance(pos, p.data->transform.position);
+		float dist = glm::distance(pos, p.data->getTransformTRS().position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
 			ret = p.data;
@@ -1143,7 +1145,7 @@ gameIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
 
 	// TODO: optimize this, O(N) is meh
 	for (auto& p : irradProbes) {
-		float dist = glm::distance(pos, p.data->transform.position);
+		float dist = glm::distance(pos, p.data->getTransformTRS().position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
 			ret = p.data;

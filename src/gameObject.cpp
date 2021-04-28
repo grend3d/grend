@@ -30,11 +30,33 @@ size_t grendx::allocateObjID(void) {
 	return ++counter;
 }
 
-glm::mat4 gameObject::getTransform(float delta) {
-	struct TRS temp = transform;
-	//animations.applyTransform(temp, delta);
-	applyChannelVecTransforms(animations, temp, delta);
-	return temp.getTransform();
+TRS gameObject::getTransformTRS(float delta) {
+	if (animations.size() > 0) {
+		TRS temp = transform;
+		applyChannelVecTransforms(animations, temp, delta);
+		return temp;
+
+	} else {
+		return transform;
+	}
+}
+
+glm::mat4 gameObject::getTransformMatrix(float delta) {
+	if (updated || animations.size() > 0) {
+		TRS temp = getTransformTRS(delta);
+		cachedTransformMatrix = temp.getTransform();
+		updated = false;
+		// note that queueCache.updated isn't changed here
+	}
+
+	return cachedTransformMatrix;
+}
+
+void gameObject::setTransform(const TRS& t) {
+	updated = true;
+	queueCache.updated = true;
+	isDefault = false;
+	transform = t;
 }
 
 gameObject::ptr gameObject::getNode(std::string name) {
@@ -61,7 +83,7 @@ gameObject::ptr grendx::unlink(gameObject::ptr node) {
 gameObject::ptr grendx::clone(gameObject::ptr node) {
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
-	ret->transform = node->transform;
+	ret->setTransform(node->getTransformTRS());
 
 	for (auto& [name, ptr] : node->nodes) {
 		setNode(name, ret, ptr);
@@ -134,7 +156,7 @@ static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
 		glm::mat4 mat(1);
 
 		if (ptr != root && parent) {
-			mat = lookup(cache, tim, root, parent.get()) * ptr->getTransform(tim);
+			mat = lookup(cache, tim, root, parent.get()) * ptr->getTransformMatrix(tim);
 		}
 
 		cache[ptr] = mat;

@@ -355,8 +355,8 @@ configure_file(grend.pc.in grend.pc @ONLY)
 #      so just bake the base engine shaders for now
 file(GLOB SHADER_SRC
      LIST_DIRECTORIES false
-	 ${CMAKE_SOURCE_DIR}/shaders/src/*.vert
-	 ${CMAKE_SOURCE_DIR}/shaders/src/*.frag)
+	 ${PROJECT_SOURCE_DIR}/shaders/src/*.vert
+	 ${PROJECT_SOURCE_DIR}/shaders/src/*.frag)
 
 set(SHADER_OUT)
 file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shader_out/")

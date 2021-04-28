@@ -82,7 +82,10 @@ class gameObject {
 			return strm.str();
 		}
 
-		virtual glm::mat4 getTransform(float delta);
+		TRS getTransformTRS(float delta = 0.f);
+		glm::mat4 getTransformMatrix(float delta = 0.f);
+		void setTransform(const TRS& t);
+		bool hasDefaultTransform(void) const { return isDefault; }
 
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
@@ -95,15 +98,31 @@ class gameObject {
 		// TODO: bounding box/radius
 
 		// transform relative to parent
-		TRS transform;
 		std::vector<animationChannel::ptr> animations;
 		bool visible = true;
 
 		gameObject::weakptr parent;
 		std::map<std::string, gameObject::ptr> nodes;
+
 		// for unlinking when the object is removed
 		std::shared_ptr<physicsObject> physObj;
 		GLenum face_order  = GL_CCW;
+
+		// cache for renderQueue state, queueCache only changed externally
+		// from renderQueue::add(), queueUpdated changed both from 
+		// setTransfrom() and renderQueue::add()
+		// TODO: documented, link up documentation
+		struct {
+			bool      updated = true;
+			glm::mat4 transform;
+			glm::vec3 center;
+		} queueCache;
+
+	private:
+		TRS transform;
+		bool updated = true;
+		bool isDefault = true;
+		glm::mat4 cachedTransformMatrix;
 };
 
 static inline

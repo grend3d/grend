@@ -32,8 +32,9 @@ rigidBodySphere::rigidBodySphere(entityManager *manager,
 	: rigidBody(manager, ent, properties)
 {
 	manager->registerComponent(ent, serializedType, this);
-	phys = manager->engine->phys->addSphere(ent, ent->node->transform.position,
-	                                        1.f, properties["radius"]);
+
+	glm::vec3 position = ent->node->getTransformTRS().position;
+	phys = manager->engine->phys->addSphere(ent, position, 1.f, properties["radius"]);
 	registerCollisionQueue(manager->collisions);
 }
 
@@ -64,7 +65,7 @@ void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 		return;
 	}
 
-	ent->node->transform = body->phys->getTransform();
+	ent->node->setTransform(body->phys->getTransform());
 }
 
 void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
@@ -76,7 +77,9 @@ void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
 		return;
 	}
 
-	ent->node->transform.position = body->phys->getTransform().position;
+	TRS transform = ent->node->getTransformTRS();
+	transform.position = body->phys->getTransform().position;
+	ent->node->setTransform(transform);
 }
 
 void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
@@ -92,8 +95,10 @@ void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	glm::vec3 vel = body->phys->getVelocity();
 	glm::quat rot = glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
 
-	ent->node->transform.position = physTransform.position;
-	ent->node->transform.rotation = rot;
+	TRS transform = ent->node->getTransformTRS();
+	transform.position = physTransform.position;
+	transform.rotation = rot;
+	ent->node->setTransform(transform);
 }
 
 void syncRigidBodySystem::update(entityManager *manager, float delta) {

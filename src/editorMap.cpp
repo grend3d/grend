@@ -176,9 +176,11 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 	//std::cerr << jay.dump(3) << std::endl;
 
-	ret->transform.position = glm::vec3(pos[0], pos[1], pos[2]);
-	ret->transform.scale    = glm::vec3(scale[0], scale[1], scale[2]);
-	ret->transform.rotation = glm::quat(rot[0], rot[1], rot[2], rot[3]);
+	TRS newtrans = ret->getTransformTRS();
+	newtrans.position = glm::vec3(pos[0], pos[1], pos[2]);
+	newtrans.scale    = glm::vec3(scale[0], scale[1], scale[2]);
+	newtrans.rotation = glm::quat(rot[0], rot[1], rot[2], rot[3]);
+	ret->setTransform(newtrans);
 
 	if (recurse && !jay["nodes"].is_null()) {
 		for (auto& [name, ptr] : jay["nodes"].items()) {
@@ -265,18 +267,20 @@ static inline std::string format_mat(T& mtx) {
 
 static json objectJson(gameObject::ptr obj) {
 	bool recurse = true;
+	TRS transform = obj->getTransformTRS();
+
 	json ret = {
 		{"type",     obj->typeString()},
-		{"position", {obj->transform.position.x,
-		              obj->transform.position.y,
-		              obj->transform.position.z}},
-		{"scale",    {obj->transform.scale.x,
-		              obj->transform.scale.y,
-		              obj->transform.scale.z}},
-		{"rotation", {obj->transform.rotation.w,
-		              obj->transform.rotation.x,
-		              obj->transform.rotation.y,
-		              obj->transform.rotation.z}},
+		{"position", {transform.position.x,
+		              transform.position.y,
+		              transform.position.z}},
+		{"scale",    {transform.scale.x,
+		              transform.scale.y,
+		              transform.scale.z}},
+		{"rotation", {transform.rotation.w,
+		              transform.rotation.x,
+		              transform.rotation.y,
+		              transform.rotation.z}},
 	};
 
 	// TODO: would make sense to avoid dynamic_pointer_cast here,

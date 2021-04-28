@@ -937,9 +937,11 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	}
 	*/
 
-	ptr->transform.position = translation;
-	ptr->transform.rotation = rotation;
-	ptr->transform.scale = scale;
+	TRS newtrans;
+	newtrans.position = translation;
+	newtrans.rotation = rotation;
+	newtrans.scale = scale;
+	ptr->setTransform(newtrans);
 }
 
 static void load_gltf_node_light(gltfModel& gltf,

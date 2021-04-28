@@ -23,10 +23,10 @@ void gameEditor::handleSelectObject(gameMain *game) {
 		clicked->onLeftClick();
 		clickedX = (x*1.f / win_x);
 		clickedY = ((win_y - y)*1.f / win_y);
-		clickDepth = glm::distance(clicked->transform.position, cam->position());
+		clickDepth = glm::distance(clicked->getTransformTRS().position, cam->position());
 
 		if (isUIObject(clicked)) {
-			transformBuf = selectedNode->transform;
+			transformBuf = selectedNode->getTransformTRS();
 			std::cerr << "It's a UI model" << std::endl;
 
 		} else {
@@ -59,7 +59,7 @@ static void handleAddNode(gameEditor *editor,
 {
 	assert(editor->selectedNode != nullptr);
 
-	obj->transform = editor->cursorBuf;
+	obj->setTransform(editor->cursorBuf);
 	setNode(name, editor->selectedNode, obj);
 	editor->selectedNode = obj;
 };
@@ -286,7 +286,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::MoveSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->transform;
+				transformBuf = selectedNode->getTransformTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::MoveX;
@@ -303,7 +303,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::RotateSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->transform;
+				transformBuf = selectedNode->getTransformTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::RotateX;
@@ -320,7 +320,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::ScaleSomething,
 		[&, game] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->transform;
+				transformBuf = selectedNode->getTransformTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::ScaleX;
@@ -472,6 +472,8 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 	glm::mat3 rot;
 	glm::vec3 dir;
 
+	TRS selectedTransform = selectedNode->getTransformTRS();
+
 	switch (mode) {
 		case mode::MoveX:
 			rot = glm::mat3_cast(transformBuf.rotation);
@@ -479,11 +481,12 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
-			selectedNode->transform.position =
+			selectedTransform.position = 
 				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::MoveY:
@@ -492,11 +495,12 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
-			selectedNode->transform.position =
+			selectedTransform.position =
 				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::MoveZ:
@@ -505,51 +509,59 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
-			selectedNode->transform.position =
+			selectedTransform.position =
 				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		// TODO: need to split rotation spinner in seperate quadrant meshes
 		//       so that this can pick the right movement direction
 		//       for the spinner
 		case mode::RotateX:
-			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
+			selectedTransform.rotation =
+				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::RotateY:
-			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
+			selectedTransform.rotation =
+				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::RotateZ:
-			selectedNode->transform.rotation
-				= glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
+			selectedTransform.rotation =
+				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		// scale, unlike the others, has a mouse handler for the select mode,
 		// similar to blender
 		case mode::ScaleSomething:
-			selectedNode->transform.scale =
+			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount);
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::ScaleX:
-			selectedNode->transform.scale =
+			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount, 0, 0);
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::ScaleY:
-			selectedNode->transform.scale =
+			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, TAUF*amount, 0);
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::ScaleZ:
-			selectedNode->transform.scale =
+			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, 0, TAUF*amount);
+			selectedNode->setTransform(selectedTransform);
 			break;
 
 		default:
@@ -563,7 +575,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
 		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));
 		float reversed_z = sign(glm::dot(glm::vec3(0, 0, 1), -cam->right()));
-		float depth = glm::distance(probe->transform.position, cam->position());
+		float depth = glm::distance(probe->getTransformTRS().position, cam->position());
 
 		switch (mode) {
 			case mode::MoveAABBPosX:

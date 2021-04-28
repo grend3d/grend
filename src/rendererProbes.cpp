@@ -310,7 +310,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
                                  renderContext::ptr rctx)
 {
 	// XXX
-	probe->source->transform = probe->transform;
+	probe->source->setTransform(probe->getTransformTRS());
 	probe->source->is_static = probe->is_static;
 	probe->source->have_map  = probe->have_map;
 	probe->source->changed   = probe->changed;

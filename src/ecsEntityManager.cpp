@@ -34,9 +34,11 @@ entity::entity(entityManager *manager,
 	                properties["node"]["scale"][1],
 	                properties["node"]["scale"][2]);
 
-	node->transform.position = pos;
-	node->transform.rotation = rot;
-	node->transform.scale    = scale;
+	node->setTransform((TRS) {
+		.position = pos,
+		.rotation = rot,
+		.scale    = scale,
+	});
 }
 
 // TODO: register entities as components of other entities...
@@ -194,7 +196,7 @@ entity *findNearest(entityManager *manager,
 	auto ents = searchEntities(manager, tags);
 	for (auto& ent : ents) {
 		gameObject::ptr node = ent->getNode();
-		float dist = glm::distance(position, node->transform.position);
+		float dist = glm::distance(position, node->getTransformTRS().position);
 
 		if (dist < curmin) {
 			curmin = dist;
@@ -271,6 +273,8 @@ nlohmann::json entity::serialize(entityManager *manager) {
 		}
 	}
 
+	TRS transform = node->getTransformTRS();
+
 	return {
 		{"type",        "entity"},
 		{"entity-type", this->typeString()},
@@ -278,22 +282,22 @@ nlohmann::json entity::serialize(entityManager *manager) {
 		{"node", {
 			{"position",
 				{
-					node->transform.position.x,
-					node->transform.position.y,
-					node->transform.position.z,
+					transform.position.x,
+					transform.position.y,
+					transform.position.z,
 				}},
 			{"rotation",
 				{
-					node->transform.rotation.w,
-					node->transform.rotation.x,
-					node->transform.rotation.y,
-					node->transform.rotation.z,
+					transform.rotation.w,
+					transform.rotation.x,
+					transform.rotation.y,
+					transform.rotation.z,
 				}},
 			{"scale",
 				{
-					node->transform.scale.x,
-					node->transform.scale.y,
-					node->transform.scale.z,
+					transform.scale.x,
+					transform.scale.y,
+					transform.scale.z,
 				}},
 		}},
 

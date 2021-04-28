@@ -108,12 +108,16 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 	ImGui::Text("%s", selectedNode->typeString().c_str());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
-	ImGui::InputFloat3("Position",
-		glm::value_ptr(selectedNode->transform.position));
-	ImGui::InputFloat3("Scale",
-		glm::value_ptr(selectedNode->transform.scale));
-	ImGui::InputFloat4("Rotation",
-		glm::value_ptr(selectedNode->transform.rotation));
+
+	TRS selectedTransform = selectedNode->getTransformTRS();
+
+	if (ImGui::InputFloat3("Position", glm::value_ptr(selectedTransform.position))
+	    || ImGui::InputFloat3("Scale", glm::value_ptr(selectedTransform.scale))
+	    || ImGui::InputFloat4("Rotation", glm::value_ptr(selectedTransform.rotation)))
+	{
+		selectedNode->setTransform(selectedTransform);
+	}
+
 	ImGui::Checkbox("Visible", &selectedNode->visible);
 	ImGui::Unindent(16.f);
 
