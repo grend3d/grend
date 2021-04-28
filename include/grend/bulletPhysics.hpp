@@ -61,28 +61,32 @@ class bulletPhysics : public physics {
 
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
-		virtual physicsObject::ptr
-			addStaticModels(void *data, gameObject::ptr obj, const TRS& transform);
+		virtual void
+		addStaticModels(void *data,
+				gameObject::ptr obj,
+				const TRS& transform,
+				std::vector<physicsObject::ptr>& collector);
 
 		// dynamic geometry, collisions with AABB tree
 		virtual physicsObject::ptr
-			addSphere(void *data, glm::vec3 pos,
-		              float mass, float r);
+		addSphere(void *data, glm::vec3 pos,
+		          float mass, float r);
 		virtual physicsObject::ptr
-			addBox(void *data,
-			       glm::vec3 position,
-			       float mass,
-				   AABBExtent& box);
+		addBox(void *data,
+		       glm::vec3 position,
+		       float mass,
+			   AABBExtent& box);
 		virtual physicsObject::ptr
-			addStaticMesh(void *data,
-			              const TRS& transform,
-			              gameModel::ptr model,
-			              gameMesh::ptr mesh);
+		addStaticMesh(void *data,
+		              const TRS& transform,
+		              gameModel::ptr model,
+		              gameMesh::ptr mesh);
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
 		virtual std::map<gameMesh::ptr, physicsObject::ptr>
-			addModelMeshBoxes(gameModel::ptr mod);
+		addModelMeshBoxes(gameModel::ptr mod);
+
 		virtual void remove(physicsObject::ptr obj);
 		virtual void remove(bulletObject *ptr);
 		virtual void clear(void);

@@ -76,7 +76,27 @@ int gameMain::step(void) {
 
 		profile::startGroup("Syncronous jobs");
 		if (jobs != nullptr) {
-			jobs->runDeferred();
+			// spread long-running syncronous job batches across multiple frames
+			// TODO: more fine-grained than SDL_GetTicks()
+			//       could use std::chrono high res clock
+			uint32_t start = SDL_GetTicks();
+			uint32_t ticks = start;
+			// TODO: configurable max time
+			uint32_t maxTime = 2 /*ms*/;
+
+			bool running = true;
+
+			while (running && ticks - start < maxTime) {
+				running = jobs->runSingleDeferred();
+				ticks = SDL_GetTicks();
+			}
+
+			if (ticks - start >= maxTime) {
+				SDL_Log("Exceeded time limit for deferred job!");
+			}
+
+			// left here for debugging, just in case
+			//jobs->runDeferred();
 		}
 		profile::endGroup();
 

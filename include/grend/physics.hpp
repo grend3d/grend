@@ -59,29 +59,34 @@ class physics {
 		virtual size_t numObjects(void) = 0;
 
 		// add non-moveable geometry
-		virtual physicsObject::ptr
-		    addStaticModels(void *data, gameObject::ptr obj,
-			                const TRS& transform) = 0;
+		virtual void
+		addStaticModels(void *data,
+		                gameObject::ptr obj,
+		                const TRS& transform,
+		                std::vector<physicsObject::ptr>& collector) = 0;
 
 		// add dynamic rigid bodies
 		virtual physicsObject::ptr
-			addSphere(void *data, glm::vec3 pos,
-		              float mass, float r) = 0;
+		addSphere(void *data, glm::vec3 pos,
+		          float mass, float r) = 0;
+
 		virtual physicsObject::ptr
-			addBox(void *data,
-			       glm::vec3 position,
-			       float mass,
-				   AABBExtent& box) = 0;
+		addBox(void *data,
+		       glm::vec3 position,
+		       float mass,
+		       AABBExtent& box) = 0;
+
 		virtual physicsObject::ptr
-			addStaticMesh(void *data,
-			              const TRS& transform,
-			              std::shared_ptr<gameModel> model,
-			              std::shared_ptr<gameMesh>  mesh) = 0;
+		addStaticMesh(void *data,
+		              const TRS& transform,
+		              std::shared_ptr<gameModel> model,
+		              std::shared_ptr<gameMesh>  mesh) = 0;
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
 		virtual std::map<std::shared_ptr<gameMesh>, physicsObject::ptr>
-			addModelMeshBoxes(std::shared_ptr<gameModel> mod) = 0;
+		addModelMeshBoxes(std::shared_ptr<gameModel> mod) = 0;
+
 		virtual void remove(physicsObject::ptr obj) = 0;
 		virtual void clear(void) = 0;
 

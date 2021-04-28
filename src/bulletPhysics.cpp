@@ -111,12 +111,11 @@ glm::vec3 bulletObject::getAcceleration(void) {
 	return glm::vec3(0);
 }
 
-// each return physics object ID
-// non-moveable geometry, collisions with octree
-physicsObject::ptr
+void
 bulletPhysics::addStaticModels(void *data,
                                gameObject::ptr obj,
-                               const TRS& transform)
+                               const TRS& transform,
+                               std::vector<physicsObject::ptr>& collector)
 {
 	// XXX: for now, don't allocate an object for static meshes,
 	//      although it may be a useful thing in the future
@@ -127,20 +126,16 @@ bulletPhysics::addStaticModels(void *data,
 			gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
 			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
 
-			if (mesh && model && !mesh->physObj) {
-				// XXX: physObj here to prevent losing the reference to
-				//      the returned physicsObject
-				mesh->physObj = addStaticMesh(data, transform, model, mesh);
+			if (mesh && model) {
+				collector.push_back(addStaticMesh(data, transform, model, mesh));
 			}
 		}
 	}
 
 	for (auto& [name, node] : obj->nodes) {
 		TRS adjTrans = addTRS(transform, node->getTransformTRS());
-		addStaticModels(data, node, adjTrans);
+		addStaticModels(data, node, adjTrans, collector);
 	}
-
-	return ret;
 }
 
 // dynamic geometry, collisions with AABB tree

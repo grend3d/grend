@@ -65,6 +65,21 @@ void jobQueue::runDeferred(void) {
 	deferredJobs.clear();
 }
 
+bool jobQueue::runSingleDeferred(void) {
+	std::lock_guard<std::mutex> g(mtx);
+	bool ran = false;
+
+	if (!deferredJobs.empty()) {
+		auto& job = deferredJobs.front();
+		job();
+
+		deferredJobs.pop_front();
+		ran = true;
+	}
+
+	return ran;
+}
+
 void jobQueue::worker(void) {
 	// TODO: loop condition
 	while (running) {

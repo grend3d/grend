@@ -105,7 +105,7 @@ class gameObject {
 		std::map<std::string, gameObject::ptr> nodes;
 
 		// for unlinking when the object is removed
-		std::shared_ptr<physicsObject> physObj;
+		//std::shared_ptr<physicsObject> physObj;
 		GLenum face_order  = GL_CCW;
 
 		// cache for renderQueue state, queueCache only changed externally

@@ -25,6 +25,7 @@ class jobQueue {
 
 		// run the queued deferred jobs (should be called from the main thread)
 		void runDeferred(void);
+		bool runSingleDeferred(void);
 
 	private:
 		// worker main loop

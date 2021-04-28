@@ -6,10 +6,6 @@ using namespace grendx;
 
 gameObject::~gameObject() {
 	std::cerr << "Freeing a " << idString() << std::endl;
-
-	if (physObj != nullptr) {
-		physObj->removeSelf();
-	}
 }
 
 // XXX: "key functions", needed to do dynamic_cast across .so boundries
