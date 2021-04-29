@@ -16,9 +16,17 @@ if (NOT BULLET_PHYSICS_SOURCE_DIR AND EXISTS ${PROJECT_SOURCE_DIR}/bullet)
 	add_subdirectory(${BULLET_PHYSICS_SOURCE_DIR})
 endif()
 
-set(CMAKE_CXX_FLAGS         "-Wall -Wnon-virtual-dtor")
-set(CMAKE_CXX_FLAGS_DEBUG   "-DGREND_BUILD_DEBUG=1 -Og -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1")
+set(CMAKE_C_FLAGS ${CMAKE_CXX_FLAGS})
+set(CMAKE_C_FLAGS "-Wall -Wl,--export-dynamic -Wl,--export-dynamic")
+if (NOT EMSCRIPTEN)
+	set(CMAKE_C_FLAGS_DEBUG   "-DGREND_BUILD_DEBUG=1 -Og -g")
+	set(CMAKE_C_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1 -O2")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wnon-virtual-dtor")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 #option(BUILD_SHARED_LIBS "build the shared stuff" ON)
