@@ -307,6 +307,8 @@ class renderQueue {
 		void updateReflectionProbe(renderContext::ptr rctx);
 		void sort(void);
 		void cull(unsigned width, unsigned height, float lightext);
+		void batch(void);
+
 		unsigned flush(renderFramebuffer::ptr fb,
 		               renderContext::ptr rctx,
 		               renderFlags& flags);

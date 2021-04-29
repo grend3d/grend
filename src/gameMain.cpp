@@ -203,6 +203,10 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		que.sort();
 		profile::endGroup();
 
+		profile::startGroup("Batch");
+		que.batch();
+		profile::endGroup();
+
 		profile::startGroup("Build light tilemap");
 		buildTilemap(que, game->rend);
 		profile::endGroup();

@@ -345,6 +345,54 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	instancedMeshes = tempInstanced;
 }
 
+void renderQueue::batch(void) {
+	std::map<gameMesh*, unsigned> meshCount;
+	bool canBatch = false;
+	// TODO: configuration option
+	unsigned minbatch = 16;
+
+	for (auto& [_, __, ___, mesh] : meshes) {
+		canBatch |= ++meshCount[mesh.get()] >= minbatch;
+	}
+
+	if (!canBatch) {
+		// no meshes meet minimum batch requirement, would be slower
+		// (in principle) to batch anyway
+		return;
+	}
+
+	std::map<gameMesh::ptr, gameParticles::ptr> batches;
+	std::vector<queueEnt<gameMesh::ptr>> tempMeshes;
+
+	for (auto it = meshes.begin(); it != meshes.end(); it++) {
+		auto& [trans, __, ___, mesh] = *it;
+
+		if (meshCount[mesh.get()] < minbatch) {
+			tempMeshes.push_back(*it);
+			continue;
+		}
+
+		if (batches.find(mesh) == batches.end()) {
+			batches[mesh] = std::make_shared<gameParticles>();
+		}
+
+		auto& batch = batches[mesh];
+
+		if (batch->activeInstances < batch->maxInstances) {
+			// TODO: if more than 256 meshes, add new instance buffer
+			batch->positions[batch->activeInstances] = trans;
+			batch->activeInstances++;
+		}
+	}
+
+	for (auto& [mesh, particles] : batches) {
+		particles->syncBuffer();
+		instancedMeshes.push_back({ glm::mat4(1), false, particles, mesh });
+	}
+
+	meshes = tempMeshes;
+}
+
 static void drawMesh(renderFlags& flags,
                      renderFramebuffer::ptr fb,
                      Program::ptr program,
