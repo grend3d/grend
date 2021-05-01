@@ -38,10 +38,11 @@ message(STATUS "ASSETS2: ${APK_DIR}")
 message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 
 # GLSL version is also used to determine OpenGL API version
-#set(GLSL_VERSION 100) # OpenGL ES 2.0
-option(GLSL_VERSION "GL shading language version (determines target opengl version)" 300) # OpenGL ES 3.0
-#set(GLSL_VERSION 330)  # OpenGL core 3.30
-#set(GLSL_VERSION 430) # OpenGL core 4.30
+# 100 -> OpenGL ES 2.0
+# 300 -> OpenGL ES 3.0
+# 330 -> OpenGL Core 3.30
+# 430 -> OpenGL Core 4.30
+set(GLSL_VERSION 300 CACHE STRING "GL shading language version (determines target opengl version)")
 
 include(GNUInstallDirs)
 add_subdirectory(libs/nanovg)
