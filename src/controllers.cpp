@@ -159,6 +159,81 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angl
 	};
 }
 
+bindFunc
+grendx::controller::camAngled2DRotatable(camera::ptr cam,
+                                         gameMain *game,
+                                         float angle,
+                                         float minY,
+                                         float maxY)
+{
+	struct moveState {
+		glm::ivec2 lastClick;
+		glm::vec2 distMoved;
+
+		bool clicked = false;
+		float angle;
+	};
+
+	// small XXX: need to bind external state somehow, using shared pointer for now
+	std::shared_ptr<moveState> state = std::make_shared<moveState>();
+	state->angle = angle;
+
+	return [=] (SDL_Event& ev, unsigned flags) {
+		if (ev.button.button == SDL_BUTTON_MIDDLE) {
+			if (!state->clicked && ev.type == SDL_MOUSEBUTTONDOWN) {
+				SDL_GetMouseState(&state->lastClick[0], &state->lastClick[1]);
+				//distMoved = {0, 0};
+				state->clicked = true;
+
+			} else if (state->clicked && ev.type == SDL_MOUSEBUTTONUP) {
+				state->clicked = false;
+
+			} else if (state->clicked && ev.type == SDL_MOUSEMOTION) {
+				int win_x, win_y;
+				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+				state->distMoved += glm::vec2 {
+					ev.motion.xrel / float(win_x),
+					ev.motion.yrel / float(win_y)
+				};
+
+				cam->setDirection(glm::vec3 {
+					sin(4.f*state->distMoved.x),
+					sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
+					-cos(4.f*state->distMoved.x)
+				});
+			}
+		}
+
+		/*
+		int x, y;
+		int win_x, win_y;
+		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
+		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+
+		x = (x > 0)? x : win_x/2;
+		y = (x > 0)? y : win_y/2;
+
+		float center_x = (float)win_x / 2;
+		//float center_y = (float)win_y / 2;
+
+		float rel_x = ((float)x - center_x) / center_x;
+		//float rel_y = ((float)y - center_y) / center_y;
+
+		// TODO: another function that allows you to pan up and down some amount,
+		//       also one that doesn't rotate (fixed orientation)
+		cam->setDirection(glm::vec3(
+			sin(rel_x*2*M_PI),
+			//sin(-rel_y*M_PI/2.f),
+			sin(angle),
+			-cos(rel_x*2*M_PI)
+		));
+		*/
+
+		return MODAL_NO_CHANGE;
+	};
+}
+
 bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		// TODO: camFocus()

@@ -16,6 +16,12 @@ bindFunc camMovement2D(camera::ptr cam, float accel);
 bindFunc camFPS(camera::ptr cam, gameMain *game);
 bindFunc camAngled2D(camera::ptr cam, gameMain *game, float angle);
 bindFunc camAngled2DFixed(camera::ptr cam, gameMain *game, float angle);
+bindFunc camAngled2DRotatable(camera::ptr cam,
+		gameMain *game,
+		float angle,
+		// limit degrees of rotation for up/down movement, default is unrestricted
+		float minY = -M_PI,
+		float maxY =  M_PI);
 bindFunc camFocus(camera::ptr cam, gameObject::ptr focus);
 bindFunc camScrollZoom(camera::ptr cam, float *zoom, float scale=1.f);
 
