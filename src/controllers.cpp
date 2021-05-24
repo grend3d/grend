@@ -3,6 +3,7 @@
 using namespace grendx;
 
 bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
+	// TODO: same as movement2D below, need to keep track of velocities per-event
 	return [=] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_KEYDOWN) {
 			switch (ev.key.keysym.sym) {
@@ -38,7 +39,7 @@ bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 
 bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
 	auto curdir = std::make_shared<glm::vec3>(0);
-	auto pressed = std::make_shared<std::set<int>>();
+	auto pressed = std::make_shared<std::map<int, glm::vec3>>();
 
 	return [=] (SDL_Event& ev, unsigned flags) {
 		glm::vec3 dir, right, up;
@@ -48,32 +49,28 @@ bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
 		up    = glm::vec3(0, 1, 0);
 
 		if (ev.type == SDL_KEYDOWN && !pressed->count(ev.key.keysym.sym)) {
+			glm::vec3 evdir(0);
+
 			switch (ev.key.keysym.sym) {
-				case SDLK_w:     *curdir +=  dir; break;
-				case SDLK_s:     *curdir += -dir; break;
-				case SDLK_a:     *curdir +=  right; break;
-				case SDLK_d:     *curdir += -right; break;
-				case SDLK_q:     *curdir +=  up; break;
-				case SDLK_e:     *curdir += -up; break;
-				case SDLK_SPACE: *curdir +=  up; break;
+				case SDLK_w:     evdir =  dir; break;
+				case SDLK_s:     evdir = -dir; break;
+				case SDLK_a:     evdir =  right; break;
+				case SDLK_d:     evdir = -right; break;
+				case SDLK_q:     evdir =  up; break;
+				case SDLK_e:     evdir = -up; break;
+				case SDLK_SPACE: evdir =  up; break;
 				default: break;
 			};
 
-			pressed->insert(ev.key.keysym.sym);
+			pressed->insert({ev.key.keysym.sym, evdir});
+			*curdir += evdir;
 
 		} else if (ev.type == SDL_KEYUP && pressed->count(ev.key.keysym.sym)) {
-			switch (ev.key.keysym.sym) {
-				case SDLK_w:     *curdir -=  dir; break;
-				case SDLK_s:     *curdir -= -dir; break;
-				case SDLK_a:     *curdir -=  right; break;
-				case SDLK_d:     *curdir -= -right; break;
-				case SDLK_q:     *curdir -=  up; break;
-				case SDLK_e:     *curdir -= -up; break;
-				case SDLK_SPACE: *curdir -=  up; break;
-				default: break;
-			};
+			auto it = pressed->find(ev.key.keysym.sym);
+			auto& [_, evdir] = *it;
 
 			pressed->erase(ev.key.keysym.sym);
+			*curdir -= evdir;
 		}
 
 		cam->setVelocity(*curdir);
