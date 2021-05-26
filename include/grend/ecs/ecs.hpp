@@ -48,6 +48,9 @@ class entityManager {
 
 		void add(entity *ent);
 		void remove(entity *ent);
+		void activate(entity *ent);
+		void deactivate(entity *ent);
+
 		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
 		bool hasComponents(entity *ent, std::vector<std::string> tags);
 
@@ -130,6 +133,10 @@ class entity : public component {
 		virtual gameObject::ptr getNode(void) { return node; };
 
 		gameObject::ptr node = std::make_shared<gameObject>();
+		// TODO: should have a seperate entity list for deactivated
+		//       entities, where being in that list is what decides whether
+		//       an entity is deactivated or not
+		bool active = true;
 };
 
 class entitySystem {

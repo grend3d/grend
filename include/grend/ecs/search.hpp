@@ -43,7 +43,11 @@ std::set<entity*> searchEntities(entityManager *manager,
 		auto& comps = manager->getComponents(*iter.first);
 
 		for (auto& comp : comps) {
-			ret.insert(manager->getEntity(comp));
+			entity *ent = manager->getEntity(comp);
+
+			if (ent->active) {
+				ret.insert(ent);
+			}
 		}
 
 	} else {
@@ -57,7 +61,11 @@ std::set<entity*> searchEntities(entityManager *manager,
 			candidates.push_back({});
 
 			for (auto& comp : comps) {
-				candidates.back().insert(manager->getEntity(comp));
+				entity *ent = manager->getEntity(comp);
+
+				if (ent->active) {
+					candidates.back().insert(ent);
+				}
 			}
 		}
 

@@ -53,12 +53,16 @@ entity::entity(entityManager *manager,
 void entityManager::update(float delta) {
 	for (auto& [name, system] : systems) {
 		if (system) {
+			// TODO: should also consider having an 'active' flag in systems
+			//       so they can be toggled on and off as needed
 			system->update(this, delta);
 		}
 	}
 
 	for (auto& ent : entities) {
-		ent->update(this, delta);
+		if (ent->active) {
+			ent->update(this, delta);
+		}
 	}
 
 	for (auto& ent : added) {
@@ -95,6 +99,14 @@ void entityManager::add(entity *ent) {
 
 void entityManager::remove(entity *ent) {
 	condemned.insert(ent);
+}
+
+void entityManager::activate(entity *ent) {
+	ent->active = ent->node->visible = true;
+}
+
+void entityManager::deactivate(entity *ent) {
+	ent->active = ent->node->visible = false;
 }
 
 entityManager::~entityManager() {
@@ -198,7 +210,7 @@ entity *findNearest(entityManager *manager,
 		gameObject::ptr node = ent->getNode();
 		float dist = glm::distance(position, node->getTransformTRS().position);
 
-		if (dist < curmin) {
+		if (ent->active && dist < curmin) {
 			curmin = dist;
 			ret = ent;
 		}
@@ -212,7 +224,7 @@ entity *findFirst(entityManager *manager,
 {
 	// TODO: search by component names
 	for (auto& ent : manager->entities) {
-		if (manager->hasComponents(ent, tags)) {
+		if (ent->active && manager->hasComponents(ent, tags)) {
 			return ent;
 		}
 	}
