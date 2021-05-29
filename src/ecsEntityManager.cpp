@@ -101,6 +101,10 @@ void entityManager::remove(entity *ent) {
 	condemned.insert(ent);
 }
 
+bool entityManager::valid(entity *ent) {
+	return entities.count(ent);
+}
+
 void entityManager::activate(entity *ent) {
 	ent->active = ent->node->visible = true;
 }
@@ -126,7 +130,7 @@ void entityManager::clearFreedEntities(void) {
 }
 
 void entityManager::freeEntity(entity *ent) {
-	if (!entities.count(ent)) {
+	if (!valid(ent)) {
 		// not a valid entity
 		return;
 	}
@@ -172,6 +176,10 @@ void entityManager::freeEntity(entity *ent) {
 bool entityManager::hasComponents(entity *ent,
                                   std::initializer_list<std::string> tags)
 {
+	if (!valid(ent)) {
+		return false;
+	}
+
 	auto& compmap = entityComponents[ent];
 	return intersects(compmap, tags);
 }
@@ -179,6 +187,10 @@ bool entityManager::hasComponents(entity *ent,
 bool entityManager::hasComponents(entity *ent,
                                   std::vector<std::string> tags)
 {
+	if (!valid(ent)) {
+		return false;
+	}
+
 	auto& compmap = entityComponents[ent];
 	return intersects(compmap, tags);
 }
@@ -265,9 +277,48 @@ void entityManager::registerComponent(entity *ent,
 {
 	// TODO: need a proper logger
 	SDL_Log("registering component '%s' for %p", name.c_str(), ptr);
+
 	components[name].insert(ptr);
-	entityComponents[ent].insert({name, ptr});
 	componentEntities.insert({ptr, ent});
+	componentTypes[ptr].insert(name);
+	entityComponents[ent].insert({name, ptr});
+}
+
+// TODO: docs, noting possible linear time
+void entityManager::unregisterComponent(entity *ent, component *ptr) {
+	if (!valid(ent)) {
+		return;
+	}
+
+	auto it = componentTypes.find(ptr);
+	if (it == componentTypes.end())
+		return;
+
+	for (auto& name : it->second) {
+		auto& comps = entityComponents[ent];
+		auto  names = comps.equal_range(name);
+
+		for (auto it = names.first; it != names.second;) {
+			auto& [_, comp] = *it;
+
+			it = (comp == ptr)? comps.erase(it) : std::next(it);
+		}
+
+		components[name].erase(ptr);
+	}
+
+	componentEntities.erase(ptr);
+	componentTypes.erase(ptr);
+
+	delete ptr;
+}
+
+void entityManager::unregisterComponentType(entity *ent, std::string name) {
+	if (!valid(ent)) {
+		return;
+	}
+
+	// TODO:
 }
 
 nlohmann::json entity::serialize(entityManager *manager) {

@@ -31,6 +31,7 @@ class entityManager {
 		entityManager(gameMain *_engine) : engine(_engine) {};
 		~entityManager();
 
+		// TODO: might be a good idea for state to be private
 		std::map<std::string, std::shared_ptr<entitySystem>> systems;
 		std::map<std::string, std::shared_ptr<entityEventSystem>> addEvents;
 		std::map<std::string, std::shared_ptr<entityEventSystem>> removeEvents;
@@ -39,15 +40,22 @@ class entityManager {
 		std::map<std::string, std::set<component*>> components;
 		std::map<entity*, std::multimap<std::string, component*>> entityComponents;
 		std::map<component*, entity*> componentEntities;
+		std::map<component*, std::set<std::string>> componentTypes;
 		std::set<entity*> entities;
 		std::set<entity*> added;
 		std::set<entity*> condemned;
 
 		void update(float delta);
 		void registerComponent(entity *ent, std::string name, component *ptr);
+		void unregisterComponent(entity *ent, component *ptr);
+		void unregisterComponentType(entity *ent, std::string name);
+		// TODO: will there ever be a time where I'd only want to unregister
+		//       a component from one specific type?
 
 		void add(entity *ent);
 		void remove(entity *ent);
+		bool valid(entity *ent);
+
 		void activate(entity *ent);
 		void deactivate(entity *ent);
 

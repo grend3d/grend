@@ -43,36 +43,49 @@ nlohmann::json collisionHandler::serialize(entityManager *manager) {
 
 void entitySystemCollision::update(entityManager *manager, float delta) {
 	for (auto& col : *manager->collisions) {
-		if (col.adata && col.bdata) {
-			entity *ents[2] = {
-				static_cast<entity*>(col.adata),
-				static_cast<entity*>(col.bdata),
-			};
+		if (!col.adata && !col.bdata) {
+			// two collision events outside the ECS, nothing to do
+			continue;
+		}
 
-			for (unsigned i = 0; i < 2; i++) {
-				entity *self  = ents[i];
-				entity *other = ents[!i];
+		entity *ents[2] = {
+			// TODO: maaaaaaybe dynamic cast... if we really don't care about
+			//       performance :P
+			//       (but would make other coexisting object systems possible...
+			//        particularly a simpler lua scripting system, ECS is great
+			//        but it does actually kinda suck for rapid prototyping (jams))
+			static_cast<entity*>(col.adata),
+			static_cast<entity*>(col.bdata),
+		};
 
-				if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
-					// TODO: handle multiple collisionHandler components
-					auto entcomps = manager->getEntityComponents(self);
-					auto range = entcomps.equal_range("collisionHandler");
+		for (unsigned i = 0; i < 2; i++) {
+			entity *self  = ents[i];
+			entity *other = ents[!i];
 
-					for (auto it = range.first; it != range.second; it++) {
-						auto& [name, comp] = *it;
+			if (!self) {
+				// allow collisions with things outside the ECS
+				// TODO!: documentation noting that 'other' may be null!
+				continue;
+			}
 
-						collisionHandler *collider
-							= dynamic_cast<collisionHandler*>(comp);
-						//castEntityComponent(collider, manager, self, "collisionHandler");
+			if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
+				// TODO: handle multiple collisionHandler components
+				auto entcomps = manager->getEntityComponents(self);
+				auto range = entcomps.equal_range("collisionHandler");
 
-						if (!collider) {
-							// no collision component...?
-							continue;
-						}
+				for (auto it = range.first; it != range.second; it++) {
+					auto& [_, comp] = *it;
 
-						if (manager->hasComponents(other, collider->tags)) {
-							collider->onCollision(manager, self, other, col);
-						}
+					collisionHandler *handler = dynamic_cast<collisionHandler*>(comp);
+					if (!handler) {
+						// no collision component...?
+						continue;
+					}
+
+					if (handler->tags.empty()
+					    || manager->hasComponents(other, handler->tags))
+					{
+						handler->onCollision(manager, self, other, col);
 					}
 				}
 			}
