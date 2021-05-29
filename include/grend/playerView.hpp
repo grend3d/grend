@@ -5,7 +5,6 @@
 #include <grend/gameMain.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/physics.hpp>
-#include <grend/vecGUI.hpp>
 #include <memory>
 
 namespace grendx {

@@ -45,7 +45,6 @@ message(STATUS "ASSETS2: ${APK_ANDROID_EXTRA_FILES}")
 set(GLSL_VERSION 300 CACHE STRING "GL shading language version (determines target opengl version)")
 
 include(GNUInstallDirs)
-add_subdirectory(libs/nanovg)
 
 set(GREND_LINK_LIBS)
 set(GR_PREFIX)
@@ -103,7 +102,6 @@ add_library(Grend
 	src/text.cpp
 	src/textureAtlas.cpp
 	src/timers.cpp
-	src/vecGUI.cpp
 	src/gameMainDevWindow.cpp
 	src/jobQueue.cpp
 	src/bufferAllocator.cpp
@@ -316,7 +314,6 @@ set(INCLUDES include/grend)
 set(LIBRARY_INCLUDES 
 	libs
 	libs/tinygltf
-	libs/nanovg/src
 	libs/imgui
 	libs/json/single_include
 	libs/stb)
@@ -342,10 +339,7 @@ target_include_directories(Grend PUBLIC
 	include
 	${LIBRARY_INCLUDES}
 )
-target_link_libraries(Grend
-	${GREND_LINK_LIBS}
-	nanovg
-)
+target_link_libraries(Grend ${GREND_LINK_LIBS})
 #target_compile_options(Grend PUBLIC "-O2")
 
 get_target_property(GREND_COMPILE_OPTIONS_LIST Grend COMPILE_OPTIONS)
@@ -390,10 +384,6 @@ add_dependencies(Grend shaderPreprocessEngine)
 
 # TODO: need to have library includes under grend folder
 install(TARGETS Grend DESTINATION ${CMAKE_INSTALL_LIBDIR})
-if (NOT ANDROID)
-	# XXX: figure out how to do this properly
-	install(TARGETS nanovg DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif()
 
 install(FILES     ${PROJECT_BINARY_DIR}/grend.pc       DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 install(FILES     ${PROJECT_BINARY_DIR}/grend-config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
