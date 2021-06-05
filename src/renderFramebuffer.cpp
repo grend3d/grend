@@ -92,11 +92,6 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		msaaResolver->set("colorMS", TEXU_SCRATCH);
 		DO_ERROR_CHECK();
 
-		glActiveTexture(TEX_GL_SCRATCHB);
-		depthMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
-		msaaResolver->set("depthMS", TEXU_SCRATCHB);
-		DO_ERROR_CHECK();
-
 		for (auto& [key, val] : options) {
 			msaaResolver->set(key, val);
 		}
@@ -111,16 +106,11 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		DO_ERROR_CHECK();
 		drawScreenquad();
 
-#ifdef GREND_BUILD_DEBUG
-		// XXX: is there a way to copy stencil info in the shader only?
-		//      leaving this in debug mode only for now, that way it can at
-		//      least be stripped out for production...
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->obj);
 		glBlitFramebuffer(0, 0, width, height,
 		                  0, 0, width, height,
-		                  GL_STENCIL_BUFFER_BIT, GL_NEAREST);
-#endif
+		                  GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
 	} else {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
