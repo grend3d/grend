@@ -8,5 +8,5 @@ Description: Game development framework
 Version: 1.0
 Requires: @GREND_PKG@ @GREND_GL_PKG@
 
-Libs: -L${libdir} -lGrend -lnanovg
+Libs: -L${libdir} -lGrend
 Cflags: -I${includedir} -I${includedir}/grend/libs -I${includedir}/grend/libs/json/include @GREND_COMPILE_OPTIONS@
