@@ -234,7 +234,6 @@ entity *findNearest(entityManager *manager,
 entity *findFirst(entityManager *manager,
                   std::initializer_list<std::string> tags)
 {
-	// TODO: search by component names
 	for (auto& ent : manager->entities) {
 		if (ent->active && manager->hasComponents(ent, tags)) {
 			return ent;

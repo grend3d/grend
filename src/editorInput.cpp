@@ -7,7 +7,6 @@
 using namespace grendx;
 
 void gameEditor::handleSelectObject(gameMain *game) {
-	// TODO: functions for this
 	int x, y;
 	int win_x, win_y;
 	Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
@@ -162,7 +161,6 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_i:
-						// TODO: need function to set clear state + set new root
 						clear(game);
 						selectedNode = game->state->rootnode = loadMapCompiled(game);
 						break;
@@ -183,7 +181,6 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			    && selectedNode && !selectedNode->parent.expired())
 			{
 				gameObject::ptr temp = clone(selectedNode);
-				// TODO: name based on selectedNode
 				std::string name = "cloned " + std::to_string(temp->id);
 				setNode(name, selectedNode->parent.lock(), temp);
 				return (int)mode::MoveSomething;
@@ -438,7 +435,6 @@ void gameEditor::loadInputBindings(gameMain *game) {
 void gameEditor::handleInput(gameMain *game, SDL_Event& ev)
 {
 	ImGui_ImplSDL2_ProcessEvent(&ev);
-	// TODO: camelCase
 	setMode((enum mode)inputBinds.dispatch(ev));
 }
 

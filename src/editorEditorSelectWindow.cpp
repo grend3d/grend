@@ -74,7 +74,6 @@ static void drawJson(nlohmann::json& value) {
 	}
 }
 
-// TODO: might want to expose this in the menubar
 void gameEditor::addEntityWindow(gameMain *game) {
 	static char comboBuf[0x1000];
 	static const size_t bufsize = sizeof(comboBuf) - 1;
@@ -120,7 +119,7 @@ void gameEditor::addEntityWindow(gameMain *game) {
 				ImGui::InputText("## template save", templateSave, sizeof(templateSave));
 				ImGui::SameLine();
 				if (ImGui::Button("Save as template")) {
-					// TODO:
+					// TODO: Save as template implementation
 				}
 			}
 
@@ -313,8 +312,6 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 		ImGui::Columns(1);
 		ImGui::Unindent(16.f);
 		ImGui::Separator();
-
-		// TODO: add/remove entity
 	}
 
 	ImGui::EndChild();

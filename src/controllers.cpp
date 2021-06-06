@@ -105,6 +105,8 @@ bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 	};
 }
 
+// TODO: probably not going to use this anymore now that camAngled2DRotatable()
+//       is here, could replace this with camAngled2DRotatable()
 bindFunc
 grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 	return [=] (SDL_Event& ev, unsigned flags) {
@@ -117,16 +119,10 @@ grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 		y = (x > 0)? y : win_y/2;
 
 		float center_x = (float)win_x / 2;
-		//float center_y = (float)win_y / 2;
-
 		float rel_x = ((float)x - center_x) / center_x;
-		//float rel_y = ((float)y - center_y) / center_y;
 
-		// TODO: another function that allows you to pan up and down some amount,
-		//       also one that doesn't rotate (fixed orientation)
 		cam->setDirection(glm::vec3(
 			sin(rel_x*2*M_PI),
-			//sin(-rel_y*M_PI/2.f),
 			sin(angle),
 			-cos(rel_x*2*M_PI)
 		));
@@ -135,6 +131,7 @@ grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 	};
 }
 
+// TODO: pitch and yaw ("angle" doesn't mean anything)
 bindFunc
 grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angle) {
 	return [=] (SDL_Event& ev, unsigned flags) {
@@ -146,7 +143,6 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angl
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
 
-		// TODO: keybinds to rotate, pan up/down
 		float center_x = (float)win_x / 2;
 		float rel_x = ((float)x - center_x) / center_x;
 
@@ -156,6 +152,7 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angl
 	};
 }
 
+// TODO: pitch and yaw ("angle" doesn't mean anything)
 bindFunc
 grendx::controller::camAngled2DRotatable(camera::ptr cam,
                                          gameMain *game,
@@ -202,31 +199,6 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 			}
 		}
 
-		/*
-		int x, y;
-		int win_x, win_y;
-		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
-		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
-
-		x = (x > 0)? x : win_x/2;
-		y = (x > 0)? y : win_y/2;
-
-		float center_x = (float)win_x / 2;
-		//float center_y = (float)win_y / 2;
-
-		float rel_x = ((float)x - center_x) / center_x;
-		//float rel_y = ((float)y - center_y) / center_y;
-
-		// TODO: another function that allows you to pan up and down some amount,
-		//       also one that doesn't rotate (fixed orientation)
-		cam->setDirection(glm::vec3(
-			sin(rel_x*2*M_PI),
-			//sin(-rel_y*M_PI/2.f),
-			sin(angle),
-			-cos(rel_x*2*M_PI)
-		));
-		*/
-
 		return MODAL_NO_CHANGE;
 	};
 }
@@ -251,7 +223,8 @@ bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float s
 
 // XXX: don't know where to put this, input handlers for
 //      resizing the framebuffer on window resize, etc.
-// TODO: maybe dedicated header
+// TODO: dedicated file for generic close, minimize, copy/paste, drag and drop, etc
+//       handlers... windowControllers.cpp?
 bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
 	return [=] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_WINDOWEVENT

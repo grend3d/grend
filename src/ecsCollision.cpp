@@ -64,12 +64,11 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 
 			if (!self) {
 				// allow collisions with things outside the ECS
-				// TODO!: documentation noting that 'other' may be null!
+				// TODO: documentation noting that 'other' may be null!
 				continue;
 			}
 
 			if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
-				// TODO: handle multiple collisionHandler components
 				auto entcomps = manager->getEntityComponents(self);
 				auto range = entcomps.equal_range("collisionHandler");
 

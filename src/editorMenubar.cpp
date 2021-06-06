@@ -22,7 +22,6 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
-		// TODO: need function to clear state + set new root node
 		editor->clear(game);
 		editor->selectedNode = game->state->rootnode
 			= loadMapCompiled(game, open_dialog.selection);
@@ -42,7 +41,6 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_model_dialog.selection << std::endl;
 		import_model_dialog.clear();
 
-		// TODO: XXX: no need for const if it's just being casted away anyway...
 		auto [obj, models] = loadModel(import_model_dialog.selection);
 		std::string name = "model["+std::to_string(obj->id)+"]";
 		setNode(name, editor->selectedNode, obj);
@@ -67,7 +65,6 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		auto obj = loadMapCompiled(game, import_map_dialog.selection);
 		std::string name = "map["+std::to_string(obj->id)+"]";
 		setNode(name, editor->selectedNode, obj);
-		//bindCookedMeshes();
 	}
 }
 
@@ -78,7 +75,6 @@ void gameEditor::menubar(gameMain *game) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
-				// TODO: need function to clear state + set new root node
 				selectedNode = game->state->rootnode
 					= std::make_shared<gameObject>();
 			}

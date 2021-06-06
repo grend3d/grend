@@ -89,7 +89,6 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	bool recurse = true;
 
 	if (jay["type"] == "Imported file") {
-		// TODO: scene cache
 		recurse = false;
 
 		if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
@@ -214,9 +213,6 @@ grendx::loadMapData(gameMain *game, std::string name) {
 		ret = loadNodes(cache, "", j["root"]);
 
 		for (auto& [name, ptr] : cache.sources) {
-			// TODO: prepend with name to avoid collisions
-			//       also don't need name info anymore for compiling,
-			//       could just return a model set
 			retmodels.insert(ptr.begin(), ptr.end());
 		}
 
@@ -362,7 +358,6 @@ void grendx::saveMap(gameMain *game,
 {
 	std::ofstream foo(name);
 	std::cerr << "saving map " << name << std::endl;
-	std::cerr << "TODO: reimplement saving maps" << std::endl;
 
 	if (!foo.good()) {
 		std::cerr << "couldn't open save file" << name << std::endl;

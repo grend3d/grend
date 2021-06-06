@@ -6,10 +6,10 @@
 
 using namespace grendx;
 
+// TODO: remove draw_indicator(), indicator drawing is in gameEditor now
 static void draw_indicator(gameMain *rend, glm::mat4 trans,
                            glm::vec3 pos, glm::quat rot)
 {
-	// TODO: should load indicator models as part of the editor constructor
 	static std::string ind[] = {
 		"X-Axis-Pointer",
 		"Y-Axis-Pointer",
@@ -23,7 +23,6 @@ static void draw_indicator(gameMain *rend, glm::mat4 trans,
 	glm::vec3 tpos = glm::vec3(temp) / temp.z;
 
 	for (unsigned i = 0; i < 6; i++) {
-		// TODO: and draw them here
 		/*
 		rend->draw_model((struct draw_attributes) {
 			.name = ind[i],

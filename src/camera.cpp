@@ -80,10 +80,6 @@ void camera::setFar(float far) {
 	updated = true;
 }
 
-// for debugging output
-// TODO: remove
-#include <stdio.h>
-
 void camera::recalculatePlanes(void) {
 	// no updates, current planes are still good
 	if (!updated) return;

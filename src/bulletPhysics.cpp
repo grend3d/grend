@@ -162,7 +162,6 @@ bulletPhysics::addSphere(void *data, glm::vec3 pos,
 		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
 	}
 
-	// TODO: apparently motion state is optional? what does it provide?
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
@@ -200,7 +199,6 @@ bulletPhysics::addBox(void *data,
 		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
 	}
 
-	// TODO: apparently motion state is optional? what does it provide?
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
@@ -248,14 +246,12 @@ bulletPhysics::addStaticMesh(void *data,
 	btVector3 localInertia(0, 0, 0);
 	btTransform trans;
 
-	//glm::vec3 pos = position + box.center;
 	glm::vec3 pos = transform.position;
 	glm::quat rot = transform.rotation;
 	trans.setIdentity();
 	trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
 	trans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
 
-	// TODO: apparently motion state is optional? what does it provide?
 	ret->motionState = new btDefaultMotionState(trans);
 	ret->body = new btRigidBody(btScalar(0.f), ret->motionState, ret->shape, localInertia);
 	ret->body->setLinearFactor(btVector3(1, 1, 1));
@@ -268,8 +264,9 @@ bulletPhysics::addStaticMesh(void *data,
 	return p;
 }
 
-// map of submesh name to physics object ID
-// TODO: multimap?
+// TODO: remove, don't think this is being used anywhere, don't remember what I
+//       had planned to do with it...
+//       must not be important then :P
 std::map<gameMesh::ptr, physicsObject::ptr>
 bulletPhysics::addModelMeshBoxes(gameModel::ptr mod) {
 	return {};
