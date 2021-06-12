@@ -182,6 +182,11 @@ void renderContext::loadShaders(void) {
 			GR_PREFIX "shaders/baked/pixel-shading-metal-roughness-pbr.frag",
 			globalShaderOptions);
 
+	lightingShaders["pixel-matcap"] =
+		loadLightingShader(
+			GR_PREFIX "shaders/baked/pixel-shading-matcap.frag",
+			globalShaderOptions);
+
 	lightingShaders["pixel-normal"] =
 		loadLightingShader(
 			GR_PREFIX "shaders/baked/normals.frag",
@@ -223,7 +228,7 @@ void renderContext::loadShaders(void) {
 			globalShaderOptions);
 
 	for (auto& name : {"tonemap", "psaa", "irradiance-convolve",
-	                    "specular-convolve", "quadtest"})
+	                    "specular-convolve", "quadtest", "fog-depth"})
 	{
 		postShaders[name] =
 			loadPostShader(
