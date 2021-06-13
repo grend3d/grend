@@ -172,7 +172,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 			for (unsigned i = 0; i < 6; i++) {
 				if (!shatree.valid(plit->shadowmap[i])) {
 					// TODO: configurable size
-					plit->shadowmap[i] = shatree.alloc(256);
+					plit->shadowmap[i] = shatree.alloc(rctx->settings.shadowSize);
 				}
 			}
 
@@ -185,7 +185,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 			auto& shatree = rctx->atlases.shadows->tree;
 			if (!shatree.valid(slit->shadowmap)) {
 				// TODO: configurable size
-				slit->shadowmap = shatree.alloc(256);
+				slit->shadowmap = shatree.alloc(rctx->settings.shadowSize);
 			}
 
 			drawSpotlightShadow(*this, slit, light.transform, rctx);
@@ -206,16 +206,19 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		for (unsigned i = 0; i < 6; i++) {
 			if (!reftree.valid(probe.data->faces[0][i])) {
 				// TODO: configurable size
-				probe.data->faces[0][i] = reftree.alloc(128);
+				probe.data->faces[0][i] = reftree.alloc(rctx->settings.reflectionSize);
 			}
 		}
 
 		// allocate from irradiance atlas for lower level (blurrier) reflections
 		for (unsigned k = 1; k < 5; k++) {
 			for (unsigned i = 0; i < 6; i++) {
+				unsigned adj = rctx->settings.reflectionSize >> k;
+				adj = adj? adj : 1;
+
 				if (!radtree.valid(probe.data->faces[k][i])) {
 					// TODO: configurable size
-					probe.data->faces[k][i] = radtree.alloc(128 >> k);
+					probe.data->faces[k][i] = radtree.alloc(adj);
 				}
 			}
 		}
@@ -228,13 +231,14 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		for (unsigned i = 0; i < 6; i++) {
 			// TODO: configurable size
 			if (!radtree.valid(radprobe.data->faces[i])) {
-				radprobe.data->faces[i] = radtree.alloc(16);
+				radprobe.data->faces[i] = radtree.alloc(rctx->settings.lightProbeSize);
 			}
 
 			// TODO: coefficients
 
 			if (!reftree.valid(radprobe.data->source->faces[0][i])) {
-				radprobe.data->source->faces[0][i] = reftree.alloc(64);
+				radprobe.data->source->faces[0][i] =
+					reftree.alloc(rctx->settings.lightProbeSize*4);
 			}
 		}
 
