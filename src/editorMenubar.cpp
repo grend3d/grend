@@ -136,6 +136,10 @@ void gameEditor::menubar(gameMain *game) {
 			ImGui::Checkbox("Show environment probes", &showProbes);
 			ImGui::Checkbox("Show lights", &showLights);
 
+			ImGui::Separator();
+			if (ImGui::MenuItem("Render settings")) {
+				showSettingsWindow = true;
+			}
 			ImGui::EndMenu();
 
 			cam->setProjection((enum camera::projection)proj);

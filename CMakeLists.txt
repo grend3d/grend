@@ -84,6 +84,7 @@ add_library(Grend
 	src/editorObjectEditorWindow.cpp
 	src/editorObjectSelectWindow.cpp
 	src/editorProfiler.cpp
+	src/editorSettings.cpp
 	src/fileDialog.cpp
 	src/geometryGeneration.cpp
 	src/glManager.cpp

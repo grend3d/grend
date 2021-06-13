@@ -14,9 +14,20 @@ using namespace grendx;
 material::ptr default_material;
 compiledMaterial::ptr default_compiledMat;
 
-renderContext::renderContext(context& ctx) {
-	enable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+void renderContext::applySettings(renderSettings& newsettings) {
+	settings = newsettings;
+
+	atlases = renderAtlases(settings.reflectionAtlasSize,
+	                        settings.shadowAtlasSize,
+	                        settings.lightProbeAtlasSize);
+
+	unsigned adjX = settings.targetResX * settings.scaleX;
+	unsigned adjY = settings.targetResY * settings.scaleY;
+	framebuffer = std::make_shared<renderFramebuffer>(adjX, adjY, settings.msaaLevel);
+}
+
+renderContext::renderContext(context& ctx, renderSettings _settings) {
+	applySettings(_settings);
 
 	Framebuffer().bind();
 	DO_ERROR_CHECK();
@@ -49,8 +60,6 @@ renderContext::renderContext(context& ctx) {
 #else
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 #endif
-
-	framebuffer = std::make_shared<renderFramebuffer>(screen_x, screen_y, 4);
 
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");

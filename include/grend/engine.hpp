@@ -177,6 +177,37 @@ struct renderFlags {
 	bool shadowmap  = false;
 };
 
+// user-facing config, eg. texture, shadow quality, antialiasing, scaling...
+struct renderSettings {
+	// thought: atlas, subtexture sizes all need to be powers of two,
+	//          would it make more sense to store only the exponent?
+	bool shadowsEnabled = true;
+	unsigned shadowSize = 256;
+	unsigned shadowAtlasSize = 4096;
+
+	// TODO: might be modal, for eg. screenspace shadows
+	bool reflectionsEnabled = true;
+	unsigned reflectionSize = 256;
+	unsigned reflectionAtlasSize = 4096;
+
+	bool lightProbesEnabled = true;
+	unsigned lightProbeSize = 16;
+	unsigned lightProbeAtlasSize = 1024;
+
+	float scaleX = 1.0;
+	float scaleY = 1.0;
+	bool dynamicScaling = false;
+	// TODO: redo the dynamic scaling stuff
+
+	// Hmm... -1 for window resolution?
+	unsigned targetResX = 1280; /* internal resolution is this * scale */
+	unsigned targetResY = 720;
+	unsigned msaaLevel              = 4; /* 0 is off */
+	unsigned anisotropicFilterLevel = 2; /* 0 is off */
+
+	bool postprocessing = true;
+};
+
 class renderContext {
 	public:
 		typedef std::shared_ptr<renderContext> ptr;
@@ -188,8 +219,10 @@ class renderContext {
 			PlainArray,
 		};
 
-		renderContext(context& ctx);
+		renderContext(context& ctx, renderSettings _settings = renderSettings());
 		~renderContext() { };
+
+		void applySettings(renderSettings& settings);
 		void loadShaders(void);
 
 		// TODO: 
@@ -226,7 +259,6 @@ class renderContext {
 		Shader::parameters globalShaderOptions;
 		enum lightingModes lightingMode = lightingModes::Tiled;
 
-
 		// maps 
 		std::string defaultLighting = "main";
 		std::map<std::string, renderFlags> lightingShaders;
@@ -238,12 +270,13 @@ class renderContext {
 		Buffer::ptr pointTiles;
 		Buffer::ptr spotTiles;
 
-		float lightThreshold = 0.05;
-		float exposure       = 1.f;
-
 		lights_std140      lightBufferCtx;
 		light_tiles_std140 pointTilesCtx;
 		light_tiles_std140 spotTilesCtx;
+
+		float lightThreshold = 0.05;
+		float exposure       = 1.f;
+		renderSettings settings;
 
 	protected:
 		Program::ptr shader;

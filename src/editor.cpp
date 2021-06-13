@@ -576,6 +576,9 @@ void gameEditor::renderEditor(gameMain *game) {
 
 	// TODO: this could probably be reduced to like a map of
 	//       window names to states...
+	//       as simple as name -> opened?
+	//       or name -> pair<opened, draw()>, something like that
+	//       or even name -> draw(), and being in the map implies it's opened...
 	if (showMetricsWindow) {
 		//ImGui::ShowMetricsWindow();
 		metricsWindow(game);
@@ -608,5 +611,9 @@ void gameEditor::renderEditor(gameMain *game) {
 
 	if (showProfilerWindow) {
 		profilerWindow(game);
+	}
+
+	if (showSettingsWindow) {
+		settingsWindow(game);
 	}
 }

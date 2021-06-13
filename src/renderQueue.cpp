@@ -683,7 +683,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 
-	cam->setViewport(fb->width, fb->height);
+	cam->setViewport(fb->width/rctx->settings.scaleX, fb->height/rctx->settings.scaleY);
 	glm::mat4 view = cam->viewTransform();
 	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv = glm::inverse(view);
