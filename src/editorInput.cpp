@@ -22,7 +22,6 @@ void gameEditor::handleSelectObject(gameMain *game) {
 		clicked->onLeftClick();
 		clickedX = (x*1.f / win_x);
 		clickedY = ((win_y - y)*1.f / win_y);
-		clickDepth = glm::distance(clicked->getTransformTRS().position, cam->position());
 
 		if (isUIObject(clicked)) {
 			transformBuf = selectedNode->getTransformTRS();
@@ -32,6 +31,13 @@ void gameEditor::handleSelectObject(gameMain *game) {
 			selectedNode = getNonModel(clicked);
 			assert(selectedNode != nullptr);
 			std::cerr << "Not a UI model" << std::endl;
+		}
+
+		if (selectedNode) {
+			clickDepth = glm::distance(selectedNode->getTransformTRS().position,
+			                           cam->position());
+		} else {
+			clickDepth = 0.f;
 		}
 
 	} else {
@@ -467,17 +473,25 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 
 	glm::mat3 rot;
 	glm::vec3 dir;
+	float rad;
 
 	TRS selectedTransform = selectedNode->getTransformTRS();
+	glm::vec4 screenuv = cam->worldToScreenPosition(transformBuf.position);
+	glm::vec2 screenpos = glm::vec2(screenuv.x*win_x, screenuv.y*win_y);
+	glm::vec2 normed, clicknorm;
+
+	clicknorm = glm::vec2(clickedX*win_x - screenpos.x,
+	                      clickedY*win_y - screenpos.y);
+	normed = glm::vec2(x - screenpos.x, (win_y-y) - screenpos.y);
 
 	switch (mode) {
 		case mode::MoveX:
 			rot = glm::mat3_cast(transformBuf.rotation);
-			dir = rot * glm::vec3(1, 0, 0); 
+			dir = rot * glm::vec3(1, 0, 0);
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
-			selectedTransform.position = 
+			selectedTransform.position =
 				transformBuf.position
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
@@ -487,7 +501,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 
 		case mode::MoveY:
 			rot = glm::mat3_cast(transformBuf.rotation);
-			dir = rot * glm::vec3(0, 1, 0); 
+			dir = rot * glm::vec3(0, 1, 0);
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
@@ -501,7 +515,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 
 		case mode::MoveZ:
 			rot = glm::mat3_cast(transformBuf.rotation);
-			dir = rot * glm::vec3(0, 0, 1); 
+			dir = rot * glm::vec3(0, 0, 1);
 			reversed_x = sign(glm::dot(dir, -cam->right()));
 			reversed_y = sign(glm::dot(dir, cam->up()));
 
@@ -517,20 +531,41 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 		//       so that this can pick the right movement direction
 		//       for the spinner
 		case mode::RotateX:
+			rot = glm::mat3_cast(transformBuf.rotation);
+			dir = rot * glm::vec3(1, 0, 0);
+			reversed_x = glm::sign(glm::dot(dir, cam->direction()));
+
+			rad = atan2(normed.x, normed.y) - atan2(clicknorm.x, clicknorm.y);
 			selectedTransform.rotation =
-				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(1, 0, 0)));
+				glm::quat(glm::rotate(transformBuf.rotation,
+				                      reversed_x*rad,
+				                      glm::vec3(1, 0, 0)));
 			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::RotateY:
+			rot = glm::mat3_cast(transformBuf.rotation);
+			dir = rot * glm::vec3(0, 1, 0);
+			reversed_x = glm::sign(glm::dot(dir, cam->direction()));
+
+			rad = atan2(normed.x, normed.y) - atan2(clicknorm.x, clicknorm.y);
 			selectedTransform.rotation =
-				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 1, 0)));
+				glm::quat(glm::rotate(transformBuf.rotation,
+				                      reversed_x*rad,
+				                      glm::vec3(0, 1, 0)));
 			selectedNode->setTransform(selectedTransform);
 			break;
 
 		case mode::RotateZ:
+			rot = glm::mat3_cast(transformBuf.rotation);
+			dir = rot * glm::vec3(0, 0, 1);
+			reversed_x = glm::sign(glm::dot(dir, cam->direction()));
+
+			rad = atan2(normed.x, normed.y) - atan2(clicknorm.x, clicknorm.y);
 			selectedTransform.rotation =
-				glm::quat(glm::rotate(transformBuf.rotation, TAUF*amount, glm::vec3(0, 0, 1)));
+				glm::quat(glm::rotate(transformBuf.rotation,
+				                      reversed_x*rad,
+				                      glm::vec3(0, 0, 1)));
 			selectedNode->setTransform(selectedTransform);
 			break;
 
@@ -576,7 +611,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 		switch (mode) {
 			case mode::MoveAABBPosX:
 				probe->boundingBox.max =
-					transformBuf.scale 
+					transformBuf.scale
 						+ glm::vec3(1, 0, 0)*depth*amount_x*reversed_x
 						+ glm::vec3(1, 0, 0)*depth*amount_y*reversed_y;
 				break;
