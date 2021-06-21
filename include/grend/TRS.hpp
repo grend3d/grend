@@ -17,7 +17,7 @@ struct TRS {
 
 static inline struct TRS addTRS(const struct TRS& a, const struct TRS& b) {
 	return (TRS) {
-		.position = a.position + b.position, // TODO: scale?
+		.position = a.position + (a.rotation*b.position)*a.scale,
 		.rotation = a.rotation * b.rotation,
 		.scale    = a.scale * b.scale,
 	};
