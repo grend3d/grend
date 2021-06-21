@@ -105,6 +105,10 @@ int gameMain::step(void) {
 		rend->framebuffer->clear();
 		view->render(this);
 
+		if (phys) {
+			phys->drawDebug(view->cam->viewProjTransform());
+		}
+
 		SDL_GL_SwapWindow(ctx.window);
 		profile::endGroup();
 	}
@@ -203,9 +207,9 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		que.sort();
 		profile::endGroup();
 
-		profile::startGroup("Batch");
-		que.batch();
-		profile::endGroup();
+		//profile::startGroup("Batch");
+		//que.batch();
+		//profile::endGroup();
 
 		profile::startGroup("Build light tilemap");
 		buildTilemap(que, game->rend);

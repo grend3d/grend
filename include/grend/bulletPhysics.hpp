@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "btBulletDynamicsCommon.h"
+#include "LinearMath/btIDebugDraw.h"
 #include <mutex>
 #include <condition_variable>
 
@@ -51,6 +52,45 @@ class bulletObject : public physicsObject {
 		void *data;
 };
 
+#include <grend/glManager.hpp>
+class bulletDebugDrawer : public btIDebugDraw {
+	public:
+		int currentMode = DebugDrawModes::DBG_NoDebug;
+		// array of start, end, and color, each 3 floats
+		struct vertex {
+			glm::vec3 position;
+			glm::vec3 color;
+		};
+
+		std::vector<vertex> lines;
+		Buffer::ptr databuf;
+		Vao::ptr vao;
+		Program::ptr shader;
+
+		bulletDebugDrawer();
+		virtual ~bulletDebugDrawer();
+
+		virtual void drawLine(const btVector3& from,
+		                      const btVector3& to,
+		                      const btVector3& color);
+
+		virtual void drawContactPoint(const btVector3& onB,
+		                              const btVector3& normalOnB,
+		                              btScalar distance,
+		                              int lifeTime,
+		                              const btVector3& color) {};
+		virtual void reportErrorWarning(const char *warning) {};
+		virtual void draw3dText(const btVector3& location, const char *str) {};
+
+		virtual void setDebugMode(int debugMode) { currentMode = debugMode; };
+		virtual int getDebugMode() const { return currentMode; };
+
+		virtual void clearLines() { lines.clear(); };
+		// XXX: flushLines will need a view/world transform, nop overload
+		virtual void flushLines() { /* lines.clear(); */ };
+		virtual void flushLines(glm::mat4 cam);
+};
+
 class bulletPhysics : public physics {
 	public:
 		typedef std::shared_ptr<bulletPhysics> ptr;
@@ -58,6 +98,8 @@ class bulletPhysics : public physics {
 
 		bulletPhysics();
 		virtual ~bulletPhysics();
+		virtual void drawDebug(glm::mat4 cam);
+		virtual void setDebugMode(int mode);
 
 		// each return physics object ID
 		// non-moveable geometry, collisions with octree
@@ -104,6 +146,8 @@ class bulletPhysics : public physics {
 
 		std::map<bulletObject *, physicsObject::weakptr> objects;
 		std::mutex bulletMutex;
+
+		bulletDebugDrawer debugDrawer;
 };
 
 // namespace grendx

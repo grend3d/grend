@@ -28,6 +28,7 @@ bulletPhysics::bulletPhysics() {
 	                                              solver, collisionConfig);
 
 	world->setGravity(btVector3(0, -15, 0));
+	world->setDebugDrawer(&debugDrawer);
 }
 
 bulletPhysics::~bulletPhysics() {
@@ -109,6 +110,17 @@ glm::vec3 bulletObject::getVelocity(void) {
 glm::vec3 bulletObject::getAcceleration(void) {
 	// TODO
 	return glm::vec3(0);
+}
+
+void bulletPhysics::drawDebug(glm::mat4 cam) {
+	if (debugDrawer.getDebugMode()) {
+		world->debugDrawWorld();
+		debugDrawer.flushLines(cam);
+	}
+}
+
+void bulletPhysics::setDebugMode(int mode) {
+	debugDrawer.setDebugMode(mode);
 }
 
 void

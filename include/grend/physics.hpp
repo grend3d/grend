@@ -56,6 +56,9 @@ class physics {
 		typedef std::weak_ptr<physics>   weakptr;
 
 		virtual ~physics();
+
+		virtual void drawDebug(glm::mat4 cam) {};
+		virtual void setDebugMode(int mode) {};
 		virtual size_t numObjects(void) = 0;
 
 		// add non-moveable geometry

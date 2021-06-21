@@ -247,6 +247,38 @@ void gameEditor::menubar(gameMain *game) {
 				showProfilerWindow = true;
 			}
 
+			if (ImGui::BeginMenu("Physics debug options")) {
+				static bool physopts[16];
+
+				// XXX: direct copy of constants from btIDebugDraw.h
+				ImGui::Checkbox("Wireframe",              physopts + 0);
+				ImGui::Checkbox("Draw AABBs",             physopts + 1);
+				ImGui::Checkbox("Features text",          physopts + 2);
+				ImGui::Checkbox("Contact points",         physopts + 3);
+				ImGui::Checkbox("No deactivation",        physopts + 4);
+				ImGui::Checkbox("No help text",           physopts + 5);
+				ImGui::Checkbox("Draw text",              physopts + 6);
+				ImGui::Checkbox("Profile timings",        physopts + 7);
+				ImGui::Checkbox("Sat comparison",         physopts + 8);
+				ImGui::Checkbox("Disable bullet lcp",     physopts + 9);
+				ImGui::Checkbox("Enable CCD",             physopts + 10);
+				ImGui::Checkbox("Draw constraints",       physopts + 11);
+				ImGui::Checkbox("Draw constraint limits", physopts + 12);
+				ImGui::Checkbox("Fast wireframe",         physopts + 13);
+				ImGui::Checkbox("Draw normals",           physopts + 14);
+				ImGui::Checkbox("Draw frames",            physopts + 15);
+
+				int mode = 0;
+				for (int i = 0; i < 16; i++) {
+					mode |= physopts[i] << i;
+				}
+
+				// TODO: rename 'phys' should be 'physics', think that involves
+				//       renaming the 'physics' class...
+				game->phys->setDebugMode(mode);
+				ImGui::EndMenu();
+			}
+
 			ImGui::Separator();
 			ImGui::MenuItem("Dear ImGui demo window", NULL, &demo_window);
 			ImGui::EndMenu();
