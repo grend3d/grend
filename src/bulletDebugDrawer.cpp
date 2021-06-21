@@ -70,12 +70,13 @@ void bulletDebugDrawer::flushLines(glm::mat4 cam) {
 
 	databuf->buffer(lines.data(), lines.size() * sizeof(vertex));
 
+	setDefaultGlFlags();
 	bindVao(vao);
 	shader->bind();
 	shader->set("cam", cam);
 	disable(GL_DEPTH_TEST);
 
-	glPointSize(5.0f);
+	glPointSize(3.0f);
 	glLineWidth(1.0f);
 	glDrawArrays(GL_POINTS, 0, lines.size());
 	glDrawArrays(GL_LINES, 0, lines.size());

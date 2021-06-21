@@ -5,5 +5,6 @@
 IN vec3 f_color;
 
 void main(void) {
-	FRAG_COLOR = vec4(f_color, 1.0);
+	// TODO: tweakable opacity uniform
+	FRAG_COLOR = vec4(f_color, 0.1);
 }
