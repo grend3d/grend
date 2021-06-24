@@ -111,7 +111,80 @@ class rigidBodyBox : public rigidBody {
 			auto ret = component::defaultProperties();
 
 			ret.update({
+				{"center", {0.f, 0.f, 0.f}},
+				{"extent", {1.f, 1.f, 1.f}},
+			});
+
+			return ret;
+		};
+
+		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
+};
+
+class rigidBodyCylinder : public rigidBody {
+	public:
+		rigidBodyCylinder(entityManager *manager,
+		             entity *ent,
+		             glm::vec3 position,
+		             float mass,
+		             AABBExtent& box)
+			: rigidBody(manager, ent, mass)
+		{
+			manager->registerComponent(ent, serializedType, this);
+			phys = manager->engine->phys->addCylinder(ent, position, mass, box);
+		}
+
+		rigidBodyCylinder(entityManager *manager,
+		             entity *ent,
+		             nlohmann::json properties);
+
+		virtual ~rigidBodyCylinder();
+
+		// serialization stuff
+		constexpr static const char *serializedType = "rigidBodyCylinder";
+		static const nlohmann::json defaultProperties(void) {
+			auto ret = component::defaultProperties();
+
+			ret.update({
+				{"center", {0.f, 0.f, 0.f}},
+				{"extent", {1.f, 1.f, 1.f}},
+			});
+
+			return ret;
+		};
+
+		virtual const char* typeString(void) const { return serializedType; };
+		virtual nlohmann::json serialize(entityManager *manager);
+};
+
+class rigidBodyCapsule : public rigidBody {
+	public:
+		rigidBodyCapsule(entityManager *manager,
+		             entity *ent,
+		             glm::vec3 position,
+		             float mass,
+		             AABBExtent& box)
+			: rigidBody(manager, ent, mass)
+		{
+			manager->registerComponent(ent, serializedType, this);
+			phys = manager->engine->phys->addCylinder(ent, position, mass, box);
+		}
+
+		rigidBodyCapsule(entityManager *manager,
+		             entity *ent,
+		             nlohmann::json properties);
+
+		virtual ~rigidBodyCapsule();
+
+		// serialization stuff
+		constexpr static const char *serializedType = "rigidBodyCapsule";
+		static const nlohmann::json defaultProperties(void) {
+			auto ret = component::defaultProperties();
+
+			ret.update({
 				{"radius", 1.f},
+				{"height", 2.f},
 			});
 
 			return ret;

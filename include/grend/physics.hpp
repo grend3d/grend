@@ -80,6 +80,19 @@ class physics {
 		       AABBExtent& box) = 0;
 
 		virtual physicsObject::ptr
+		addCylinder(void *data,
+		            glm::vec3 position,
+		            float mass,
+		            AABBExtent& box) = 0;
+
+		virtual physicsObject::ptr
+		addCapsule(void *data,
+		           glm::vec3 position,
+		           float mass,
+		           float radius,
+		           float height) = 0;
+
+		virtual physicsObject::ptr
 		addStaticMesh(void *data,
 		              const TRS& transform,
 		              std::shared_ptr<gameModel> model,

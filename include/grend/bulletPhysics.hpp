@@ -118,6 +118,20 @@ class bulletPhysics : public physics {
 		       glm::vec3 position,
 		       float mass,
 			   AABBExtent& box);
+
+		virtual physicsObject::ptr
+		addCylinder(void *data,
+		            glm::vec3 position,
+		            float mass,
+		            AABBExtent& box);
+
+		virtual physicsObject::ptr
+		addCapsule(void *data,
+		           glm::vec3 position,
+		           float mass,
+		           float radius,
+		           float height);
+
 		virtual physicsObject::ptr
 		addStaticMesh(void *data,
 		              const TRS& transform,

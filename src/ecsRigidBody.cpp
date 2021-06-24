@@ -11,12 +11,13 @@ rigidBody::~rigidBody() {
 };
 rigidBodySphere::~rigidBodySphere() {};
 rigidBodyBox::~rigidBodyBox() {};
+rigidBodyCylinder::~rigidBodyCylinder() {};
+rigidBodyCapsule::~rigidBodyCapsule() {};
 syncRigidBody::~syncRigidBody() {};
 syncRigidBodyTransform::~syncRigidBodyTransform() {};
 syncRigidBodyPosition::~syncRigidBodyPosition() {};
 syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
 syncRigidBodySystem::~syncRigidBodySystem() {};
-
 
 rigidBody::rigidBody(entityManager *manager,
                      entity *ent,
@@ -43,7 +44,54 @@ rigidBodyBox::rigidBodyBox(entityManager *manager,
                            nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	// TODO
+	manager->registerComponent(ent, serializedType, this);
+
+	glm::vec3 position = ent->node->getTransformTRS().position;
+	auto center = properties["center"];
+	auto extent = properties["extent"];
+
+	AABBExtent box = {
+		.center = glm::vec3(center[0], center[1], center[2]),
+		.extent = glm::vec3(extent[0], extent[1], extent[2]),
+	};
+
+	phys = manager->engine->phys->addBox(ent, position, 1.f, box);
+	registerCollisionQueue(manager->collisions);
+}
+
+rigidBodyCylinder::rigidBodyCylinder(entityManager *manager,
+                                     entity *ent,
+                                     nlohmann::json properties)
+	: rigidBody(manager, ent, properties)
+{
+	manager->registerComponent(ent, serializedType, this);
+
+	glm::vec3 position = ent->node->getTransformTRS().position;
+	auto center = properties["center"];
+	auto extent = properties["extent"];
+
+	AABBExtent box = {
+		.center = glm::vec3(center[0], center[1], center[2]),
+		.extent = glm::vec3(extent[0], extent[1], extent[2]),
+	};
+
+	phys = manager->engine->phys->addCylinder(ent, position, 1.f, box);
+	registerCollisionQueue(manager->collisions);
+}
+
+rigidBodyCapsule::rigidBodyCapsule(entityManager *manager,
+                                   entity *ent,
+                                   nlohmann::json properties)
+	: rigidBody(manager, ent, properties)
+{
+	manager->registerComponent(ent, serializedType, this);
+
+	glm::vec3 position = ent->node->getTransformTRS().position;
+	float radius = properties["radius"];
+	float height = properties["height"];
+
+	phys = manager->engine->phys->addCapsule(ent, position, 1.f, radius, height);
+	registerCollisionQueue(manager->collisions);
 }
 
 nlohmann::json rigidBodySphere::serialize(entityManager *manager) {
@@ -52,6 +100,16 @@ nlohmann::json rigidBodySphere::serialize(entityManager *manager) {
 }
 
 nlohmann::json rigidBodyBox::serialize(entityManager *manager) {
+	// TODO: actually serialize
+	return defaultProperties();
+}
+
+nlohmann::json rigidBodyCylinder::serialize(entityManager *manager) {
+	// TODO: actually serialize
+	return defaultProperties();
+}
+
+nlohmann::json rigidBodyCapsule::serialize(entityManager *manager) {
 	// TODO: actually serialize
 	return defaultProperties();
 }

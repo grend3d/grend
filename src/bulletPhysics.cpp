@@ -225,6 +225,85 @@ bulletPhysics::addBox(void *data,
 }
 
 physicsObject::ptr
+bulletPhysics::addCylinder(void *data,
+                           glm::vec3 position,
+                           float mass,
+                           AABBExtent& box)
+{
+	std::lock_guard<std::mutex> lock(bulletMutex);
+
+	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->runtime = this;
+	ret->mass = mass;
+	ret->data = data;
+	ret->shape = new btCylinderShape(btVector3(box.extent.x, box.extent.y, box.extent.z));
+
+	bool isDynamic = mass != 0.f;
+	btVector3 localInertia(0, 0, 0);
+	btTransform trans;
+
+	glm::vec3 pos = position + box.center;
+	trans.setIdentity();
+	trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+	if (isDynamic) {
+		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
+	}
+
+	ret->motionState = new btDefaultMotionState(trans);
+	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
+	ret->body->setLinearFactor(btVector3(1, 1, 1));
+	ret->body->setAngularFactor(btScalar(1));
+	ret->body->setUserPointer(ret.get());
+	world->addRigidBody(ret->body);
+
+	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	//obj->physObj = p;
+	objects.insert({ret.get(), p});
+	return p;
+}
+
+physicsObject::ptr
+bulletPhysics::addCapsule(void *data,
+                          glm::vec3 position,
+                          float mass,
+                          float radius,
+                          float height)
+{
+	std::lock_guard<std::mutex> lock(bulletMutex);
+
+	bulletObject::ptr ret = std::make_shared<bulletObject>();
+	ret->runtime = this;
+	ret->mass = mass;
+	ret->data = data;
+	ret->shape = new btCapsuleShape(btScalar(radius), btScalar(height));
+
+	bool isDynamic = mass != 0.f;
+	btVector3 localInertia(0, 0, 0);
+	btTransform trans;
+
+	glm::vec3 pos = position;
+	trans.setIdentity();
+	trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
+
+	if (isDynamic) {
+		ret->shape->calculateLocalInertia(btScalar(mass), localInertia);
+	}
+
+	ret->motionState = new btDefaultMotionState(trans);
+	ret->body = new btRigidBody(btScalar(mass), ret->motionState, ret->shape, localInertia);
+	ret->body->setLinearFactor(btVector3(1, 1, 1));
+	ret->body->setAngularFactor(btScalar(1));
+	ret->body->setUserPointer(ret.get());
+	world->addRigidBody(ret->body);
+
+	auto p = std::dynamic_pointer_cast<physicsObject>(ret);
+	//obj->physObj = p;
+	objects.insert({ret.get(), p});
+	return p;
+}
+
+physicsObject::ptr
 bulletPhysics::addStaticMesh(void *data,
                              const TRS& transform,
                              gameModel::ptr model,
