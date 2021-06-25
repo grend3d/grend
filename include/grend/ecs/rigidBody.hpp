@@ -164,11 +164,12 @@ class rigidBodyCapsule : public rigidBody {
 		             entity *ent,
 		             glm::vec3 position,
 		             float mass,
-		             AABBExtent& box)
+		             float radius,
+		             float height)
 			: rigidBody(manager, ent, mass)
 		{
 			manager->registerComponent(ent, serializedType, this);
-			phys = manager->engine->phys->addCylinder(ent, position, mass, box);
+			phys = manager->engine->phys->addCapsule(ent, position, mass, radius, height);
 		}
 
 		rigidBodyCapsule(entityManager *manager,
