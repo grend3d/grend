@@ -100,28 +100,35 @@ float point_shadow(uint idx, vec3 pos) {
 }
 
 float spot_shadow(uint idx, vec3 pos) {
+	vec3 light_vertex = pos - SPOT_LIGHT(idx).position.xyz;
+	vec3 light_dir = normalize(light_vertex);
+	float light_angle = dot(light_dir, SPOT_LIGHT(idx).direction.xyz);
+
+	// TODO: have start/end angles as part of the spot_light struct
+	float k = 0.1;
+	float edge = clamp((light_angle - (SPOT_LIGHT(idx).angle))/k, 0.0, 1.0);
+	edge *= edge;
+
 	if (!SPOT_LIGHT(idx).casts_shadows) {
-		return 1.0;
+		return edge;
 	}
 
-	vec3 light_vertex = SPOT_LIGHT(idx).position.xyz - pos;
-	vec3 light_dir = normalize(light_vertex);
-
-	if (dot(light_dir, SPOT_LIGHT(idx).direction.xyz) < SPOT_LIGHT(idx).angle) {
+	if (light_angle > SPOT_LIGHT(idx).angle) {
 		// XXX: maybe pass this in a uniform, or use quarternion for rotation
 		//      and extract an SO(3) out of that
-		vec3 up = -SPOT_LIGHT(idx).up.xyz;
-		vec3 right = normalize(cross(up, -SPOT_LIGHT(idx).direction.xyz));
-
-		float p = 1.0 - SPOT_LIGHT(idx).angle;
+		vec3 up = SPOT_LIGHT(idx).up.xyz;
+		vec3 right = -normalize(cross(up, SPOT_LIGHT(idx).direction.xyz));
 		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
+
 		vec4 depth = texture2DAtlas(shadowmap_atlas,
 		                            SPOT_LIGHT(idx).shadowmap.xyz, uv);
 
-		return SHADOW_FILTER(shadowmap_atlas,
-		       SPOT_LIGHT(idx).shadowmap.xyz,
-		       light_vertex,
-		       uv);
+		float shadow = SHADOW_FILTER(shadowmap_atlas,
+		                             SPOT_LIGHT(idx).shadowmap.xyz,
+		                             light_vertex,
+		                             uv);
+
+		return edge * shadow;
 	}
 
 	return 0.0;
