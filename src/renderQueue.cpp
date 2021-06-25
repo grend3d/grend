@@ -872,9 +872,12 @@ static void syncPlainUniforms(Program::ptr program,
 		DO_ERROR_CHECK();
 
 		if (light->casts_shadows) {
-			std::string sloc = locstr + ".shadowmap";
+			std::string smap  = locstr + ".shadowmap";
+			std::string sproj = locstr + ".shadowproj";
+
 			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, glm::vec4(vec, 0.0));
+			program->set(smap, glm::vec4(vec, 0.0));
+			program->set(sproj, light->shadowproj);
 			DO_ERROR_CHECK();
 		}
 	}
@@ -904,9 +907,12 @@ static void syncPlainUniforms(Program::ptr program,
 		DO_ERROR_CHECK();
 
 		if (light->casts_shadows) {
-			std::string sloc = locstr + ".shadowmap";
+			std::string smap  = locstr + ".shadowmap";
+			std::string sproj = locstr + ".shadowproj";
+
 			auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
-			program->set(sloc, glm::vec4(vec, 0.0));
+			program->set(smap, glm::vec4(vec, 0.0));
+			program->set(sproj, light->shadowproj);
 			DO_ERROR_CHECK();
 		}
 	}

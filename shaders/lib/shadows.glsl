@@ -8,15 +8,15 @@ float far = 50.0;
 
 // TODO: compile-time and uniform parameter macros, once I get to
 //       doing hot shader reloading
-#define DEPTH_BIAS 0.001
-//#define SHADOW_FILTER shadow_sample // to disable shadow filtering
+#define DEPTH_BIAS 0.0005
+#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
-#define SHADOW_FILTER shadow_pcf
+//#define SHADOW_FILTER shadow_pcf
 #define SHADOW_PCF_RANGE   0.5
 #define SHADOW_PCF_STEP    1.0
 
-#define SHADOW_PCF_SAMPLER shadow_sample_linear
-//#define SHADOW_PCF_SAMPLER shadow_sample
+//#define SHADOW_PCF_SAMPLER shadow_sample_linear
+#define SHADOW_PCF_SAMPLER shadow_sample
 
 // possible parameter macro implementation:
 // PARAMETER_UNIFORM_1F(name, default);
@@ -114,18 +114,14 @@ float spot_shadow(uint idx, vec3 pos) {
 	}
 
 	if (light_angle > SPOT_LIGHT(idx).angle) {
-		// XXX: maybe pass this in a uniform, or use quarternion for rotation
-		//      and extract an SO(3) out of that
-		vec3 up = SPOT_LIGHT(idx).up.xyz;
-		vec3 right = -normalize(cross(up, SPOT_LIGHT(idx).direction.xyz));
-		vec2 uv = (vec2(dot(light_dir, right), dot(light_dir, up)) + 1.0) / 2.0;
+		vec4 proj = SPOT_LIGHT(idx).shadowproj * vec4(pos, 1.0);
+		vec3 ndc = proj.xyz/proj.w;
+		vec2 uv = clamp((ndc.xy)*0.5 + 0.5, 0.0, 1.0);
 
-		vec4 depth = texture2DAtlas(shadowmap_atlas,
-		                            SPOT_LIGHT(idx).shadowmap.xyz, uv);
-
+		vec3 asdf = SPOT_LIGHT(idx).position.xyz - pos;
 		float shadow = SHADOW_FILTER(shadowmap_atlas,
 		                             SPOT_LIGHT(idx).shadowmap.xyz,
-		                             light_vertex,
+		                             asdf,
 		                             uv);
 
 		return edge * shadow;

@@ -64,23 +64,24 @@ struct spot_light {
 	vec4 position;
 	vec4 diffuse;
 	vec4 direction;
-	vec4 up;
+	vec4 shadowmap;
+	mat4 shadowproj;
 	float intensity;
 	float radius; // bulb radius
 	float angle;
 	bool casts_shadows;
-	vec4 shadowmap;
 };
 
 struct directional_light {
 	vec4 position;
 	vec4 diffuse;
 	vec4 direction;
+	vec4 shadowmap;
+	mat4 shadowproj;
 	float intensity;
 	bool casts_shadows;
-	vec4 shadowmap;
+	float pada[2];
 };
-
 
 // per cluster, tile, whatever, maximum lights that will be evaluated per fragment
 #ifndef MAX_LIGHTS
@@ -154,7 +155,7 @@ layout(std430, binding = 1) buffer plights {
 
 // for clustered, tiled, number of possible light objects available (ie. in view)
 #ifndef MAX_POINT_LIGHT_OBJECTS
-#define MAX_POINT_LIGHT_OBJECTS 90
+#define MAX_POINT_LIGHT_OBJECTS 80
 #endif
 
 #ifndef MAX_SPOT_LIGHT_OBJECTS
@@ -165,7 +166,7 @@ layout(std430, binding = 1) buffer plights {
 #define MAX_DIRECTIONAL_LIGHT_OBJECTS 4
 #endif
 
-layout (std140) uniform lights {
+layout (std140, column_major) uniform lights {
 	uint uactive_point_lights;
 	uint uactive_spot_lights;
 	uint uactive_directional_lights;

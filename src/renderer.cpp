@@ -507,12 +507,10 @@ void grendx::packLight(gameLightSpot::ptr light,
 {
 	glm::vec3 rpos = applyTransform(trans);
 	glm::vec3 rotvec = glm::mat3(trans) * glm::vec3(1, 0, 0);
-	glm::vec3 rotup  = glm::mat3(trans) * glm::vec3(0, 1, 0);
 
 	memcpy(p->position,  glm::value_ptr(rpos),           sizeof(float[3]));
 	memcpy(p->diffuse,   glm::value_ptr(light->diffuse), sizeof(float[4]));
 	memcpy(p->direction, glm::value_ptr(rotvec),         sizeof(float[3]));
-	memcpy(p->up,        glm::value_ptr(rotup),          sizeof(float[3]));
 
 	p->intensity     = light->intensity;
 	p->radius        = light->radius;
@@ -521,7 +519,8 @@ void grendx::packLight(gameLightSpot::ptr light,
 
 	if (light->casts_shadows) {
 		auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
-		memcpy(p->shadowmap, glm::value_ptr(vec), sizeof(float[3]));
+		memcpy(p->shadowmap,  glm::value_ptr(vec), sizeof(float[3]));
+		memcpy(p->shadowproj, glm::value_ptr(light->shadowproj), sizeof(float[16]));
 	}
 }
 
@@ -544,6 +543,7 @@ void grendx::packLight(gameLightDirectional::ptr light,
 	if (light->casts_shadows) {
 		auto vec = rctx->atlases.shadows->tex_vector(light->shadowmap);
 		memcpy(p->shadowmap, glm::value_ptr(vec), sizeof(float[3]));
+		memcpy(p->shadowproj, glm::value_ptr(light->shadowproj), sizeof(float[16]));
 	}
 }
 

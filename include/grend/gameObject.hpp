@@ -323,6 +323,7 @@ class gameLightSpot : public gameLight {
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
+		glm::mat4 shadowproj;
 };
 
 class gameLightDirectional : public gameLight {
@@ -341,6 +342,7 @@ class gameLightDirectional : public gameLight {
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
+		glm::mat4 shadowproj;
 };
 
 class gameReflectionProbe : public gameObject {

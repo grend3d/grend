@@ -67,7 +67,7 @@ namespace grendx {
 #else /* not defined(USE_SINGLE_UBO) */
 // otherwise, tiled lighting, lots more lights available
 #ifndef MAX_POINT_LIGHT_OBJECTS_TILED
-#define MAX_POINT_LIGHT_OBJECTS_TILED 90
+#define MAX_POINT_LIGHT_OBJECTS_TILED 80
 #endif
 
 #ifndef MAX_SPOT_LIGHT_OBJECTS_TILED
@@ -90,25 +90,26 @@ struct point_std140 {
 } __attribute__((packed));
 
 struct spot_std140 {
-	GLfloat position[4];   // 0
-	GLfloat diffuse[4];    // 16
-	GLfloat direction[4];  // 32
-	GLfloat up[4];         // 48
-	GLfloat intensity;     // 64
-	GLfloat radius;        // 68
-	GLfloat angle;         // 72
-	GLuint  casts_shadows; // 76
-	GLfloat shadowmap[4];  // 80, end 96
+	GLfloat position[4];    // 0
+	GLfloat diffuse[4];     // 16
+	GLfloat direction[4];   // 32
+	GLfloat shadowmap[4];   // 48
+	GLfloat shadowproj[16]; // 64
+	GLfloat intensity;      // 128
+	GLfloat radius;         // 132
+	GLfloat angle;          // 136
+	GLuint  casts_shadows;  // 140, end 144
 } __attribute__((packed));
 
 struct directional_std140 {
-	GLfloat position[4];   // 0
-	GLfloat diffuse[4];    // 16
-	GLfloat direction[4];  // 32
-	GLfloat intensity;     // 44
-	GLuint  casts_shadows; // 48
-	GLfloat padding[2];    // 52, pad to 64
-	GLfloat shadowmap[4];  // 64, end 80
+	GLfloat position[4];     // 0
+	GLfloat diffuse[4];      // 16
+	GLfloat direction[4];    // 32
+	GLfloat shadowmap[4];    // 48
+	GLfloat shadowproj[16];  // 64
+	GLfloat intensity;       // 128
+	GLuint  casts_shadows;   // 132
+	GLfloat padding[2];      // 136, pad to 144
 } __attribute__((packed));
 
 struct lights_std140 {
@@ -127,9 +128,17 @@ struct lights_std140 {
 	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED];
 } __attribute__((packed));
 
+// check to make sure everything will fit in the (specifications) minimum required UBO
+// TODO: configurable maximum, or adjust size for the largest UBO on the platform
+static_assert(sizeof(lights_std140) <= 16384,
+              "Packed light attributes in lights_std140 must be <=16384 bytes!");
+
 struct light_tiles_std140 {
 	GLuint indexes[9*16*MAX_LIGHTS];
 } __attribute__((packed));
+
+static_assert(sizeof(light_tiles_std140) <= 16384,
+              "Packed light tiles in light_tiles_std140 must be <=16384 bytes!");
 
 class skybox {
 	public:
