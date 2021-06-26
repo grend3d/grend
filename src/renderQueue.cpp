@@ -397,6 +397,16 @@ void renderQueue::batch(void) {
 	meshes = tempMeshes;
 }
 
+void renderQueue::clear(void) {
+	meshes.clear();
+	skinnedMeshes.clear();
+	lights.clear();
+	probes.clear();
+	irradProbes.clear();
+	instancedMeshes.clear();
+	billboardMeshes.clear();
+}
+
 static void drawMesh(renderFlags& flags,
                      renderFramebuffer::ptr fb,
                      Program::ptr program,

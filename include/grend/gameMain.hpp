@@ -59,6 +59,8 @@ class gameMain {
 
 // common world-drawing function
 void renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags);
+void renderWorld(gameMain *game, camera::ptr cam,
+                 renderQueue& base, renderFlags& flags);
 
 // namespace grendx
 }

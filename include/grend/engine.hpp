@@ -350,6 +350,7 @@ class renderQueue {
 		void sort(void);
 		void cull(unsigned width, unsigned height, float lightext);
 		void batch(void);
+		void clear(void);
 
 		unsigned flush(renderFramebuffer::ptr fb,
 		               renderContext::ptr rctx,

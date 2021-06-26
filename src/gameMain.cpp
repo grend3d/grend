@@ -164,6 +164,15 @@ void gameMain::handleInput(void) {
 }
 
 void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
+	renderQueue que(cam);
+	renderWorld(game, cam, que, flags);
+}
+
+void grendx::renderWorld(gameMain *game,
+                         camera::ptr cam,
+                         renderQueue& base,
+                         renderFlags& flags)
+{
 	profile::startGroup("renderWorld()");
 	assert(game->rend && game->rend->framebuffer);
 
@@ -171,7 +180,8 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 
 	if (game->state->rootnode) {
-		renderQueue que(cam);
+		renderQueue que(base);
+		que.setCamera(cam);
 		float fticks = SDL_GetTicks() / 1000.0f;
 
 		DO_ERROR_CHECK();
@@ -188,8 +198,6 @@ void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
 		DO_ERROR_CHECK();
 
 		game->rend->framebuffer->bind();
-		glClearStencil(0);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		DO_ERROR_CHECK();
 
