@@ -5,10 +5,30 @@
 
 namespace grendx::ecs {
 
-class rigidBody : public component {
+class transformUpdatable : public component {
+	public:
+		transformUpdatable(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, serializedType, this);
+		};
+
+		transformUpdatable(entityManager *manager, entity *ent, nlohmann::json properties)
+			: transformUpdatable(manager, ent) {};
+
+		virtual ~transformUpdatable();
+
+		virtual void setTransform(const TRS& transform) = 0;
+
+		// serialization stuff
+		constexpr static const char *serializedType = "transformUpdatable";
+		virtual const char* typeString(void) const { return serializedType; };
+};
+
+class rigidBody : public transformUpdatable {
 	public:
 		rigidBody(entityManager *manager, entity *ent, float _mass)
-			: component(manager, ent)
+			: transformUpdatable(manager, ent)
 		{
 			manager->registerComponent(ent, serializedType, this);
 			mass = _mass;
@@ -19,6 +39,12 @@ class rigidBody : public component {
 		          nlohmann::json properties);
 
 		virtual ~rigidBody();
+
+		virtual void setTransform(const TRS& transform) {
+			if (phys) {
+				phys->setTransform(transform);
+			}
+		}
 
 		void registerCollisionQueue(std::shared_ptr<std::vector<collision>> queue) {
 			if (phys) {
@@ -271,6 +297,13 @@ class syncRigidBodySystem : public entitySystem {
 		virtual ~syncRigidBodySystem();
 		virtual void update(entityManager *manager, float delta);
 };
+
+// TODO: Not sure if this is the best place for it, but this is the only thing
+//       using transformUpdatable for now... Once I figure out what else would
+//       need to go with it I'll move it into a seperate header
+void updateEntityTransforms(entityManager *manager,
+                            entity *ent,
+                            const TRS& transform);
 
 // namespace grendx::ecs
 };

@@ -3,6 +3,7 @@
 
 namespace grendx::ecs {
 
+transformUpdatable::~transformUpdatable() {};
 // key functions for rtti
 rigidBody::~rigidBody() {
 	std::cerr << "got to ~rigidBody()" << std::endl;
@@ -22,7 +23,7 @@ syncRigidBodySystem::~syncRigidBodySystem() {};
 rigidBody::rigidBody(entityManager *manager,
                      entity *ent,
                      nlohmann::json properties)
-	: component(manager, ent, properties)
+	: transformUpdatable(manager, ent, properties)
 {
 	manager->registerComponent(ent, serializedType, this);
 }
@@ -172,6 +173,24 @@ void syncRigidBodySystem::update(entityManager *manager, float delta) {
 		}
 
 		syncer->sync(manager, ent);
+	}
+}
+
+void updateEntityTransforms(entityManager *manager,
+                            entity *ent,
+                            const TRS& transform)
+{
+	auto& m = manager->getEntityComponents(ent);
+	auto updaters = m.equal_range("transformUpdatable");
+
+	for (auto it = updaters.first; it != updaters.second; it++) {
+		auto& [_, comp] = *it;
+
+		transformUpdatable *updater = dynamic_cast<transformUpdatable*>(comp);
+
+		if (updater) {
+			updater->setTransform(transform);
+		}
 	}
 }
 

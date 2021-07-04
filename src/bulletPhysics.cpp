@@ -49,8 +49,28 @@ void bulletObject::removeSelf(void) {
 	}
 }
 
-void bulletObject::setTransform(TRS& transform) {
+void bulletObject::setTransform(const TRS& transform) {
+	// just in case
+	if (!body) return;
 
+	btTransform trans;
+
+	const auto& t = transform.position;
+	const auto& r = transform.rotation;
+	const auto& s = transform.scale;
+
+	trans.setOrigin(btVector3(t.x, t.y, t.z));
+	trans.setRotation(btQuaternion(r.x, r.y, r.z, r.w));
+
+	/*
+	if (body->getMotionState()) {
+		body->getMotionState()->setWorldTransform(trans);
+
+	} else {
+		body->setWorldTransform(trans);
+	}
+	*/
+	body->setWorldTransform(trans);
 }
 
 TRS bulletObject::getTransform(void) {

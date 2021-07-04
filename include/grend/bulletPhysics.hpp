@@ -30,7 +30,7 @@ class bulletObject : public physicsObject {
 
 		virtual ~bulletObject();
 
-		virtual void setTransform(TRS& transform);
+		virtual void setTransform(const TRS& transform);
 		virtual TRS  getTransform(void);
 
 		virtual void setPosition(glm::vec3 pos);

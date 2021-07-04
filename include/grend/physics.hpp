@@ -36,7 +36,7 @@ class physicsObject {
 
 		virtual ~physicsObject();
 
-		virtual void setTransform(TRS& transform) = 0;
+		virtual void setTransform(const TRS& transform) = 0;
 		virtual TRS  getTransform(void) = 0;
 
 		virtual void setPosition(glm::vec3 pos) = 0;

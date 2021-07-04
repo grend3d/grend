@@ -42,7 +42,7 @@ class impObject : public physicsObject {
 		enum type type;
 		union { struct sphere usphere; struct box ubox; };
 
-		virtual void setTransform(TRS& transform);
+		virtual void setTransform(const TRS& transform);
 		virtual TRS  getTransform(void);
 
 		virtual void setPosition(glm::vec3 pos);
