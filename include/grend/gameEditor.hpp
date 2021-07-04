@@ -167,7 +167,7 @@ class gameEditor : public gameView {
 		bool showAddEntityWindow = false;
 		bool showProfilerWindow = false;
 		bool showMetricsWindow = true;
-		bool showSettingsWindow = true;
+		bool showSettingsWindow = false;
 		bool showProbes = true;
 		bool showLights = true;
 
