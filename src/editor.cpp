@@ -295,6 +295,12 @@ void gameEditor::initImgui(gameMain *game) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
 	ImGui::StyleColorsDark();
 	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
 	// TODO: make the glsl version here depend on GL version/the string in
@@ -565,6 +571,15 @@ void gameEditor::clear(gameMain *game) {
 void gameEditor::renderImgui(gameMain *game) {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		SDL_Window *w = SDL_GL_GetCurrentWindow();
+		SDL_GLContext g = SDL_GL_GetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		SDL_GL_MakeCurrent(w, g);
+	}
 }
 
 void gameEditor::renderEditor(gameMain *game) {
