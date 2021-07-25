@@ -422,13 +422,9 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 		}
 
 		if (mat.alphaMode == "BLEND") {
-			// XXX:
-			ret->factors.opacity = mat.alphaCutoff;
 			ret->factors.blend = grendx::material::blend_mode::Blend;
 
 		} else if (mat.alphaMode == "MASK") {
-			// XXX:
-			ret->factors.opacity = mat.alphaCutoff;
 			ret->factors.blend = grendx::material::blend_mode::Mask;
 		}
 
@@ -437,6 +433,11 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 		ret->factors.roughness = pbr.roughnessFactor;
 		ret->factors.metalness = pbr.metallicFactor;
 		ret->factors.diffuse   = mat_diffuse;
+		// XXX: is there really a point in having RGBA base color and an
+		//      opacity field...
+		ret->factors.opacity = mat_diffuse[3];
+		// TODO: alpha cutoff field
+		//ret->factors.opacity = mat.alphaCutoff;
 
 		return ret;
 	}

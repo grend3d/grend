@@ -301,7 +301,16 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 		auto& [trans, _, __, mesh] = *it;
 		auto obb = trans * mesh->boundingBox;
 
-		if (cam->boxInFrustum(obb)) {
+		bool visible =
+			// TODO: might want just AABBs for performance, maybe an option?
+			cam->boxInFrustum(obb)
+			// need a compiled mesh
+			&& mesh->comped_mesh
+			// never need to draw fully transparent meshes
+			&& (!mesh->comped_mesh->mat
+			    || mesh->comped_mesh->mat->factors.opacity > 0.0001);
+
+		if (visible) {
 			tempMeshes.push_back(*it);
 		}
 	}
