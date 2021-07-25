@@ -51,7 +51,7 @@ class physicsObject {
 };
 
 class physics {
-	public: 
+	public:
 		typedef std::shared_ptr<physics> ptr;
 		typedef std::weak_ptr<physics>   weakptr;
 
@@ -61,12 +61,27 @@ class physics {
 		virtual void setDebugMode(int mode) {};
 		virtual size_t numObjects(void) = 0;
 
-		// add non-moveable geometry
+		/**
+		 * Add non-movable collision geometry to the world.
+		 *
+		 * @param data User-defined pointer for storing arbitrary data attached to
+		 *             this node. This can be a nullptr.
+		 * @param obj  Root node to start adding from, all nodes are fully traversed
+		 *             to find mesh objects.
+		 * @param transform World-space transformation information.
+		 * @param collector Collects shared pointers to resulting physics objects.
+		 *                  these pointers should be stored for as long as you want
+		 *                  the collision objects to persist.
+		 * @param propFilter If not empty, this will only add mesh objects which
+		 *                   have a property (in gameObject::extraProperties) equal
+		 *                   to the filter name.
+		 */
 		virtual void
 		addStaticModels(void *data,
 		                gameObject::ptr obj,
 		                const TRS& transform,
-		                std::vector<physicsObject::ptr>& collector) = 0;
+		                std::vector<physicsObject::ptr>& collector,
+		                std::string propFilter = "") = 0;
 
 		// add dynamic rigid bodies
 		virtual physicsObject::ptr

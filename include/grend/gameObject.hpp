@@ -25,7 +25,6 @@ size_t allocateObjID(void);
 // forward declaration, physics.hpp include at end
 class physicsObject;
 
-// TODO: start switching things to camelCase
 class gameObject {
 	public:
 		// used for type checking, dynamically-typed tree here
@@ -103,6 +102,9 @@ class gameObject {
 
 		gameObject::weakptr parent;
 		std::map<std::string, gameObject::ptr> nodes;
+		// intended to map to gltf extra properties, useful for exporting
+		// info from blender
+		std::map<std::string, float> extraProperties;
 
 		// for unlinking when the object is removed
 		//std::shared_ptr<physicsObject> physObj;

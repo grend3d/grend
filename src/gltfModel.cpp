@@ -495,6 +495,15 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			grendx::gameMesh::ptr modmesh = grendx::gameMesh::ptr(new grendx::gameMesh());
 			setNode(temp_name, curModel, modmesh);
 
+			// copy over extra property values
+			for (const auto& name : mesh.extras.Keys()) {
+				tinygltf::Value foo = mesh.extras.Get(name);
+
+				if (foo.IsNumber()) {
+					modmesh->extraProperties[name] = (float)foo.GetNumberAsDouble();
+				}
+			}
+
 			if (prim.material >= 0) {
 				modmesh->meshMaterial
 					= gltf_load_material(gltf, prim.material);

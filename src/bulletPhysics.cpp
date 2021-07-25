@@ -147,13 +147,15 @@ void
 bulletPhysics::addStaticModels(void *data,
                                gameObject::ptr obj,
                                const TRS& transform,
-                               std::vector<physicsObject::ptr>& collector)
+                               std::vector<physicsObject::ptr>& collector,
+                               std::string propFilter)
 {
-	// XXX: for now, don't allocate an object for static meshes,
-	//      although it may be a useful thing in the future
-	physicsObject::ptr ret = nullptr;
-
 	if (obj->type == gameObject::objType::Mesh) {
+		if (!propFilter.empty() && !obj->extraProperties.count(propFilter)) {
+			// have filter and this mesh doesn't match it
+			return;
+		}
+
 		if (auto p = obj->parent.lock()) {
 			gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
 			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
@@ -166,7 +168,7 @@ bulletPhysics::addStaticModels(void *data,
 
 	for (auto& [name, node] : obj->nodes) {
 		TRS adjTrans = addTRS(transform, node->getTransformTRS());
-		addStaticModels(data, node, adjTrans, collector);
+		addStaticModels(data, node, adjTrans, collector, propFilter);
 	}
 }
 

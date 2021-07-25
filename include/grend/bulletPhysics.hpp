@@ -107,7 +107,8 @@ class bulletPhysics : public physics {
 		addStaticModels(void *data,
 				gameObject::ptr obj,
 				const TRS& transform,
-				std::vector<physicsObject::ptr>& collector);
+				std::vector<physicsObject::ptr>& collector,
+				std::string propFilter = "");
 
 		// dynamic geometry, collisions with AABB tree
 		virtual physicsObject::ptr
