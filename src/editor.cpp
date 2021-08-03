@@ -302,6 +302,8 @@ void gameEditor::initImgui(gameMain *game) {
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+	//ImGui::StyleColorsLight();
 	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
 	// TODO: make the glsl version here depend on GL version/the string in
 	//       shaders/version.glsl
@@ -366,6 +368,8 @@ gameImport::ptr grendx::loadSceneCompiled(std::string path) {
 	return obj;
 }
 
+#if 0
+// old implementation of loadSceneAsyncCompiled, left here just in case (TODO: remove)
 gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 	auto ret = std::make_shared<gameImport>(path);
 
@@ -390,7 +394,43 @@ gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path)
 
 	return ret;
 }
+#endif
 
+std::pair<gameImport::ptr, std::future<bool>>
+grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
+	auto ret = std::make_shared<gameImport>(path);
+
+	auto fut = game->jobs->addAsync([=] () {
+		auto [obj, models] = loadSceneData(path);
+
+		// apparently you can't (officially) capture destructured bindings, only variables...
+		// ffs
+		gameImport::ptr objptr = obj;
+		modelMap modelptr = models;
+
+		if (obj) {
+			setNode("asyncData", ret, objptr);
+
+			// TODO: hmm, seems there's no way to wait on compilation in the system I've
+			//       set up here... compileModels() neeeds to be run on the main thread,
+			//       if this function waits on it, then something from the main thread
+			//       waits for this function to complete, that would result in a deadlock
+			//
+			//       this means it would be possible to get to the rendering step with a valid
+			//       model that just hasn't been compiled yet... hmmmmmmmmmmmmmmm
+			game->jobs->addDeferred([=] () {
+				compileModels(modelptr);
+				//setNode("asyncLoaded", ret, std::make_shared<gameObject>());
+				return true;
+			});
+		}
+
+		return obj != nullptr;
+	});
+
+	//return std::pair<gameImport::ptr, std::future<bool>>(ret, std::move(fut));
+	return {ret, std::move(fut)};
+}
 
 void gameEditor::reloadShaders(gameMain *game) {
 	// push everything into one vector for simplicity, this will be
@@ -582,11 +622,65 @@ void gameEditor::renderImgui(gameMain *game) {
 	}
 }
 
+#if 0
+// messing around with an IDE-style layout, will set this up properly eventually
+#include <imgui/imgui_internal.h>
+static void initDocking(void) {
+	ImGuiIO& io = ImGui::GetIO();
+	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+	ImGuiWindowFlags window_flags
+		= ImGuiWindowFlags_NoTitleBar
+		| ImGuiWindowFlags_NoCollapse
+		| ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoMove
+		| ImGuiWindowFlags_NoBringToFrontOnFocus
+		| ImGuiWindowFlags_NoNavFocus
+		| ImGuiWindowFlags_NoBackground
+		;
+
+	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("dockspace", nullptr, window_flags);
+		ImGui::PopStyleVar();
+
+		ImGuiID dockspace_id = ImGui::GetID("dockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(1280, 720), dockspace_flags);
+
+		static bool initialized = false;
+		if (!initialized) {
+			initialized = true;
+
+			ImGui::DockBuilderRemoveNode(dockspace_id);
+			ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
+			ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1280, 720));
+
+			auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2, nullptr, &dockspace_id);
+			auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.2, nullptr, &dockspace_id);
+
+			ImGui::DockBuilderDockWindow("Down", dock_id_down);
+			ImGui::DockBuilderDockWindow("Left", dock_id_left);
+			ImGui::DockBuilderFinish(dockspace_id);
+		}
+
+		ImGui::Begin("Left");
+		ImGui::Text("left");
+		ImGui::End();
+
+		ImGui::Begin("Down");
+		ImGui::Text("down");
+		ImGui::End();
+
+		ImGui::End();
+	}
+}
+#endif
+
 void gameEditor::renderEditor(gameMain *game) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame(game->ctx.window);
 	ImGui::NewFrame();
 
+	// initDocking();
 	menubar(game);
 
 	// TODO: this could probably be reduced to like a map of
