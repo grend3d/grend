@@ -165,6 +165,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 		glm::vec2 distMoved;
 
 		bool clicked = false;
+		bool initialized = false;
 		float angle;
 	};
 
@@ -173,7 +174,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	state->angle = angle;
 
 	return [=] (SDL_Event& ev, unsigned flags) {
-		if (ev.button.button == SDL_BUTTON_MIDDLE) {
+		if (!state->initialized || ev.button.button == SDL_BUTTON_MIDDLE) {
 			if (!state->clicked && ev.type == SDL_MOUSEBUTTONDOWN) {
 				SDL_GetMouseState(&state->lastClick[0], &state->lastClick[1]);
 				//distMoved = {0, 0};
@@ -182,7 +183,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 			} else if (state->clicked && ev.type == SDL_MOUSEBUTTONUP) {
 				state->clicked = false;
 
-			} else if (state->clicked && ev.type == SDL_MOUSEMOTION) {
+			} else if (!state->initialized || state->clicked && ev.type == SDL_MOUSEMOTION) {
 				int win_x, win_y;
 				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
@@ -197,6 +198,8 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 					-cos(4.f*state->distMoved.x)
 				});
 			}
+
+			state->initialized = true;
 		}
 
 		return MODAL_NO_CHANGE;
