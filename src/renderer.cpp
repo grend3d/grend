@@ -587,19 +587,19 @@ void grendx::packRefprobe(gameReflectionProbe::ptr probe,
 
 void grendx::invalidateLightMaps(gameObject::ptr tree) {
 	if (tree->type == gameObject::objType::Light) {
-		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(tree);
+		gameLight::ptr light = std::static_pointer_cast<gameLight>(tree);
 		light->have_map = false;
 
 	// TODO: reflection probes and irradiance probes are basically the
 	//       same structure, should have a base class they derive from
 	} else if (tree->type == gameObject::objType::ReflectionProbe) {
 		gameReflectionProbe::ptr probe
-			= std::dynamic_pointer_cast<gameReflectionProbe>(tree);
+			= std::static_pointer_cast<gameReflectionProbe>(tree);
 		probe->have_map = false;
 
 	} else if (tree->type == gameObject::objType::IrradianceProbe) {
 		gameIrradianceProbe::ptr probe
-			= std::dynamic_pointer_cast<gameIrradianceProbe>(tree);
+			= std::static_pointer_cast<gameIrradianceProbe>(tree);
 		probe->have_map = false;
 	}
 

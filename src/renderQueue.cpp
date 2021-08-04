@@ -31,24 +31,24 @@ void renderQueue::add(gameObject::ptr obj,
 	}
 
 	if (obj->type == gameObject::objType::Mesh) {
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
+		gameMesh::ptr mesh = std::static_pointer_cast<gameMesh>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		meshes.push_back({adjTrans, center, inverted, mesh});
 
 	} else if (obj->type == gameObject::objType::Light) {
-		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
+		gameLight::ptr light = std::static_pointer_cast<gameLight>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		lights.push_back({adjTrans, center, inverted, light});
 
 	} else if (obj->type == gameObject::objType::ReflectionProbe) {
 		gameReflectionProbe::ptr probe =
-			std::dynamic_pointer_cast<gameReflectionProbe>(obj);
+			std::static_pointer_cast<gameReflectionProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		probes.push_back({adjTrans, center, inverted, probe});
 
 	} else if (obj->type == gameObject::objType::IrradianceProbe) {
 		gameIrradianceProbe::ptr probe =
-			std::dynamic_pointer_cast<gameIrradianceProbe>(obj);
+			std::static_pointer_cast<gameIrradianceProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		irradProbes.push_back({adjTrans, center, inverted, probe});
 	}
@@ -57,15 +57,15 @@ void renderQueue::add(gameObject::ptr obj,
 	    && obj->hasNode("skin")
 	    && obj->hasNode("mesh"))
 	{
-		auto s = std::dynamic_pointer_cast<gameSkin>(obj->getNode("skin"));
+		auto s = std::static_pointer_cast<gameSkin>(obj->getNode("skin"));
 		addSkinned(obj->getNode("mesh"), s, animTime, adjTrans, inverted);
 
 	} else if (obj->type == gameObject::objType::Particles) {
-		auto p = std::dynamic_pointer_cast<gameParticles>(obj);
+		auto p = std::static_pointer_cast<gameParticles>(obj);
 		addInstanced(obj, p, adjTrans, inverted);
 
 	} else if (obj->type == gameObject::objType::BillboardParticles) {
-		auto p = std::dynamic_pointer_cast<gameBillboardParticles>(obj);
+		auto p = std::static_pointer_cast<gameBillboardParticles>(obj);
 		addBillboards(obj, p, adjTrans, inverted);
 
 	} else {
@@ -89,7 +89,7 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 	}
 
 	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		auto m = std::static_pointer_cast<gameMesh>(obj);
 		glm::vec3 center = applyTransform(trans, boxCenter(m->boundingBox));
 		skinnedMeshes[skin].push_back({trans, center, inverted, m});
 	}
@@ -118,7 +118,7 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 	inverted ^= invcount & 1;
 
 	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		auto m = std::static_pointer_cast<gameMesh>(obj);
 		instancedMeshes.push_back({adjTrans, inverted, particles, m});
 	}
 
@@ -146,7 +146,7 @@ void renderQueue::addBillboards(gameObject::ptr obj,
 	inverted ^= invcount & 1;
 
 	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::dynamic_pointer_cast<gameMesh>(obj);
+		auto m = std::static_pointer_cast<gameMesh>(obj);
 		billboardMeshes.push_back({adjTrans, inverted, particles, m});
 	}
 
@@ -166,7 +166,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 			// TODO: check against view frustum to see if this light is visible,
 			//       avoid rendering shadow maps if not
 			gameLightPoint::ptr plit =
-				std::dynamic_pointer_cast<gameLightPoint>(light.data);
+				std::static_pointer_cast<gameLightPoint>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			for (unsigned i = 0; i < 6; i++) {
@@ -180,7 +180,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 
 		} else if (light.data->lightType == gameLight::lightTypes::Spot) {
 			gameLightSpot::ptr slit =
-				std::dynamic_pointer_cast<gameLightSpot>(light.data);
+				std::static_pointer_cast<gameLightSpot>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			if (!shatree.valid(slit->shadowmap)) {
@@ -1063,7 +1063,7 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 		    lit.data->lightType == gameLight::lightTypes::Point)
 		{
 			gameLightPoint::ptr plit =
-				std::dynamic_pointer_cast<gameLightPoint>(lit.data);
+				std::static_pointer_cast<gameLightPoint>(lit.data);
 
 			packLight(plit,
 					  lightbuf.upoint_lights + activePoints,
@@ -1075,7 +1075,7 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 		           && lit.data->lightType == gameLight::lightTypes::Spot)
 		{
 			gameLightSpot::ptr slit =
-				std::dynamic_pointer_cast<gameLightSpot>(lit.data);
+				std::static_pointer_cast<gameLightSpot>(lit.data);
 
 			packLight(slit,
 					  lightbuf.uspot_lights + activeSpots,
@@ -1087,7 +1087,7 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 		          && lit.data->lightType == gameLight::lightTypes::Directional)
 		{
 			gameLightDirectional::ptr dlit =
-				std::dynamic_pointer_cast<gameLightDirectional>(lit.data);
+				std::static_pointer_cast<gameLightDirectional>(lit.data);
 
 			packLight(dlit,
 					  lightbuf.udirectional_lights + activeDirs,
@@ -1148,7 +1148,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				case gameLight::lightTypes::Point:
 					{
 						gameLightPoint::ptr plit =
-							std::dynamic_pointer_cast<gameLightPoint>(light.data);
+							std::static_pointer_cast<gameLightPoint>(light.data);
 						point_lights.push_back({light.transform, plit});
 					}
 					break;
@@ -1156,7 +1156,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				case gameLight::lightTypes::Spot:
 					{
 						gameLightSpot::ptr slit =
-							std::dynamic_pointer_cast<gameLightSpot>(light.data);
+							std::static_pointer_cast<gameLightSpot>(light.data);
 						spot_lights.push_back({light.transform, slit});
 					}
 					break;
@@ -1164,7 +1164,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 				case gameLight::lightTypes::Directional:
 					{
 						gameLightDirectional::ptr dlit =
-							std::dynamic_pointer_cast<gameLightDirectional>(light.data);
+							std::static_pointer_cast<gameLightDirectional>(light.data);
 						directional_lights.push_back({light.transform, dlit});
 					}
 					break;
