@@ -37,8 +37,11 @@ class bulletObject : public physicsObject {
 		virtual void setVelocity(glm::vec3 vel);
 		virtual void setAcceleration(glm::vec3 accel);
 		virtual void setAngularFactor(float amount);
+
 		virtual glm::vec3 getVelocity(void);
 		virtual glm::vec3 getAcceleration(void);
+		virtual float     getAngularFactor(void);
+
 		virtual void removeSelf(void);
 
 	protected:

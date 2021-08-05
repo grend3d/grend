@@ -132,6 +132,10 @@ glm::vec3 bulletObject::getAcceleration(void) {
 	return glm::vec3(0);
 }
 
+float bulletObject::getAngularFactor(void) {
+	return body->getAngularFactor().x();
+}
+
 void bulletPhysics::drawDebug(glm::mat4 cam) {
 	if (debugDrawer.getDebugMode()) {
 		world->debugDrawWorld();

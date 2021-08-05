@@ -26,6 +26,7 @@ rigidBody::rigidBody(entityManager *manager,
 	: transformUpdatable(manager, ent, properties)
 {
 	manager->registerComponent(ent, serializedType, this);
+	manager->registerComponent(ent, "activatable", this);
 }
 
 rigidBodySphere::rigidBodySphere(entityManager *manager,
@@ -119,7 +120,7 @@ void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");
 
-	if (!body) {
+	if (!body || !body->phys) {
 		// no attached physics body
 		return;
 	}
@@ -131,7 +132,7 @@ void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");
 
-	if (!body) {
+	if (!body || !body->phys) {
 		// no attached physics body
 		return;
 	}
@@ -145,7 +146,7 @@ void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent, "rigidBody");
 
-	if (!body) {
+	if (!body || !body->phys) {
 		// no attached physics body
 		return;
 	}
@@ -167,7 +168,7 @@ void syncRigidBodySystem::update(entityManager *manager, float delta) {
 		syncRigidBody *syncer = dynamic_cast<syncRigidBody*>(comp);
 		entity *ent = manager->getEntity(comp);
 
-		if (!syncer || !ent) {
+		if (!syncer || !ent || !ent->active) {
 			// TODO: warning
 			continue;
 		}

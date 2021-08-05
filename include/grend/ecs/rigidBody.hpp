@@ -25,12 +25,13 @@ class transformUpdatable : public component {
 		virtual const char* typeString(void) const { return serializedType; };
 };
 
-class rigidBody : public transformUpdatable {
+class rigidBody : public transformUpdatable, public activatable {
 	public:
 		rigidBody(entityManager *manager, entity *ent, float _mass)
 			: transformUpdatable(manager, ent)
 		{
 			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, "activatable", this);
 			mass = _mass;
 		}
 
@@ -53,8 +54,39 @@ class rigidBody : public transformUpdatable {
 			// TODO: should show warning if there's no physics object
 		}
 
+		virtual void initBody(entityManager *manager, entity *ent) {
+			// class needs to be instantiable for serialization,
+			// so this can't be an abstract function, so note that
+			// subclasses should implement this to generate a physics
+			// object
+		};
+
+		// activation here means adding and deleting the physics object
+		virtual void activate(entityManager *manager, entity *ent) {
+			if (!phys) {
+				initBody(manager, ent);
+				// TODO: cached angular factor
+				phys->setAngularFactor(cachedAngularFactor);
+				phys->collisionQueue = cachedQueue;
+			}
+		}
+
+		virtual void deactivate(entityManager *manager, entity *ent) {
+			if (phys) {
+				// TODO: cache angular factor
+				position = phys->getTransform().position;
+				cachedQueue = phys->collisionQueue;
+				cachedAngularFactor = phys->getAngularFactor();
+				phys->removeSelf();
+				phys = nullptr;
+			}
+		}
+
 		physicsObject::ptr phys = nullptr;
 		float mass;
+		float cachedAngularFactor = 1.f;
+		glm::vec3 position;
+		std::shared_ptr<std::vector<collision>> cachedQueue = nullptr;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "rigidBody";
@@ -68,14 +100,17 @@ class rigidBodySphere : public rigidBody {
 		                glm::vec3 _position,
 		                float _mass,
 		                float _radius)
-			: rigidBody(manager, ent, _mass),
-			  position(_position),
-			  mass(_mass),
-			  radius(_radius)
+			: rigidBody(manager, ent, _mass)
 		{
 			manager->registerComponent(ent, serializedType, this);
+
+			position = _position;
+			mass     = _mass;
+			radius   = _radius;
+
 			//setRadius(radius);
-			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
+			//phys = manager->engine->phys->addSphere(ent, position, mass, radius);
+			activate(manager, ent);
 		}
 
 		rigidBodySphere(entityManager *manager,
@@ -83,6 +118,10 @@ class rigidBodySphere : public rigidBody {
 		                nlohmann::json properties);
 
 		virtual ~rigidBodySphere();
+
+		virtual void initBody(entityManager *manager, entity *ent) {
+			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
+		}
 
 		virtual void setRadius(float r) {
 			// XXX: if the object has moved since it was added, this will reset
@@ -92,8 +131,6 @@ class rigidBodySphere : public rigidBody {
 			//phys = manager->engine->phys->addSphere(ent, position, mass, r);
 		}
 
-		glm::vec3 position;
-		float mass;
 		float radius;
 
 		// serialization stuff
@@ -116,13 +153,18 @@ class rigidBodyBox : public rigidBody {
 	public:
 		rigidBodyBox(entityManager *manager,
 		             entity *ent,
-		             glm::vec3 position,
-		             float mass,
-		             AABBExtent& box)
-			: rigidBody(manager, ent, mass)
+		             glm::vec3 _position,
+		             float _mass,
+		             AABBExtent& _extent)
+			: rigidBody(manager, ent, _mass)
 		{
 			manager->registerComponent(ent, serializedType, this);
-			phys = manager->engine->phys->addBox(ent, position, mass, box);
+
+			position = _position;
+			mass     = _mass;
+			extent   = _extent;
+
+			activate(manager, ent);
 		}
 
 		rigidBodyBox(entityManager *manager,
@@ -130,6 +172,12 @@ class rigidBodyBox : public rigidBody {
 		             nlohmann::json properties);
 
 		virtual ~rigidBodyBox();
+
+		virtual void initBody(entityManager *manager, entity *ent) {
+			phys = manager->engine->phys->addBox(ent, position, mass, extent);
+		}
+
+		AABBExtent extent;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "rigidBodyBox";
@@ -148,17 +196,23 @@ class rigidBodyBox : public rigidBody {
 		virtual nlohmann::json serialize(entityManager *manager);
 };
 
+// TODO: activatable
 class rigidBodyCylinder : public rigidBody {
 	public:
 		rigidBodyCylinder(entityManager *manager,
 		             entity *ent,
-		             glm::vec3 position,
-		             float mass,
-		             AABBExtent& box)
+		             glm::vec3 _position,
+		             float _mass,
+		             AABBExtent& _extent)
 			: rigidBody(manager, ent, mass)
 		{
 			manager->registerComponent(ent, serializedType, this);
-			phys = manager->engine->phys->addCylinder(ent, position, mass, box);
+
+			position = _position;
+			mass = _mass;
+			extent = _extent;
+
+			activate(manager, ent);
 		}
 
 		rigidBodyCylinder(entityManager *manager,
@@ -166,6 +220,12 @@ class rigidBodyCylinder : public rigidBody {
 		             nlohmann::json properties);
 
 		virtual ~rigidBodyCylinder();
+
+		virtual void initBody(entityManager *manager, entity *ent) {
+			phys = manager->engine->phys->addCylinder(ent, position, mass, extent);
+		}
+
+		AABBExtent extent;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "rigidBodyCylinder";
@@ -188,14 +248,20 @@ class rigidBodyCapsule : public rigidBody {
 	public:
 		rigidBodyCapsule(entityManager *manager,
 		             entity *ent,
-		             glm::vec3 position,
-		             float mass,
-		             float radius,
-		             float height)
+		             glm::vec3 _position,
+		             float _mass,
+		             float _radius,
+		             float _height)
 			: rigidBody(manager, ent, mass)
 		{
 			manager->registerComponent(ent, serializedType, this);
-			phys = manager->engine->phys->addCapsule(ent, position, mass, radius, height);
+
+			position = _position;
+			mass     = _mass;
+			radius   = _radius;
+			height   = _height;
+
+			activate(manager, ent);
 		}
 
 		rigidBodyCapsule(entityManager *manager,
@@ -203,6 +269,16 @@ class rigidBodyCapsule : public rigidBody {
 		             nlohmann::json properties);
 
 		virtual ~rigidBodyCapsule();
+
+		// for class activatable
+		// activation here means adding and deleting the physics object
+		virtual void initBody(entityManager *manager, entity *ent) {
+			phys = manager->engine->phys->addCapsule(ent, position, mass, radius, height);
+		}
+
+		// position, mass in rigidBody
+		float radius;
+		float height;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "rigidBodyCapsule";

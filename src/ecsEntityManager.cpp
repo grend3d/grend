@@ -13,6 +13,7 @@ component::~component() {
 entity::~entity() {};
 entitySystem::~entitySystem() {};
 entityEventSystem::~entityEventSystem() {};
+activatable::~activatable() {};
 
 
 entity::entity(entityManager *manager,
@@ -106,11 +107,55 @@ bool entityManager::valid(entity *ent) {
 }
 
 void entityManager::activate(entity *ent) {
+	if (!valid(ent)) return;
+
 	ent->active = ent->node->visible = true;
+
+	// run activators, if any
+	auto comps = entityComponents[ent];
+	auto activaters = comps.equal_range("activatable");
+
+	for (auto it = activaters.first; it != activaters.second; it++) {
+		activatable* act = dynamic_cast<activatable*>(it->second);
+
+		if (act) {
+			SDL_Log("(%s:%s) Running activator",
+			        ent->typeString(),
+			        it->second->typeString());
+			act->activate(this, ent);
+
+		} else {
+			SDL_Log("(%s:%s) Warning: couldn't cast activator!",
+			        ent->typeString(),
+			        it->second->typeString());
+		}
+	}
 }
 
 void entityManager::deactivate(entity *ent) {
+	if (!valid(ent)) return;
+
 	ent->active = ent->node->visible = false;
+
+	// run deactivators, if any
+	auto comps = entityComponents[ent];
+	auto activaters = comps.equal_range("activatable");
+
+	for (auto it = activaters.first; it != activaters.second; it++) {
+		activatable* act = dynamic_cast<activatable*>(it->second);
+
+		if (act) {
+			SDL_Log("(%s:%s) Running deactivator",
+			        ent->typeString(),
+			        it->second->typeString());
+			act->deactivate(this, ent);
+
+		} else {
+			SDL_Log("(%s:%s) Warning: couldn't cast activator!",
+			        ent->typeString(),
+			        it->second->typeString());
+		}
+	}
 }
 
 entityManager::~entityManager() {

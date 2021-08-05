@@ -1,3 +1,5 @@
+/// @file
+// TODO: more doxygen, copyright, etc
 #pragma once
 
 #include <grend/gameObject.hpp>
@@ -145,6 +147,22 @@ class entity : public component {
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
 		bool active = true;
+};
+
+/**
+ * Interface for actions to perform when activating/deactivating
+ * entities.
+ *
+ * To use this class, entities should inherit from this base class,
+ * implement activate() and deactivate(), and register themselves as
+ * an "activatable" component on themselves. 
+ */
+class activatable {
+	public:
+		virtual ~activatable();
+
+		virtual void activate(entityManager *manager, entity *ent) = 0;
+		virtual void deactivate(entityManager *manager, entity *ent) = 0;
 };
 
 class entitySystem {

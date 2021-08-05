@@ -43,8 +43,15 @@ class physicsObject {
 		virtual void setVelocity(glm::vec3 vel) = 0;
 		virtual void setAcceleration(glm::vec3 accel) = 0;
 		virtual void setAngularFactor(float amount) = 0;
+
+		virtual glm::vec3 getPosition(void) {
+			return getTransform().position;
+		};
+
 		virtual glm::vec3 getVelocity(void) = 0;
 		virtual glm::vec3 getAcceleration(void) = 0;
+		virtual float     getAngularFactor(void) = 0;
+
 		virtual void removeSelf(void) = 0;
 
 		std::shared_ptr<std::vector<collision>> collisionQueue = nullptr;
