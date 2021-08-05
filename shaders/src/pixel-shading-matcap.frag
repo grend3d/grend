@@ -22,7 +22,7 @@ void main(void) {
 	vec2 matuv  = vec2(matuva.x, 1.0 - matuva.y);
 
 	vec3 matcolor = texture2D(diffuse_map, matuv).rgb;
-	vec3 total_light = aoidx*matcolor + emissive;
+	vec3 total_light = aoidx*matcolor + anmaterial.emissive.rgb*emissive;
 
 	FRAG_COLOR = vec4(total_light, 1.0);
 }
