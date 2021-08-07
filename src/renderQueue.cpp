@@ -62,7 +62,7 @@ void renderQueue::add(gameObject::ptr obj,
 
 	} else if (obj->type == gameObject::objType::Particles) {
 		auto p = std::static_pointer_cast<gameParticles>(obj);
-		addInstanced(obj, p, adjTrans, inverted);
+		addInstanced(obj, p, adjTrans, glm::mat4(1), inverted);
 
 	} else if (obj->type == gameObject::objType::BillboardParticles) {
 		auto p = std::static_pointer_cast<gameBillboardParticles>(obj);
@@ -101,14 +101,15 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 
 void renderQueue::addInstanced(gameObject::ptr obj,
                                gameParticles::ptr particles,
-                               glm::mat4 trans,
+                               glm::mat4 outerTrans,
+                               glm::mat4 innerTrans,
                                bool inverted)
 {
 	if (obj == nullptr || !obj->visible) {
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransformMatrix();
+	glm::mat4 adjTrans = innerTrans*obj->getTransformMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
@@ -119,11 +120,11 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 
 	if (obj->type == gameObject::objType::Mesh) {
 		auto m = std::static_pointer_cast<gameMesh>(obj);
-		instancedMeshes.push_back({adjTrans, inverted, particles, m});
+		instancedMeshes.push_back({adjTrans, outerTrans, inverted, particles, m});
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		addInstanced(ptr, particles, adjTrans, inverted);
+		addInstanced(ptr, particles, outerTrans, adjTrans, inverted);
 	}
 }
 
@@ -346,10 +347,11 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	}
 	lights = tempLights;
 
-	std::vector<std::tuple<glm::mat4, bool, gameParticles::ptr,
+	std::vector<std::tuple<glm::mat4, glm::mat4, bool,
+	                       gameParticles::ptr,
 						   gameMesh::ptr>> tempInstanced;
 	for (auto it = instancedMeshes.begin(); it != instancedMeshes.end(); it++) {
-		auto& [trans, _, particles, __] = *it;
+		auto& [_, trans, __, particles, ___] = *it;
 
 		if (cam->sphereInFrustum(applyTransform(trans), particles->radius)) {
 			tempInstanced.push_back(*it);
@@ -400,7 +402,13 @@ void renderQueue::batch(void) {
 
 	for (auto& [mesh, particles] : batches) {
 		particles->syncBuffer();
-		instancedMeshes.push_back({ glm::mat4(1), false, particles, mesh });
+		instancedMeshes.push_back({
+			glm::mat4(1),
+			glm::mat4(1),
+			false,
+			particles,
+			mesh
+		});
 	}
 
 	meshes = tempMeshes;
@@ -481,7 +489,8 @@ static void drawMesh(renderFlags& flags,
 static void drawMeshInstanced(renderFlags& flags,
                               renderFramebuffer::ptr fb,
                               Program::ptr program,
-                              glm::mat4& transform,
+                              glm::mat4& outerTrans,
+                              glm::mat4& innerTrans,
                               bool inverted,
                               gameParticles::ptr particles,
                               gameMesh::ptr mesh)
@@ -502,9 +511,10 @@ static void drawMeshInstanced(renderFlags& flags,
 	}
 
 	glm::mat3 m_3x3_inv_transp =
-		glm::transpose(glm::inverse(model_to_world(transform)));
+		glm::transpose(glm::inverse(model_to_world(outerTrans)));
 
-	program->set("m", transform);
+	program->set("outerTrans", outerTrans);
+	program->set("innerTrans", innerTrans);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
 	if (!flags.shadowmap) {
@@ -764,15 +774,16 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.instancedShader->set("cameraPosition", cam->position());
 	shaderSync(flags.instancedShader, rctx);
 
-	for (auto& [transform, inverted, particleSystem, mesh] : instancedMeshes) {
+	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : instancedMeshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
+				nearest_irradiance_probe(applyTransform(outerTrans)),
 				flags.instancedShader);
 		}
 
 		drawMeshInstanced(flags, fb, flags.instancedShader,
-		                  transform, inverted, particleSystem, mesh);
+		                  innerTrans, outerTrans, inverted,
+		                  particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
 	}
 
