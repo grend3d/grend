@@ -47,7 +47,6 @@ class entityManager {
 		std::set<entity*> added;
 		std::set<entity*> condemned;
 
-		void update(float delta);
 		void registerComponent(entity *ent, std::string name, component *ptr);
 		void unregisterComponent(entity *ent, component *ptr);
 		void unregisterComponentType(entity *ent, std::string name);
@@ -58,6 +57,7 @@ class entityManager {
 		void remove(entity *ent);
 		bool valid(entity *ent);
 
+		void update(float delta);
 		void activate(entity *ent);
 		void deactivate(entity *ent);
 
@@ -139,7 +139,6 @@ class entity : public component {
 		virtual const char* typeString(void) const { return "entity"; };
 		virtual nlohmann::json serialize(entityManager *manager);
 
-		virtual void update(entityManager *manager, float delta) {};
 		virtual gameObject::ptr getNode(void) { return node; };
 
 		gameObject::ptr node = std::make_shared<gameObject>();
@@ -147,6 +146,26 @@ class entity : public component {
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
 		bool active = true;
+};
+
+/**
+ * Interface for components with per-frame updates.
+ *
+ * Entities and components should inherit from this base class,
+ * implement update(), and register themselves as an "updatable"
+ * component on their containing entity. (For entities that means
+ * themselves.)
+ */
+class updatable {
+	public:
+		// TODO: probably a good idea to have a constructor
+		//       here that automatically registers this thing
+		//       as an updatable component
+		virtual ~updatable();
+
+		//! Update state, integrated over the time difference from
+		//! the last frame.
+		virtual void update(entityManager *manager, float delta) = 0;
 };
 
 /**

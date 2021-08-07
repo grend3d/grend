@@ -13,8 +13,8 @@ component::~component() {
 entity::~entity() {};
 entitySystem::~entitySystem() {};
 entityEventSystem::~entityEventSystem() {};
+updatable::~updatable() {};
 activatable::~activatable() {};
-
 
 entity::entity(entityManager *manager,
 		       nlohmann::json properties)
@@ -60,11 +60,26 @@ void entityManager::update(float delta) {
 		}
 	}
 
+	auto& updaters = getComponents("updatable");
+	for (auto& comp : updaters) {
+		entity *e = getEntity(comp);
+
+		if (!e || !e->active) {
+			continue;
+		}
+
+		if (updatable *u = dynamic_cast<updatable*>(comp)) {
+			u->update(this, delta);
+		}
+	}
+
+	/*
 	for (auto& ent : entities) {
 		if (ent->active) {
 			ent->update(this, delta);
 		}
 	}
+	*/
 
 	for (auto& ent : added) {
 		for (auto& [_, sys] : addEvents) {
