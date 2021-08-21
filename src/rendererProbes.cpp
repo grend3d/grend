@@ -120,11 +120,11 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	camera::ptr cam = camera::ptr(new camera());
 	profile::startGroup("Set flags, bind");
 	cam->setPosition(applyTransform(transform));
-	cam->setFovx(360.f*acos(light->angle)/M_PI);
+	//cam->setFovx(360.f*acos(light->angle)/M_PI);
+	cam->setFovx(2.f*180.f*acosf(light->angle)/M_PI);
 	// TODO: configurable/dynamic far plane
 	//cam->setFar(light->extent(rctx->lightThreshold));
 	cam->setFar(50);
-	std::cerr << "Set angle: " << cam->fovx() << std::endl;
 
 	renderFlags flags = rctx->probeShaders["shadow"];
 	flags.shadowmap = true;
@@ -139,7 +139,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	profile::endGroup();
 
 	profile::startGroup("Clear");
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 	profile::endGroup();
 
 	profile::startGroup("Build queue");

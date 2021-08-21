@@ -23,7 +23,11 @@ void main(void) {
 
 	vec4 color = texture2D(render_fb, scaled_texcoord);
 	float depth = texture2D(render_depth, scaled_texcoord).r;
-	float adj = clamp((linearDepth(depth)) / (far/12.0), 0.0, 1.0);
+	if (depth < 1.0) {
+		float adj = clamp((linearDepth(depth)) / (far/12.0), 0.0, 1.0);
+		FRAG_COLOR = vec4(mix(color.rgb, fogColor.rgb, adj*adj), 1.0);
 
-	FRAG_COLOR = vec4(mix(color.rgb, fogColor.rgb, adj*adj), 1.0);
+	} else {
+		FRAG_COLOR = vec4(color.rgb, 1.0);
+	}
 }

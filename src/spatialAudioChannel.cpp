@@ -101,7 +101,7 @@ static const double inch_to_cm  = 2.54;
 #define INCHES 2.54
 
 static const double direction = -3.1415926;
-static const double driver_radius = 2.7*INCHES;
+static const double driver_radius = 3.0*INCHES;
 static const double front_radius = 6.0*INCHES;
 static const double back_radius = 3.75*INCHES;
 static const double echo_ext_param = (M_PI/2.0);

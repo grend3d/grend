@@ -218,6 +218,15 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 	}
 
 	materialCache[mat.get()] = ret;
+	// XXX: once the material is cached no need to keep pointers around...
+	//      need better way to do this
+	maps.diffuse.reset();
+	maps.metalRoughness.reset();
+	maps.normal.reset();
+	maps.ambientOcclusion.reset();
+	maps.emissive.reset();
+	maps.lightmap.reset();
+
 	return ret;
 }
 

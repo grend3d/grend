@@ -312,6 +312,7 @@ bool Program::cached(std::string uniform) {
  * @return true if a new object was set, false if obj is the current object.
  */
 bool Program::cacheObject(const char *name, uintptr_t obj) {
+	return true;
 	auto it = objCache.find(name);
 
 	if (it == objCache.end() || it->second != obj) {

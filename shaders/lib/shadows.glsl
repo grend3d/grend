@@ -8,10 +8,10 @@ float far = 50.0;
 
 // TODO: compile-time and uniform parameter macros, once I get to
 //       doing hot shader reloading
-#define DEPTH_BIAS 0.0005
-#define SHADOW_FILTER shadow_sample // to disable shadow filtering
+#define DEPTH_BIAS 0.001
+//#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
-//#define SHADOW_FILTER shadow_pcf
+#define SHADOW_FILTER shadow_pcf
 #define SHADOW_PCF_RANGE   0.5
 #define SHADOW_PCF_STEP    1.0
 

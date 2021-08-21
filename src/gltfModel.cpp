@@ -986,7 +986,8 @@ static void load_gltf_node_light(gltfModel& gltf,
 		if (light.type == "point") {
 			gameLightPoint::ptr point = std::make_shared<gameLightPoint>();
 			point->intensity = light.intensity;
-			point->casts_shadows = true;
+			//point->casts_shadows = true;
+			point->casts_shadows = false;
 			// XXX: 0.25 seems to be the blender default, and the punctual lights
 			//      gltf extension doesn't store this info...
 			point->radius = 0.25;
@@ -998,7 +999,8 @@ static void load_gltf_node_light(gltfModel& gltf,
 		} else if (light.type == "spot") {
 			gameLightSpot::ptr spot = std::make_shared<gameLightSpot>();
 			spot->intensity = light.intensity;
-			spot->casts_shadows = true;
+			//spot->casts_shadows = true;
+			spot->casts_shadows = false;
 			spot->radius = 0.25;
 			spot->diffuse =
 				glm::vec4(light.color[0], light.color[1], light.color[2], 1.0);
