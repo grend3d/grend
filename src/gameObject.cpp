@@ -90,15 +90,41 @@ gameObject::ptr grendx::clone(gameObject::ptr node) {
 
 gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	// TODO: need to copy all attributes
-	/*
-	gameObject::ptr ret = std::make_shared<gameObject>();
 
+	gameObject::ptr ret;
+
+	// copy specific per-type object members
+	switch (node->type) {
+		case gameObject::objType::None:
+			ret = std::make_shared<gameObject>();
+			break;
+
+		case gameObject::objType::Import:
+			{
+				gameImport::ptr foo = std::static_pointer_cast<gameImport>(node);
+				ret = std::make_shared<gameImport>(foo->sourceFile);
+				break;
+			}
+
+		// TODO: meshes/models, particles shouldn't be copied, but would it make
+		//       sense to copy other types like lights, cameras?
+		default:
+			return node;
+	}
+
+	// copy generic gameObject members
+	ret->setTransform(node->getTransformTRS());
+	ret->visible         = node->visible;
+	ret->animations      = node->animations;
+	ret->parent          = node->parent;
+	ret->extraProperties = node->extraProperties;
+
+	// copy sub-nodes
 	for (auto& [name, ptr] : node->nodes) {
 		setNode(name, ret, duplicate(ptr));
 	}
-	*/
 
-	return clone(node);
+	return ret;
 }
 
 std::string grendx::getNodeName(gameObject::ptr node) {
