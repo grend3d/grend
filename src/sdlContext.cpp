@@ -26,7 +26,13 @@ static void callbackStub(void *userdata, uint8_t *stream, int len) {
 
 context::context(const char *progname) {
 	SDL_Log("got to context::context()");
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+	int flags
+		= SDL_INIT_VIDEO
+		| SDL_INIT_AUDIO
+		| SDL_INIT_JOYSTICK
+		| SDL_INIT_GAMECONTROLLER;
+
+	if (SDL_Init(flags) < 0) {
 		SDL_Die(SDL_GetError());
 	}
 

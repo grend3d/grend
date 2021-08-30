@@ -174,7 +174,10 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	state->angle = angle;
 
 	return [=] (SDL_Event& ev, unsigned flags) {
-		if (!state->initialized || ev.button.button == SDL_BUTTON_MIDDLE) {
+		bool isMouse = ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP;
+		bool isController = ev.type == SDL_CONTROLLERBUTTONDOWN || ev.type == SDL_CONTROLLERBUTTONUP;
+
+		if (!state->initialized || (isMouse && ev.button.button == SDL_BUTTON_MIDDLE)) {
 			if (!state->clicked && ev.type == SDL_MOUSEBUTTONDOWN) {
 				SDL_GetMouseState(&state->lastClick[0], &state->lastClick[1]);
 				//distMoved = {0, 0};
@@ -202,6 +205,26 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 			state->initialized = true;
 		}
 
+		else if (isController) {
+			float n = 0;
+
+			switch (ev.cbutton.button) {
+				case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+					n = -0.07;
+					break;
+				case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+					n = 0.06;
+					break;
+			}
+
+			state->distMoved.x += n;
+			cam->setDirection(glm::vec3 {
+				sin(4.f*state->distMoved.x),
+				sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
+				-cos(4.f*state->distMoved.x)
+			});
+		}
+
 		return MODAL_NO_CHANGE;
 	};
 }
@@ -218,6 +241,16 @@ bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float s
 	return [=] (SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_MOUSEWHEEL) {
 			*zoom -= scale*ev.wheel.y;
+		}
+
+		if (ev.type == SDL_CONTROLLERBUTTONDOWN) {
+			if (ev.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP) {
+				*zoom -= scale;
+			}
+
+			if (ev.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN) {
+				*zoom += scale;
+			}
 		}
 
 		return MODAL_NO_CHANGE;
