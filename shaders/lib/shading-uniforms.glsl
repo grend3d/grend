@@ -48,7 +48,7 @@ uniform mat4 v_inv;
 
 // TODO: UBO for material (except on gles2...)
 uniform material anmaterial;
-uniform float time_ms;
+//uniform float time_ms;
 
 struct point_light {
 	vec4 position;

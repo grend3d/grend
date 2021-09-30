@@ -5,6 +5,9 @@
 
 namespace grendx {
 
+// XXX: need to pass shader blocks for lighting info, need a cleaner way to do this
+using blockParameters = std::map<std::string, std::pair<Buffer::ptr, GLuint>>;
+
 class rUninitialized {
 	public:
 		rUninitialized(unsigned fb_x, unsigned fb_y) {
@@ -140,11 +143,18 @@ class renderPostStage : public Storage {
 			program = prog;
 		}
 
-		void setUniforms(Shader::parameters& uniforms) {
+		void setUniforms(Shader::parameters& uniforms,
+		                 blockParameters& uniformBlocks)
+		{
 			program->bind();
 
 			for (auto& [key, val] : uniforms) {
 				program->set(key, val);
+			}
+
+			for (auto& [key, val] : uniformBlocks) {
+				auto& [buf, binding] = val;
+				program->setUniformBlock(key, buf, binding);
 			}
 		}
 
@@ -200,12 +210,12 @@ class renderPostChain {
 			Texture::ptr current = fb->color;
 
 			for (auto& stage : prestages) {
-				stage->setUniforms(uniforms);
+				stage->setUniforms(uniforms, uniformBlocks);
 				stage->draw(current, fb->depth);
 				current = stage->renderTexture;
 			}
 
-			output->setUniforms(uniforms);
+			output->setUniforms(uniforms, uniformBlocks);
 			output->draw(current, fb->depth);
 		}
 
@@ -221,10 +231,15 @@ class renderPostChain {
 			uniforms[name] = val;
 		}
 
+		void setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding) {
+			uniformBlocks[name] = {buf, binding};
+		}
+
 	private:
 		std::vector<renderPostStage<rStage>::ptr> prestages;
 		renderPostStage<rOutput>::ptr output;
 		Shader::parameters uniforms;
+		blockParameters uniformBlocks;
 };
 
 // NOTE: assumes the given program is not already linked
