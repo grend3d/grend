@@ -174,19 +174,34 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	state->angle = angle;
 
 	return [=] (SDL_Event& ev, unsigned flags) {
-		bool isMouse = ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP;
+		int x, y; (void)x; (void)y;
+		Uint32 buttons = SDL_GetMouseState(&x, &y);
+
+		bool isMouse = ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP || ev.type == SDL_MOUSEMOTION;
 		bool isController = ev.type == SDL_CONTROLLERBUTTONDOWN || ev.type == SDL_CONTROLLERBUTTONUP;
 
-		if (!state->initialized || (isMouse && ev.button.button == SDL_BUTTON_MIDDLE)) {
-			if (!state->clicked && ev.type == SDL_MOUSEBUTTONDOWN) {
+		if (!state->initialized) {
+			cam->setDirection(glm::vec3 {
+				sin(4.f*state->distMoved.x),
+				sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
+				-cos(4.f*state->distMoved.x)
+			});
+
+			state->initialized = true;
+		}
+
+		else if (isMouse) {
+			bool isMiddle = ev.button.button == SDL_BUTTON_MIDDLE;
+
+			if (!state->clicked && ev.type == SDL_MOUSEBUTTONDOWN && isMiddle) {
 				SDL_GetMouseState(&state->lastClick[0], &state->lastClick[1]);
 				//distMoved = {0, 0};
 				state->clicked = true;
 
-			} else if (state->clicked && ev.type == SDL_MOUSEBUTTONUP) {
+			} else if (state->clicked && ev.type == SDL_MOUSEBUTTONUP && isMiddle) {
 				state->clicked = false;
 
-			} else if (!state->initialized || state->clicked && ev.type == SDL_MOUSEMOTION) {
+			} else if (state->clicked && ev.type == SDL_MOUSEMOTION) {
 				int win_x, win_y;
 				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
@@ -201,8 +216,6 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 					-cos(4.f*state->distMoved.x)
 				});
 			}
-
-			state->initialized = true;
 		}
 
 		else if (isController) {
