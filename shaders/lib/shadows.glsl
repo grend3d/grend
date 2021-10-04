@@ -12,7 +12,7 @@ float far = 50.0;
 //#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
 #define SHADOW_FILTER shadow_pcf
-#define SHADOW_PCF_RANGE   0.5
+#define SHADOW_PCF_RANGE   1.0
 #define SHADOW_PCF_STEP    1.0
 
 //#define SHADOW_PCF_SAMPLER shadow_sample_linear
