@@ -22,8 +22,28 @@ namespace grendx::ecs {
 
 class component;
 class entity;
+class entityManager;
 class entitySystem;
 class entityEventSystem;
+
+template <typename T>
+concept Nameable = requires(T a) {
+	T::serializedType != nullptr;
+	a.typeString();
+};
+
+template <typename T>
+concept Constructable = requires(T a) {
+	T::defaultProperties();
+	new T((entityManager*)nullptr, (entity*)nullptr, T::defaultProperties());
+};
+
+
+template <typename T>
+concept Serializeable
+	=  Nameable<T>
+	&& Constructable<T>
+	&& requires(T a) { a.serialize(); };
 
 class entityManager {
 	public:
@@ -48,6 +68,11 @@ class entityManager {
 		std::set<entity*> condemned;
 
 		void registerComponent(entity *ent, std::string name, component *ptr);
+		template <Nameable T>
+		void registerComponent(entity *ent, T *ptr) {
+			registerComponent(ent, T::serializedType, ptr);
+		};
+
 		void unregisterComponent(entity *ent, component *ptr);
 		void unregisterComponentType(entity *ent, std::string name);
 		// TODO: will there ever be a time where I'd only want to unregister
@@ -63,6 +88,11 @@ class entityManager {
 
 		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
 		bool hasComponents(entity *ent, std::vector<std::string> tags);
+
+		template <Nameable T>
+		bool hasComponent(entity *ent) {
+			return hasComponents(ent, {T::serializedType});
+		};
 
 		// remove() doesn't immediately free, just adds the entity
 		// to a queue of the condemned, clearFreedEntities() banishes the
@@ -218,6 +248,16 @@ entity *findNearest(entityManager *manager,
 entity *findFirst(entityManager *manager,
                   std::initializer_list<std::string> tags);
 
+template <Nameable T>
+T* findNearest(entityManager *manager, glm::vec3 position) {
+	return (T*)findNearest(manager, position, {T::serializedType});
+}
+
+template <Nameable T>
+T* findFirst(entityManager *manager) {
+	return (T*)findFirst(manager, {T::serializedType});
+}
+
 template <class T>
 T castEntityComponent(entityManager *m, entity *e, std::string name) {
 	auto &comps = m->getEntityComponents(e);
@@ -228,13 +268,21 @@ T castEntityComponent(entityManager *m, entity *e, std::string name) {
 		return nullptr;
 	}
 
-	return dynamic_cast<T>(comp->second);
+	// TODO: dynamic_cast for debug, static_cast for production?
+	//       seems like a recipe for bugs that disappear in debug mode
+	//return dynamic_cast<T>(comp->second);
+	return static_cast<T>(comp->second);
 }
 
 template <class T>
 T castEntityComponent(T& val, entityManager *m, entity *e, std::string name) {
 	val = castEntityComponent<T>(m, e, name);
 	return val;
+}
+
+template <Nameable T>
+T* castEntityComponent(entityManager *m, entity *e) {
+	return castEntityComponent<T*>(m, e, T::serializedType);
 }
 
 // TODO: generalized for any iterable container type
