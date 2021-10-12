@@ -6,8 +6,6 @@ precision mediump sampler2D;
 #include <lib/postprocessing-uniforms.glsl>
 #include <lib/compat.glsl>
 
-//IN vec2 f_texcoord;
-
 vec4 fogColor = vec4(vec3(0.4), 1.0);
 
 uniform vec3 cameraPos;
@@ -27,6 +25,7 @@ float linearDepth(float d) {
 	return (2.0*lfar*lnear)/(lfar+lnear - (d*2.0 - 1.0)*(lfar - lnear));
 }
 
+// TODO: Figure out how to expose this as a quality setting
 #define ITERS 8
 
 #include <lib/noise.glsl>
@@ -38,27 +37,34 @@ float hash13(vec3 p3) {
 }
 
 vec3 raymarch(vec3 pos, vec3 dir, float depth, uint cluster) {
-	//float n = uniformNoise(f_texcoord*vec2(screen_x, screen_y), time_ms).x;
 	float n = hash13(vec3(f_texcoord*vec2(screen_x, screen_y), time_ms/1000.0));
 	float inc = 1.0 / float(ITERS);
-	float t = inc * n * depth;
+	float t = inc*depth;
+	float s = n*t;
+	float v = 0.025 * depth * inc;
 	vec3 accum = vec3(0);
 
 	for (uint i = uint(0); i < uint(ITERS); i++) {
-		vec3 p = pos + dir*t;
+		float k = t + s;
+		vec3 d = dir*k;
+		vec3 p = pos + dir*k;
+
+		if (k > depth) break;
 
 		for (uint m = uint(0); m < ACTIVE_POINTS(cluster); m++) {
-			float atten = point_attenuation(m, p);
-			float shadow = point_shadow(m, p);
+			uint idx = POINT_LIGHT_IDX(m, cluster);
+			float atten = point_attenuation(idx, p);
+			float shadow = point_shadow(idx, p);
 
-			accum += inc * 0.25*atten*shadow * POINT_LIGHT(m).diffuse.rgb;
+			accum += inc * v*atten*shadow * POINT_LIGHT(idx).diffuse.rgb;
 		}
 
 		for (uint m = uint(0); m < ACTIVE_SPOTS(cluster); m++) {
-			float atten = spot_attenuation(m, p);
-			float shadow = spot_shadow(m, p);
+			uint idx = SPOT_LIGHT_IDX(m, cluster);
+			float atten = spot_attenuation(idx, p);
+			float shadow = spot_shadow(idx, p);
 
-			accum += inc * 0.25*atten*shadow * SPOT_LIGHT(m).diffuse.rgb;
+			accum += inc * v*atten*shadow * SPOT_LIGHT(idx).diffuse.rgb;
 		}
 
 
@@ -75,32 +81,21 @@ void main(void) {
 	vec4 color = texture2D(render_fb, scaled_texcoord);
 	float depth = texture2D(render_depth, scaled_texcoord).r;
 
+	// TODO: pass in camera FOV as uniform
+	float asdf = tan(65.0 * 0.5 * 3.141592/180.0);
+
 	vec2 duv = f_texcoord*2.0 - 1.0;
-	//vec2 duv = f_texcoord;
-	vec3 uuv = cameraPos
-		+ cameraForward*1.0
-		+ f_texcoord.x * cameraRight
-		+ f_texcoord.y * cameraUp
-		;
-	//vec3 dir = normalize(uuv - cameraPos);
-
-	//float asdf = tan(1.2217 * 0.5);
-	//float asdf = tan(70.0 * 0.5 * 3.141592/180.0);
-	float asdf = 0.7;
-
 	vec3 dir = normalize(
 		cameraForward/asdf
 		+ duv.x * -cameraRight
 		+ duv.y/aspectRatio * cameraUp
 	);
 
-	uint cluster = SCREEN_TO_CLUSTER(f_texcoord.x, 1.0 - f_texcoord.y);
-	//uint cluster = SCREEN_TO_CLUSTER(gl_FragCoord.x / screen_x, (screen_y - gl_FragCoord.y) / screen_y);
+	uint cluster = SCREEN_TO_CLUSTER(gl_FragCoord.x/screen_x, gl_FragCoord.y/screen_y);
 
-	//float d = (depth < 1.0)? 50.0 : linearDepth(depth);
 	float d = linearDepth(depth);
 
-	vec3 fog = 0.05*raymarch(cameraPos, dir, d, cluster);
+	vec3 fog = raymarch(cameraPos, dir, d, cluster);
 	vec3 undone = undoTonemap(color, exposure).rgb;
 	fog = reinhard_hdr_modified(undone + fog, exposure);
 	FRAG_COLOR = vec4(fog.rgb, 1.0);
