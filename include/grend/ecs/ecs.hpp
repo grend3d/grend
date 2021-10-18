@@ -26,18 +26,32 @@ class entityManager;
 class entitySystem;
 class entityEventSystem;
 
-template <typename T>
-concept Nameable = requires(T a) {
-	T::serializedType != nullptr;
-	a.typeString();
-};
+template <typename T, typename U>
+concept differing_types =
+	std::is_same<T, U>::value
+	// make sure the serialized type member has been overloaded
+	|| (T::serializedType != U::serializedType);
 
 template <typename T>
-concept Constructable = requires(T a) {
-	T::defaultProperties();
-	new T((entityManager*)nullptr, (entity*)nullptr, T::defaultProperties());
-};
+concept is_ECSObject
+	// XXX: basic check to make sure the serialized type has been overridden,
+	//      need something more robust than this
+	=  differing_types<component, T>
+	&& differing_types<entity, T>
+	&& (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
 
+template <typename T>
+concept Nameable =
+	is_ECSObject<T>
+	&& requires(T a) { a.typeString(); };
+
+template <typename T>
+concept Constructable =
+	is_ECSObject<T>
+	&& requires(T a) {
+		T::defaultProperties();
+		new T((entityManager*)nullptr, (entity*)nullptr, T::defaultProperties());
+	};
 
 template <typename T>
 concept Serializeable
@@ -166,7 +180,7 @@ class entity : public component {
 		       nlohmann::json properties);
 
 		virtual ~entity();
-		virtual const char* typeString(void) const { return "entity"; };
+		virtual const char* typeString(void) const { return serializedType; };
 		virtual nlohmann::json serialize(entityManager *manager);
 
 		virtual gameObject::ptr getNode(void) { return node; };
@@ -268,10 +282,22 @@ T castEntityComponent(entityManager *m, entity *e, std::string name) {
 		return nullptr;
 	}
 
-	// TODO: dynamic_cast for debug, static_cast for production?
-	//       seems like a recipe for bugs that disappear in debug mode
+#if GREND_BUILD_DEBUG
+	// XXX: dynamic_cast in debug mode to help catch cases where you
+	//      might have forgotten to set a serializedType on a derived class
+	//
+	//      maybe should just accept doing dynamic_cast here all the time
+	//      for safety, gains from static_cast here probably aren't worth it,
+	//      benchmarking needed
+	auto ret = dynamic_cast<T>(comp->second);
+
+	assert(ret);
+	return ret;
+
+#else
 	//return dynamic_cast<T>(comp->second);
 	return static_cast<T>(comp->second);
+#endif
 }
 
 template <class T>
