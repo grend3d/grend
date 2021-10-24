@@ -29,11 +29,15 @@ class modalSDLInput {
 		void bind(int mode, bindFunc func, maskFunc mask);
 		void bind(int mode, bindEntry entry);
 		void setMode(int m);
+		void pushMode(int m);
+		void popMode(void);
+
 		bool sanityCheck(void);
 		int dispatch(SDL_Event& ev);
 		static bool maskNone(void);
 
 		std::map<int, std::vector<bindEntry>> bindings;
+		std::vector<int> modestack;
 		unsigned flags = bindFlags::None;
 		int mode = -1;
 };

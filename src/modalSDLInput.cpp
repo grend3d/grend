@@ -22,6 +22,18 @@ void modalSDLInput::setMode(int m) {
 	sanityCheck();
 }
 
+void modalSDLInput::pushMode(int m) {
+	modestack.push_back(mode);
+	mode = m;
+}
+
+void modalSDLInput::popMode(void) {
+	if (!modestack.empty()) {
+		mode = modestack.back();
+		modestack.pop_back();
+	}
+}
+
 bool modalSDLInput::sanityCheck(void) {
 	if (bindings.find(mode) == bindings.end()) {
 		std::cerr << "modalSDLInput::sanityCheck(): mode '"
