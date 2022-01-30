@@ -6,6 +6,7 @@ namespace grendx::ecs {
 // key functions for rtti
 component::~component() {
 	std::cerr << "got to ~component() "
+		//<< "[type: " << this->typeString() << "]"
 		<< "[type: " << this->typeString() << "]"
 		<< std::endl;
 }
@@ -20,7 +21,8 @@ entity::entity(entityManager *manager,
 		       nlohmann::json properties)
 	: component(manager, this, properties)
 {
-	manager->registerComponent(this, "entity", this);
+	//manager->registerComponent(this, "entity", this);
+	manager->registerComponent(this, this);
 
 	glm::vec3 pos(properties["node"]["position"][0],
 	              properties["node"]["position"][1],
@@ -60,7 +62,8 @@ void entityManager::update(float delta) {
 		}
 	}
 
-	auto& updaters = getComponents("updatable");
+	//auto& updaters = getComponents<updatable>();
+	auto& updaters = getComponents<updatable>();
 	for (auto& comp : updaters) {
 		entity *e = getEntity(comp);
 
@@ -128,21 +131,16 @@ void entityManager::activate(entity *ent) {
 
 	// run activators, if any
 	auto comps = entityComponents[ent];
-	auto activaters = comps.equal_range("activatable");
+	//auto activaters = comps.equal_range("activatable");
+	auto activators = comps.equal_range(getTypeName<activatable>());
 
-	for (auto it = activaters.first; it != activaters.second; it++) {
+	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
-
 		if (act) {
-			SDL_Log("(%s:%s) Running activator",
-			        ent->typeString(),
-			        it->second->typeString());
+			SDL_Log("(%s) Running activator", ent->typeString());
 			act->activate(this, ent);
-
 		} else {
-			SDL_Log("(%s:%s) Warning: couldn't cast activator!",
-			        ent->typeString(),
-			        it->second->typeString());
+			SDL_Log("(%s) Invalid activator!", ent->typeString());
 		}
 	}
 }
@@ -154,21 +152,16 @@ void entityManager::deactivate(entity *ent) {
 
 	// run deactivators, if any
 	auto comps = entityComponents[ent];
-	auto activaters = comps.equal_range("activatable");
+	auto activators = comps.equal_range(getTypeName<activatable>());
 
-	for (auto it = activaters.first; it != activaters.second; it++) {
+	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
-
 		if (act) {
-			SDL_Log("(%s:%s) Running deactivator",
-			        ent->typeString(),
-			        it->second->typeString());
+			SDL_Log("(%s) Running deactivator", ent->typeString());
 			act->deactivate(this, ent);
 
 		} else {
-			SDL_Log("(%s:%s) Warning: couldn't cast activator!",
-			        ent->typeString(),
-			        it->second->typeString());
+			SDL_Log("(%s) Invalid activator", ent->typeString());
 		}
 	}
 }
@@ -206,11 +199,11 @@ void entityManager::freeEntity(entity *ent) {
 		auto subent = entities.find((entity*)comp);
 
 		if (subent != entities.end()) {
-			entity *sub = dynamic_cast<entity*>(comp);
+			entity *sub = static_cast<entity*>(comp);
 
 			// entities get a self-referential entity and base component,
 			// need to check for that
-			if (sub && sub != ent) {
+			if (sub != ent) {
 				SDL_Log("entity has subentity, deleting that too");
 				remove(sub);
 			}
@@ -223,7 +216,7 @@ void entityManager::freeEntity(entity *ent) {
 
 	// then remove pointers from indexes
 	for (auto& [name, comp] : comps) {
-		SDL_Log("removing component %s from entity", name.c_str());
+		//SDL_Log("removing component %s from entity", name.c_str());
 		componentEntities.erase(comp);
 		components[name].erase(comp);
 	}
@@ -234,7 +227,7 @@ void entityManager::freeEntity(entity *ent) {
 
 // TODO: specialization or w/e
 bool entityManager::hasComponents(entity *ent,
-                                  std::initializer_list<std::string> tags)
+                                  std::initializer_list<const char *> tags)
 {
 	if (!valid(ent)) {
 		return false;
@@ -245,7 +238,7 @@ bool entityManager::hasComponents(entity *ent,
 }
 
 bool entityManager::hasComponents(entity *ent,
-                                  std::vector<std::string> tags)
+                                  std::vector<const char *> tags)
 {
 	if (!valid(ent)) {
 		return false;
@@ -256,23 +249,23 @@ bool entityManager::hasComponents(entity *ent,
 }
 
 std::set<entity*> searchEntities(entityManager *manager,
-                                 std::initializer_list<std::string> tags)
+                                 std::initializer_list<const char *> tags)
 {
-	return searchEntities<std::initializer_list<std::string>>
+	return searchEntities<std::initializer_list<const char *>>
 		(manager, {tags.begin(), tags.end()}, tags.size());
 }
 
 std::set<entity*> searchEntities(entityManager *manager,
-                                 std::vector<std::string>& tags)
+                                 std::vector<const char *>& tags)
 {
 	//return searchEntities(manager, {tags.data(), tags.data() + tags.size()});
-	return searchEntities<std::vector<std::string>>
+	return searchEntities<std::vector<const char *>>
 		(manager, {tags.begin(), tags.end()}, tags.size());
 }
 
 entity *findNearest(entityManager *manager,
                     glm::vec3 position,
-                    std::initializer_list<std::string> tags)
+                    std::initializer_list<const char *> tags)
 {
 	float curmin = HUGE_VALF;
 	entity *ret = nullptr;
@@ -292,7 +285,7 @@ entity *findNearest(entityManager *manager,
 }
 
 entity *findFirst(entityManager *manager,
-                  std::initializer_list<std::string> tags)
+                  std::initializer_list<const char *> tags)
 {
 	for (auto& ent : manager->entities) {
 		if (ent->active && manager->hasComponents(ent, tags)) {
@@ -304,18 +297,20 @@ entity *findFirst(entityManager *manager,
 }
 
 
+/*
 std::set<component*>& entityManager::getComponents(std::string name) {
 	// XXX: avoid creating component names if nothing registered them
 	static std::set<component*> nullret;
 
 	return (components.count(name))? components[name] : nullret;
 }
+*/
 
-std::multimap<std::string, component*>&
+std::multimap<const char *, component*>&
 entityManager::getEntityComponents(entity *ent) {
 	// XXX: similarly, something which isn't registered here has 
 	//      no components (at least, in this system) so return empty set
-	static std::multimap<std::string, component*> nullret;
+	static std::multimap<const char *, component*> nullret;
 
 	return (entityComponents.count(ent))? entityComponents[ent] : nullret;
 }
@@ -331,17 +326,50 @@ entity *entityManager::getEntity(component *com) {
 }
 
 void entityManager::registerComponent(entity *ent,
-                                      std::string name,
+                                      const char *name,
+                                      //std::string name,
                                       component *ptr)
 {
 	// TODO: need a proper logger
-	SDL_Log("registering component '%s' for %p", name.c_str(), ptr);
+	SDL_Log("registering component '%s' for %p", name, ptr);
 
 	components[name].insert(ptr);
 	componentEntities.insert({ptr, ent});
 	componentTypes[ptr].insert(name);
 	entityComponents[ent].insert({name, ptr});
 }
+
+void entityManager::registerInterface(entity *ent,
+                                      const char *name,
+                                      //std::string name,
+                                      void *ptr)
+{
+	// TODO: need a proper logger
+	//SDL_Log("registering component '%s' for %p", name, ptr);
+
+	component *root;
+
+#if 0 && GREND_BUILD_DEBUG
+	if ((root = dynamic_cast<component*>(ptr)) == nullptr) {
+		SDL_Log("Invalid interface, should be a base of a derived component!");
+		SDL_Log("(as in, define a component that inherits from the interface)");
+		return;
+	}
+#else
+	root = static_cast<component*>(ptr);
+#endif
+
+	/*
+	interfaces[name].insert(ptr);
+	interfaceEntities.insert({ptr, ent});
+	//interfaceTypes[ptr].insert(name);
+	entityInterfaces[ent].insert({name, ptr});
+	componentInterfaces[root].insert(name);
+	*/
+
+	registerComponent(ent, name, root);
+}
+
 
 // TODO: docs, noting possible linear time
 void entityManager::unregisterComponent(entity *ent, component *ptr) {
@@ -351,6 +379,8 @@ void entityManager::unregisterComponent(entity *ent, component *ptr) {
 
 	auto it = componentTypes.find(ptr);
 	if (it == componentTypes.end())
+		// doesn't exist in the entity manager, maybe double free?
+		// TODO: debug-only log statement
 		return;
 
 	for (auto& name : it->second) {
@@ -427,8 +457,8 @@ nlohmann::json entity::serialize(entityManager *manager) {
 	};
 }
 
-bool intersects(std::multimap<std::string, component*>& entdata,
-                std::initializer_list<std::string> test)
+bool intersects(std::multimap<const char *, component*>& entdata,
+                std::initializer_list<const char *> test)
 {
 	for (auto& s : test) {
 		auto it = entdata.find(s);
@@ -440,8 +470,8 @@ bool intersects(std::multimap<std::string, component*>& entdata,
 	return true;
 }
 
-bool intersects(std::multimap<std::string, component*>& entdata,
-                std::vector<std::string>& test)
+bool intersects(std::multimap<const char *, component*>& entdata,
+                std::vector<const char *>& test)
 {
 	for (auto& s : test) {
 		auto it = entdata.find(s);

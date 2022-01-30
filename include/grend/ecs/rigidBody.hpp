@@ -10,7 +10,7 @@ class transformUpdatable : public component {
 		transformUpdatable(entityManager *manager, entity *ent)
 			: component(manager, ent)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		};
 
 		transformUpdatable(entityManager *manager, entity *ent, nlohmann::json properties)
@@ -30,8 +30,8 @@ class rigidBody : public transformUpdatable, public activatable {
 		rigidBody(entityManager *manager, entity *ent, float _mass)
 			: transformUpdatable(manager, ent)
 		{
-			manager->registerComponent(ent, serializedType, this);
-			manager->registerComponent(ent, "activatable", this);
+			manager->registerComponent(ent, this);
+			manager->registerInterface<activatable>(ent, this);
 			mass = _mass;
 		}
 
@@ -102,7 +102,8 @@ class rigidBodySphere : public rigidBody {
 		                float _radius)
 			: rigidBody(manager, ent, _mass)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			//manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 
 			position = _position;
 			mass     = _mass;
@@ -158,7 +159,7 @@ class rigidBodyBox : public rigidBody {
 		             AABBExtent& _extent)
 			: rigidBody(manager, ent, _mass)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 
 			position = _position;
 			mass     = _mass;
@@ -206,7 +207,7 @@ class rigidBodyCylinder : public rigidBody {
 		             AABBExtent& _extent)
 			: rigidBody(manager, ent, mass)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 
 			position = _position;
 			mass = _mass;
@@ -254,7 +255,7 @@ class rigidBodyCapsule : public rigidBody {
 		             float _height)
 			: rigidBody(manager, ent, mass)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 
 			position = _position;
 			mass     = _mass;
@@ -306,7 +307,7 @@ class syncRigidBody : public component {
 		              nlohmann::json properties={})
 			: component(manager, ent, properties)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		}
 
 		virtual ~syncRigidBody();
@@ -323,7 +324,7 @@ class syncRigidBodyTransform : public syncRigidBody {
 		                       nlohmann::json properties={})
 			: syncRigidBody(manager, ent, properties)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		}
 
 		virtual ~syncRigidBodyTransform();
@@ -340,7 +341,7 @@ class syncRigidBodyPosition : public syncRigidBody {
 		                      nlohmann::json properties={})
 			: syncRigidBody(manager, ent, properties)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		}
 
 		virtual ~syncRigidBodyPosition();
@@ -357,7 +358,7 @@ class syncRigidBodyXZVelocity : public syncRigidBody {
 		                        nlohmann::json properties={})
 			: syncRigidBody(manager, ent)
 		{
-			manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		}
 
 		virtual ~syncRigidBodyXZVelocity();

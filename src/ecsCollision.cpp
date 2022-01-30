@@ -22,11 +22,12 @@ collisionHandler::collisionHandler(entityManager *manager,
                                    nlohmann::json properties)
 	: component(manager, ent)
 {
-	manager->registerComponent(ent, "collisionHandler", this);
+	manager->registerComponent(ent, this);
 
 	for (auto& it : properties) {
 		if (it.is_string()) {
-			tags.push_back(it.get<std::string>());
+			tagstore.push_back(it.get<std::string>());
+			tags.push_back(tagstore.back().c_str());
 		}
 	}
 }

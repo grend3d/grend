@@ -26,24 +26,41 @@ class entityManager;
 class entitySystem;
 class entityEventSystem;
 
+template <typename T>
+const char *getTypeName() {
+	return typeid(T).name();
+}
+
+template <typename T>
+const char *getTypeName(T& thing) {
+	return typeid(T).name();
+}
+
+/*
 template <typename T, typename U>
 concept differing_types =
 	std::is_same<T, U>::value
 	// make sure the serialized type member has been overloaded
 	|| (T::serializedType != U::serializedType);
+	*/
 
+// all ECS objects derived from component
+// TODO: now that I'm using typeid() could just attach any object
+//       as a component
 template <typename T>
 concept is_ECSObject
 	// XXX: basic check to make sure the serialized type has been overridden,
 	//      need something more robust than this
-	=  differing_types<component, T>
-	&& differing_types<entity, T>
-	&& (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
+	//=  differing_types<component, T>
+	//&& differing_types<entity, T>
+	//&& (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
+	= (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
 
 template <typename T>
 concept Nameable =
 	is_ECSObject<T>
-	&& requires(T a) { a.typeString(); };
+	;
+	//&& requires(T a) { a.typeString(); };
 
 template <typename T>
 concept Constructable =
@@ -73,24 +90,36 @@ class entityManager {
 		std::map<std::string, std::shared_ptr<entityEventSystem>> removeEvents;
 		// TODO: probably want externally-specified event systems
 
-		std::map<std::string, std::set<component*>> components;
-		std::map<entity*, std::multimap<std::string, component*>> entityComponents;
+		// component maps
+		// entity instances -> (attached component names -> component instances)
+		std::map<entity*, std::multimap<const char *, component*>> entityComponents;
+		// component names -> set of component instances
+		std::map<const char *, std::set<component*>> components;
+		// component instance -> entity attached to
 		std::map<component*, entity*> componentEntities;
-		std::map<component*, std::set<std::string>> componentTypes;
+		// component instance -> set of component names registered
+		//                       with the same instance
+		std::map<component*, std::set<const char *>> componentTypes;
+
 		std::set<entity*> entities;
 		std::set<entity*> added;
 		std::set<entity*> condemned;
 
-		void registerComponent(entity *ent, std::string name, component *ptr);
-		template <Nameable T>
+		//void registerComponent(entity *ent, std::string name, component *ptr);
+		template <typename T>
 		void registerComponent(entity *ent, T *ptr) {
-			registerComponent(ent, T::serializedType, ptr);
+			//registerComponent(ent, T::serializedType, ptr);
+			registerComponent(ent, getTypeName<T>(), ptr);
 		};
+
+		// should be called from interface constructors
+		template <typename T>
+		void registerInterface(entity *ent, T *ptr) {
+			registerInterface(ent, getTypeName<T>(), ptr);
+		}
 
 		void unregisterComponent(entity *ent, component *ptr);
 		void unregisterComponentType(entity *ent, std::string name);
-		// TODO: will there ever be a time where I'd only want to unregister
-		//       a component from one specific type?
 
 		void add(entity *ent);
 		void remove(entity *ent);
@@ -100,13 +129,20 @@ class entityManager {
 		void activate(entity *ent);
 		void deactivate(entity *ent);
 
-		bool hasComponents(entity *ent, std::initializer_list<std::string> tags);
-		bool hasComponents(entity *ent, std::vector<std::string> tags);
+		entity *getEntity(component *com); 
+		std::multimap<const char *, component*>& getEntityComponents(entity *ent);
 
-		template <Nameable T>
+		//bool hasComponents(entity *ent, std::vector<std::string> tags);
+
+		bool hasComponents(entity *ent, std::initializer_list<const char *> tags);
+		bool hasComponents(entity *ent, std::vector<const char *> tags);
+
+		/*
+		template <typename T>
 		bool hasComponent(entity *ent) {
-			return hasComponents(ent, {T::serializedType});
+			//return hasComponents(ent, {T::serializedType});
 		};
+		*/
 
 		// remove() doesn't immediately free, just adds the entity
 		// to a queue of the condemned, clearFreedEntities() banishes the
@@ -114,9 +150,19 @@ class entityManager {
 		void freeEntity(entity *ent);
 		void clearFreedEntities(void);
 
-		std::set<component*>& getComponents(std::string name);
-		std::multimap<std::string, component*>& getEntityComponents(entity *ent);
-		entity *getEntity(component *com); 
+		// TODO: "unsafe" or "internal" namespace for untemplated queries
+		//       can't really make it private
+		std::set<component*>& getComponents(const char *name) {
+			static std::set<component*> nullret;
+			return (components.count(name))? components[name] : nullret;
+		}
+
+		template <typename T>
+		std::set<component*>& getComponents() {
+			static std::set<component*> nullret;
+			const char *name = getTypeName<T>();
+			return (components.count(name))? components[name] : nullret;
+		}
 
 		gameObject::ptr root = std::make_shared<gameObject>();
 
@@ -127,11 +173,24 @@ class entityManager {
 
 		// XXX
 		gameMain *engine;
+
+	private:
+		void registerComponent(entity *ent, const char *name, component *ptr);
+		void registerInterface(entity *ent, const char *name, void *ptr);
+};
+
+template <typename... U>
+struct query {
+	bool hasComponents(entityManager *manager, entity *ent);
+};
+
+template <typename T>
+struct query<T> {
+	bool hasComponents(entityManager *manager, entity *ent);
 };
 
 class component {
 	public:
-		constexpr static const char *serializedType = "component";
 		static const nlohmann::json defaultProperties(void) {
 			return {};
 		};
@@ -140,11 +199,12 @@ class component {
 		          entity *ent,
 		          nlohmann::json properties = defaultProperties())
 		{
-			manager->registerComponent(ent, serializedType, this);
+			//manager->registerComponent(ent, serializedType, this);
+			manager->registerComponent(ent, this);
 		}
 
 		virtual ~component();
-		virtual const char* typeString(void) const { return serializedType; };
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 		virtual nlohmann::json serialize(entityManager *manager) { return {}; };
 
 		// draw the imgui widgets for this component, TODO
@@ -155,11 +215,11 @@ class component {
 
 class entity : public component {
 	public:
-		constexpr static const char *serializedType = "entity";
 		static const nlohmann::json defaultProperties(void) {
 			return {
 				{"type",        "entity"},
-				{"entity-type", serializedType},
+				//{"entity-type", serializedType},
+				{"entity-type", "TODO"},
 				{"node", {
 					{"position", {0.f, 0.f, 0.f}},
 					{"rotation", {1.f, 0.f, 0.f, 0.f}},
@@ -180,7 +240,7 @@ class entity : public component {
 		       nlohmann::json properties);
 
 		virtual ~entity();
-		virtual const char* typeString(void) const { return serializedType; };
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 		virtual nlohmann::json serialize(entityManager *manager);
 
 		virtual gameObject::ptr getNode(void) { return node; };
@@ -242,38 +302,40 @@ class entityEventSystem {
 		typedef std::shared_ptr<entityEventSystem> ptr;
 		typedef std::weak_ptr<entityEventSystem>   weakptr;
 
-		entityEventSystem(std::vector<std::string> _tags) : tags(_tags) {};
+		entityEventSystem(std::vector<const char *> _tags) : tags(_tags) {};
 
 		virtual ~entityEventSystem();
 		virtual void onEvent(entityManager *manager, entity *ent, float delta) {};
 
-		std::vector<std::string> tags;
+		std::vector<const char *> tags;
 };
 
 std::set<entity*> searchEntities(entityManager *manager,
-                                 std::initializer_list<std::string> tags);
+                                 std::initializer_list<const char *> tags);
 std::set<entity*> searchEntities(entityManager *manager,
-                                 std::vector<std::string>& tags);
+                                 std::vector<const char *>& tags);
 
 entity *findNearest(entityManager *manager,
                     glm::vec3 position,
-                    std::initializer_list<std::string> tags);
+                    std::initializer_list<const char *> tags);
 
 entity *findFirst(entityManager *manager,
-                  std::initializer_list<std::string> tags);
+                  std::initializer_list<const char *> tags);
 
 template <Nameable T>
 T* findNearest(entityManager *manager, glm::vec3 position) {
-	return (T*)findNearest(manager, position, {T::serializedType});
+	//return (T*)findNearest(manager, position, {T::serializedType});
+	return (T*)findNearest(manager, position, {getTypeName<T>()});
 }
 
 template <Nameable T>
 T* findFirst(entityManager *manager) {
-	return (T*)findFirst(manager, {T::serializedType});
+	return (T*)findFirst(manager, {getTypeName<T>()});
+	//return (T*)findFirst(manager, {T::serializedType});
 }
 
-template <class T>
-T castEntityComponent(entityManager *m, entity *e, std::string name) {
+template <class To>
+To* castEntityComponent(entityManager *m, entity *e, const char *name) {
 	auto &comps = m->getEntityComponents(e);
 	auto comp = comps.find(name);
 
@@ -289,34 +351,67 @@ T castEntityComponent(entityManager *m, entity *e, std::string name) {
 	//      maybe should just accept doing dynamic_cast here all the time
 	//      for safety, gains from static_cast here probably aren't worth it,
 	//      benchmarking needed
-	auto ret = dynamic_cast<T>(comp->second);
+	auto ret = dynamic_cast<To*>(comp->second);
 
 	assert(ret);
 	return ret;
 
 #else
 	//return dynamic_cast<T>(comp->second);
-	return static_cast<T>(comp->second);
+	return static_cast<To*>(comp->second);
 #endif
 }
 
+/*
 template <class T>
 T castEntityComponent(T& val, entityManager *m, entity *e, std::string name) {
 	val = castEntityComponent<T>(m, e, name);
 	return val;
 }
+*/
+template <class To, class From>
+To*& castEntityComponent(To*& val, entityManager *m, entity *e) {
+	const char *name = getTypeName<From>();
+	val = castEntityComponent<To>(m, e, name);
+	return val;
+}
 
+template <class To>
+To*& castEntityComponent(To*& val, entityManager *m, entity *e) {
+	const char *name = getTypeName<To>();
+	val = castEntityComponent<To>(m, e, name);
+	return val;
+}
+
+template <class To>
+To* castEntityComponent(entityManager *m, entity *e) {
+	const char *name = getTypeName<To>();
+	return castEntityComponent<To>(m, e, name);
+}
+
+template <class To>
+To* getComponent(entityManager *m, entity *e) {
+	return castEntityComponent<To>(m, e);
+}
+
+template <class To>
+To* getComponent(entityManager *m, entity *e, const char *type) {
+	return castEntityComponent<To>(m, e, type);
+}
+
+/*
 template <Nameable T>
 T* castEntityComponent(entityManager *m, entity *e) {
 	return castEntityComponent<T*>(m, e, T::serializedType);
 }
+*/
 
 // TODO: generalized for any iterable container type
-bool intersects(std::multimap<std::string, component*>& entdata,
-                std::initializer_list<std::string> test);
+bool intersects(std::multimap<const char *, component*>& entdata,
+                std::initializer_list<const char *> test);
 
-bool intersects(std::multimap<std::string, component*>& entdata,
-                std::vector<std::string>& test);
+bool intersects(std::multimap<const char *, component*>& entdata,
+                std::vector<const char *>& test);
 
 // namespace grendx::ecs
 };

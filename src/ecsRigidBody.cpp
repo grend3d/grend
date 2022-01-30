@@ -25,8 +25,8 @@ rigidBody::rigidBody(entityManager *manager,
                      nlohmann::json properties)
 	: transformUpdatable(manager, ent, properties)
 {
-	manager->registerComponent(ent, serializedType, this);
-	manager->registerComponent(ent, "activatable", this);
+	manager->registerComponent(ent, this);
+	manager->registerInterface<activatable>(ent, this);
 }
 
 rigidBodySphere::rigidBodySphere(entityManager *manager,
@@ -34,7 +34,7 @@ rigidBodySphere::rigidBodySphere(entityManager *manager,
                                  nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	manager->registerComponent(ent, serializedType, this);
+	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
 	phys = manager->engine->phys->addSphere(ent, position, 1.f, properties["radius"]);
@@ -46,7 +46,7 @@ rigidBodyBox::rigidBodyBox(entityManager *manager,
                            nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	manager->registerComponent(ent, serializedType, this);
+	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
 	auto center = properties["center"];
@@ -66,7 +66,7 @@ rigidBodyCylinder::rigidBodyCylinder(entityManager *manager,
                                      nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	manager->registerComponent(ent, serializedType, this);
+	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
 	auto center = properties["center"];
@@ -86,7 +86,7 @@ rigidBodyCapsule::rigidBodyCapsule(entityManager *manager,
                                    nlohmann::json properties)
 	: rigidBody(manager, ent, properties)
 {
-	manager->registerComponent(ent, serializedType, this);
+	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
 	float radius = properties["radius"];
@@ -118,7 +118,7 @@ nlohmann::json rigidBodyCapsule::serialize(entityManager *manager) {
 
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
-	castEntityComponent(body, manager, ent, "rigidBody");
+	castEntityComponent(body, manager, ent);
 
 	if (!body || !body->phys) {
 		// no attached physics body
@@ -130,7 +130,7 @@ void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 
 void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
-	castEntityComponent(body, manager, ent, "rigidBody");
+	castEntityComponent(body, manager, ent);
 
 	if (!body || !body->phys) {
 		// no attached physics body
@@ -144,7 +144,7 @@ void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
 
 void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
-	castEntityComponent(body, manager, ent, "rigidBody");
+	castEntityComponent(body, manager, ent);
 
 	if (!body || !body->phys) {
 		// no attached physics body
@@ -162,10 +162,11 @@ void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 }
 
 void syncRigidBodySystem::update(entityManager *manager, float delta) {
-	std::set<component*> syncers = manager->getComponents("syncRigidBody");
+	//std::set<component*> syncers = manager->getComponents("syncRigidBody");
+	std::set<component*> syncers = manager->getComponents<syncRigidBody>();
 
 	for (auto& comp : syncers) {
-		syncRigidBody *syncer = dynamic_cast<syncRigidBody*>(comp);
+		syncRigidBody *syncer = static_cast<syncRigidBody*>(comp);
 		entity *ent = manager->getEntity(comp);
 
 		if (!syncer || !ent || !ent->active) {
@@ -182,12 +183,13 @@ void updateEntityTransforms(entityManager *manager,
                             const TRS& transform)
 {
 	auto& m = manager->getEntityComponents(ent);
-	auto updaters = m.equal_range("transformUpdatable");
+	//auto updaters = m.equal_range("transformUpdatable");
+	auto updaters = m.equal_range(getTypeName<transformUpdatable>());
 
 	for (auto it = updaters.first; it != updaters.second; it++) {
 		auto& [_, comp] = *it;
 
-		transformUpdatable *updater = dynamic_cast<transformUpdatable*>(comp);
+		transformUpdatable *updater = static_cast<transformUpdatable*>(comp);
 
 		if (updater) {
 			updater->setTransform(transform);

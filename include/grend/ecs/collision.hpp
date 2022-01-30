@@ -18,7 +18,9 @@ class collisionHandler : public component {
 		onCollision(entityManager *manager, entity *ent,
 		            entity *other, collision& col) = 0;
 
-		std::vector<std::string> tags;
+		std::vector<const char *> tags;
+		// XXX: storage for tags
+		std::vector<std::string> tagstore;
 
 		// serialization stuff
 		constexpr static const char *serializedType = "collisionHandler";

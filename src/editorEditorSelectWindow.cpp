@@ -233,6 +233,11 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	ImGui::SameLine();
 	ImGui::InputText("Search", searchBuffer, sizeof(searchBuffer));
 	auto tags = split_string(searchBuffer);
+	std::vector<const char *> tagchars;
+
+	for (const auto& v : tags) {
+		tagchars.push_back(v.c_str());
+	}
 
 	ImGui::SameLine();
 	if (ImGui::Button("New entity")) {
@@ -247,7 +252,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 	ImGui::BeginChild("componentList");
 	for (const auto& [name, _] : game->entities->components) {
-		drawSelectableLabel(name.c_str());
+		drawSelectableLabel(name);
 	}
 
 	ImGui::EndChild();
@@ -260,8 +265,9 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 	ImGui::BeginChild("entityList", ImVec2(0, 0), false, 0);
 	for (auto& ent : game->entities->entities) {
-		if (*searchBuffer && !game->entities->hasComponents(ent, tags)) {
+		if (*searchBuffer && !game->entities->hasComponents(ent, tagchars)) {
 			// entity doesn't have the searched tags, filtered out
+			// TODO: wait, why am I not using the search interface here?
 			continue;
 		}
 
@@ -302,7 +308,8 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 		for (auto& [name, comp] : components) {
 			if (!seen.count(name)) {
-				drawSelectableLabel(name.c_str());
+				// TODO: demangle, re-mangle
+				drawSelectableLabel(name);
 				ImGui::NextColumn();
 				seen.insert(name);
 			}
