@@ -73,6 +73,9 @@ void entityManager::update(float delta) {
 
 		if (updatable *u = dynamic_cast<updatable*>(comp)) {
 			u->update(this, delta);
+
+		} else {
+			SDL_Log("(%s) Invalid updater!", e->typeString());
 		}
 	}
 
@@ -131,8 +134,7 @@ void entityManager::activate(entity *ent) {
 
 	// run activators, if any
 	auto comps = entityComponents[ent];
-	//auto activaters = comps.equal_range("activatable");
-	auto activators = comps.equal_range(getTypeName<activatable>());
+	auto activators = getRange<activatable>(comps);
 
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
@@ -152,7 +154,7 @@ void entityManager::deactivate(entity *ent) {
 
 	// run deactivators, if any
 	auto comps = entityComponents[ent];
-	auto activators = comps.equal_range(getTypeName<activatable>());
+	auto activators = getRange<activatable>(comps);
 
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
@@ -192,7 +194,7 @@ void entityManager::freeEntity(entity *ent) {
 
 	// first free component objects
 	auto comps = entityComponents[ent];
-	auto uniqueComponents = comps.equal_range("component");
+	auto uniqueComponents = getRange<component>(comps);
 
 	for (auto it = uniqueComponents.first; it != uniqueComponents.second; it++) {
 		auto& [name, comp] = *it;
@@ -345,7 +347,6 @@ void entityManager::registerInterface(entity *ent,
                                       void *ptr)
 {
 	// TODO: need a proper logger
-	//SDL_Log("registering component '%s' for %p", name, ptr);
 
 	component *root;
 
@@ -358,6 +359,7 @@ void entityManager::registerInterface(entity *ent,
 #else
 	root = static_cast<component*>(ptr);
 #endif
+	SDL_Log("registering interface '%s' for %p", name, root);
 
 	/*
 	interfaces[name].insert(ptr);

@@ -19,17 +19,11 @@ collisionHandler::collisionHandler(entityManager *manager, entity *ent,
 
 collisionHandler::collisionHandler(entityManager *manager,
                                    entity *ent,
-                                   nlohmann::json properties)
-	: component(manager, ent)
+                                   std::initializer_list<const char *> taglist)
+	: component(manager, ent),
+	  tags(taglist.begin(), taglist.end())
 {
 	manager->registerComponent(ent, this);
-
-	for (auto& it : properties) {
-		if (it.is_string()) {
-			tagstore.push_back(it.get<std::string>());
-			tags.push_back(tagstore.back().c_str());
-		}
-	}
 }
 
 nlohmann::json collisionHandler::serialize(entityManager *manager) {
@@ -69,9 +63,9 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 				continue;
 			}
 
-			if (manager->hasComponents(self, {"collisionHandler", "entity"})) {
+			if (manager->hasComponents<collisionHandler, entity>(self)) {
 				auto entcomps = manager->getEntityComponents(self);
-				auto range = entcomps.equal_range("collisionHandler");
+				auto range = getRange<collisionHandler>(entcomps);
 
 				for (auto it = range.first; it != range.second; it++) {
 					auto& [_, comp] = *it;

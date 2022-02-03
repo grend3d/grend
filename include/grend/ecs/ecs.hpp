@@ -113,8 +113,10 @@ class entityManager {
 		};
 
 		// should be called from interface constructors
-		template <typename T>
-		void registerInterface(entity *ent, T *ptr) {
+		template <typename T, typename U>
+		void registerInterface(entity *ent, U *ptr) noexcept {
+			static_assert(std::is_base_of<T, U>::value,
+			              "Given component type must implement the interface specified");
 			registerInterface(ent, getTypeName<T>(), ptr);
 		}
 
@@ -133,6 +135,11 @@ class entityManager {
 		std::multimap<const char *, component*>& getEntityComponents(entity *ent);
 
 		//bool hasComponents(entity *ent, std::vector<std::string> tags);
+
+		template <typename... T>
+		bool hasComponents(entity *ent) {
+			return hasComponents(ent, { getTypeName<T>()... });
+		}
 
 		bool hasComponents(entity *ent, std::initializer_list<const char *> tags);
 		bool hasComponents(entity *ent, std::vector<const char *> tags);
@@ -178,6 +185,14 @@ class entityManager {
 		void registerComponent(entity *ent, const char *name, component *ptr);
 		void registerInterface(entity *ent, const char *name, void *ptr);
 };
+
+template <typename T>
+std::pair<std::multimap<const char *, component*>::iterator,
+          std::multimap<const char *, component*>::iterator>
+getRange(std::multimap<const char *, component*>& compmap)
+{
+	return compmap.equal_range(getTypeName<T>());
+}
 
 template <typename... U>
 struct query {
@@ -322,16 +337,24 @@ entity *findNearest(entityManager *manager,
 entity *findFirst(entityManager *manager,
                   std::initializer_list<const char *> tags);
 
-template <Nameable T>
+template <typename T>
 T* findNearest(entityManager *manager, glm::vec3 position) {
-	//return (T*)findNearest(manager, position, {T::serializedType});
 	return (T*)findNearest(manager, position, {getTypeName<T>()});
 }
 
-template <Nameable T>
+template <typename T>
 T* findFirst(entityManager *manager) {
 	return (T*)findFirst(manager, {getTypeName<T>()});
-	//return (T*)findFirst(manager, {T::serializedType});
+}
+
+template <typename... T>
+entity *findNearestTypes(entityManager *manager, glm::vec3 position) {
+	return findNearest(manager, position, { getTypeName<T>()... });
+}
+
+template <typename... T>
+entity *findFirstTypes(entityManager *manager) {
+	return findFirst(manager, { getTypeName<T>()... });
 }
 
 template <class To>
