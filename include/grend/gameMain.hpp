@@ -23,7 +23,7 @@ class gameView;
 // abstract class, should be derived from
 class gameMain {
 	public:
-		gameMain(std::string name="grendx");
+		gameMain(const std::string& name, const renderSettings& settings);
 		virtual ~gameMain();
 
 		virtual int step(void);
@@ -32,9 +32,11 @@ class gameMain {
 		virtual void setView(std::shared_ptr<gameView> nview);
 		virtual void handleInput(void);
 		virtual void clearMetrics(void);
+		void applySettings(const renderSettings& newSettings);
 
 		bool running = false;
 		context ctx;
+		renderSettings settings;
 
 		// state objects
 		// TODO: these might as well be unique_ptrs

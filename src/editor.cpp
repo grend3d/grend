@@ -14,7 +14,9 @@ using namespace grendx;
 
 static gameModel::ptr  physmodel;
 
-gameEditor::gameEditor(gameMain *game) : gameView() {
+gameEditor::gameEditor(gameMain *game)
+	: gameView()
+{
 	objects = gameObject::ptr(new gameObject());
 	cam->setFar(1000.0);
 	/*
@@ -28,22 +30,24 @@ gameEditor::gameEditor(gameMain *game) : gameView() {
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
 		                game->rend->globalShaderOptions)},
-		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		game->settings.targetResX, game->settings.targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
 		//{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
 		 //               game->rend->globalShaderOptions)},
 		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
-		{game->rend->postShaders["psaa"]},
-		SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		//{game->rend->postShaders["psaa"]},
+		//
+		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
+		                game->rend->globalShaderOptions)},
+		game->settings.targetResX, game->settings.targetResY));
 #endif
 
 	loading_thing = makePostprocessor<rOutput>(
 		loadProgram(GR_PREFIX "shaders/baked/postprocess.vert",
 		            GR_PREFIX "shaders/baked/texpresent.frag",
 		            game->rend->globalShaderOptions),
-		SCREEN_SIZE_X,
-		SCREEN_SIZE_Y
+		game->settings.targetResX, game->settings.targetResY
 	);
 
 	// XXX: constructing a full shared pointer for this is a bit wasteful...
@@ -295,11 +299,13 @@ void gameEditor::initImgui(gameMain *game) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
-
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+	io.Fonts->AddFontFromFileTTF(GR_PREFIX "assets/fonts/Roboto-Regular.ttf",
+	                             12*game->settings.UIScale);
 
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsClassic();

@@ -8,6 +8,7 @@
 #include <grend/gameView.hpp>
 #include <grend/timers.hpp>
 #include <grend/modalSDLInput.hpp>
+#include <grend/renderSettings.hpp>
 #include <memory>
 
 namespace grendx {
@@ -21,7 +22,7 @@ class gameMainDevWindow : public gameMain {
 			Player,
 		};
 
-		gameMainDevWindow();
+		gameMainDevWindow(const renderSettings& settings);
 
 		// setView here sets the player view
 		virtual void setView(std::shared_ptr<gameView> nview);

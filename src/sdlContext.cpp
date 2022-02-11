@@ -24,7 +24,7 @@ static void callbackStub(void *userdata, uint8_t *stream, int len) {
 	}
 }
 
-context::context(const char *progname) {
+context::context(const char *progname, const renderSettings& settings) {
 	SDL_Log("got to context::context()");
 	int flags
 		= SDL_INIT_VIDEO
@@ -33,6 +33,9 @@ context::context(const char *progname) {
 		| SDL_INIT_GAMECONTROLLER;
 
 	if (SDL_Init(flags) < 0) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+		                         "Could not initialize",
+		                         "Could not initialize SDL!", NULL);
 		SDL_Die(SDL_GetError());
 	}
 
@@ -73,22 +76,22 @@ context::context(const char *progname) {
 
 	window = SDL_CreateWindow(progname, SDL_WINDOWPOS_CENTERED, 
 	                         SDL_WINDOWPOS_CENTERED,
-	                          SCREEN_SIZE_X, SCREEN_SIZE_Y,
+	                          32, 32,
 	                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
-
-	/*
-	SDL_ShowCursor(SDL_DISABLE);
-	*/
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+	                         "Could not initialize",
+	                         "Could not initialize SDL!", NULL);
 
 	if (!window) {
 		SDL_Die("Couldn't create a window");
 	}
 
+	// apply after creating a window, before creating GL context
+	applySettings(settings);
+
 	glcontext = SDL_GL_CreateContext(window);
 	SDL_Log("have window + gl context");
-
-	SDL_GL_SetSwapInterval(1);
 
 #if GLSL_VERSION >= 330
 	// only use glew for core profiles
@@ -127,6 +130,71 @@ context::~context() {
 	SDL_DestroyWindow(window);
 	SDL_CloseAudioDevice(audioOut);
 	SDL_Quit();
+}
+
+void context::applySettings(const renderSettings& settings) {
+	SDL_GL_SetSwapInterval(settings.vsync);
+
+	if (settings.windowResX == 0 || settings.windowResY == 0) {
+		//SDL_SetWindowSize(window, 1920, 1080);
+
+		//SDL_SetWindowFullscreen(window, settings.fullscreen? SDL_WINDOW_FULLSCREEN : 0);
+		SDL_SetWindowFullscreen(window, settings.fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+
+		if (settings.fullscreen) {
+			// find best display mode in full screen mode
+			// TODO: figure out how to find what desktop the window is on
+			//       or let the user select the desktop
+			int count = SDL_GetNumDisplayModes(0);
+			if (count < 0) {
+				SDL_Log("SDL_GetNumDisplayModes() failed...");
+				return;
+			}
+
+			SDL_DisplayMode mode;
+			SDL_DisplayMode best;
+			uint32_t bestbpp = 0;
+
+			memset(&best, 0, sizeof(best));
+
+			for (int i = 0; i < count; i++) {
+				if (SDL_GetDisplayMode(0, i, &mode) != 0) {
+					SDL_Log("SDL_GetDisplayMode() failed...");
+					return;
+				}
+
+				uint32_t f = mode.format;
+
+				SDL_Log("Mode %d\tbpp: %d\t%s\t%dx%d",
+						i, SDL_BITSPERPIXEL(f), SDL_GetPixelFormatName(f),
+						mode.w, mode.h);
+
+				if (mode.w > best.w && SDL_BITSPERPIXEL(f) >= bestbpp) {
+					best = mode;
+					bestbpp = SDL_BITSPERPIXEL(f);
+				}
+			}
+
+			SDL_SetWindowDisplayMode(window, &best);
+
+		} else {
+			SDL_DisplayMode mode;
+			if (SDL_GetDesktopDisplayMode(0, &mode) != 0) {
+				SDL_SetWindowSize(window, mode.w, mode.h);
+
+			} else {
+				SDL_Log("SDL_GetDesktopDisplayMode() failed, defaulting to 1080p");
+				SDL_SetWindowSize(window, 1920, 1080);
+			}
+		}
+
+	} else {
+		SDL_SetWindowSize(window, settings.windowResX, settings.windowResY);
+	}
+
+	/*
+	SDL_ShowCursor(SDL_DISABLE);
+	*/
 }
 
 void context::setAudioCallback(void *data, SDL_AudioCallback callback) {

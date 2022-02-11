@@ -21,8 +21,9 @@ using namespace grendx;
 // non-pure virtual destructors for rtti
 gameMain::~gameMain() {};
 
-gameMain::gameMain(std::string name)
-	: ctx(name.c_str())
+gameMain::gameMain(const std::string& name, const renderSettings& _settings)
+	: ctx(name.c_str(), _settings),
+	  settings(_settings)
 {
 	initializeOpengl();
 
@@ -41,6 +42,10 @@ gameMain::gameMain(std::string name)
 
 	entities  = std::make_shared<ecs::entityManager>(this);
 	factories = std::make_shared<ecs::factories>();
+}
+
+void gameMain::applySettings(const renderSettings& newSettings) {
+	ctx.applySettings(newSettings);
 }
 
 void gameMain::clearMetrics(void) {

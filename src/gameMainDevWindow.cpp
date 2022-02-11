@@ -11,7 +11,9 @@
 
 using namespace grendx;
 
-gameMainDevWindow::gameMainDevWindow() : gameMain("grend editor") {
+gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
+	: gameMain("grend editor", settings)
+{
 	editor = gameView::ptr(new gameEditor(this));
 	view   = editor;
 

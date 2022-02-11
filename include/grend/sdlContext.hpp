@@ -1,25 +1,18 @@
 #pragma once
 
-// premium HD resolution
-// TODO: make screen size configurable
-/*
-#define SCREEN_SIZE_X 1366
-#define SCREEN_SIZE_Y 768
-*/
-#define SCREEN_SIZE_X 1280
-#define SCREEN_SIZE_Y 720
-
 #include <SDL.h>
 //#include <SDL_ttf.h>
 #include <grend/openglIncludes.hpp>
+#include <grend/renderSettings.hpp>
 
 namespace grendx {
 
 class context {
 	public:
-		context(const char *progname);
+		context(const char *progname, const renderSettings& settings);
 		~context();
 		void setAudioCallback(void *data, SDL_AudioCallback callback);
+		void applySettings(const renderSettings& settings);
 
 		SDL_Window *window;
 		SDL_GLContext glcontext;
