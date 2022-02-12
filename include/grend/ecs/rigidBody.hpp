@@ -156,7 +156,7 @@ class rigidBodyBox : public rigidBody {
 		             entity *ent,
 		             glm::vec3 _position,
 		             float _mass,
-		             AABBExtent& _extent)
+		             const AABBExtent& _extent)
 			: rigidBody(manager, ent, _mass)
 		{
 			manager->registerComponent(ent, this);
