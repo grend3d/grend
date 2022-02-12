@@ -21,8 +21,8 @@ struct renderSettings {
 	unsigned lightProbeSize = 16;
 	unsigned lightProbeAtlasSize = 1024;
 
-	float scaleX = 0.5;
-	float scaleY = 0.5;
+	float scaleX = 1.0;
+	float scaleY = 1.0;
 	bool dynamicScaling = false;
 	// TODO: redo the dynamic scaling stuff
 

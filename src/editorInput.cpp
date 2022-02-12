@@ -67,6 +67,7 @@ static void handleAddNode(gameEditor *editor,
 	obj->setTransform(editor->cursorBuf);
 	setNode(name, editor->selectedNode, obj);
 	editor->selectedNode = obj;
+	editor->runCallbacks(obj, gameEditor::editAction::Added);
 };
 
 template <class T>
@@ -169,6 +170,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 					case SDLK_i:
 						clear(game);
 						selectedNode = game->state->rootnode = loadMapCompiled(game);
+						runCallbacks(selectedNode, editAction::NewScene);
 						break;
 					case SDLK_o: saveMap(game, game->state->rootnode); break;
 					case SDLK_DELETE: selectedNode = unlink(selectedNode); break;
@@ -189,6 +191,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 				gameObject::ptr temp = clone(selectedNode);
 				std::string name = "cloned " + std::to_string(temp->id);
 				setNode(name, selectedNode->parent.lock(), temp);
+				runCallbacks(selectedNode, editAction::Added);
 				return (int)mode::MoveSomething;
 			}
 			return MODAL_NO_CHANGE;
@@ -497,6 +500,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_y*reversed_y
 				;
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		case mode::MoveY:
@@ -511,6 +515,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_y*reversed_y
 				;
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		case mode::MoveZ:
@@ -525,6 +530,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_y*reversed_y
 				;
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		// TODO: need to split rotation spinner in seperate quadrant meshes
@@ -541,6 +547,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				                      reversed_x*rad,
 				                      glm::vec3(1, 0, 0)));
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		case mode::RotateY:
@@ -554,6 +561,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				                      reversed_x*rad,
 				                      glm::vec3(0, 1, 0)));
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		case mode::RotateZ:
@@ -567,6 +575,7 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				                      reversed_x*rad,
 				                      glm::vec3(0, 0, 1)));
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		// scale, unlike the others, has a mouse handler for the select mode,
@@ -575,24 +584,28 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount);
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleX:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount, 0, 0);
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleY:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, TAUF*amount, 0);
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleZ:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, 0, TAUF*amount);
 			selectedNode->setTransform(selectedTransform);
+			runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		default:

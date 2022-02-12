@@ -14,7 +14,8 @@ using namespace grendx;
 gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
 	: gameMain("grend editor", settings)
 {
-	editor = gameView::ptr(new gameEditor(this));
+	//editor = gameView::ptr(new gameEditor(this));
+	editor = std::make_shared<gameEditor>(this);
 	view   = editor;
 
 	jobs->addAsync([](){
@@ -108,4 +109,9 @@ void gameMainDevWindow::handleInput(void) {
 		input.dispatch(ev);
 		view->handleInput(this, ev);
 	}
+}
+
+void gameMainDevWindow::addEditorCallback(gameEditor::editCallback func) {
+	gameEditor *p = editor.get();
+	p->addEditorCallback(func);
 }

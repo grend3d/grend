@@ -318,6 +318,16 @@ void gameEditor::initImgui(gameMain *game) {
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
+void gameEditor::addEditorCallback(editCallback func) {
+	callbacks.push_back(func);
+}
+
+void gameEditor::runCallbacks(gameObject::ptr node, editAction action) {
+	for (auto& f : callbacks) {
+		f(node, action);
+	}
+}
+
 std::pair<gameObject::ptr, modelMap> grendx::loadModel(std::string path) {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {

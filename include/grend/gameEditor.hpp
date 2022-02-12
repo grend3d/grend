@@ -54,6 +54,20 @@ gameObject::ptr loadMapAsyncCompiled(gameMain *game, std::string name="save.map"
 
 class gameEditor : public gameView {
 	public:
+		typedef std::shared_ptr<gameEditor> ptr;
+		typedef std::weak_ptr<gameEditor> weakptr;
+
+		enum editAction {
+			NewScene,
+			Added,
+			Moved,
+			Scaled,
+			Rotated,
+			Deleted,
+		};
+
+		typedef std::function<void(gameObject::ptr, editAction action)> editCallback;
+
 		gameEditor(gameMain *game);
 		renderPostChain::ptr post;
 		renderPostStage<rOutput>::ptr loading_thing;
@@ -62,6 +76,8 @@ class gameEditor : public gameView {
 		virtual void handleInput(gameMain *game, SDL_Event& ev);
 		virtual void render(gameMain *game);
 		void initImgui(gameMain *game);
+		void addEditorCallback(editCallback func);
+		void runCallbacks(gameObject::ptr node, editAction action);
 
 		enum mode {
 			Inactive,
@@ -178,6 +194,7 @@ class gameEditor : public gameView {
 		// TODO: utility function, should be move somewhere else
 		gameObject::ptr getNonModel(gameObject::ptr obj);
 
+		std::vector<editCallback> callbacks;
 		modalSDLInput inputBinds;
 		bool showMapWindow = false;
 		bool showObjectEditorWindow = false;

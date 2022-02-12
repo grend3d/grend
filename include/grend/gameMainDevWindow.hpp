@@ -9,7 +9,9 @@
 #include <grend/timers.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/renderSettings.hpp>
+
 #include <memory>
+#include <functional>
 
 namespace grendx {
 
@@ -27,9 +29,10 @@ class gameMainDevWindow : public gameMain {
 		// setView here sets the player view
 		virtual void setView(std::shared_ptr<gameView> nview);
 		virtual void handleInput(void);
+		void addEditorCallback(gameEditor::editCallback func);
 
-		gameView::ptr player = nullptr;
-		gameView::ptr editor = nullptr;
+		gameView::ptr   player = nullptr;
+		gameEditor::ptr editor = nullptr;
 		modalSDLInput input;
 };
 
