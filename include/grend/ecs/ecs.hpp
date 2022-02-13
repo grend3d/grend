@@ -210,11 +210,11 @@ class component {
 			return {};
 		};
 
-		component(entityManager *manager,
+		component(entityManager *_manager,
 		          entity *ent,
 		          nlohmann::json properties = defaultProperties())
+			: manager(_manager)
 		{
-			//manager->registerComponent(ent, serializedType, this);
 			manager->registerComponent(ent, this);
 		}
 
@@ -226,6 +226,8 @@ class component {
 		// also, this class needs a polymorphic member in order to upcast,
 		// so this fills that role.
 		virtual void drawEditorWidgets(void) { };
+
+		entityManager *manager;
 };
 
 class entity : public component {
@@ -259,6 +261,11 @@ class entity : public component {
 		virtual nlohmann::json serialize(entityManager *manager);
 
 		virtual gameObject::ptr getNode(void) { return node; };
+
+		template <typename T, typename... Args>
+		T* attach(Args... args) {
+			return new T(manager, this, args...);
+		}
 
 		gameObject::ptr node = std::make_shared<gameObject>();
 		// TODO: should have a seperate entity list for deactivated
