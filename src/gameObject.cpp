@@ -55,6 +55,25 @@ void gameObject::setTransform(const TRS& t) {
 	transform = t;
 }
 
+
+void gameObject::setPosition(const glm::vec3& position) {
+	TRS temp = getTransformTRS();
+	temp.position = position;
+	setTransform(temp);
+}
+
+void gameObject::setScale(const glm::vec3& scale) {
+	TRS temp = getTransformTRS();
+	temp.scale = scale;
+	setTransform(temp);
+}
+
+void gameObject::setRotation(const glm::quat& rotation) {
+	TRS temp = getTransformTRS();
+	temp.rotation = rotation;
+	setTransform(temp);
+}
+
 gameObject::ptr gameObject::getNode(std::string name) {
 	return hasNode(name)? nodes[name] : nullptr;
 }

@@ -83,8 +83,12 @@ class gameObject {
 
 		TRS getTransformTRS(float delta = 0.f);
 		glm::mat4 getTransformMatrix(float delta = 0.f);
-		void setTransform(const TRS& t);
 		bool hasDefaultTransform(void) const { return isDefault; }
+
+		void setTransform(const TRS& t);
+		void setPosition(const glm::vec3& position);
+		void setScale(const glm::vec3& scale);
+		void setRotation(const glm::quat& rotation);
 
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
