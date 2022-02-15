@@ -1,5 +1,6 @@
 #include <grend/gameModel.hpp>
 #include <grend/utility.hpp>
+#include <grend/animation.hpp>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
@@ -786,13 +787,6 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 	return ret;
 }
 
-struct mapent {
-	animationChannel::ptr channel;
-	tinygltf::Animation anim;
-};
-
-// TODO: camelcase?
-typedef std::map<int, std::vector<animationChannel::ptr>> animation_map;
 typedef std::map<std::string, gameObject::ptr> node_map;
 
 static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
@@ -809,59 +803,55 @@ static void assert_componentType(tinygltf::Model& mod, int accidx, int expected)
 	assert_type(acc.componentType, expected);
 }
 
-static gameObject::ptr 
-load_gltf_skin_node_top(gltfModel& gltf,
-                        animation_map& animations,
-                        int nodeidx)
-{
-	if (nodeidx < 0) {
-		return nullptr;
+static void
+set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
+	glm::quat rotation(1, 0, 0, 0);
+	glm::vec3 translation = {0, 0, 0};
+	glm::vec3 scale = {1, 1, 1};
+
+	if (node.rotation.size() == 4)
+		rotation = glm::make_quat(node.rotation.data());
+	if (node.translation.size() == 3)
+		translation = glm::make_vec3(node.translation.data());
+
+	if (node.scale.size() == 3) {
+		scale = glm::make_vec3(node.scale.data());
 	}
 
-	gameObject::ptr ret = std::make_shared<gameObject>();
-
-	auto it = animations.find(nodeidx);
-	if (it != animations.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
-		ret->animations = it->second;
+	/*
+	// TODO: if no T/R/S specifiers, show an error/warning,
+	//       extract info from the matrix
+	if (node.matrix.size() == 16) {
+	glm::mat4 mat;
+	mat = glm::make_mat4(node.matrix.data());
 	}
+	*/
 
-	return ret;
+	TRS newtrans;
+	newtrans.position = translation;
+	newtrans.rotation = rotation;
+	newtrans.scale = scale;
+	ptr->setTransform(newtrans);
 }
 
-
 static gameObject::ptr 
-load_gltf_skin_nodes_rec(gltfModel& gltf,
-                         animation_map& animations,
-                         int nodeidx)
-{
+load_gltf_skin_node_top(gltfModel& gltf, int nodeidx) {
 	if (nodeidx < 0) {
 		return nullptr;
 	}
 
-	// TODO: range checko
-	auto& node = gltf.data.nodes[nodeidx];
 	gameObject::ptr ret = std::make_shared<gameObject>();
 
-	auto it = animations.find(nodeidx); if (it != animations.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
-		ret->animations = it->second;
-	}
-
-	for (auto& idx : node.children) {
-		auto& cnode = gltf.data.nodes[idx];
-		std::string name = "joint["+std::to_string(idx)+"]:" + cnode.name;
-		setNode(name, ret, load_gltf_skin_nodes_rec(gltf, animations, idx));
-	}
+	// TODO: range check
+	auto& node = gltf.data.nodes[nodeidx];
+	ret->animChannel = std::hash<std::string>{}(node.name);
+	set_object_gltf_transform(ret, node);
 
 	return ret;
 }
 
 static gameSkin::ptr
-load_gltf_skin_nodes(gltfModel& gltf,
-                     animation_map& animations,
-                     int nodeidx)
-{
+load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 	if (nodeidx < 0) {
 		return nullptr;
 	}
@@ -886,7 +876,7 @@ load_gltf_skin_nodes(gltfModel& gltf,
 	std::map<int, gameObject::ptr> jointidxs;
 
 	for (auto& idx : skin.joints) {
-		gameObject::ptr jnt = load_gltf_skin_node_top(gltf, animations, idx);
+		gameObject::ptr jnt = load_gltf_skin_node_top(gltf, idx);
 		obj->joints.push_back(jnt);
 		jointidxs[idx] = jnt;
 	}
@@ -921,37 +911,6 @@ load_gltf_skin_nodes(gltfModel& gltf,
 	gltf_unpack_buffer(gltf, skin.inverseBindMatrices, obj->inverseBind);
 
 	return obj;
-}
-
-static void
-set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
-	glm::quat rotation(1, 0, 0, 0);
-	glm::vec3 translation = {0, 0, 0};
-	glm::vec3 scale = {1, 1, 1};
-
-	if (node.rotation.size() == 4)
-		rotation = glm::make_quat(node.rotation.data());
-	if (node.translation.size() == 3)
-		translation = glm::make_vec3(node.translation.data());
-
-	if (node.scale.size() == 3) {
-		scale = glm::make_vec3(node.scale.data());
-	}
-
-	/*
-	// TODO: if no T/R/S specifiers, show an error/warning,
-	//       extract info from the matrix
-	if (node.matrix.size() == 16) {
-	glm::mat4 mat;
-	mat = glm::make_mat4(node.matrix.data());
-	}
-	*/
-
-	TRS newtrans;
-	newtrans.position = translation;
-	newtrans.rotation = rotation;
-	newtrans.scale = scale;
-	ptr->setTransform(newtrans);
 }
 
 static void load_gltf_node_light(gltfModel& gltf,
@@ -1019,7 +978,6 @@ static void load_gltf_node_light(gltfModel& gltf,
 static gameObject::ptr
 load_gltf_scene_nodes_rec(gltfModel& gltf,
                           modelMap& models,
-                          animation_map& anims,
                           node_map& names,
                           int nodeidx)
 {
@@ -1028,11 +986,6 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 	gameObject::ptr ret = std::make_shared<gameObject>();
 	set_object_gltf_transform(ret, node);
 	load_gltf_node_light(gltf, node, ret);
-
-	auto it = anims.find(nodeidx); if (it != anims.end()) {
-		//load_gltf_animation_channels(ret, nodeidx, gltf, it->second);
-		ret->animations = it->second;
-	}
 
 	if (node.mesh >= 0 && (unsigned)node.mesh < gltf.data.meshes.size()) {
 		auto& mesh = gltf.data.meshes[node.mesh];
@@ -1049,7 +1002,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 	if (node.skin >= 0) {
 		// TODO: range check
 		// TODO: get skin node names
-		auto  obj = load_gltf_skin_nodes(gltf, anims, node.skin);
+		auto  obj = load_gltf_skin_nodes(gltf, node.skin);
 		setNode("skin", ret, obj);
 	}
 
@@ -1061,7 +1014,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 
 	for (auto& x : node.children) {
 		std::string id = "node["+std::to_string(x)+"]";
-		setNode(id, ret, load_gltf_scene_nodes_rec(gltf, models, anims, names, x));
+		setNode(id, ret, load_gltf_scene_nodes_rec(gltf, models, names, x));
 	}
 
 	if (!node.name.empty()) {
@@ -1077,7 +1030,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 	return ret;
 }
 
-static void
+static float
 load_gltf_animation_channels(animationChannel::ptr cookedchan,
                              gltfModel& gltf,
                              tinygltf::Animation& anim,
@@ -1088,7 +1041,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		&& chan.target_path != "scale")
 	{
 		// ignore weight targets
-		return;
+		return 0;
 	}
 
 	// TODO: range check
@@ -1137,45 +1090,35 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 	}
 
 	cookedchan->animations.push_back(chananim);
-	cookedchan->group->endtime
-		= max(cookedchan->group->endtime,
-			  chananim->frametimes.back());
+
+	return chananim->frametimes.back();
 }
 
-static animation_map collectAnimations(gltfModel& gltf) {
-	animation_map ret;
-	auto collection = std::make_shared<animationCollection>();
+static animationCollection::ptr collectAnimations(gltfModel& gltf) {
+	animationCollection::ptr ret = std::make_shared<animationCollection>();
 
 	for (unsigned i = 0; i < gltf.data.animations.size(); i++) {
 		auto& anim = gltf.data.animations[i];
-		auto group = std::make_shared<animationGroup>();
+		auto animmap = std::make_shared<animationMap>();
+
 		// TODO: put this in constructor
-		group->name = anim.name.empty()
+		std::string name = anim.name.empty()
 			? "(default "+std::to_string(i) + ")"
 			: anim.name;
-		group->collection = collection;
-		collection->groups[group->name] = group;
-
-		// avoid adding the same animation multiple times
-		// when the animation has multiple channels 
-		std::set<int> chanset;
-
-		/*
-		std::cerr << "GLTF: collectAnimations(): have animation '"
-			<< anim.name
-			<< "'" << std::endl;
-			*/
 
 		for (auto& chan : anim.channels) {
 			auto chanptr = std::make_shared<animationChannel>();
-			chanptr->group = group;
 
-			//if (!chanset.count(chan.target_node)) {
-				load_gltf_animation_channels(chanptr, gltf, anim, chan);
-				ret[chan.target_node].push_back(chanptr);
-				chanset.insert(chan.target_node);
-			//}
+			float endtime = load_gltf_animation_channels(chanptr, gltf, anim, chan);
+			animmap->endtime = max(animmap->endtime, endtime);
+
+			auto& node = gltf.data.nodes[chan.target_node];
+			uint32_t namehash = std::hash<std::string>{}(node.name);
+			(*animmap)[namehash].push_back(chanptr);
+			SDL_Log("Animation %u targeting '%s':%08x", i, node.name.c_str(), namehash);
 		}
+
+		(*ret)[name] = animmap;
 	}
 
 	return ret;
@@ -1190,12 +1133,15 @@ load_gltf_scene_nodes(std::string filename,
 	auto anims = collectAnimations(gltf);
 	node_map names;
 
+	// TODO: how to return animations?
+	//       could just stuff it in the import object
+
 	gameImport::ptr sceneobj = std::make_shared<gameImport>(filename);
 	for (auto& scene : gltf.data.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
 			setNode(id, sceneobj,
-				load_gltf_scene_nodes_rec(gltf, models, anims, names, nodeidx));
+				load_gltf_scene_nodes_rec(gltf, models, names, nodeidx));
 		}
 	}
 
@@ -1204,7 +1150,10 @@ load_gltf_scene_nodes(std::string filename,
 
 	for (auto& [name, obj] : names) {
 		setNode(name, nameobj, obj);
+		obj->animChannel = std::hash<std::string>{}(name);
 	}
+
+	ret->animations = anims;
 
 	setNode("names", ret, nameobj);
 	setNode("scene", ret, sceneobj);

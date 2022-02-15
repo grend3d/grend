@@ -136,18 +136,8 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 		editModel(game, std::dynamic_pointer_cast<gameModel>(selectedNode));
 	}
 
-	{
-		ImGui::Text("%s", "Animations");
-		ImGui::Separator();
-		ImGui::Indent(16.f);
-
-		for (auto& chan : selectedNode->animations) {
-			ImGui::SliderFloat(chan->group->name.c_str(),
-			                   &chan->group->weight, 0.f, 1.f);
-			ImGui::Separator();
-		}
-		ImGui::Unindent(16.f);
-	}
+	ImGui::Separator();
+	ImGui::Text("%s: %08x", "Animations channel", selectedNode->animChannel);
 
 	ImGui::End();
 }

@@ -26,21 +26,20 @@ size_t grendx::allocateObjID(void) {
 	return ++counter;
 }
 
-TRS gameObject::getTransformTRS(float delta) {
-	if (animations.size() > 0) {
-		TRS temp = transform;
-		applyChannelVecTransforms(animations, temp, delta);
-		return temp;
-
-	} else {
-		return transform;
-	}
+// TODO: should have this return a const ref
+TRS gameObject::getTransformTRS() {
+	return transform;
 }
 
-glm::mat4 gameObject::getTransformMatrix(float delta) {
-	if (updated || animations.size() > 0) {
-		TRS temp = getTransformTRS(delta);
-		cachedTransformMatrix = temp.getTransform();
+// TODO: should have this return a const ref
+TRS gameObject::getOrigTransform() {
+	return origTransform;
+}
+
+// TODO: also const ref
+glm::mat4 gameObject::getTransformMatrix() {
+	if (updated) {
+		cachedTransformMatrix = transform.getTransform();
 		updated = false;
 		// note that queueCache.updated isn't changed here
 	}
@@ -49,12 +48,15 @@ glm::mat4 gameObject::getTransformMatrix(float delta) {
 }
 
 void gameObject::setTransform(const TRS& t) {
+	if (isDefault) {
+		origTransform = t;
+	}
+
 	updated = true;
 	queueCache.updated = true;
 	isDefault = false;
 	transform = t;
 }
-
 
 void gameObject::setPosition(const glm::vec3& position) {
 	TRS temp = getTransformTRS();
@@ -134,7 +136,7 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	// copy generic gameObject members
 	ret->setTransform(node->getTransformTRS());
 	ret->visible         = node->visible;
-	ret->animations      = node->animations;
+	ret->animChannel     = node->animChannel;
 	ret->parent          = node->parent;
 	ret->extraProperties = node->extraProperties;
 
@@ -185,8 +187,8 @@ float gameLightDirectional::extent(float threshold) {
 	return HUGE_VALF;
 }
 
+// TODO: better name
 static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
-                        float tim,
                         gameObject *root,
                         gameObject *ptr)
 {
@@ -197,7 +199,7 @@ static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
 		glm::mat4 mat(1);
 
 		if (ptr != root && parent) {
-			mat = lookup(cache, tim, root, parent.get()) * ptr->getTransformMatrix(tim);
+			mat = lookup(cache, root, parent.get()) * ptr->getTransformMatrix();
 		}
 
 		cache[ptr] = mat;
@@ -223,13 +225,10 @@ void gameSkin::sync(Program::ptr program) {
 	}
 #endif
 
-	float tim = SDL_GetTicks()/1000.f;
 	std::map<gameObject*, glm::mat4> accumTransforms;
 
 	for (unsigned i = 0; i < inverseBind.size(); i++) {
-		gameObject::ptr temp = joints[i];
-		glm::mat4 accum = lookup(accumTransforms, tim, this, joints[i].get());
-
+		glm::mat4 accum = lookup(accumTransforms, this, joints[i].get());
 		transforms[i] = accum*inverseBind[i];
 	}
 

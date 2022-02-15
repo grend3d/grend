@@ -4,6 +4,7 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <vector>
 #include <tuple>
@@ -40,34 +41,30 @@ class animationChannel {
 		typedef std::shared_ptr<animationChannel> ptr;
 		typedef std::weak_ptr<animationChannel>   weakptr;
 
-		void applyTransform(struct TRS& thing, float delta);
+		void applyTransform(struct TRS& thing, float delta, float endtime);
 		std::vector<animation::ptr> animations;
-		std::shared_ptr<animationGroup> group;
 };
 
-void applyChannelVecTransforms(std::vector<animationChannel::ptr>& channels,
-                               struct TRS& thing,
-                               float delta);
 
-class animationGroup {
+// maps node names -> animation channels
+// gameObject nodes store a corresponding hash, this way
+// animations and models/skins can be loaded from seperate files
+class animationMap
+	: public std::unordered_map<uint32_t, std::vector<animationChannel::ptr>>
+{
 	public:
-		typedef std::shared_ptr<animationGroup> ptr;
-		typedef std::weak_ptr<animationGroup>   weakptr;
-
-		std::shared_ptr<animationCollection> collection;
-		std::string name;
+		typedef std::shared_ptr<animationMap> ptr;
+		typedef std::weak_ptr<animationMap>   weakptr;
 
 		float endtime = 0.0;
-		float weight = 1.0;
 };
 
-class animationCollection {
+class animationCollection
+	: public std::unordered_map<std::string, animationMap::ptr>
+{
 	public:
 		typedef std::shared_ptr<animationCollection> ptr;
 		typedef std::weak_ptr<animationCollection>   weakptr;
-
-		void applyTransform(struct TRS& thing, float delta);
-		std::map<std::string, animationGroup::weakptr> groups;
 };
 
 class animationTranslation : public animation {

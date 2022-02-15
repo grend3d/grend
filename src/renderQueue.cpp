@@ -19,7 +19,7 @@ void renderQueue::add(gameObject::ptr obj,
 		// cycles on the matrix multiply
 		obj->hasDefaultTransform()
 			? trans
-			: trans*obj->getTransformMatrix(animTime);
+			: trans*obj->getTransformMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)

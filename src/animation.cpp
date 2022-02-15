@@ -92,41 +92,22 @@ animation::interpFrames(float delta, float end) {
 	return {idx, kdx, interp};
 }
 
-void animationChannel::applyTransform(struct TRS& thing, float delta) {
-	assert(group != nullptr);
+void animationChannel::applyTransform(struct TRS& thing,
+                                      float delta,
+                                      float endtime)
+{
+	//assert(group != nullptr);
 	struct TRS asdf = thing;
 
 	for (auto& ptr : animations) {
-		struct TRS foo = asdf;
-		FERR("group %s with endtime %f\n",
-		     group->name.c_str(), group->endtime);
-		ptr->applyTransform(foo, delta, group->endtime);
-		asdf = mixtrs(asdf, foo, group->weight);
+		FERR("anim: delta: %f, endtime %f\n", delta, endtime);
+		ptr->applyTransform(asdf, delta, endtime);
+		// TODO: reimplement animation weighting, could take weight as a parameter
+		//asdf = mixtrs(asdf, foo, group->weight);
 	}
 
+	// or could return the resulting transform
 	thing = asdf;
-}
-
-void grendx::applyChannelVecTransforms(
-	std::vector<animationChannel::ptr>& channels,
-	struct TRS& thing,
-	float delta)
-{
-	for (auto& ptr : channels) {
-		ptr->applyTransform(thing, delta);
-	}
-}
-
-void animationCollection::applyTransform(struct TRS& thing, float delta) {
-	// left here in case this is useful in the future
-	// (probably will be)
-	for (auto& [name, group] : groups) {
-		if (auto g = group.lock()) {
-			if (g->weight > 0) {
-				//g->applyTransform(thing, delta);
-			}
-		}
-	}
 }
 
 void animationTranslation::applyTransform(struct TRS& thing, float delta, float end) {

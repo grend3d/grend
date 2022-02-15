@@ -3,10 +3,11 @@
 #include <grend/glmIncludes.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/sdlContext.hpp>
+#include <grend/animation.hpp>
 // TODO: move, for lights
 #include <grend/quadtree.hpp>
-#include <grend/animation.hpp>
 #include <grend/boundingBox.hpp>
+#include <grend/TRS.hpp>
 
 #include <memory>
 #include <map>
@@ -81,8 +82,9 @@ class gameObject {
 			return strm.str();
 		}
 
-		TRS getTransformTRS(float delta = 0.f);
-		glm::mat4 getTransformMatrix(float delta = 0.f);
+		TRS getTransformTRS();
+		TRS getOrigTransform();
+		glm::mat4 getTransformMatrix();
 		bool hasDefaultTransform(void) const { return isDefault; }
 
 		void setTransform(const TRS& t);
@@ -100,8 +102,10 @@ class gameObject {
 		size_t id = allocateObjID();
 		// TODO: bounding box/radius
 
-		// transform relative to parent
-		std::vector<animationChannel::ptr> animations;
+		// hash index into animation channel table
+		uint32_t animChannel = 0;
+
+		// whether the node visible
 		bool visible = true;
 
 		gameObject::weakptr parent;
@@ -126,6 +130,8 @@ class gameObject {
 
 	private:
 		TRS transform;
+		TRS origTransform;
+
 		bool updated = true;
 		bool isDefault = true;
 		glm::mat4 cachedTransformMatrix;
@@ -174,6 +180,7 @@ class gameImport : public gameObject {
 		}
 
 		std::string sourceFile;
+		animationCollection::ptr animations;
 };
 
 // forward declaration defined in glManager.hpp
