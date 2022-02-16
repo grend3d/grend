@@ -117,7 +117,7 @@ void animationTranslation::applyTransform(struct TRS& thing, float delta, float 
 
 void animationRotation::applyTransform(struct TRS& thing, float delta, float end) {
 	auto [idx, kdx, interp] = interpFrames(delta, end);
-	thing.rotation = glm::mix(rotations[kdx], rotations[idx], interp);
+	thing.rotation = glm::slerp(rotations[kdx], rotations[idx], interp);
 }
 
 void animationScale::applyTransform(struct TRS& thing, float delta, float end) {
