@@ -109,6 +109,49 @@ gameObject::ptr grendx::clone(gameObject::ptr node) {
 	return ret;
 }
 
+static animationMap::ptr copyAnimationMap(animationMap::ptr anim) {
+	auto ret = std::make_shared<animationMap>();
+
+	for (auto& p : *anim) {
+		ret->insert(p);
+	}
+
+	return ret;
+}
+
+static animationCollection::ptr copyCollection(animationCollection::ptr anims) {
+	if (!anims) return nullptr;
+
+	auto ret = std::make_shared<animationCollection>();
+
+	for (auto& [name, anim] : *anims) {
+		if (anim == nullptr)
+			continue;
+
+		ret->insert({name, copyAnimationMap(anim)});
+	}
+
+	return ret;
+}
+
+static void copySkin(gameSkin::ptr target, gameSkin::ptr skin) {
+#define COPY_SKIN_VEC(V) \
+	target->V.insert(target->V.end(), skin->V.begin(), skin->V.end())
+
+	COPY_SKIN_VEC(inverseBind);
+	COPY_SKIN_VEC(transforms);
+#undef COPY_SKIN_VEC
+
+	target->joints.reserve(skin->joints.size());
+
+	for (unsigned i = 0; i < skin->joints.size(); i++) {
+		std::string name = "rootjoint[" + std::to_string(i) + "]";
+		target->joints[i] = target->getNode(name);
+
+		assert(target->joints[i] != nullptr);
+	}
+}
+
 gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	// TODO: need to copy all attributes
 
@@ -122,8 +165,17 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 
 		case gameObject::objType::Import:
 			{
-				gameImport::ptr foo = std::static_pointer_cast<gameImport>(node);
-				ret = std::make_shared<gameImport>(foo->sourceFile);
+				auto foo = std::static_pointer_cast<gameImport>(node);
+				auto temp = std::make_shared<gameImport>(foo->sourceFile);
+				temp->animations = copyCollection(temp->animations);
+
+				ret = temp;
+				break;
+			}
+
+		case gameObject::objType::Skin:
+			{
+				ret = std::make_shared<gameSkin>();
 				break;
 			}
 
@@ -143,6 +195,14 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	// copy sub-nodes
 	for (auto& [name, ptr] : node->nodes) {
 		setNode(name, ret, duplicate(ptr));
+	}
+
+	if (node->type == gameObject::objType::Skin) {
+		// small XXX: need to copy skin information after copying subnodes
+		auto skin = std::static_pointer_cast<gameSkin>(node);
+		auto temp = std::static_pointer_cast<gameSkin>(ret);
+
+		copySkin(temp, skin);
 	}
 
 	return ret;
