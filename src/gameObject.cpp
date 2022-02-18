@@ -134,21 +134,61 @@ static animationCollection::ptr copyCollection(animationCollection::ptr anims) {
 	return ret;
 }
 
+template <typename T>
+static int indexOf(const std::vector<T>& vec, const T& value) {
+	for (int i = 0; i < vec.size(); i++) {
+		if (vec[i] == value) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static gameObject::ptr copySkinNodes(gameSkin::ptr target,
+                                     gameSkin::ptr skin,
+                                     gameObject::ptr node)
+{
+	if (node == nullptr) {
+		return node;
+	}
+
+	if (node->type != gameObject::objType::None) {
+		// should only have pure node types under skin nodes
+		return node;
+	}
+
+	gameObject::ptr ret = std::make_shared<gameObject>();
+
+	// copy generic gameObject members
+	// XXX: two set transforms to ensure origTransform is the same
+	ret->setTransform(node->getOrigTransform());
+	ret->setTransform(node->getTransformTRS());
+	ret->visible         = node->visible;
+	ret->animChannel     = node->animChannel;
+	ret->extraProperties = node->extraProperties;
+
+	int i = indexOf(skin->joints, node);
+	if (i >= 0) {
+		target->joints[i] = ret;
+	}
+
+	// copy sub-nodes
+	for (auto& [name, ptr] : node->nodes) {
+		setNode(name, ret, copySkinNodes(target, skin, ptr));
+	}
+
+	return ret;
+}
+
 static void copySkin(gameSkin::ptr target, gameSkin::ptr skin) {
-#define COPY_SKIN_VEC(V) \
-	target->V.insert(target->V.end(), skin->V.begin(), skin->V.end())
+	target->inverseBind = skin->inverseBind;
+	target->transforms  = skin->transforms;
 
-	COPY_SKIN_VEC(inverseBind);
-	COPY_SKIN_VEC(transforms);
-#undef COPY_SKIN_VEC
+	target->joints.resize(skin->joints.size());
 
-	target->joints.reserve(skin->joints.size());
-
-	for (unsigned i = 0; i < skin->joints.size(); i++) {
-		std::string name = "rootjoint[" + std::to_string(i) + "]";
-		target->joints[i] = target->getNode(name);
-
-		assert(target->joints[i] != nullptr);
+	for (auto& [name, ptr] : skin->nodes) {
+		setNode(name, target, copySkinNodes(target, skin, ptr));
 	}
 }
 
@@ -167,7 +207,7 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 			{
 				auto foo = std::static_pointer_cast<gameImport>(node);
 				auto temp = std::make_shared<gameImport>(foo->sourceFile);
-				temp->animations = copyCollection(temp->animations);
+				temp->animations = copyCollection(foo->animations);
 
 				ret = temp;
 				break;
@@ -176,16 +216,25 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 		case gameObject::objType::Skin:
 			{
 				ret = std::make_shared<gameSkin>();
-				break;
-			}
 
-		// TODO: meshes/models, particles shouldn't be copied, but would it make
+				// small XXX: need to copy skin information after copying subnodes
+				auto skin = std::static_pointer_cast<gameSkin>(node);
+				auto temp = std::static_pointer_cast<gameSkin>(ret);
+
+				copySkin(temp, skin);
+				return ret;
+			}
+			break;
+
+		// TODO: meshes/models, particles shouldn't be doCopy, but would it make
 		//       sense to copy other types like lights, cameras?
 		default:
 			return node;
 	}
 
 	// copy generic gameObject members
+	// XXX: two set transforms to ensure origTransform is the same
+	ret->setTransform(node->getOrigTransform());
 	ret->setTransform(node->getTransformTRS());
 	ret->visible         = node->visible;
 	ret->animChannel     = node->animChannel;
@@ -197,13 +246,6 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 		setNode(name, ret, duplicate(ptr));
 	}
 
-	if (node->type == gameObject::objType::Skin) {
-		// small XXX: need to copy skin information after copying subnodes
-		auto skin = std::static_pointer_cast<gameSkin>(node);
-		auto temp = std::static_pointer_cast<gameSkin>(ret);
-
-		copySkin(temp, skin);
-	}
 
 	return ret;
 }
@@ -288,6 +330,11 @@ void gameSkin::sync(Program::ptr program) {
 	std::map<gameObject*, glm::mat4> accumTransforms;
 
 	for (unsigned i = 0; i < inverseBind.size(); i++) {
+		if (!joints[i]) {
+			transforms[i] = glm::mat4(1);
+			continue;
+		}
+
 		glm::mat4 accum = lookup(accumTransforms, this, joints[i].get());
 		transforms[i] = accum*inverseBind[i];
 	}

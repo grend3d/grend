@@ -884,7 +884,12 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 	for (auto& [idx, ptr] : jointidxs) {
 		auto& node = gltf.data.nodes[idx];
 		for (auto& i : node.children) {
-			assert(jointidxs.find(i) != jointidxs.end());
+			//assert(jointidxs.find(i) != jointidxs.end());
+			if (jointidxs.find(i) == jointidxs.end()) {
+				SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "WARNING: %s: missing joint index %d!", gltf.filename.c_str(), i);
+				continue;
+			}
+
 			std::string name = "joint["+std::to_string(i)+"]:" + node.name;
 			setNode(name, ptr, jointidxs[i]);
 		}
