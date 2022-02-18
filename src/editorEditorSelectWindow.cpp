@@ -236,7 +236,10 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	std::vector<const char *> tagchars;
 
 	for (const auto& v : tags) {
-		tagchars.push_back(v.c_str());
+		//tagchars.push_back(v.c_str());
+		if (const char *re = remangle(v)) {
+			tagchars.push_back(re);
+		}
 	}
 
 	ImGui::SameLine();
@@ -252,7 +255,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 	ImGui::BeginChild("componentList");
 	for (const auto& [name, _] : game->entities->components) {
-		drawSelectableLabel(name);
+		drawSelectableLabel(demangle(name).c_str());
 	}
 
 	ImGui::EndChild();
@@ -308,8 +311,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 		for (auto& [name, comp] : components) {
 			if (!seen.count(name)) {
-				// TODO: demangle, re-mangle
-				drawSelectableLabel(name);
+				drawSelectableLabel(demangle(name).c_str());
 				ImGui::NextColumn();
 				seen.insert(name);
 			}

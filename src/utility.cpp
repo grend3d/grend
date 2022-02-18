@@ -1,6 +1,8 @@
 #include <grend/utility.hpp>
+#include <unordered_map>
 #include <sstream>
 #include <fstream>
+#include <cxxabi.h>
 
 namespace grendx {
 
@@ -25,6 +27,43 @@ std::string load_file(const std::string filename) {
 	return content;
 }
 
+// keep global map of type names over the whole lifetime of the engine,
+// the number of names should be bounded by the number of classes in the program,
+// so shouldn't be an issue...
+static std::unordered_map<const char *, std::string> typemap;
+static std::unordered_map<std::string, const char *> mangledmap;
+
+const std::string& demangle(const char *type) {
+	auto it = typemap.find(type); 
+	if (it != typemap.end()) {
+		return it->second;
+	}
+
+	// NOTE: targeting GCC and clang, no idea if this will work anywhere else
+	int status;
+	char *realname = abi::__cxa_demangle(type, 0, 0, &status);
+
+	if (status == 0) {
+		std::string ret = realname;
+		typemap.insert({ type, ret });
+		mangledmap.insert({ ret, type });
+		free(realname);
+		return typemap[type];
+		//return ret;
+	}
+
+	return "<invalid name>";
+}
+
+const char *remangle(const std::string& demang) {
+	auto it = mangledmap.find(demang);
+
+	if (it != mangledmap.end()) {
+		return it->second;
+	}
+
+	return NULL;
+}
 
 // namespace grendx
 }
