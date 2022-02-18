@@ -4,12 +4,7 @@
 namespace grendx::ecs {
 
 // key functions for rtti
-component::~component() {
-	std::cerr << "got to ~component() "
-		//<< "[type: " << this->typeString() << "]"
-		<< "[type: " << this->typeString() << "]"
-		<< std::endl;
-}
+component::~component() {}
 
 entity::~entity() {};
 entitySystem::~entitySystem() {};
@@ -333,7 +328,7 @@ void entityManager::registerComponent(entity *ent,
                                       component *ptr)
 {
 	// TODO: need a proper logger
-	SDL_Log("registering component '%s' for %p", name, ptr);
+	SDL_Log("registering component '%s' for %p", demangle(name).c_str(), ptr);
 
 	components[name].insert(ptr);
 	componentEntities.insert({ptr, ent});
@@ -359,7 +354,7 @@ void entityManager::registerInterface(entity *ent,
 #else
 	root = static_cast<component*>(ptr);
 #endif
-	SDL_Log("registering interface '%s' for %p", name, root);
+	SDL_Log("registering interface '%s' for %p", demangle(name).c_str(), root);
 
 	/*
 	interfaces[name].insert(ptr);
