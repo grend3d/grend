@@ -115,6 +115,8 @@ class entityManager {
 		// should be called from interface constructors
 		template <typename T, typename U>
 		void registerInterface(entity *ent, U *ptr) noexcept {
+			static_assert(std::is_base_of<component, U>::value,
+			              "Given component type must be derived from ecs::component");
 			static_assert(std::is_base_of<T, U>::value,
 			              "Given component type must implement the interface specified");
 			registerInterface(ent, getTypeName<T>(), ptr);
