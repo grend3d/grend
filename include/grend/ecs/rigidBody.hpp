@@ -5,36 +5,19 @@
 
 namespace grendx::ecs {
 
-class transformUpdatable : public component {
+// interface
+class transformUpdatable {
 	public:
-		transformUpdatable(entityManager *manager, entity *ent)
-			: component(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-		};
-
-		transformUpdatable(entityManager *manager, entity *ent, nlohmann::json properties)
-			: transformUpdatable(manager, ent) {};
-
 		virtual ~transformUpdatable();
-
 		virtual void setTransform(const TRS& transform) = 0;
-
-		// serialization stuff
-		constexpr static const char *serializedType = "transformUpdatable";
-		virtual const char* typeString(void) const { return serializedType; };
 };
 
-class rigidBody : public transformUpdatable, public activatable {
+class rigidBody
+	: public component,
+      public transformUpdatable,
+      public activatable
+{
 	public:
-		rigidBody(entityManager *manager, entity *ent, float _mass)
-			: transformUpdatable(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-			manager->registerInterface<activatable>(ent, this);
-			mass = _mass;
-		}
-
 		rigidBody(entityManager *manager,
 		          entity *ent,
 		          nlohmann::json properties);

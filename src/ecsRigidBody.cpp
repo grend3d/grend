@@ -23,10 +23,11 @@ syncRigidBodySystem::~syncRigidBodySystem() {};
 rigidBody::rigidBody(entityManager *manager,
                      entity *ent,
                      nlohmann::json properties)
-	: transformUpdatable(manager, ent, properties)
+	: component(manager, ent)
 {
 	manager->registerComponent(ent, this);
 	manager->registerInterface<activatable>(ent, this);
+	manager->registerInterface<transformUpdatable>(ent, this);
 }
 
 rigidBodySphere::rigidBodySphere(entityManager *manager,
@@ -146,7 +147,9 @@ void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;
 	castEntityComponent(body, manager, ent);
 
-	if (!body || !body->phys) {
+	// TODO: need way to avoid syncing if velocity is low to avoid
+	//       glitchy movement, but still allow updating explicitly
+	if (!body || !body->phys /*|| glm::length(body->phys->getVelocity()) < 0.1*/) {
 		// no attached physics body
 		return;
 	}
@@ -189,7 +192,7 @@ void updateEntityTransforms(entityManager *manager,
 	for (auto it = updaters.first; it != updaters.second; it++) {
 		auto& [_, comp] = *it;
 
-		transformUpdatable *updater = static_cast<transformUpdatable*>(comp);
+		transformUpdatable *updater = dynamic_cast<transformUpdatable*>(comp);
 
 		if (updater) {
 			updater->setTransform(transform);

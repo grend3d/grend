@@ -267,6 +267,16 @@ class entity : public component {
 			return new T(manager, this, args...);
 		}
 
+		template <typename T>
+		T* get() {
+			return getComponent<T>(manager, this);
+		}
+
+		template <typename T>
+		T* getInterface() {
+			return getInterface<T>(manager, this);
+		}
+
 		gameObject::ptr node = std::make_shared<gameObject>();
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
