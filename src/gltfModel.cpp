@@ -1120,7 +1120,6 @@ static animationCollection::ptr collectAnimations(gltfModel& gltf) {
 			auto& node = gltf.data.nodes[chan.target_node];
 			uint32_t namehash = std::hash<std::string>{}(node.name);
 			(*animmap)[namehash].push_back(chanptr);
-			SDL_Log("Animation %u targeting '%s':%08x", i, node.name.c_str(), namehash);
 		}
 
 		(*ret)[name] = animmap;

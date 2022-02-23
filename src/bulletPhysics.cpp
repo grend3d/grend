@@ -11,11 +11,8 @@ using namespace grendx;
 // TODO: move physics* objects to own source file
 physics::~physics() {};
 
-physicsObject::~physicsObject() {
-	std::cerr << "BBBBBBB : removing physics object!!!!!! " << std::endl;
-};
+physicsObject::~physicsObject() {};
 bulletObject::~bulletObject() {
-	std::cerr << "AAAAAAA : removing bullet object!!!!!! " << std::endl;
 	this->removeSelf();
 }
 
@@ -42,10 +39,11 @@ bulletPhysics::~bulletPhysics() {
 #include <iostream>
 
 void bulletObject::removeSelf(void) {
-	std::cerr << "AAAAAAAAAAAAAAAAAA: got here! removing bullet object" << std::endl;
 	if (runtime) {
-		std::cerr << "removing bullet object 0x" << std::hex << this << std::endl;
 		runtime->remove(this);
+
+	} else {
+		SDL_Log("NOTE: have bullet physics object with no associated runtime, probably a bug");
 	}
 }
 

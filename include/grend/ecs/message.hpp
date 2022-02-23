@@ -133,7 +133,8 @@ class endpoint {
 			}
 		}
 
-		bool debug = true;
+		// TODO: toggleable debug levels
+		bool debug = false;
 		std::map<std::string, std::list<mailbox::weakptr>> subscribers;
 		std::map<const mailbox*, std::set<std::string>> subscribedTypes;
 };

@@ -6,7 +6,7 @@ namespace grendx::ecs {
 transformUpdatable::~transformUpdatable() {};
 // key functions for rtti
 rigidBody::~rigidBody() {
-	std::cerr << "got to ~rigidBody()" << std::endl;
+	//std::cerr << "got to ~rigidBody()" << std::endl;
 	//phys = nullptr;
 	phys.reset();
 };

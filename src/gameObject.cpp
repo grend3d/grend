@@ -5,7 +5,8 @@
 using namespace grendx;
 
 gameObject::~gameObject() {
-	std::cerr << "Freeing a " << idString() << std::endl;
+	// TODO: toggleable debug log, or profile events, etc
+	//std::cerr << "Freeing a " << idString() << std::endl;
 }
 
 // XXX: "key functions", needed to do dynamic_cast across .so boundries

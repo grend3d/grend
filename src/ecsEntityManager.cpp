@@ -108,7 +108,8 @@ void entityManager::update(float delta) {
 }
 
 void entityManager::add(entity *ent) {
-	SDL_Log("Adding entity %s", ent->typeString());
+	// TODO: toggleable messages
+	//SDL_Log("Adding entity %s", ent->typeString());
 	setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
 	entities.insert(ent);
 	added.insert(ent);
@@ -134,7 +135,6 @@ void entityManager::activate(entity *ent) {
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
 		if (act) {
-			SDL_Log("(%s) Running activator", ent->typeString());
 			act->activate(this, ent);
 		} else {
 			SDL_Log("(%s) Invalid activator!", ent->typeString());
@@ -154,7 +154,6 @@ void entityManager::deactivate(entity *ent) {
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
 		if (act) {
-			SDL_Log("(%s) Running deactivator", ent->typeString());
 			act->deactivate(this, ent);
 
 		} else {
@@ -213,7 +212,6 @@ void entityManager::freeEntity(entity *ent) {
 
 	// then remove pointers from indexes
 	for (auto& [name, comp] : comps) {
-		//SDL_Log("removing component %s from entity", name.c_str());
 		componentEntities.erase(comp);
 		components[name].erase(comp);
 	}
@@ -327,8 +325,8 @@ void entityManager::registerComponent(entity *ent,
                                       //std::string name,
                                       component *ptr)
 {
-	// TODO: need a proper logger
-	SDL_Log("registering component '%s' for %p", demangle(name).c_str(), ptr);
+	// TODO: toggleable messages
+	//SDL_Log("registering component '%s' for %p", demangle(name).c_str(), ptr);
 
 	components[name].insert(ptr);
 	componentEntities.insert({ptr, ent});
@@ -354,15 +352,6 @@ void entityManager::registerInterface(entity *ent,
 #else
 	root = static_cast<component*>(ptr);
 #endif
-	SDL_Log("registering interface '%s' for %p", demangle(name).c_str(), root);
-
-	/*
-	interfaces[name].insert(ptr);
-	interfaceEntities.insert({ptr, ent});
-	//interfaceTypes[ptr].insert(name);
-	entityInterfaces[ent].insert({name, ptr});
-	componentInterfaces[root].insert(name);
-	*/
 
 	registerComponent(ent, name, root);
 }
