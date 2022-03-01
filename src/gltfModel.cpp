@@ -1165,7 +1165,7 @@ load_gltf_scene_nodes(std::string filename,
 	return ret;
 }
 
-static gltfModel open_gltf_model(std::string filename) {
+static std::optional<gltfModel> open_gltf_model(std::string filename) {
 	// TODO: parse extension, handle binary format
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model gltf;
@@ -1185,7 +1185,7 @@ static gltfModel open_gltf_model(std::string filename) {
 
 	if (!loaded) {
 		SDL_Log("EXCEPTION: %s", err.c_str());
-		throw std::logic_error(err);
+		return {};
 	}
 
 	if (!err.empty()) {
@@ -1206,25 +1206,36 @@ static void updateModelSources(grendx::modelMap& models, std::string filename) {
 }
 
 grendx::modelMap grendx::load_gltf_models(std::string filename) {
-	gltfModel gltf = open_gltf_model(filename);
-	auto models = load_gltf_models(gltf);
-	std::cerr << " GLTF > loaded a thing successfully" << std::endl;
+	if (auto gltf = open_gltf_model(filename)) {
+		auto models = load_gltf_models(*gltf);
+		std::cerr << " GLTF > loaded a thing successfully" << std::endl;
 
-	updateModelSources(models, filename);
-	return models;
+		updateModelSources(models, filename);
+		return models;
+
+	} else {
+		return {};
+	}
 }
 
+// TODO: return optional
 std::pair<grendx::gameImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
 	SDL_Log("Opening gltf scene %s...", filename.c_str());
-	gltfModel gltf = open_gltf_model(filename);
-	SDL_Log("Loading gltf scene %s...", filename.c_str());
-	grendx::modelMap models = load_gltf_models(gltf);
-	SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
-	gameImport::ptr ret = load_gltf_scene_nodes(filename, gltf, models);
 
-	SDL_Log("updating sources %s...", filename.c_str());
-	updateModelSources(models, filename);
-	SDL_Log("done loading %s", filename.c_str());
-	return {ret, models};
+	if (auto gltf = open_gltf_model(filename)) {
+		SDL_Log("Loading gltf scene %s...", filename.c_str());
+		grendx::modelMap models = load_gltf_models(*gltf);
+		SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
+		gameImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
+
+		SDL_Log("updating sources %s...", filename.c_str());
+		updateModelSources(models, filename);
+		SDL_Log("done loading %s", filename.c_str());
+		return {ret, models};
+
+	} else {
+		// XXX: should return an optional here
+		return {std::make_shared<gameImport>(""), {}};
+	}
 }

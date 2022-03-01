@@ -1,4 +1,5 @@
 #include <grend/gameEditor.hpp>
+#include <grend/loadScene.hpp>
 #include <grend/utility.hpp>
 #include <iostream>
 #include <fstream>

@@ -5,6 +5,7 @@
 #include <grend/engine.hpp>
 #include <grend/glManager.hpp>
 #include <grend/geometryGeneration.hpp>
+#include <grend/loadScene.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -38,7 +39,11 @@ gameEditor::gameEditor(gameMain *game)
 		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
 		//{game->rend->postShaders["psaa"]},
 		//
+		/*
 		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
+		                game->rend->globalShaderOptions)},
+						*/
+		{loadPostShader(GR_PREFIX "shaders/baked/dither.frag",
 		                game->rend->globalShaderOptions)},
 		game->settings.targetResX, game->settings.targetResY));
 #endif

@@ -1,4 +1,5 @@
 #include <grend/gameEditor.hpp>
+#include <grend/loadScene.hpp>
 #include <grend/fileDialog.hpp>
 
 // TODO: debugging, remove

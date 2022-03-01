@@ -1,5 +1,6 @@
 #include <grend/gameEditor.hpp>
 #include <grend/controllers.hpp>
+#include <grend/loadScene.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
