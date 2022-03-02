@@ -135,7 +135,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			    && ev.key.keysym.sym == SDLK_r
 			    && flags & bindFlags::Control)
 			{
-					reloadShaders(game);
+				reloadShaders(game);
 			}
 			return MODAL_NO_CHANGE;
 		},
@@ -169,10 +169,15 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_i:
-						clear(game);
-						selectedNode = game->state->rootnode = loadMapCompiled(game);
-						runCallbacks(selectedNode, editAction::NewScene);
+						if (auto node = loadMapCompiled(game)) {
+							clear(game);
+							selectedNode = game->state->rootnode = *node;
+							runCallbacks(selectedNode, editAction::NewScene);
+
+						} else printError(node);
+
 						break;
+
 					case SDLK_o: saveMap(game, game->state->rootnode); break;
 					case SDLK_DELETE: selectedNode = unlink(selectedNode); break;
 				}

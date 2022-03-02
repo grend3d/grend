@@ -23,9 +23,10 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
-		editor->clear(game);
-		editor->selectedNode = game->state->rootnode
-			= loadMapCompiled(game, open_dialog.selection);
+		if (auto node = loadMapCompiled(game, open_dialog.selection)) {
+			editor->clear(game);
+			editor->selectedNode = game->state->rootnode = *node;
+		} else printError(node);
 	}
 
 	if (save_as_dialog.promptFilename()) {
@@ -42,10 +43,12 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_model_dialog.selection << std::endl;
 		import_model_dialog.clear();
 
-		auto [obj, models] = loadModel(import_model_dialog.selection);
-		std::string name = "model["+std::to_string(obj->id)+"]";
-		setNode(name, editor->selectedNode, obj);
-		compileModels(models);
+		if (auto res = loadModel(import_model_dialog.selection)) {
+			auto [obj, models] = *res;
+			std::string name = "model["+std::to_string(obj->id)+"]";
+			setNode(name, editor->selectedNode, obj);
+			compileModels(models);
+		} else printError(res);
 	}
 
 	if (import_scene_dialog.promptFilename()) {
@@ -53,9 +56,11 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_scene_dialog.selection << std::endl;
 		import_scene_dialog.clear();
 
-		auto obj = loadSceneCompiled(import_scene_dialog.selection);
-		std::string name = "import["+std::to_string(obj->id)+"]";
-		setNode(name, editor->selectedNode, obj);
+		if (auto res = loadSceneCompiled(import_scene_dialog.selection)) {
+			auto obj = *res;
+			std::string name = "import["+std::to_string(obj->id)+"]";
+			setNode(name, editor->selectedNode, obj);
+		} else printError(res);
 	}
 
 	if (import_map_dialog.promptFilename()) {
@@ -63,9 +68,11 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_map_dialog.selection << std::endl;
 		import_map_dialog.clear();
 
-		auto obj = loadMapCompiled(game, import_map_dialog.selection);
-		std::string name = "map["+std::to_string(obj->id)+"]";
-		setNode(name, editor->selectedNode, obj);
+		if (auto res = loadMapCompiled(game, import_map_dialog.selection)) {
+			auto obj = *res;
+			std::string name = "map["+std::to_string(obj->id)+"]";
+			setNode(name, editor->selectedNode, obj);
+		} else printError(res);
 	}
 }
 

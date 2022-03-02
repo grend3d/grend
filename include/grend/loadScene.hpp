@@ -8,8 +8,42 @@
 
 namespace grendx {
 
-std::pair<gameObject::ptr, modelMap> loadModel(std::string path);
-std::pair<gameImport::ptr, modelMap> loadSceneData(std::string path);
+enum errorFlag {
+	resultError,
+};
+
+template <typename T>
+class result : public std::optional<T> {
+	public:
+		result(T&& value)
+			: std::optional<T>(value) {};
+
+		result(enum errorFlag, const std::string& msg)
+			: std::optional<T>(),
+			error(msg) {};
+
+		const std::string& what() {
+			return error;
+		}
+
+	private:
+		std::string error;
+};
+
+
+template <typename T>
+void printError(result<T>& res) {
+	if (!res) {
+		// TODO: proper logger
+		SDL_Log("ERROR: %s\n", res.what().c_str());
+	}
+}
+
+using importPair = std::pair<gameImport::ptr, modelMap>;
+using objectPair = std::pair<gameObject::ptr, modelMap>;
+
+result<objectPair> loadModel(std::string path) noexcept;
+result<importPair> loadSceneData(std::string path) noexcept;
 
 /// @file
 /**
@@ -19,7 +53,7 @@ std::pair<gameImport::ptr, modelMap> loadSceneData(std::string path);
  *
  * @return gameImport::ptr representing the scene.
  */
-gameImport::ptr loadSceneCompiled(std::string path);
+result<gameImport::ptr> loadSceneCompiled(std::string path) noexcept;
 
 /**
  * Load a scene asyncronously.
@@ -37,13 +71,16 @@ loadSceneAsyncCompiled(gameMain *game, std::string path);
 
 void saveMap(gameMain *game,
 			 gameObject::ptr root,
-			 std::string name="save.map");
+			 std::string name="save.map") noexcept;
 
-std::pair<gameObject::ptr, modelMap> loadMapData(gameMain *game,
-                                                 std::string name="save.map");
+result<objectPair>
+loadMapData(gameMain *game, std::string name="save.map") noexcept;
 
-gameObject::ptr loadMapCompiled(gameMain *game, std::string name="save.map");
-gameObject::ptr loadMapAsyncCompiled(gameMain *game, std::string name="save.map");
+result<gameObject::ptr>
+loadMapCompiled(gameMain *game, std::string name="save.map") noexcept;
+
+result<gameObject::ptr>
+loadMapAsyncCompiled(gameMain *game, std::string name="save.map") noexcept;
 
 // namespace grendx
 };

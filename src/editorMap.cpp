@@ -72,9 +72,15 @@ class modelCache {
 
 		gameImport::ptr getScene(std::string source) {
 			if (scenes.find(source) == scenes.end()) {
-				auto [objs, models] = loadSceneData(source);
-				scenes[source]  = objs;
-				sources[source] = models;
+				if (auto scene = loadSceneData(source)) {
+					auto [objs, models] = *scene;
+					scenes[source]  = objs;
+					sources[source] = models;
+
+				} else {
+					printError(scene);
+					scenes[source] = nullptr;
+				}
 			}
 
 			return scenes[source];
@@ -193,14 +199,16 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	return ret;
 }
 
-std::pair<gameObject::ptr, modelMap>
-grendx::loadMapData(gameMain *game, std::string name) {
+grendx::result<grendx::objectPair>
+grendx::loadMapData(gameMain *game, std::string name) noexcept {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 
 	if (!foo.good()) {
-		std::cerr << "couldn't open save file" << name << std::endl;
-		return {std::make_shared<gameObject>(), {}};
+		//std::cerr << "couldn't open save file" << name << std::endl;
+		//return {std::make_shared<gameObject>(), {}};
+		std::string asdf = "couldn't open save file: ";
+		return {resultError, "asdf"};
 	}
 
 	try {
@@ -217,25 +225,30 @@ grendx::loadMapData(gameMain *game, std::string name) {
 			retmodels.insert(ptr.begin(), ptr.end());
 		}
 
-		return {ret, retmodels};
+		return objectPair {ret, retmodels};
 
 	} catch (std::exception& e) {
 		std::cerr << "loadMap(): couldn't parse " << name
 			<< ": " << e.what() << std::endl;
 
 		// return empty map instead
-		return {std::make_shared<gameObject>(), {}};
+		return {resultError, e.what()};
 	}
 }
 
-gameObject::ptr grendx::loadMapCompiled(gameMain *game, std::string name) {
-	auto [obj, models] = loadMapData(game, name);
+result<gameObject::ptr>
+grendx::loadMapCompiled(gameMain *game, std::string name) noexcept {
+	//auto [obj, models] = loadMapData(game, name);
 
-	if (obj) {
+	if (auto res = loadMapData(game, name)) {
+		auto [obj, models] = *res;
 		compileModels(models);
+		return obj;
+
+	} else {
+		return {resultError, res.what()};
 	}
 
-	return obj;
 }
 
 template <typename T>
@@ -355,7 +368,7 @@ static json objectJson(gameObject::ptr obj) {
 
 void grendx::saveMap(gameMain *game,
                      gameObject::ptr root,
-                     std::string name)
+                     std::string name) noexcept
 {
 	std::ofstream foo(name);
 	std::cerr << "saving map " << name << std::endl;
