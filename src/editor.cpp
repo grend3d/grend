@@ -333,7 +333,7 @@ void gameEditor::runCallbacks(gameObject::ptr node, editAction action) {
 	}
 }
 
-std::pair<gameObject::ptr, modelMap> grendx::loadModel(std::string path) {
+result<objectPair> grendx::loadModel(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
 		//model m(path);
@@ -347,7 +347,7 @@ std::pair<gameObject::ptr, modelMap> grendx::loadModel(std::string path) {
 		setNode(fname, obj, m);
 		//return obj;
 		modelMap models = {{ fname, m }};
-		return {obj, models};
+		return objectPair {obj, models};
 	}
 
 	else if (ext == ".gltf" || ext == ".glb") {
@@ -360,13 +360,15 @@ std::pair<gameObject::ptr, modelMap> grendx::loadModel(std::string path) {
 			setNode(name, obj, model);
 		}
 
-		return {obj, mods};
+		return objectPair {obj, mods};
 	}
 
-	return {nullptr, {}};
+	//return {nullptr, {}};
+	return {resultError, "loadModel: unknown file extension: " + ext};
 }
 
-std::pair<gameImport::ptr, modelMap> grendx::loadSceneData(std::string path) {
+//std::pair<gameImport::ptr, modelMap>
+result<importPair> grendx::loadSceneData(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 
 	if (ext == ".gltf" || ext == ".glb") {
@@ -376,17 +378,18 @@ std::pair<gameImport::ptr, modelMap> grendx::loadSceneData(std::string path) {
 		return load_gltf_scene(path);
 	}
 
-	return {nullptr, {}};
+	return {resultError, "loadSceneData: unknown file extension: " + ext};
 }
 
-gameImport::ptr grendx::loadSceneCompiled(std::string path) {
-	auto [obj, models] = loadSceneData(path);
-
-	if (obj) {
+result<gameImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
+	if (auto res = loadSceneData(path)) {
+		auto [obj, models] = *res;
 		compileModels(models);
-	}
+		return obj;
 
-	return obj;
+	} else {
+		return {resultError, res.what()};
+	}
 }
 
 #if 0
@@ -417,19 +420,20 @@ gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path)
 }
 #endif
 
+// TODO: return result type here somehow
 std::pair<gameImport::ptr, std::future<bool>>
 grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 	auto ret = std::make_shared<gameImport>(path);
 
 	auto fut = game->jobs->addAsync([=] () {
-		auto [obj, models] = loadSceneData(path);
+		if (auto res = loadSceneData(path)) {
+			auto [obj, models] = *res;
 
-		// apparently you can't (officially) capture destructured bindings, only variables...
-		// ffs
-		gameImport::ptr objptr = obj;
-		modelMap modelptr = models;
+			// apparently you can't (officially) capture destructured bindings, only variables...
+			// ffs
+			gameImport::ptr objptr = obj;
+			modelMap modelptr = models;
 
-		if (obj) {
 			setNode("asyncData", ret, objptr);
 
 			// TODO: hmm, seems there's no way to wait on compilation in the system I've
@@ -444,9 +448,12 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 				//setNode("asyncLoaded", ret, std::make_shared<gameObject>());
 				return true;
 			});
-		}
 
-		return obj != nullptr;
+			return true;
+
+		} else {
+			return false;
+		}
 	});
 
 	//return std::pair<gameImport::ptr, std::future<bool>>(ret, std::move(fut));
