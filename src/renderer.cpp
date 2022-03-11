@@ -506,7 +506,7 @@ void grendx::packLight(gameLightSpot::ptr light,
                        glm::mat4& trans)
 {
 	glm::vec3 rpos = applyTransform(trans);
-	glm::vec3 rotvec = glm::mat3(trans) * glm::vec3(1, 0, 0);
+	glm::vec3 rotvec = glm::mat3(trans) * glm::vec3(0, 0, -1);
 
 	memcpy(p->position,  glm::value_ptr(rpos),           sizeof(float[3]));
 	memcpy(p->diffuse,   glm::value_ptr(light->diffuse), sizeof(float[4]));

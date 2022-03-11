@@ -879,12 +879,12 @@ static void syncPlainUniforms(Program::ptr program,
 		//gameLightSpot::ptr light = spots[i];
 		auto& [trans, light] = spots[i];
 
-		// TODO: also updating all these uniforms can't be very efficient for a lot of
-		//       moving point lights... maybe look into how uniform buffer objects work
+		// TODO: possibly have a seperate version of this that uses UBOs
+		//       on higher versions of opengl
 		TRS transform = light->getTransformTRS();
 		std::string locstr = "spot_lights[" + std::to_string(i) + "]";
-		// light points toward +X by default
-		glm::vec3 rotvec = glm::mat3_cast(transform.rotation) * glm::vec3(1, 0, 0);
+		// light points toward -Z by default
+		glm::vec3 rotvec = glm::mat3_cast(transform.rotation) * glm::vec3(0, 0, -1);
 
 		program->set(locstr + ".position",      glm::vec4(transform.position, 1.0));
 		DO_ERROR_CHECK();
@@ -921,6 +921,7 @@ static void syncPlainUniforms(Program::ptr program,
 		TRS transform = light->getTransformTRS();
 		std::string locstr = "directional_lights[" + std::to_string(i) + "]";
 		// light points toward +X by default
+		// TODO: -Z to match spotlights
 		glm::vec3 rotvec = glm::mat3_cast(transform.rotation) * glm::vec3(1, 0, 0);
 
 		// position is ignored in the shader, but might as well set it anyway

@@ -962,14 +962,14 @@ static void load_gltf_node_light(gltfModel& gltf,
 
 		} else if (light.type == "spot") {
 			gameLightSpot::ptr spot = std::make_shared<gameLightSpot>();
-			spot->intensity = light.intensity;
+			spot->intensity = 10*light.intensity;
 			//spot->casts_shadows = true;
 			spot->casts_shadows = false;
 			spot->radius = 0.25;
 			spot->diffuse =
 				glm::vec4(light.color[0], light.color[1], light.color[2], 1.0);
 			// TODO: inner cone angle, blend(?)
-			spot->angle = light.spot.outerConeAngle;
+			spot->angle = 1.0 - light.spot.outerConeAngle;
 
 			setNode(light.name, obj, spot);
 

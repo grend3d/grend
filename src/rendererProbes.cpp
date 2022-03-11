@@ -122,6 +122,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setPosition(applyTransform(transform));
 	//cam->setFovx(360.f*acos(light->angle)/M_PI);
 	cam->setFovx(2.f*180.f*acosf(light->angle)/M_PI);
+	//cam->setFovx(90);
 	// TODO: configurable/dynamic far plane
 	//cam->setFar(light->extent(rctx->lightThreshold));
 	cam->setFar(50);
@@ -147,7 +148,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	// TODO: texture atlas should have some tree wrappers, just for
 	//       clean encapsulation...
 	quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap);
-	glm::vec3 dir = glm::mat3(transform) * glm::vec3(1, 0, 0);
+	glm::vec3 dir = glm::mat3(transform) * glm::vec3(0, 0, -1);
 	glm::vec3 up  = glm::mat3(transform) * glm::vec3(0, 1, 0);
 
 	cam->setDirection(dir, up);
