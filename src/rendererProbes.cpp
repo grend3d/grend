@@ -84,8 +84,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		cam->setDirection(cube_dirs[i], cube_up[i]);
 		cam->setViewport(info.size, info.size);
 
-		porque.setCamera(cam);
-		porque.flush(info.size, info.size, rctx, flags);
+		flush(porque, cam, info.size, info.size, rctx, flags);
 	}
 
 	light->have_map = true;
@@ -155,14 +154,13 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setViewport(info.size, info.size);
 	profile::endGroup();
 
-	porque.setCamera(cam);
-
 	profile::startGroup("Cull");
-	porque.cull(info.size, info.size, 1.0);
+	cullQueue(porque, cam, info.size, info.size, 1.0);
+	renderQueue& newque = porque;
 	profile::endGroup();
 
 	profile::startGroup("Draw");
-	porque.flush(info.size, info.size, rctx, flags);
+	flush(newque, cam, info.size, info.size, rctx, flags);
 	profile::endGroup();
 	DO_ERROR_CHECK();
 
@@ -267,9 +265,8 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	                          flags.instancedShader})
 	{
 		prog->bind();
-		queue.shaderSync(prog, rctx);
+		shaderSync(prog, rctx, queue);
 		prog->set("shadowmap_atlas", TEXU_SHADOWS);
-
 	}
 
 	DO_ERROR_CHECK();
@@ -291,8 +288,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		cam->setViewport(info.size, info.size);
 		DO_ERROR_CHECK();
 
-		porque.setCamera(cam);
-		porque.flush(info.size, info.size, rctx, flags);
+		flush(porque, cam, info.size, info.size, rctx, flags);
 		DO_ERROR_CHECK();
 
 		rctx->defaultSkybox.draw(cam, info.size, info.size);

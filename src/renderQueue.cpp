@@ -156,9 +156,11 @@ void renderQueue::addBillboards(gameObject::ptr obj,
 	}
 }
 
-void renderQueue::updateLights(renderContext::ptr rctx) {
+void grendx::updateLights(renderContext::ptr rctx,
+                          renderQueue& que)
+{
 	// TODO: should probably apply the transform to light position
-	for (auto& light : lights) {
+	for (auto& light : que.lights) {
 		if (!light.data->casts_shadows) {
 			continue;
 		}
@@ -177,7 +179,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 				}
 			}
 
-			drawShadowCubeMap(*this, plit, light.transform, rctx);
+			drawShadowCubeMap(que, plit, light.transform, rctx);
 
 		} else if (light.data->lightType == gameLight::lightTypes::Spot) {
 			gameLightSpot::ptr slit =
@@ -189,7 +191,7 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 				slit->shadowmap = shatree.alloc(rctx->settings.shadowSize);
 			}
 
-			drawSpotlightShadow(*this, slit, light.transform, rctx);
+			drawSpotlightShadow(que, slit, light.transform, rctx);
 
 		} else if (light.data->lightType == gameLight::lightTypes::Directional) {
 			// TODO: orthoganal shadow map
@@ -197,12 +199,11 @@ void renderQueue::updateLights(renderContext::ptr rctx) {
 	}
 }
 
-void
-renderQueue::updateReflections(renderContext::ptr rctx) {
+void grendx::updateReflections(renderContext::ptr rctx, renderQueue& que) {
 	auto& reftree = rctx->atlases.reflections->tree;
 	auto& radtree = rctx->atlases.irradiance->tree;
 
-	for (auto& probe : probes) {
+	for (auto& probe : que.probes) {
 		// allocate from reflection atlas for top level reflections
 		for (unsigned i = 0; i < 6; i++) {
 			if (!reftree.valid(probe.data->faces[0][i])) {
@@ -225,10 +226,10 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		}
 
 		probe.data->have_convolved = true;
-		drawReflectionProbe(*this, probe.data, probe.transform, rctx);
+		drawReflectionProbe(que, probe.data, probe.transform, rctx);
 	}
 
-	for (auto& radprobe : irradProbes) {
+	for (auto& radprobe : que.irradProbes) {
 		for (unsigned i = 0; i < 6; i++) {
 			// TODO: configurable size
 			if (!radtree.valid(radprobe.data->faces[i])) {
@@ -244,31 +245,31 @@ renderQueue::updateReflections(renderContext::ptr rctx) {
 		}
 
 		radprobe.data->source->have_convolved = false;
-		drawIrradianceProbe(*this, radprobe.data, radprobe.transform, rctx);
+		drawIrradianceProbe(que, radprobe.data, radprobe.transform, rctx);
 	}
 }
 
-void renderQueue::sort(void) {
+void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 	//typedef std::tuple<glm::mat4, bool, gameMesh::ptr>  draw_ent;
 	//typedef std::tuple<glm::mat4, bool, gameLight::ptr> light_ent;
 
 	// TODO: better way to do this, in-place?
-	std::vector<queueEnt<gameMesh::ptr>> transparent;
-	std::vector<queueEnt<gameMesh::ptr>> opaque;
+	renderQueue::MeshQ transparent;
+	renderQueue::MeshQ opaque;
 
-	std::sort(lights.begin(), lights.end(),
-		[&] (queueEnt<gameLight::ptr>& a, queueEnt<gameLight::ptr>& b) {
+	std::sort(queue.lights.begin(), queue.lights.end(),
+		[&] (auto& a, auto& b) {
 			return glm::distance(cam->position(), a.center)
 			     < glm::distance(cam->position(), b.center);
 		});
 
-	std::sort(meshes.begin(), meshes.end(),
-		[&] (queueEnt<gameMesh::ptr>& a, queueEnt<gameMesh::ptr>& b) {
+	std::sort(queue.meshes.begin(), queue.meshes.end(),
+		[&] (auto& a, auto& b) {
 			return glm::distance(cam->position(), a.center)
 			     < glm::distance(cam->position(), b.center);
 		});
 
-	for (auto& it : meshes) {
+	for (auto& it : queue.meshes) {
 		//auto [transform, inverted, mesh] = it;
 
 		if (it.data->comped_mesh
@@ -284,21 +285,26 @@ void renderQueue::sort(void) {
 	std::reverse(transparent.begin(), transparent.end());
 
 	// XXX: TODO: avoid clearing, do whole thing in-place
-	meshes.clear();
-	meshes.insert(meshes.end(), opaque.begin(), opaque.end());
-	meshes.insert(meshes.end(), transparent.begin(), transparent.end());
+	queue.meshes.clear();
+	queue.meshes.insert(queue.meshes.end(), opaque.begin(), opaque.end());
+	queue.meshes.insert(queue.meshes.end(), transparent.begin(), transparent.end());
 }
 
-void renderQueue::cull(unsigned width, unsigned height, float lightext) {
+void grendx::cullQueue(renderQueue& queue,
+                       camera::ptr cam,
+                       unsigned width,
+                       unsigned height,
+                       float lightext)
+{
 	glm::mat4 view = cam->viewTransform();
 
 	// XXX: need vector for sorting, deleting elements from vector for culling
 	//      would make this quadratic in the worst case... copying isn't
 	//      ideal, but should be fast enough, still linear time complexity
 	//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempMeshes;
-	std::vector<queueEnt<gameMesh::ptr>> tempMeshes;
+	renderQueue::MeshQ tempMeshes;
 
-	for (auto it = meshes.begin(); it != meshes.end(); it++) {
+	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
 		auto& [trans, _, __, mesh] = *it;
 		auto obb = trans * mesh->boundingBox;
 
@@ -316,11 +322,12 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 		}
 	}
 
-	meshes = tempMeshes;
+	queue.meshes = tempMeshes;
 
-	for (auto& [skin, skmeshes] : skinnedMeshes) {
+	for (auto& [skin, skmeshes] : queue.skinnedMeshes) {
 		//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempSkinned;
-		std::vector<queueEnt<gameMesh::ptr>> tempSkinned;
+		//std::vector<queueEnt<gameMesh::ptr>> tempSkinned;
+		renderQueue::MeshQ tempSkinned;
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
 			auto& [trans, _, __, mesh] = *it;
@@ -335,8 +342,9 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 	}
 
 	//std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> tempLights;
-	std::vector<queueEnt<gameLight::ptr>> tempLights;
-	for (auto it = lights.begin(); it != lights.end(); it++) {
+	//std::vector<queueEnt<gameLight::ptr>> tempLights;
+	renderQueue::LightQ tempLights;
+	for (auto it = queue.lights.begin(); it != queue.lights.end(); it++) {
 		auto& [trans, _, __, lit] = *it;
 
 		// conservative culling, keeps any lights that may possibly affect
@@ -345,28 +353,32 @@ void renderQueue::cull(unsigned width, unsigned height, float lightext) {
 			tempLights.push_back(*it);
 		}
 	}
-	lights = tempLights;
+	queue.lights = tempLights;
 
 	std::vector<std::tuple<glm::mat4, glm::mat4, bool,
 	                       gameParticles::ptr,
 						   gameMesh::ptr>> tempInstanced;
-	for (auto it = instancedMeshes.begin(); it != instancedMeshes.end(); it++) {
+
+	for (auto it = queue.instancedMeshes.begin();
+	     it != queue.instancedMeshes.end();
+	     it++)
+	{
 		auto& [_, trans, __, particles, ___] = *it;
 
 		if (cam->sphereInFrustum(applyTransform(trans), particles->radius)) {
 			tempInstanced.push_back(*it);
 		}
 	}
-	instancedMeshes = tempInstanced;
+	queue.instancedMeshes = tempInstanced;
 }
 
-void renderQueue::batch(void) {
+void grendx::batchQueue(renderQueue& queue) {
 	std::map<gameMesh*, unsigned> meshCount;
 	bool canBatch = false;
 	// TODO: configuration option
 	unsigned minbatch = 16;
 
-	for (auto& [_, __, ___, mesh] : meshes) {
+	for (auto& [_, __, ___, mesh] : queue.meshes) {
 		canBatch |= ++meshCount[mesh.get()] >= minbatch;
 	}
 
@@ -377,9 +389,9 @@ void renderQueue::batch(void) {
 	}
 
 	std::map<gameMesh::ptr, gameParticles::ptr> batches;
-	std::vector<queueEnt<gameMesh::ptr>> tempMeshes;
+	renderQueue::MeshQ tempMeshes;
 
-	for (auto it = meshes.begin(); it != meshes.end(); it++) {
+	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
 		auto& [trans, __, ___, mesh] = *it;
 
 		if (meshCount[mesh.get()] < minbatch) {
@@ -402,7 +414,7 @@ void renderQueue::batch(void) {
 
 	for (auto& [mesh, particles] : batches) {
 		particles->syncBuffer();
-		instancedMeshes.push_back({
+		queue.instancedMeshes.push_back({
 			glm::mat4(1),
 			glm::mat4(1),
 			false,
@@ -411,7 +423,7 @@ void renderQueue::batch(void) {
 		});
 	}
 
-	meshes = tempMeshes;
+	queue.meshes = tempMeshes;
 }
 
 void renderQueue::clear(void) {
@@ -613,15 +625,32 @@ static void drawBillboards(renderFlags& flags,
 }
 
 
-unsigned renderQueue::flush(unsigned width,
-                            unsigned height,
-                            renderContext::ptr rctx,
-                            renderFlags& flags)
+unsigned grendx::flush(renderQueue& que,
+                       camera::ptr cam,
+                       unsigned width,
+                       unsigned height,
+                       renderContext::ptr rctx,
+                       renderFlags& flags)
 {
 	unsigned drawnMeshes = 0;
 
-	if (flags.sort)       { sort(); }
-	if (flags.cull_faces) { enable(GL_CULL_FACE); }
+	if (flags.cull_faces) {
+		enable(GL_CULL_FACE);
+		glFrontFace(GL_CCW);
+	}
+
+	if (flags.stencil) {
+		enable(GL_STENCIL_TEST);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
+
+	if (flags.depthTest) {
+		enable(GL_DEPTH_TEST);
+	} else {
+		disable(GL_DEPTH_TEST);
+	}
+
+	glDepthMask(flags.depthMask? GL_TRUE : GL_FALSE);
 
 	cam->setViewport(width, height);
 	glm::mat4 view = cam->viewTransform();
@@ -634,13 +663,13 @@ unsigned renderQueue::flush(unsigned width,
 	flags.skinnedShader->set("v_inv", v_inv);
 	flags.skinnedShader->set("cameraPosition", cam->position());
 
-	for (auto& [skin, drawinfo] : skinnedMeshes) {
+	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(
-					nearest_irradiance_probe(mesh.center),
+					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
 
@@ -659,10 +688,10 @@ unsigned renderQueue::flush(unsigned width,
 	flags.mainShader->set("cameraPosition", cam->position());
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
-	for (auto& mesh : meshes) {
+	for (auto& mesh : que.meshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(mesh.center),
+				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
@@ -670,24 +699,29 @@ unsigned renderQueue::flush(unsigned width,
 		drawnMeshes++;
 	}
 
+	/*
 	meshes.clear();
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
 	instancedMeshes.clear();
 	billboardMeshes.clear();
+	*/
+	que.clear();
 
 	return drawnMeshes;
 }
 
-unsigned renderQueue::flush(renderFramebuffer::ptr fb,
-                            renderContext::ptr rctx,
-                            renderFlags& flags)
+unsigned grendx::flush(renderQueue& que,
+                       camera::ptr cam,
+                       renderFramebuffer::ptr fb,
+                       renderContext::ptr rctx,
+                       renderFlags& flags)
 {
 	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
 
-	if (flags.sort) { sort(); }
+	//if (flags.sort) { sort(); }
 
 	if (flags.cull_faces) {
 		enable(GL_CULL_FACE);
@@ -726,10 +760,10 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.skinnedShader->set("p", projection);
 	flags.skinnedShader->set("v_inv", v_inv);
 	flags.skinnedShader->set("cameraPosition", cam->position());
-	shaderSync(flags.skinnedShader, rctx);
+	shaderSync(flags.skinnedShader, rctx, que);
 	gameSkin::ptr lastskin = nullptr;
 
-	for (auto& [skin, drawinfo] : skinnedMeshes) {
+	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		float offset = -1.0;
 
 		for (auto& mesh : drawinfo) {
@@ -737,7 +771,7 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 
 			if (!flags.shadowmap) {
 				rctx->setIrradianceProbe(
-					nearest_irradiance_probe(mesh.center),
+					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
 			drawMesh(flags, fb, flags.skinnedShader, mesh.transform, mesh.inverted, mesh.data);
@@ -753,13 +787,13 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.mainShader->set("p", projection);
 	flags.mainShader->set("v_inv", v_inv);
 	flags.mainShader->set("cameraPosition", cam->position());
-	shaderSync(flags.mainShader, rctx);
+	shaderSync(flags.mainShader, rctx, que);
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
-	for (auto& mesh : meshes) {
+	for (auto& mesh : que.meshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(mesh.center),
+				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
@@ -772,12 +806,12 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.instancedShader->set("p", projection);
 	flags.instancedShader->set("v_inv", v_inv);
 	flags.instancedShader->set("cameraPosition", cam->position());
-	shaderSync(flags.instancedShader, rctx);
+	shaderSync(flags.instancedShader, rctx, que);
 
-	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : instancedMeshes) {
+	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(outerTrans)),
+				que.nearest_irradiance_probe(applyTransform(outerTrans)),
 				flags.instancedShader);
 		}
 
@@ -796,13 +830,13 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	flags.billboardShader->set("v_inv", v_inv);
 	flags.billboardShader->set("cameraPosition", cam->position());
 	DO_ERROR_CHECK();
-	shaderSync(flags.billboardShader, rctx);
+	shaderSync(flags.billboardShader, rctx, que);
 	DO_ERROR_CHECK();
 
-	for (auto& [transform, inverted, particleSystem, mesh] : billboardMeshes) {
+	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
 		if (!flags.shadowmap) {
 			rctx->setIrradianceProbe(
-				nearest_irradiance_probe(applyTransform(transform)),
+				que.nearest_irradiance_probe(applyTransform(transform)),
 				flags.billboardShader);
 		}
 
@@ -813,12 +847,15 @@ unsigned renderQueue::flush(renderFramebuffer::ptr fb,
 	}
 
 	// TODO: clear()
+	/*
 	meshes.clear();
 	lights.clear();
 	probes.clear();
 	skinnedMeshes.clear();
 	instancedMeshes.clear();
 	billboardMeshes.clear();
+	*/
+	que.clear();
 
 	return drawnMeshes;
 }
@@ -953,14 +990,17 @@ static inline float rectScale(float R, float d) {
 	return 1.f / cos(d/R);
 }
 
-void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
+void grendx::buildTilemap(renderQueue::LightQ& queue,
+                          camera::ptr cam,
+                          renderContext::ptr rctx)
+{
 	switch (rctx->lightingMode) {
 		case renderContext::lightingModes::Clustered:
 			// TODO:
 			break;
 
 		case renderContext::lightingModes::Tiled:
-			buildTilemapTiled(queue, rctx);
+			buildTilemapTiled(queue, cam, rctx);
 			break;
 
 		case renderContext::lightingModes::PlainArray:
@@ -972,12 +1012,14 @@ void grendx::buildTilemap(renderQueue& queue, renderContext::ptr rctx) {
 
 // TODO: possibly move this to it's own file
 #include <grend/plane.hpp>
-void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
+void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
+                               camera::ptr cam,
+                               renderContext::ptr rctx)
+{
 	lights_std140&      lightbuf = rctx->lightBufferCtx;
 	light_tiles_std140& pointbuf = rctx->pointTilesCtx;
 	light_tiles_std140& spotbuf  = rctx->spotTilesCtx;
 
-	camera::ptr cam = queue.cam;
 	float rx = glm::radians(cam->fovx());
 	float ry = glm::radians(cam->fovy());
 
@@ -1070,7 +1112,7 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 	};
 
 	//for (auto& [trans, _, lit] : queue.lights) {
-	for (auto& lit : queue.lights) {
+	for (auto& lit : queue) {
 		if (activePoints < MAX_POINT_LIGHT_OBJECTS_TILED &&
 		    lit.data->lightType == gameLight::lightTypes::Point)
 		{
@@ -1121,8 +1163,11 @@ void grendx::buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx) {
 	rctx->spotTiles->update(&spotbuf,    0, sizeof(spotbuf));
 }
 
-void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
-	auto refprobe = nearest_reflection_probe(cam->position());
+void grendx::updateReflectionProbe(renderContext::ptr rctx,
+                                   renderQueue& que,
+                                   camera::ptr cam)
+{
+	auto refprobe = que.nearest_reflection_probe(cam->position());
 
 	// TODO: set the real transform
 	glm::mat4 xxx(1);
@@ -1131,7 +1176,10 @@ void renderQueue::updateReflectionProbe(renderContext::ptr rctx) {
 	rctx->lightBuffer->update(&rctx->lightBufferCtx, 0, sizeof(rctx->lightBufferCtx));
 }
 
-void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
+void grendx::shaderSync(Program::ptr program,
+                        renderContext::ptr rctx,
+                        renderQueue& que)
+{
 	if (rctx->lightingMode == renderContext::lightingModes::Clustered) {
 		// TODO: implement
 		// TODO: function to set mode
@@ -1155,7 +1203,7 @@ void renderQueue::shaderSync(Program::ptr program, renderContext::ptr rctx) {
 		dirList   directional_lights;
 
 		//for (auto& [trans, _, light] : lights) {
-		for (auto& light : lights) {
+		for (auto& light : que.lights) {
 			switch (light.data->lightType) {
 				case gameLight::lightTypes::Point:
 					{

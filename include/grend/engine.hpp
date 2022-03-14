@@ -280,13 +280,13 @@ class renderContext {
 
 class renderQueue {
 	public:
-		renderQueue(camera::ptr cam) { setCamera(cam); };
+		renderQueue() {};
+
 		renderQueue(renderQueue& other) {
 			meshes        = other.meshes;
 			skinnedMeshes = other.skinnedMeshes;
 			lights        = other.lights;
 			probes        = other.probes;
-			cam           = other.cam;
 		}
 
 		template <typename T>
@@ -301,6 +301,9 @@ class renderQueue {
 		         float animTime = 0.0,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
+
+		void add(renderQueue& other);
+
 		void addSkinned(gameObject::ptr obj,
 		                gameSkin::ptr skin,
 		                float animTime = 0.0,
@@ -315,32 +318,23 @@ class renderQueue {
 		                   gameBillboardParticles::ptr particles,
 		                   glm::mat4 trans = glm::mat4(1),
 		                   bool inverted = false);
-		void updateLights(renderContext::ptr rctx);
-		void updateReflections(renderContext::ptr rctx);
-		void updateReflectionProbe(renderContext::ptr rctx);
-		void sort(void);
-		void cull(unsigned width, unsigned height, float lightext);
-		void batch(void);
+
 		void clear(void);
 
-		unsigned flush(renderFramebuffer::ptr fb,
-		               renderContext::ptr rctx,
-		               renderFlags& flags);
-		unsigned flush(unsigned width, unsigned height,
-		               renderContext::ptr rctx,
-		               renderFlags& flags);
-		void shaderSync(Program::ptr program, renderContext::ptr rctx);
-		void setCamera(camera::ptr newcam) { cam = newcam; };
-
-		camera::ptr cam = nullptr;
+		using MeshQ  = std::vector<queueEnt<gameMesh::ptr>>;
+		using LightQ = std::vector<queueEnt<gameLight::ptr>>;
+		using RefQ   = std::vector<queueEnt<gameReflectionProbe::ptr>>;
+		using RadQ   = std::vector<queueEnt<gameIrradianceProbe::ptr>>;
+		using SkinQ  = std::map<gameSkin::ptr, MeshQ>;
 
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
-		std::vector<queueEnt<gameMesh::ptr>> meshes;
-		std::map<gameSkin::ptr, std::vector<queueEnt<gameMesh::ptr>>> skinnedMeshes;
-		std::vector<queueEnt<gameLight::ptr>> lights;
-		std::vector<queueEnt<gameReflectionProbe::ptr>> probes;
-		std::vector<queueEnt<gameIrradianceProbe::ptr>> irradProbes;
+		MeshQ  meshes;
+		SkinQ  skinnedMeshes;
+		LightQ lights;
+		RefQ   probes;
+		RadQ   irradProbes;
+
 		// TODO: hmm, having types that line wrap might be a code smell...
 		std::vector<std::tuple<glm::mat4, glm::mat4, bool,
 		                       gameParticles::ptr,
@@ -348,10 +342,30 @@ class renderQueue {
 		std::vector<std::tuple<glm::mat4, bool, gameBillboardParticles::ptr,
 		                       gameMesh::ptr>> billboardMeshes;
 
-	private:
 		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
 		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
 };
+
+void updateLights(renderContext::ptr rctx, renderQueue& lights);
+void updateReflections(renderContext::ptr rctx, renderQueue& refs);
+void updateReflectionProbe(renderContext::ptr rctx, renderQueue& que, camera::ptr cam);
+void sortQueue(renderQueue& queue, camera::ptr cam);
+void cullQueue(renderQueue& queue, camera::ptr cam, unsigned width, unsigned height, float lightext);
+void batchQueue(renderQueue& queue);
+
+void shaderSync(Program::ptr program, renderContext::ptr rctx, renderQueue& que);
+
+unsigned flush(renderQueue& que,
+               camera::ptr cam,
+               renderFramebuffer::ptr fb,
+               renderContext::ptr rctx,
+               renderFlags& flags);
+unsigned flush(renderQueue& que,
+               camera::ptr cam,
+               unsigned width,
+               unsigned height,
+               renderContext::ptr rctx,
+               renderFlags& flags);
 
 renderFlags loadLightingShader(std::string fragmentPath, Shader::parameters& opts);
 renderFlags loadProbeShader(std::string fragmentPath, Shader::parameters& opts);
@@ -382,9 +396,9 @@ void drawIrradianceProbe(renderQueue& queue,
                          glm::mat4& transform,
                          renderContext::ptr rctx);
 
-void buildTilemap(renderQueue& queue, renderContext::ptr rctx);
-void buildTilemapTiled(renderQueue& queue, renderContext::ptr rctx);
-void buildTilemapClustered(renderQueue& queue, renderContext::ptr rctx);
+void buildTilemap(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
+void buildTilemapTiled(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
+void buildTilemapClustered(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
 
 void packLight(gameLightPoint::ptr light, point_std140 *p,
                renderContext::ptr rctx, glm::mat4& trans);

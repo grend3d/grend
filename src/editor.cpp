@@ -160,7 +160,7 @@ void gameEditor::loadUIModels(void) {
 }
 
 void gameEditor::render(gameMain *game) {
-	renderQueue que(cam);
+	renderQueue que;
 	auto flags = game->rend->getLightingFlags();
 
 	renderWorld(game, cam, flags);
@@ -189,11 +189,11 @@ void gameEditor::render(gameMain *game) {
 
 	// TODO: depth mode in render flags
 	glDepthFunc(GL_GEQUAL);
-	por.flush(game->rend->framebuffer, game->rend, constantFlags);
+	flush(por, cam, game->rend->framebuffer, game->rend, constantFlags);
 
 	por = que;
 	glDepthFunc(GL_LESS);
-	por.flush(game->rend->framebuffer, game->rend, unshadedFlags);
+	flush(por, cam, game->rend->framebuffer, game->rend, unshadedFlags);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
@@ -226,8 +226,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	static gameObject::ptr probeObj = std::make_shared<gameObject>();
 	setNode("model", probeObj, physmodel);
 
-	renderQueue tempque(cam);
-	renderQueue que(cam);
+	renderQueue tempque;
+	renderQueue que;
 	tempque.add(game->state->rootnode);
 
 	if (showProbes) {
@@ -256,7 +256,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			que.flush(game->rend->framebuffer, game->rend, probeFlags);
+			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
 		}
 
 		probeFlags.mainShader = probeFlags.skinnedShader =
@@ -277,7 +277,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			}
 
 			que.add(probeObj);
-			que.flush(game->rend->framebuffer, game->rend, probeFlags);
+			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
 		}
 	}
 
@@ -294,7 +294,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 				});
 
 				que.add(probeObj);
-				que.flush(game->rend->framebuffer, game->rend, unshadedFlags);
+				flush(que, cam, game->rend->framebuffer, game->rend, unshadedFlags);
 			}
 		}
 	}

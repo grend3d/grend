@@ -169,7 +169,7 @@ void gameMain::handleInput(void) {
 }
 
 void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
-	renderQueue que(cam);
+	renderQueue que;
 	renderWorld(game, cam, que, flags);
 }
 
@@ -186,7 +186,7 @@ void grendx::renderWorld(gameMain *game,
 
 	if (game->state->rootnode) {
 		renderQueue que(base);
-		que.setCamera(cam);
+		//que.setCamera(cam);
 		float fticks = SDL_GetTicks() / 1000.0f;
 
 		DO_ERROR_CHECK();
@@ -196,8 +196,8 @@ void grendx::renderWorld(gameMain *game,
 		que.add(game->state->physObjects);
 
 		profile::startGroup("Update lights/shadowmaps");
-		que.updateLights(game->rend);
-		que.updateReflections(game->rend);
+		updateLights(game->rend, que);
+		updateReflections(game->rend, que);
 		profile::endGroup();
 		profile::endGroup();
 		DO_ERROR_CHECK();
@@ -211,13 +211,15 @@ void grendx::renderWorld(gameMain *game,
 		DO_ERROR_CHECK();
 
 		profile::startGroup("Cull");
-		que.cull(game->rend->framebuffer->width,
-		         game->rend->framebuffer->height,
-		         game->rend->lightThreshold);
+		cullQueue(que, cam, game->rend->framebuffer->width,
+		          game->rend->framebuffer->height,
+		          game->rend->lightThreshold);
+		renderQueue& newque = que;
 		profile::endGroup();
 
 		profile::startGroup("Sort");
-		que.sort();
+		//que.sort();
+		sortQueue(newque, cam);
 		profile::endGroup();
 
 		//profile::startGroup("Batch");
@@ -225,13 +227,13 @@ void grendx::renderWorld(gameMain *game,
 		//profile::endGroup();
 
 		profile::startGroup("Build light tilemap");
-		buildTilemap(que, game->rend);
+		buildTilemap(newque.lights, cam, game->rend);
 		profile::endGroup();
 
 		profile::startGroup("Draw");
-		que.updateReflectionProbe(game->rend);
+		updateReflectionProbe(game->rend, newque, cam);
 		game->metrics.drawnMeshes +=
-			que.flush(game->rend->framebuffer, game->rend, flags);
+			flush(newque, cam, game->rend->framebuffer, game->rend, flags);
 		DO_ERROR_CHECK();
 		game->rend->defaultSkybox.draw(cam, game->rend->framebuffer);
 		DO_ERROR_CHECK();
