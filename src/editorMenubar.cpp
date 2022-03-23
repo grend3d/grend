@@ -23,7 +23,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
-		if (auto node = loadMapCompiled(game, open_dialog.selection)) {
+		if (auto node = loadMapCompiled(open_dialog.selection)) {
 			editor->clear(game);
 			editor->selectedNode = game->state->rootnode = *node;
 		} else printError(node);
@@ -68,7 +68,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		          << import_map_dialog.selection << std::endl;
 		import_map_dialog.clear();
 
-		if (auto res = loadMapCompiled(game, import_map_dialog.selection)) {
+		if (auto res = loadMapCompiled(import_map_dialog.selection)) {
 			auto obj = *res;
 			std::string name = "map["+std::to_string(obj->id)+"]";
 			setNode(name, editor->selectedNode, obj);

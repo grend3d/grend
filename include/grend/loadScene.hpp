@@ -18,6 +18,10 @@ class result : public std::optional<T> {
 		result(T&& value)
 			: std::optional<T>(value) {};
 
+		result(const std::pair<enum errorFlag, const std::string&>& msg)
+			: std::optional<T>(),
+			error(msg.second) {};
+
 		result(enum errorFlag, const std::string& msg)
 			: std::optional<T>(),
 			error(msg) {};
@@ -30,6 +34,11 @@ class result : public std::optional<T> {
 		std::string error;
 };
 
+static inline
+std::pair<enum errorFlag, const std::string&>
+invalidResult(const std::string& msg) noexcept {
+	return {resultError, msg};
+}
 
 template <typename T>
 void printError(result<T>& res) {
@@ -73,13 +82,13 @@ void saveMap(gameMain *game,
 			 gameObject::ptr root,
 			 std::string name="save.map") noexcept;
 
-result<objectPair>
-loadMapData(gameMain *game, std::string name="save.map") noexcept;
+result<importPair>
+loadMapData(std::string name="save.map") noexcept;
 
-result<gameObject::ptr>
-loadMapCompiled(gameMain *game, std::string name="save.map") noexcept;
+result<gameImport::ptr>
+loadMapCompiled(std::string name="save.map") noexcept;
 
-result<gameObject::ptr>
+result<gameImport::ptr>
 loadMapAsyncCompiled(gameMain *game, std::string name="save.map") noexcept;
 
 // namespace grendx

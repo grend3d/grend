@@ -372,10 +372,16 @@ result<importPair> grendx::loadSceneData(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 
 	if (ext == ".gltf" || ext == ".glb") {
-		std::cerr << "load_scene(): loading scene" << std::endl;
+		std::cerr << "load_scene(): loading scene: " << path << std::endl;
 		// TODO: this is kind of redundant now, unless I want this to also
 		//       be able to load .map files from here... could be useful
 		return load_gltf_scene(path);
+
+	} else if (ext == ".map") {
+		std::cerr << "load_scene(): loading map: " << path << std::endl;
+		// TODO: need to detect and avoid recursive map loads,
+		//       otherwise this will loop and consume all memory
+		return loadMapData(path);
 	}
 
 	return {resultError, "loadSceneData: unknown file extension: " + ext};

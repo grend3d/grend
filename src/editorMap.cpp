@@ -90,6 +90,8 @@ class modelCache {
 		std::map<std::string, gameImport::ptr> scenes;
 };
 
+// TODO: set to keep track of map files already being loaded to avoid
+//       recursive map loads
 gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	gameObject::ptr ret = nullptr;
 	std::vector<std::string> modelFiles;
@@ -199,56 +201,53 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	return ret;
 }
 
-grendx::result<grendx::objectPair>
-grendx::loadMapData(gameMain *game, std::string name) noexcept {
+result<importPair>
+grendx::loadMapData(std::string name) noexcept {
 	std::ifstream foo(name);
 	std::cerr << "loading map " << name << std::endl;
 
 	if (!foo.good()) {
-		//std::cerr << "couldn't open save file" << name << std::endl;
-		//return {std::make_shared<gameObject>(), {}};
-		std::string asdf = "couldn't open save file: ";
-		return {resultError, "asdf"};
+		std::string asdf = "couldn't open map file: " + name;
+		return invalidResult(asdf);
 	}
 
 	try {
-		gameObject::ptr ret = nullptr;
+		gameImport::ptr ret = std::make_shared<gameImport>(name);
 		json j;
 		foo >> j;
 
 		// XXX: again TODO
 		modelCache cache;
 		modelMap retmodels;
-		ret = loadNodes(cache, "", j["root"]);
+
+		gameObject::ptr temp = loadNodes(cache, "", j["root"]);
+		ret->setTransform(temp->getTransformTRS());
+		ret->nodes = temp->nodes;
 
 		for (auto& [name, ptr] : cache.sources) {
 			retmodels.insert(ptr.begin(), ptr.end());
 		}
 
-		return objectPair {ret, retmodels};
+		return importPair {ret, retmodels};
 
 	} catch (std::exception& e) {
 		std::cerr << "loadMap(): couldn't parse " << name
 			<< ": " << e.what() << std::endl;
 
-		// return empty map instead
-		return {resultError, e.what()};
+		return invalidResult(e.what());
 	}
 }
 
-result<gameObject::ptr>
-grendx::loadMapCompiled(gameMain *game, std::string name) noexcept {
-	//auto [obj, models] = loadMapData(game, name);
-
-	if (auto res = loadMapData(game, name)) {
+result<gameImport::ptr>
+grendx::loadMapCompiled(std::string name) noexcept {
+	if (auto res = loadMapData(name)) {
 		auto [obj, models] = *res;
 		compileModels(models);
 		return obj;
 
 	} else {
-		return {resultError, res.what()};
+		return invalidResult(res.what());
 	}
-
 }
 
 template <typename T>

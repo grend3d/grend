@@ -169,7 +169,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_i:
-						if (auto node = loadMapCompiled(game)) {
+						if (auto node = loadMapCompiled()) {
 							clear(game);
 							selectedNode = game->state->rootnode = *node;
 							runCallbacks(selectedNode, editAction::NewScene);
