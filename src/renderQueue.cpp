@@ -78,6 +78,18 @@ void renderQueue::add(gameObject::ptr obj,
 	//std::cerr << "add(): pop" << std::endl;
 }
 
+void renderQueue::add(renderQueue& other) {
+#define QUEAPPEND(SYM) \
+	SYM.insert(SYM.end(), other.SYM.begin(), other.SYM.end())
+
+	QUEAPPEND(meshes);
+	//QUEAPPEND(skinnedMeshes);
+	QUEAPPEND(lights);
+	QUEAPPEND(probes);
+	skinnedMeshes.insert(other.skinnedMeshes.begin(), other.skinnedMeshes.end());
+#undef QUEAPPEND
+}
+
 void renderQueue::addSkinned(gameObject::ptr obj,
                              gameSkin::ptr skin,
                              float animTime,
