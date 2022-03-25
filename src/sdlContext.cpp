@@ -79,10 +79,6 @@ context::context(const char *progname, const renderSettings& settings) {
 	                          32, 32,
 	                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-	                         "Could not initialize",
-	                         "Could not initialize SDL!", NULL);
-
 	if (!window) {
 		SDL_Die("Couldn't create a window");
 	}
