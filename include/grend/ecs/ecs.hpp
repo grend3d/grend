@@ -3,6 +3,7 @@
 #pragma once
 
 #include <grend/gameObject.hpp>
+#include <grend/physics.hpp>
 #include <nlohmann/json.hpp>
 
 #include <iostream>

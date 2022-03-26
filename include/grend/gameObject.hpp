@@ -1,8 +1,7 @@
 #pragma once
 
+#include <grend-config.h>
 #include <grend/glmIncludes.hpp>
-#include <grend/openglIncludes.hpp>
-#include <grend/sdlContext.hpp>
 #include <grend/animation.hpp>
 // TODO: move, for lights
 #include <grend/quadtree.hpp>
@@ -22,9 +21,6 @@
 namespace grendx {
 
 size_t allocateObjID(void);
-
-// forward declaration, physics.hpp include at end
-class physicsObject;
 
 class gameObject {
 	public:
@@ -113,10 +109,6 @@ class gameObject {
 		// intended to map to gltf extra properties, useful for exporting
 		// info from blender
 		std::map<std::string, float> extraProperties;
-
-		// for unlinking when the object is removed
-		//std::shared_ptr<physicsObject> physObj;
-		GLenum face_order  = GL_CCW;
 
 		// cache for renderQueue state, queueCache only changed externally
 		// from renderQueue::add(), queueUpdated changed both from 
@@ -413,6 +405,3 @@ class gameIrradianceProbe : public gameObject {
 
 // namespace grendx
 }
-
-#include <grend/physics.hpp>
-#include <grend/glManager.hpp>

@@ -1,4 +1,5 @@
 #include <grend/gameObject.hpp>
+#include <grend/glManager.hpp>
 #include <grend/utility.hpp>
 #include <math.h>
 
