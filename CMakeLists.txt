@@ -116,6 +116,7 @@ add_library(Grend
 	src/ecsEntityManager.cpp
 	src/ecsCollision.cpp
 	src/ecsRigidBody.cpp
+	src/ecsShader.cpp
 	src/gameView.cpp
 	src/ecsSerializer.cpp
 	src/editorEditorSelectWindow.cpp
