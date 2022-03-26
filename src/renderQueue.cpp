@@ -308,8 +308,6 @@ void grendx::cullQueue(renderQueue& queue,
                        unsigned height,
                        float lightext)
 {
-	glm::mat4 view = cam->viewTransform();
-
 	// XXX: need vector for sorting, deleting elements from vector for culling
 	//      would make this quadratic in the worst case... copying isn't
 	//      ideal, but should be fast enough, still linear time complexity
@@ -448,10 +446,10 @@ void renderQueue::clear(void) {
 	billboardMeshes.clear();
 }
 
-static void drawMesh(renderFlags& flags,
+static void drawMesh(const renderFlags& flags,
                      renderFramebuffer::ptr fb,
                      Program::ptr program,
-                     glm::mat4& transform,
+                     const glm::mat4& transform,
                      bool inverted,
                      gameMesh::ptr mesh)
 {
@@ -510,11 +508,11 @@ static void drawMesh(renderFlags& flags,
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-static void drawMeshInstanced(renderFlags& flags,
+static void drawMeshInstanced(const renderFlags& flags,
                               renderFramebuffer::ptr fb,
                               Program::ptr program,
-                              glm::mat4& outerTrans,
-                              glm::mat4& innerTrans,
+                              const glm::mat4& outerTrans,
+                              const glm::mat4& innerTrans,
                               bool inverted,
                               gameParticles::ptr particles,
                               gameMesh::ptr mesh)
@@ -578,10 +576,10 @@ static void drawMeshInstanced(renderFlags& flags,
 #endif
 }
 
-static void drawBillboards(renderFlags& flags,
+static void drawBillboards(const renderFlags& flags,
                            renderFramebuffer::ptr fb,
                            Program::ptr program,
-                           glm::mat4& transform,
+                           const glm::mat4& transform,
                            bool inverted,
                            gameBillboardParticles::ptr particles,
                            gameMesh::ptr mesh)
@@ -642,7 +640,7 @@ unsigned grendx::flush(renderQueue& que,
                        unsigned width,
                        unsigned height,
                        renderContext::ptr rctx,
-                       renderFlags& flags)
+                       const renderFlags& flags)
 {
 	unsigned drawnMeshes = 0;
 
@@ -728,7 +726,7 @@ unsigned grendx::flush(renderQueue& que,
                        camera::ptr cam,
                        renderFramebuffer::ptr fb,
                        renderContext::ptr rctx,
-                       renderFlags& flags)
+                       const renderFlags& flags)
 {
 	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
@@ -776,8 +774,6 @@ unsigned grendx::flush(renderQueue& que,
 	gameSkin::ptr lastskin = nullptr;
 
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
-		float offset = -1.0;
-
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
@@ -883,9 +879,9 @@ static void syncPlainUniforms(Program::ptr program,
 	                          spotList& spots,
 	                          dirList&  directionals)
 {
-	size_t pactive = min(MAX_LIGHTS, points.size());
-	size_t sactive = min(MAX_LIGHTS, spots.size());
-	size_t dactive = min(MAX_LIGHTS, directionals.size());
+	size_t pactive = min((size_t)MAX_LIGHTS, points.size());
+	size_t sactive = min((size_t)MAX_LIGHTS, spots.size());
+	size_t dactive = min((size_t)MAX_LIGHTS, directionals.size());
 
 	program->set("active_point_lights",       (GLint)pactive);
 	program->set("active_spot_lights",        (GLint)sactive);

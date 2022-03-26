@@ -242,3 +242,28 @@ void grendx::renderWorld(gameMain *game,
 
 	profile::endGroup();
 }
+
+// TODO: Maybe replaces drawWorld?
+void grendx::drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr cam) {
+	// XXX: less than ideal
+	// TODO: need a better way to update global lighting state,
+	//       without (or minimizing) allocations, this could add a lot
+	//       of pointless overhead
+	renderQueue hax;
+	for (auto& [id, que] : que.queues) {
+		hax.add(que);
+	}
+
+	updateLights(game->rend, hax);
+	updateReflections(game->rend, hax);
+	buildTilemap(hax.lights, cam, game->rend);
+	updateReflectionProbe(game->rend, hax, cam);
+
+	cullQueue(que, cam,
+			  game->rend->framebuffer->width,
+			  game->rend->framebuffer->height,
+			  game->rend->lightThreshold);
+	sortQueue(que, cam);
+
+	flush(que, cam, game->rend->framebuffer, game->rend);
+}

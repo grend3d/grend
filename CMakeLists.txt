@@ -120,6 +120,7 @@ add_library(Grend
 	src/ecsSerializer.cpp
 	src/editorEditorSelectWindow.cpp
 	src/renderQueue.cpp
+	src/multiRenderQueue.cpp
 	src/playerView.cpp
 	src/tinygltf.cpp
 

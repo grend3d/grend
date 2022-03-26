@@ -64,5 +64,8 @@ void renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags);
 void renderWorld(gameMain *game, camera::ptr cam,
                  renderQueue& base, renderFlags& flags);
 
+// TODO: Maybe replaces drawWorld?
+void drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr cam);
+
 // namespace grendx
 }

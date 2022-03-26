@@ -187,6 +187,23 @@ struct renderFlags {
 	bool shadowmap  = false;
 };
 
+static inline
+bool operator==(const renderFlags& lhs, const renderFlags& rhs) noexcept {
+	return lhs.mainShader      == rhs.mainShader
+	    && lhs.skinnedShader   == rhs.skinnedShader
+	    && lhs.instancedShader == rhs.instancedShader
+	    && lhs.billboardShader == rhs.billboardShader
+	    && lhs.cull_faces      == rhs.cull_faces
+	    && lhs.sort            == rhs.sort
+	    && lhs.stencil         == rhs.stencil
+	    && lhs.depthTest       == rhs.depthTest
+	    && lhs.depthMask       == rhs.depthMask
+	    && lhs.syncshader      == rhs.syncshader
+	    && lhs.shadowmap       == rhs.shadowmap
+	    ;
+}
+
+
 class renderContext {
 	public:
 		typedef std::shared_ptr<renderContext> ptr;
@@ -346,26 +363,53 @@ class renderQueue {
 		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
 };
 
+struct multiRenderQueue {
+	public:
+		std::unordered_map<std::size_t, renderQueue> queues;
+		std::unordered_map<std::size_t, renderFlags> shadermap;
+
+		// TODO: probably rename renderFlags to renderShader
+		void add(const renderFlags& shader,
+		         gameObject::ptr obj,
+		         const glm::mat4& trans = glm::mat4(1),
+		         bool inverted = false);
+
+		// TODO:
+		//void add(multiRenderQueue& other);
+
+		void clear(void);
+};
+
 void updateLights(renderContext::ptr rctx, renderQueue& lights);
 void updateReflections(renderContext::ptr rctx, renderQueue& refs);
 void updateReflectionProbe(renderContext::ptr rctx, renderQueue& que, camera::ptr cam);
 void sortQueue(renderQueue& queue, camera::ptr cam);
 void cullQueue(renderQueue& queue, camera::ptr cam, unsigned width, unsigned height, float lightext);
+void sortQueue(multiRenderQueue& queue, camera::ptr cam);
+void cullQueue(multiRenderQueue& queue, camera::ptr cam, unsigned width, unsigned height, float lightext);
 void batchQueue(renderQueue& queue);
 
 void shaderSync(Program::ptr program, renderContext::ptr rctx, renderQueue& que);
 
+// TODO: rename flushQueue
 unsigned flush(renderQueue& que,
                camera::ptr cam,
                renderFramebuffer::ptr fb,
                renderContext::ptr rctx,
-               renderFlags& flags);
+               const renderFlags& flags);
+
+unsigned flush(multiRenderQueue& que,
+               camera::ptr cam,
+               renderFramebuffer::ptr fb,
+               renderContext::ptr rctx);
+
+// TODO: this for multiRenderQueue
 unsigned flush(renderQueue& que,
                camera::ptr cam,
                unsigned width,
                unsigned height,
                renderContext::ptr rctx,
-               renderFlags& flags);
+               const renderFlags& flags);
 
 renderFlags loadLightingShader(std::string fragmentPath, Shader::parameters& opts);
 renderFlags loadProbeShader(std::string fragmentPath, Shader::parameters& opts);
@@ -420,3 +464,27 @@ void invalidateLightMaps(gameObject::ptr tree);
 
 // namespace grendx
 }
+
+// injecting a hash function for renderflags into std namespace
+template <>
+struct std::hash<grendx::renderFlags> {
+	std::size_t operator()(const grendx::renderFlags& r) const noexcept {
+		std::size_t ret = 737;
+
+		unsigned k = (r.cull_faces << 6)
+		           | (r.sort       << 5)
+		           | (r.stencil    << 4)
+		           | (r.depthTest  << 3)
+		           | (r.depthMask  << 2)
+		           | (r.syncshader << 1)
+		           | (r.shadowmap  << 0);
+
+		ret = ret*33 + (uintptr_t)r.mainShader.get();
+		ret = ret*33 + (uintptr_t)r.skinnedShader.get();
+		ret = ret*33 + (uintptr_t)r.instancedShader.get();
+		ret = ret*33 + (uintptr_t)r.billboardShader.get();
+		ret = ret*33 + k;
+
+		return ret;
+	}
+};
