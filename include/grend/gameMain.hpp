@@ -67,5 +67,10 @@ void renderWorld(gameMain *game, camera::ptr cam,
 // TODO: Maybe replaces drawWorld?
 void drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr cam);
 
+// TODO: Maybe add to an existing multiRenderQueue?
+//       or could have an overload for that
+// TODO: better place for this
+multiRenderQueue buildDrawableQueue(gameMain *game, camera::ptr cam);
+
 // namespace grendx
 }

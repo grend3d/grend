@@ -163,7 +163,9 @@ void gameEditor::render(gameMain *game) {
 	renderQueue que;
 	auto flags = game->rend->getLightingFlags();
 
-	renderWorld(game, cam, flags);
+	auto world = buildDrawableQueue(game, cam);
+	world.add(flags, game->state->rootnode);
+	drawMultiQueue(game, world, cam);
 	renderWorldObjects(game);
 
 	// TODO: this results in cursor not being clickable if the render
