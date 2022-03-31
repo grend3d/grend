@@ -42,7 +42,7 @@ vec4 undoTonemap(in vec4 samp, float exposure) {
 //#define EARLY_TONEMAP(color, exposure) (reinhard_hdr_modified(color, exposure))
 // TODO: UV parameter, not implicit uniform dependency
 #define EARLY_TONEMAP(color, exposure, uv) \
-	doTonemap(color, exposure, uniformNoise(uv, 0.0))
+	doTonemap(color, exposure)
 
 #else
 #define EARLY_TONEMAP(color, exposure, uv) (color)

@@ -315,7 +315,7 @@ static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
 }
 
 void gameSkin::sync(Program::ptr program) { 
-	size_t numjoints = min(inverseBind.size(), 1024);
+	size_t numjoints = min(inverseBind.size(), 256);
 
 	if (transforms.size() != inverseBind.size()) {
 		transforms.resize(inverseBind.size());
@@ -325,7 +325,8 @@ void gameSkin::sync(Program::ptr program) {
 	// use UBOs on gles3, core profiles
 	if (!ubuffer) {
 		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
-		ubuffer->allocate(sizeof(GLfloat[16*numjoints]));
+		//ubuffer->allocate(sizeof(GLfloat[16*numjoints]));
+		ubuffer->allocate(sizeof(GLfloat[16*256]));
 	}
 #endif
 

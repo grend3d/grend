@@ -76,7 +76,9 @@ void bulletDebugDrawer::flushLines(glm::mat4 cam) {
 	shader->set("cam", cam);
 	disable(GL_DEPTH_TEST);
 
+#if GLSL_VERSION == 330 || GLSL_VERSION == 430
 	glPointSize(3.0f);
+#endif
 	glLineWidth(1.0f);
 	glDrawArrays(GL_POINTS, 0, lines.size());
 	glDrawArrays(GL_LINES, 0, lines.size());

@@ -33,6 +33,10 @@ renderContext::renderContext(context& ctx, renderSettings _settings) {
 	DO_ERROR_CHECK();
 
 #if GLSL_VERSION >= 140
+	SDL_Log("GOT HERE!!!!!!!!!!!!!!!!!!");
+	SDL_Log("renderContext(): sizeof(lights_std140): %lu", sizeof(lights_std140));
+	SDL_Log("renderContext(): sizeof(light_tiles_std140): %lu", sizeof(light_tiles_std140));
+
 	lightBuffer = genBuffer(GL_UNIFORM_BUFFER);
 	lightBuffer->bind();
 	lightBuffer->allocate(sizeof(lights_std140));
@@ -54,12 +58,15 @@ renderContext::renderContext(context& ctx, renderSettings _settings) {
 	spotTiles->update(&spotTilesCtx,     0, sizeof(spotTilesCtx));
 #endif
 
+	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
+	/*
 #ifdef __EMSCRIPTEN__
-	screen_x = SCREEN_SIZE_X;
-	screen_y = SCREEN_SIZE_Y;
+	screen_x = 1280;
+	screen_y = 720;
 #else
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
 #endif
+*/
 
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");

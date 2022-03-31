@@ -18,6 +18,9 @@ class result : public std::optional<T> {
 		result(T&& value)
 			: std::optional<T>(value) {};
 
+		result(T& value)
+			: std::optional<T>(value) {};
+
 		result(const std::pair<enum errorFlag, const std::string&>& msg)
 			: std::optional<T>(),
 			error(msg.second) {};

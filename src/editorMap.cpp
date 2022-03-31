@@ -238,7 +238,7 @@ grendx::loadMapData(std::string name) noexcept {
 	}
 }
 
-result<gameImport::ptr>
+grendx::result<gameImport::ptr>
 grendx::loadMapCompiled(std::string name) noexcept {
 	if (auto res = loadMapData(name)) {
 		auto [obj, models] = *res;

@@ -56,6 +56,7 @@ void initializeOpengl(void) {
 	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS,      &maxUBOBindings);
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,           &maxUBOSize);
 #endif
+	DO_ERROR_CHECK();
 
 	SDL_Log(" OpenGL initializing... ");
 	SDL_Log(" OpenGL %s", glGetString(GL_VERSION));

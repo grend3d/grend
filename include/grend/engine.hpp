@@ -127,6 +127,8 @@ struct lights_std140 {
 	point_std140 upoint_lights[MAX_POINT_LIGHT_OBJECTS_TILED];
 	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS_TILED];
 	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED];
+
+	uint8_t lol[128];
 } __attribute__((packed));
 
 // check to make sure everything will fit in the (specifications) minimum required UBO

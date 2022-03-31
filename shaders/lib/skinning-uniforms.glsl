@@ -11,7 +11,7 @@ uniform mat4 joints[MAX_JOINTS];
 // use UBOs on gles3, core profiles
 #else
 // TODO: should be configurable, lots of newer GPUs have 64kb UBOs
-#define MAX_JOINTS 1024
+#define MAX_JOINTS 256
 
 layout (std140) uniform jointTransforms {
 	mat4 joints[MAX_JOINTS];

@@ -32,6 +32,7 @@ GLenum Buffer::unmap(void) {
 }
 
 void Buffer::allocate(size_t n) {
+	SDL_Log("Allocating buffer of %u bytes", n);
 	bind();
 	glBufferData(type, n, NULL, use);
 	DO_ERROR_CHECK();

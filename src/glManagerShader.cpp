@@ -277,7 +277,18 @@ GLuint Program::lookupUniformBlock(std::string name) {
 		GLuint temp = glGetUniformBlockIndex(obj, name.c_str());
 		uniformBlocks[name] = temp;
 		DO_ERROR_CHECK();
-		return temp;
+
+		if (temp != GL_INVALID_INDEX) {
+			GLint foo;
+			glGetActiveUniformBlockiv(obj, temp, GL_UNIFORM_BLOCK_DATA_SIZE, &foo);
+
+			SDL_Log("UBO at %u has block data size of %d", temp, foo);
+			return temp;
+
+		} else {
+			SDL_Log("Could not find uniform block index for %s", name.c_str());
+			return temp;
+		}
 	}
 }
 

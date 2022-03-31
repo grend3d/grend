@@ -502,7 +502,7 @@ static void drawMesh(const renderFlags& flags,
 	enable(GL_LINE_SMOOTH);
 	*/
 	glDrawElements(GL_TRIANGLES,
-	               mesh->comped_mesh->elements->currentSize,
+	               mesh->comped_mesh->elements->currentSize / 4 /* sizeof uint */,
 	               GL_UNSIGNED_INT, 0);
 	DO_ERROR_CHECK();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -565,7 +565,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	                         UBO_INSTANCE_TRANSFORMS);
 	glDrawElementsInstanced(
 		GL_TRIANGLES,
-		mesh->comped_mesh->elements->currentSize,
+		mesh->comped_mesh->elements->currentSize / 4 /* sizeof uint */,
 		GL_UNSIGNED_INT, 0, particles->activeInstances);
 	DO_ERROR_CHECK();
 
@@ -623,7 +623,7 @@ static void drawBillboards(const renderFlags& flags,
 	                         UBO_INSTANCE_TRANSFORMS);
 	glDrawElementsInstanced(
 		GL_TRIANGLES,
-		mesh->comped_mesh->elements->currentSize,
+		mesh->comped_mesh->elements->currentSize / 4 /* sizeof uint */,
 		GL_UNSIGNED_INT, 0, particles->activeInstances);
 	DO_ERROR_CHECK();
 
