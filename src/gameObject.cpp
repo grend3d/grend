@@ -362,7 +362,7 @@ void gameSkin::sync(Program::ptr program) {
 void gameParticles::syncBuffer(void) {
 	if (!ubuffer) {
 		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
-		ubuffer->allocate(sizeof(GLfloat[16*maxInstances]));
+		ubuffer->allocate(sizeof(GLfloat[16*256]));
 	}
 
 	if (!synced) {
@@ -392,7 +392,7 @@ gameParticles::gameParticles(unsigned _maxInstances)
 void gameBillboardParticles::syncBuffer(void) {
 	if (!ubuffer) {
 		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
-		ubuffer->allocate(sizeof(GLfloat[4*maxInstances]));
+		ubuffer->allocate(sizeof(GLfloat[4*1024]));
 	}
 
 	if (!synced) {
