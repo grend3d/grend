@@ -2,6 +2,7 @@
 
 #include <grend/gameMain.hpp>
 #include <grend/timers.hpp>
+#include <grend/scancodes.hpp>
 
 #include <string.h> // memset
 
@@ -67,12 +68,15 @@ int gameMain::step(void) {
 		float fticks = ticks_delta / 1000.0f;
 		last_frame_time = cur_ticks;
 
+		updateKeyStates(fticks);
+
 		if (view == nullptr) {
 			SDL_Log(
 				"ERROR: no view defined, you must set a view controller "
 				"with gameMain::setView()"
 			);
 			running = false;
+			return running;
 		}
 
 		profile::startGroup("View");

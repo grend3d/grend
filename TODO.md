@@ -1,4 +1,5 @@
-- scancodes header, poll handler functions
+- handle controllers in scancode header
+- come up with a better name for the "scancode" header
 - clean up editor file
 - split editor into seperate library
 - start merging in nscheme stuff

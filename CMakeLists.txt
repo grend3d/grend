@@ -124,6 +124,7 @@ add_library(Grend
 	src/multiRenderQueue.cpp
 	src/playerView.cpp
 	src/tinygltf.cpp
+	src/scancodes.cpp
 
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp
