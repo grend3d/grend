@@ -13,7 +13,7 @@ enum bindFlags {
 	Shift   = (1 << 1),
 };
 
-typedef std::function<int(SDL_Event& ev, unsigned flags)> bindFunc;
+typedef std::function<int(const SDL_Event& ev, unsigned flags)> bindFunc;
 typedef std::function<bool(void)> maskFunc;
 typedef std::pair<bindFunc, maskFunc> bindEntry;
 
@@ -33,7 +33,7 @@ class modalSDLInput {
 		void popMode(void);
 
 		bool sanityCheck(void);
-		int dispatch(SDL_Event& ev);
+		int dispatch(const SDL_Event& ev);
 		static bool maskNone(void);
 
 		std::map<int, std::vector<bindEntry>> bindings;

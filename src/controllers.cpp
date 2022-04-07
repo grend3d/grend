@@ -4,7 +4,7 @@ using namespace grendx;
 
 bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 	// TODO: same as movement2D below, need to keep track of velocities per-event
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_KEYDOWN) {
 			switch (ev.key.keysym.sym) {
 				case SDLK_w:     cam->setVelocity( cam->direction()*accel); break;
@@ -41,7 +41,7 @@ bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
 	auto curdir = std::make_shared<glm::vec3>(0);
 	auto pressed = std::make_shared<std::map<int, glm::vec3>>();
 
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		glm::vec3 dir, right, up;
 
 		dir   = glm::normalize(cam->direction() * glm::vec3(1, 0, 1));
@@ -80,7 +80,7 @@ bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
 }
 
 bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
@@ -109,7 +109,7 @@ bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 //       is here, could replace this with camAngled2DRotatable()
 bindFunc
 grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
@@ -134,7 +134,7 @@ grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 // TODO: pitch and yaw ("angle" doesn't mean anything)
 bindFunc
 grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angle) {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
@@ -173,7 +173,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	std::shared_ptr<moveState> state = std::make_shared<moveState>();
 	state->angle = angle;
 
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		int x, y; (void)x; (void)y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y);
 
@@ -243,7 +243,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 }
 
 bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		// TODO: camFocus()
 		return MODAL_NO_CHANGE;
 	};
@@ -251,7 +251,7 @@ bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
 
 bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float scale)
 {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_MOUSEWHEEL) {
 			*zoom -= scale*ev.wheel.y;
 		}
@@ -275,7 +275,7 @@ bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float s
 // TODO: dedicated file for generic close, minimize, copy/paste, drag and drop, etc
 //       handlers... windowControllers.cpp?
 bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_WINDOWEVENT
 		    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
 		{

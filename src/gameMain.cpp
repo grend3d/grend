@@ -76,7 +76,7 @@ int gameMain::step(void) {
 		}
 
 		profile::startGroup("View");
-		view->logic(this, fticks);
+		view->update(this, fticks);
 		profile::endGroup();
 
 		profile::startGroup("Syncronous jobs");
@@ -108,7 +108,7 @@ int gameMain::step(void) {
 		profile::startGroup("Render");
 		setDefaultGlFlags();
 		rend->framebuffer->clear();
-		view->render(this);
+		view->render(this, rend->framebuffer);
 
 		if (phys) {
 			phys->drawDebug(view->cam->viewProjTransform());
@@ -163,7 +163,7 @@ void gameMain::handleInput(void) {
 		}
 
 		if (view != nullptr) {
-			view->handleInput(this, ev);
+			view->handleEvent(this, ev);
 		}
 	}
 }
@@ -244,7 +244,11 @@ void grendx::renderWorld(gameMain *game,
 }
 
 // TODO: Maybe replaces drawWorld?
-void grendx::drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr cam) {
+void grendx::drawMultiQueue(gameMain *game,
+                            multiRenderQueue& que,
+                            renderFramebuffer::ptr fb,
+                            camera::ptr cam)
+{
 	// XXX: less than ideal
 	// TODO: need a better way to update global lighting state,
 	//       without (or minimizing) allocations, this could add a lot
@@ -265,7 +269,7 @@ void grendx::drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr c
 			  game->rend->lightThreshold);
 	sortQueue(que, cam);
 
-	flush(que, cam, game->rend->framebuffer, game->rend);
+	flush(que, cam, fb, game->rend);
 }
 
 #include <grend/ecs/shader.hpp>

@@ -76,7 +76,7 @@ static bindFunc makeClicker(gameEditor *editor,
                             gameMain *game,
                             std::string name)
 {
-	return [=] (SDL_Event& ev, unsigned flags) {
+	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (editor->selectedNode
 		    && ev.type == SDL_MOUSEBUTTONDOWN
 			&& ev.button.button == SDL_BUTTON_LEFT)
@@ -96,7 +96,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// camera movement (on key press)
 	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				auto v = cam->velocity();
 
@@ -118,7 +118,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// Return back to View mode from any other mode
 	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				if (ev.key.keysym.sym == SDLK_ESCAPE) {
 					return (int)mode::View;
@@ -130,7 +130,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// reload shaders
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN
 			    && ev.key.keysym.sym == SDLK_r
 			    && flags & bindFlags::Control)
@@ -143,7 +143,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// camera movement (on key up)
 	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYUP) {
 				auto v = cam->velocity();
 
@@ -165,7 +165,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// map editing
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_i:
@@ -188,7 +188,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// clone keybind
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN
 			    && ev.key.keysym.sym == SDLK_d
 			    && flags & bindFlags::Shift
@@ -206,7 +206,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// camera movement (set direction)
 	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			int x, y;
 			Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
 
@@ -235,7 +235,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// scroll wheel for cursor placement
 	inputBinds.bind(MODAL_ALL_MODES,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_MOUSEWHEEL) {
 				editDistance -= ev.wheel.y/1.f /* scroll sensitivity */;
 			}
@@ -246,7 +246,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// camera movement (set direction)
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_MOUSEBUTTONDOWN
 			    && ev.button.button == SDL_BUTTON_LEFT)
 			{
@@ -264,7 +264,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// handle menubar keybinds
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_l: return (int)mode::AddSomething;
@@ -279,7 +279,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// handle add keybinds
 	inputBinds.bind(mode::AddSomething,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				switch (ev.key.keysym.sym) {
 					case SDLK_o: return (int)mode::AddObject;
@@ -296,7 +296,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// handle move keybinds
 	inputBinds.bind(mode::MoveSomething,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -313,7 +313,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// rotate keybinds
 	inputBinds.bind(mode::RotateSomething,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -330,7 +330,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 
 	// scale keybinds
 	inputBinds.bind(mode::ScaleSomething,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -346,7 +346,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 		imguiWantsKeyboard);
 
 	inputBinds.bind(mode::View,
-		[&, game] (SDL_Event& ev, unsigned flags) {
+		[&, game] (const SDL_Event& ev, unsigned flags) {
 			int ret = MODAL_NO_CHANGE;
 
 			if (selectedNode == nullptr
@@ -418,7 +418,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 		makeClicker<gameIrradianceProbe>(this, game, "irradiance probe E"),
 		imguiWantsMouse);
 
-	auto releaseMove = [&, game] (SDL_Event& ev, unsigned flags) {
+	auto releaseMove = [&, game] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_MOUSEBUTTONUP
 		    && ev.button.button == SDL_BUTTON_LEFT)
 		{
@@ -447,7 +447,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::MoveAABBNegZ, releaseMove, imguiWantsMouse);
 }
 
-void gameEditor::handleInput(gameMain *game, SDL_Event& ev)
+void gameEditor::handleEvent(gameMain *game, const SDL_Event& ev)
 {
 	ImGui_ImplSDL2_ProcessEvent(&ev);
 	setMode((enum mode)inputBinds.dispatch(ev));

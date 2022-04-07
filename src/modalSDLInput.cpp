@@ -48,7 +48,7 @@ bool modalSDLInput::maskNone(void) {
 	return false;
 }
 
-int modalSDLInput::dispatch(SDL_Event& ev) {
+int modalSDLInput::dispatch(const SDL_Event& ev) {
 	// keep track of control/shift state outside of the bindings
 	if (ev.type == SDL_KEYDOWN) {
 		switch (ev.key.keysym.sym) {

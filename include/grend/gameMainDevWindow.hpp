@@ -23,17 +23,17 @@ class gameMainDevWindow : public gameMain {
 			Editor,
 			Player,
 		};
+		int mode = modes::Editor;
 
 		gameMainDevWindow(const renderSettings& settings);
 
 		// setView here sets the player view
-		virtual void setView(std::shared_ptr<gameView> nview);
+		virtual void setView(gameView::ptr nview);
 		virtual void handleInput(void);
 		void addEditorCallback(gameEditor::editCallback func);
 
 		gameView::ptr   player = nullptr;
 		gameEditor::ptr editor = nullptr;
-		modalSDLInput input;
 };
 
 // namespace grendx

@@ -38,11 +38,14 @@ class gameEditor : public gameView {
 		renderPostStage<rOutput>::ptr loading_thing;
 		Texture::ptr loading_img;
 
-		virtual void handleInput(gameMain *game, SDL_Event& ev);
-		virtual void render(gameMain *game);
+		virtual void handleEvent(gameMain *game, const SDL_Event& ev);
+		virtual void render(gameMain *game, renderFramebuffer::ptr fb);
+		virtual void update(gameMain *game, float delta);
+
 		void initImgui(gameMain *game);
 		void addEditorCallback(editCallback func);
 		void runCallbacks(gameObject::ptr node, editAction action);
+		void clear(gameMain *game);
 
 		enum mode {
 			Inactive,
@@ -74,6 +77,7 @@ class gameEditor : public gameView {
 			MoveAABBNegY,
 			MoveAABBNegZ,
 		};
+		int mode = mode::View;
 
 		// TODO: don't need this anymore
 		struct editorEntry {
@@ -101,10 +105,6 @@ class gameEditor : public gameView {
 		void renderEditor(gameMain *game);
 		void renderMapModels(gameMain *game);
 
-		void logic(gameMain *game, float delta);
-		void clear(gameMain *game);
-
-		int mode = mode::View;
 		modelMap::const_iterator edit_model;
 		gameObject::ptr objects;
 		gameObject::ptr UIObjects;

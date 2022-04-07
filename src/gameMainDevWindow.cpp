@@ -25,6 +25,7 @@ gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
 
 	audio->setCamera(view->cam);
 
+	/*
 	input.bind(MODAL_ALL_MODES,
 		[&, this] (SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_b) {
@@ -91,6 +92,7 @@ gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
 		});
 
 	input.setMode(modes::Editor);
+	*/
 }
 
 void gameMainDevWindow::setView(std::shared_ptr<gameView> nview) {
@@ -106,8 +108,34 @@ void gameMainDevWindow::handleInput(void) {
 			return;
 		}
 
-		input.dispatch(ev);
-		view->handleInput(this, ev);
+		if (mode == modes::Editor
+			&& ev.type == SDL_KEYDOWN
+			&& ev.key.keysym.sym == SDLK_m
+			/*&& (flags & bindFlags::Control)*/)
+		{
+			view = player;
+			audio->setCamera(view->cam);
+
+			if (audio->currentCam == nullptr) {
+				std::cerr
+					<< "no camera is defined in the audio mixer...?"
+					<< std::endl;
+			}
+
+			mode = modes::Player;
+		}
+
+		if (mode == modes::Player
+			&& ev.type == SDL_KEYDOWN
+			&& ev.key.keysym.sym == SDLK_m
+			/*&& (flags & bindFlags::Control)*/)
+		{
+			view = editor;
+			audio->setCamera(view->cam);
+			mode = modes::Editor;
+		}
+
+		view->handleEvent(this, ev);
 	}
 }
 

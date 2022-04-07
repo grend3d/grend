@@ -58,14 +58,16 @@ class rStage : public rUninitialized {
 		virtual ~rStage();
 
 		virtual void setSize(unsigned fb_x, unsigned fb_y) {
-			framebuffer = genFramebuffer();
-			framebuffer->bind();
-			renderTexture =
-				framebuffer->attach(GL_COLOR_ATTACHMENT0,
-					genTextureColor(fb_x, fb_y, rgbaf_if_supported()));
+			if (fb_x != width || fb_y != height) {
+				framebuffer = genFramebuffer();
+				framebuffer->bind();
+				renderTexture =
+					framebuffer->attach(GL_COLOR_ATTACHMENT0,
+						genTextureColor(fb_x, fb_y, rgbaf_if_supported()));
 
-			width = fb_x;
-			height = fb_y;
+				width = fb_x;
+				height = fb_y;
+			}
 		}
 };
 

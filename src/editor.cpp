@@ -159,13 +159,13 @@ void gameEditor::loadUIModels(void) {
 	bindCookedMeshes();
 }
 
-void gameEditor::render(gameMain *game) {
+void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	renderQueue que;
 	auto flags = game->rend->getLightingFlags();
 
 	auto world = buildDrawableQueue(game, cam);
 	world.add(flags, game->state->rootnode);
-	drawMultiQueue(game, world, cam);
+	drawMultiQueue(game, world, fb, cam);
 	renderWorldObjects(game);
 
 	// TODO: this results in cursor not being clickable if the render
@@ -504,7 +504,7 @@ void gameEditor::reloadShaders(gameMain *game) {
 
 void gameEditor::setMode(enum mode newmode) {
 	mode = newmode;
-	inputBinds.setMode(mode);
+	//inputBinds.setMode(mode);
 }
 
 void gameEditor::handleCursorUpdate(gameMain *game) {
@@ -516,7 +516,7 @@ void gameEditor::handleCursorUpdate(gameMain *game) {
 		align(cam->direction().z*editDistance + cam->position().z));
 }
 
-void gameEditor::logic(gameMain *game, float delta) {
+void gameEditor::update(gameMain *game, float delta) {
 	cam->updatePosition(delta);
 
 	auto orientation = UIObjects->getNode("Orientation-Indicator");

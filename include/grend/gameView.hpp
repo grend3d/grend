@@ -1,4 +1,6 @@
 #pragma once
+
+#include <grend/renderFramebuffer.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/gameState.hpp>
 #include <grend/camera.hpp>
@@ -15,13 +17,17 @@ class gameView {
 
 		virtual ~gameView();
 
-		virtual void handleInput(gameMain *game, SDL_Event& ev);
-		virtual void logic(gameMain *game, float delta) = 0;
-		virtual void render(gameMain *game) = 0;
+		virtual void onResume(gameMain *game);
+		virtual void onHide(gameMain *game);
+
+		virtual void handleEvent(gameMain *game, const SDL_Event& ev);
+		virtual void update(gameMain *game, float delta) = 0;
+		virtual void render(gameMain *game, renderFramebuffer::ptr fb) = 0;
 
 		// TODO: game object
+		// TODO: this doesn't really need to be part of the view
 		camera::ptr cam = std::make_shared<camera>();
-		modalSDLInput input;
+		//modalSDLInput input;
 };
 
 // namespace grendx

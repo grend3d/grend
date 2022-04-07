@@ -65,7 +65,8 @@ void renderWorld(gameMain *game, camera::ptr cam,
                  renderQueue& base, renderFlags& flags);
 
 // TODO: Maybe replaces drawWorld?
-void drawMultiQueue(gameMain *game, multiRenderQueue& que, camera::ptr cam);
+void drawMultiQueue(gameMain *game, multiRenderQueue& que,
+                    renderFramebuffer::ptr fb, camera::ptr cam);
 
 // TODO: Maybe add to an existing multiRenderQueue?
 //       or could have an overload for that
