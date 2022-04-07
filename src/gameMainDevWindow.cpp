@@ -110,7 +110,7 @@ void gameMainDevWindow::handleInput(void) {
 
 		if (mode == modes::Editor
 			&& ev.type == SDL_KEYDOWN
-			&& ev.key.keysym.sym == SDLK_m
+			&& ev.key.keysym.sym == SDLK_F1
 			/*&& (flags & bindFlags::Control)*/)
 		{
 			view = player;
@@ -127,7 +127,7 @@ void gameMainDevWindow::handleInput(void) {
 
 		if (mode == modes::Player
 			&& ev.type == SDL_KEYDOWN
-			&& ev.key.keysym.sym == SDLK_m
+			&& ev.key.keysym.sym == SDLK_F1
 			/*&& (flags & bindFlags::Control)*/)
 		{
 			view = editor;
