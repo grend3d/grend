@@ -1,6 +1,5 @@
 - handle controllers in scancode header
 - come up with a better name for the "scancode" header
-- clean up editor file
 - split editor into seperate library
 - start merging in nscheme stuff
 - completely phase out modalSDLInput, need a better way of abstracting

@@ -6,6 +6,7 @@
 #include <grend/glManager.hpp>
 #include <grend/geometryGeneration.hpp>
 #include <grend/loadScene.hpp>
+#include <grend/scancodes.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -20,10 +21,6 @@ gameEditor::gameEditor(gameMain *game)
 {
 	objects = gameObject::ptr(new gameObject());
 	cam->setFar(1000.0);
-	/*
-	testpost = makePostprocessor<rOutput>(game->rend->shaders["tonemap"],
-	                                      SCREEN_SIZE_X, SCREEN_SIZE_Y);
-										  */
 
 	// don't apply post-processing filters if this is an embedded profile
 	// (so no tonemapping/HDR)
@@ -34,15 +31,6 @@ gameEditor::gameEditor(gameMain *game)
 		game->settings.targetResX, game->settings.targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
-		//{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
-		 //               game->rend->globalShaderOptions)},
-		//{game->rend->postShaders["tonemap"], game->rend->postShaders["psaa"]},
-		//{game->rend->postShaders["psaa"]},
-		//
-		/*
-		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
-		                game->rend->globalShaderOptions)},
-						*/
 		{loadPostShader(GR_PREFIX "shaders/baked/dither.frag",
 		                game->rend->globalShaderOptions)},
 		game->settings.targetResX, game->settings.targetResY));
@@ -68,16 +56,6 @@ gameEditor::gameEditor(gameMain *game)
 	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
 	compileModel("testphys", physmodel);
 
-	/*
-	setNode("lmao", moda, physmodel);
-	setNode("lmao", modb, physmodel);
-	setNode("fooa", game->state->physObjects, moda);
-	setNode("foob", game->state->physObjects, modb);
-	game->phys->addSphere(nullptr, glm::vec3(0, 10, 0), 1.0, 1.0);
-	game->phys->addSphere(nullptr, glm::vec3(-10, 10, 0), 1.0, 1.0);
-	*/
-
-	bindCookedMeshes();
 	loadInputBindings(game);
 	setMode(mode::View);
 
@@ -156,7 +134,6 @@ void gameEditor::loadUIModels(void) {
 	cursor->visible = false;
 
 	compileModels(UIModels);
-	bindCookedMeshes();
 }
 
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
@@ -318,10 +295,6 @@ void gameEditor::initImgui(gameMain *game) {
 	//ImGui::StyleColorsClassic();
 	//ImGui::StyleColorsLight();
 	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
-	// TODO: make the glsl version here depend on GL version/the string in
-	//       shaders/version.glsl
-	//ImGui_ImplOpenGL3_Init("#version 100");
-	//ImGui_ImplOpenGL3_Init("#version 300 es");
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
@@ -338,16 +311,14 @@ void gameEditor::runCallbacks(gameObject::ptr node, editAction action) {
 result<objectPair> grendx::loadModel(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
-		//model m(path);
 		gameModel::ptr m = load_object(path);
-		//compileModel(path, m);
 
 		// add the model at 0,0
 		auto obj = gameObject::ptr(new gameObject());
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
+
 		setNode(fname, obj, m);
-		//return obj;
 		modelMap models = {{ fname, m }};
 		return objectPair {obj, models};
 	}
@@ -355,7 +326,6 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 	else if (ext == ".gltf" || ext == ".glb") {
 		modelMap mods = load_gltf_models(path);
 		auto obj = std::make_shared<gameObject>();
-		//compileModels(mods);
 
 		for (auto& [name, model] : mods) {
 			// add the models at 0,0
@@ -365,7 +335,6 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 		return objectPair {obj, mods};
 	}
 
-	//return {nullptr, {}};
 	return {resultError, "loadModel: unknown file extension: " + ext};
 }
 
@@ -399,34 +368,6 @@ result<gameImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 		return {resultError, res.what()};
 	}
 }
-
-#if 0
-// old implementation of loadSceneAsyncCompiled, left here just in case (TODO: remove)
-gameImport::ptr grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
-	auto ret = std::make_shared<gameImport>(path);
-
-	auto fut = game->jobs->addAsync([=] () {
-		auto [obj, models] = loadSceneData(path);
-
-		// apparently you can't (officially) capture destructured bindings, only variables...
-		// ffs
-		gameImport::ptr objptr = obj;
-		modelMap modelptr = models;
-
-		if (obj) {
-			game->jobs->addDeferred([=] () {
-				compileModels(modelptr);
-				setNode("asyncLoaded", ret, objptr);
-				return true;
-			});
-		}
-
-		return obj != nullptr;
-	});
-
-	return ret;
-}
-#endif
 
 // TODO: return result type here somehow
 std::pair<gameImport::ptr, std::future<bool>>
@@ -464,7 +405,6 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 		}
 	});
 
-	//return std::pair<gameImport::ptr, std::future<bool>>(ret, std::move(fut));
 	return {ret, std::move(fut)};
 }
 
@@ -504,7 +444,7 @@ void gameEditor::reloadShaders(gameMain *game) {
 
 void gameEditor::setMode(enum mode newmode) {
 	mode = newmode;
-	//inputBinds.setMode(mode);
+	inputBinds.setMode(mode);
 }
 
 void gameEditor::handleCursorUpdate(gameMain *game) {
@@ -583,25 +523,6 @@ void gameEditor::update(gameMain *game, float delta) {
 			ptr->setTransform((TRS) { .position = cursorBuf.position, });
 		}
 	}
-
-	/*
-	switch (mode) {
-		case mode::AddObject:
-		case mode::AddPointLight:
-		case mode::AddSpotLight:
-		case mode::AddDirectionalLight:
-		case mode::AddReflectionProbe:
-		case mode::AddIrradianceProbe:
-			{
-				auto ptr = UIObjects->getNode("Cursor-Placement");
-				assert(ptr != nullptr);
-				handleCursorUpdate(game);
-				ptr->transform.position = entbuf.position;
-				break;
-			}
-		default: break;
-	}
-	*/
 }
 
 
@@ -724,41 +645,22 @@ void gameEditor::renderEditor(gameMain *game) {
 	//       as simple as name -> opened?
 	//       or name -> pair<opened, draw()>, something like that
 	//       or even name -> draw(), and being in the map implies it's opened...
-	if (showMetricsWindow) {
+	if (showMetricsWindow)      metricsWindow(game);
 		//ImGui::ShowMetricsWindow();
-		metricsWindow(game);
-	}
+	if (showMapWindow)          mapWindow(game);
+	if (showObjectSelectWindow) objectSelectWindow(game);
+	if (showEntitySelectWindow) entitySelectWindow(game);
+	if (showAddEntityWindow)    addEntityWindow(game);
+	if (showProfilerWindow)     profilerWindow(game);
+	if (showSettingsWindow)     settingsWindow(game);
 
-	if (showMapWindow) {
-		mapWindow(game);
-	}
-
-	if (showObjectSelectWindow) {
-		objectSelectWindow(game);
-	}
-
-	if (selectedNode && showObjectEditorWindow) {
+	if (selectedNode && showObjectEditorWindow)
 		objectEditorWindow(game);
-	}
 
-	if (showEntitySelectWindow) {
-		entitySelectWindow(game);
-	}
-
-	if (showAddEntityWindow) {
-		addEntityWindow(game);
-	}
-
+	/* TODO:
 	if (showEntityEditorWindow) {
 		// TODO
 		//entityEditorWindow(game);
 	}
-
-	if (showProfilerWindow) {
-		profilerWindow(game);
-	}
-
-	if (showSettingsWindow) {
-		settingsWindow(game);
-	}
+	*/
 }
