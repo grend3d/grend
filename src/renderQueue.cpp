@@ -6,7 +6,6 @@
 using namespace grendx;
 
 void renderQueue::add(gameObject::ptr obj,
-                      float animTime,
                       glm::mat4 trans,
                       bool inverted)
 {
@@ -58,7 +57,7 @@ void renderQueue::add(gameObject::ptr obj,
 	    && obj->hasNode("mesh"))
 	{
 		auto s = std::static_pointer_cast<gameSkin>(obj->getNode("skin"));
-		addSkinned(obj->getNode("mesh"), s, animTime, adjTrans, inverted);
+		addSkinned(obj->getNode("mesh"), s, adjTrans, inverted);
 
 	} else if (obj->type == gameObject::objType::Particles) {
 		auto p = std::static_pointer_cast<gameParticles>(obj);
@@ -71,7 +70,7 @@ void renderQueue::add(gameObject::ptr obj,
 	} else {
 		for (auto& [name, ptr] : obj->nodes) {
 			//std::cerr << "add(): subnode " << name << std::endl;
-			add(ptr, animTime, adjTrans, inverted);
+			add(ptr, adjTrans, inverted);
 		}
 	}
 
@@ -92,7 +91,6 @@ void renderQueue::add(renderQueue& other) {
 
 void renderQueue::addSkinned(gameObject::ptr obj,
                              gameSkin::ptr skin,
-                             float animTime,
                              glm::mat4 trans,
                              bool inverted)
 {
@@ -107,7 +105,7 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		addSkinned(ptr, skin, animTime, trans, inverted);
+		addSkinned(ptr, skin, trans, inverted);
 	}
 }
 

@@ -317,7 +317,6 @@ class renderQueue {
 		};
 
 		void add(gameObject::ptr obj,
-		         float animTime = 0.0,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
 
@@ -325,7 +324,6 @@ class renderQueue {
 
 		void addSkinned(gameObject::ptr obj,
 		                gameSkin::ptr skin,
-		                float animTime = 0.0,
 		                glm::mat4 trans = glm::mat4(1),
 		                bool inverted = false);
 		void addInstanced(gameObject::ptr obj,

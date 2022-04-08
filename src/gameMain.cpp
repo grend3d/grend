@@ -196,7 +196,7 @@ void grendx::renderWorld(gameMain *game,
 		DO_ERROR_CHECK();
 
 		profile::startGroup("Build queue");
-		que.add(game->state->rootnode, fticks);
+		que.add(game->state->rootnode);
 		que.add(game->state->physObjects);
 
 		profile::startGroup("Update lights/shadowmaps");

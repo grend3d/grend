@@ -16,7 +16,7 @@ void multiRenderQueue::add(const renderFlags& shader,
 		shadermap[h] = shader;
 	}
 
-	queues[h].add(obj, 0.f, trans, inverted);
+	queues[h].add(obj, trans, inverted);
 }
 
 void grendx::cullQueue(multiRenderQueue& renque,
