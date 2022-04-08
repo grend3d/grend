@@ -457,7 +457,9 @@ static void drawMesh(const renderFlags& flags,
 		return;
 	}
 
-	if (fb != nullptr && flags.stencil) {
+	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
+		// TODO: remove this, going to move this functionality outside
+		//       of the render queue
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);
 			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
@@ -473,7 +475,7 @@ static void drawMesh(const renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (!flags.shadowmap) {
+	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 		// enable()/disable() cache state, no need to worry about toggling
@@ -488,7 +490,7 @@ static void drawMesh(const renderFlags& flags,
 	}
 
 	// TODO: need to keep track of the model face order
-	if (flags.cull_faces) {
+	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
@@ -520,7 +522,9 @@ static void drawMeshInstanced(const renderFlags& flags,
 		return;
 	}
 
-	if (fb != nullptr && flags.stencil) {
+	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
+		// TODO: remove this, going to move this functionality outside
+		//       of the render queue
 		if (fb->drawn_meshes.size() < 0xff) {
 			fb->drawn_meshes.push_back(mesh);
 			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
@@ -537,7 +541,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	program->set("innerTrans", innerTrans);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (!flags.shadowmap) {
+	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 		// enable()/disable() cache state, no need to worry about toggling
@@ -551,7 +555,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	}
 
 	// TODO: need to keep track of the model face order
-	if (flags.cull_faces) {
+	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
@@ -587,7 +591,7 @@ static void drawBillboards(const renderFlags& flags,
 		return;
 	}
 
-	if (!flags.shadowmap) {
+	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 		// enable()/disable() cache state, no need to worry about toggling
@@ -608,7 +612,8 @@ static void drawBillboards(const renderFlags& flags,
 
 	enable(GL_BLEND);
 
-	if (flags.cull_faces) {
+	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+		// TODO: face order
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
@@ -640,25 +645,30 @@ unsigned grendx::flush(renderQueue& que,
                        renderContext::ptr rctx,
                        const renderFlags& flags)
 {
+	// TODO: deduplicate code
 	unsigned drawnMeshes = 0;
 
-	if (flags.cull_faces) {
+	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		enable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
 	}
 
-	if (flags.stencil) {
+	if (hasFlag(flags.features, renderFlags::StencilTest)) {
 		enable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilOp(flags.stencilOpToGL(flags.stencilFail),
+		            flags.stencilOpToGL(flags.depthFail),
+		            flags.stencilOpToGL(flags.depthPass));
 	}
 
-	if (flags.depthTest) {
+	if (hasFlag(flags.features, renderFlags::DepthTest)) {
 		enable(GL_DEPTH_TEST);
 	} else {
 		disable(GL_DEPTH_TEST);
 	}
 
-	glDepthMask(flags.depthMask? GL_TRUE : GL_FALSE);
+	bool depthMask = hasFlag(flags.features, renderFlags::DepthMask);
+	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
 
 	cam->setViewport(width, height);
 	glm::mat4 view = cam->viewTransform();
@@ -675,7 +685,7 @@ unsigned grendx::flush(renderQueue& que,
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
-			if (!flags.shadowmap) {
+			if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 				rctx->setIrradianceProbe(
 					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
@@ -697,7 +707,7 @@ unsigned grendx::flush(renderQueue& que,
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!flags.shadowmap) {
+		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
@@ -731,23 +741,28 @@ unsigned grendx::flush(renderQueue& que,
 
 	//if (flags.sort) { sort(); }
 
-	if (flags.cull_faces) {
+	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		enable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
 	}
 
-	if (flags.stencil) {
+	if (hasFlag(flags.features, renderFlags::StencilTest)) {
 		enable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilOp(flags.stencilOpToGL(flags.stencilFail),
+		            flags.stencilOpToGL(flags.depthFail),
+		            flags.stencilOpToGL(flags.depthPass));
 	}
 
-	if (flags.depthTest) {
+	if (hasFlag(flags.features, renderFlags::DepthTest)) {
 		enable(GL_DEPTH_TEST);
 	} else {
 		disable(GL_DEPTH_TEST);
 	}
 
-	glDepthMask(flags.depthMask? GL_TRUE : GL_FALSE);
+	bool depthMask = hasFlag(flags.features, renderFlags::DepthMask);
+	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
 
 	DO_ERROR_CHECK();
 	assert(fb != nullptr);
@@ -775,7 +790,7 @@ unsigned grendx::flush(renderQueue& que,
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
-			if (!flags.shadowmap) {
+			if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 				rctx->setIrradianceProbe(
 					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
@@ -797,7 +812,7 @@ unsigned grendx::flush(renderQueue& que,
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!flags.shadowmap) {
+		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
@@ -815,7 +830,7 @@ unsigned grendx::flush(renderQueue& que,
 	shaderSync(flags.instancedShader, rctx, que);
 
 	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
-		if (!flags.shadowmap) {
+		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(applyTransform(outerTrans)),
 				flags.instancedShader);
@@ -840,7 +855,7 @@ unsigned grendx::flush(renderQueue& que,
 	DO_ERROR_CHECK();
 
 	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
-		if (!flags.shadowmap) {
+		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(applyTransform(transform)),
 				flags.billboardShader);

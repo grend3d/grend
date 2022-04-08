@@ -154,8 +154,11 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 
 	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 	renderFlags constantFlags = game->rend->getLightingFlags("constant-color");
-	unshadedFlags.depthTest = constantFlags.depthTest = true;
-	unshadedFlags.depthMask = constantFlags.depthMask = false;
+
+	constantFlags.features |=  renderFlags::Features::DepthTest;
+	constantFlags.features |=  renderFlags::Features::StencilTest;
+	constantFlags.features &= ~renderFlags::Features::DepthMask;
+	unshadedFlags.features = constantFlags.features;
 
 	renderQueue por = que;
 	for (auto& prog : {constantFlags.mainShader,
