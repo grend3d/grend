@@ -49,8 +49,8 @@ void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {
 	map->bind(GL_TEXTURE_CUBE_MAP);
 	program->set("skytexture", TEXU_SKYBOX);
 
-	gameMesh::ptr mesh =
-		std::dynamic_pointer_cast<gameMesh>(model->getNode("mesh"));
+	sceneMesh::ptr mesh =
+		std::dynamic_pointer_cast<sceneMesh>(model->getNode("mesh"));
 	auto& cmesh = mesh->comped_mesh;
 
 	bindVao(cmesh->vao);

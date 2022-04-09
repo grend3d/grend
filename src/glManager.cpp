@@ -1,5 +1,5 @@
 #include <grend/glManager.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <SDL.h>
 
 #include <string>
@@ -231,7 +231,7 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 	return ret;
 }
 
-compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
+compiledMesh::ptr compileMesh(sceneMesh::ptr& mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
 	if (mesh->faces.size() == 0) {
@@ -253,7 +253,7 @@ compiledMesh::ptr compileMesh(gameMesh::ptr& mesh) {
 	return foo;
 }
 
-compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
+compiledModel::ptr compileModel(std::string name, sceneModel::ptr model) {
 	// TODO: might be able to clear vertex info after compiling here
 	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
 	model->comped_model = obj;
@@ -261,18 +261,18 @@ compiledModel::ptr compileModel(std::string name, gameModel::ptr model) {
 
 	obj->vertices = genBuffer(GL_ARRAY_BUFFER);
 	obj->vertices->buffer(model->vertices.data(),
-	                      model->vertices.size() * sizeof(gameModel::vertex));
+	                      model->vertices.size() * sizeof(sceneModel::vertex));
 
 	if (model->haveJoints) {
 		obj->haveJoints = true;
 		obj->joints = genBuffer(GL_ARRAY_BUFFER);
 		obj->joints->buffer(model->joints.data(),
-		                    model->joints.size() * sizeof(gameModel::jointWeights));
+		                    model->joints.size() * sizeof(sceneModel::jointWeights));
 	}
 
 	for (auto& [meshname, ptr] : model->nodes) {
-		if (ptr->type == gameObject::objType::Mesh) {
-			auto wptr = std::dynamic_pointer_cast<gameMesh>(ptr);
+		if (ptr->type == sceneNode::objType::Mesh) {
+			auto wptr = std::dynamic_pointer_cast<sceneMesh>(ptr);
 			obj->meshes[meshname] = compileMesh(wptr);
 		}
 	}
@@ -320,30 +320,30 @@ Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 
 	obj->vertices->bind();
 	glEnableVertexAttribArray(VAO_VERTICES);
-	SET_VAO_ENTRY(VAO_VERTICES, gameModel::vertex, position);
+	SET_VAO_ENTRY(VAO_VERTICES, sceneModel::vertex, position);
 
 	glEnableVertexAttribArray(VAO_NORMALS);
-	SET_VAO_ENTRY(VAO_NORMALS, gameModel::vertex, normal);
+	SET_VAO_ENTRY(VAO_NORMALS, sceneModel::vertex, normal);
 
 	glEnableVertexAttribArray(VAO_TANGENTS);
-	SET_VAO_ENTRY(VAO_TANGENTS, gameModel::vertex, tangent);
+	SET_VAO_ENTRY(VAO_TANGENTS, sceneModel::vertex, tangent);
 
 	glEnableVertexAttribArray(VAO_COLORS);
-	SET_VAO_ENTRY(VAO_COLORS, gameModel::vertex, color);
+	SET_VAO_ENTRY(VAO_COLORS, sceneModel::vertex, color);
 
 	glEnableVertexAttribArray(VAO_TEXCOORDS);
-	SET_VAO_ENTRY(VAO_TEXCOORDS, gameModel::vertex, uv);
+	SET_VAO_ENTRY(VAO_TEXCOORDS, sceneModel::vertex, uv);
 
 	glEnableVertexAttribArray(VAO_LIGHTMAP);
-	SET_VAO_ENTRY(VAO_LIGHTMAP, gameModel::vertex, lightmap);
+	SET_VAO_ENTRY(VAO_LIGHTMAP, sceneModel::vertex, lightmap);
 
 	if (obj->haveJoints) {
 		obj->joints->bind();
 		glEnableVertexAttribArray(VAO_JOINTS);
-		SET_VAO_ENTRY(VAO_JOINTS, gameModel::jointWeights, joints);
+		SET_VAO_ENTRY(VAO_JOINTS, sceneModel::jointWeights, joints);
 
 		glEnableVertexAttribArray(VAO_JOINT_WEIGHTS);
-		SET_VAO_ENTRY(VAO_JOINT_WEIGHTS, gameModel::jointWeights, weights);
+		SET_VAO_ENTRY(VAO_JOINT_WEIGHTS, sceneModel::jointWeights, weights);
 	}
 
 	bindVao(orig_vao);
@@ -361,7 +361,7 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 	return orig_vao;
 }
 
-void bindModel(gameModel::ptr model) {
+void bindModel(sceneModel::ptr model) {
 	if (model->comped_model == nullptr) {
 		SDL_Log(" # ERROR: trying to bind an uncompiled model");
 	}

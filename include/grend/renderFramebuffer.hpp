@@ -1,7 +1,7 @@
 #pragma once
 
-#include <grend/gameObject.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneNode.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/glManager.hpp>
 
 #include <vector>
@@ -24,8 +24,8 @@ class renderFramebuffer {
 		// TODO: reference/optional, avoid copying
 		void resolve(Shader::parameters options = {});
 		void setSize(int Width, int Height);
-		gameMesh::ptr index(float x, float y);
-		gameMesh::ptr index(unsigned idx);
+		sceneMesh::ptr index(float x, float y);
+		sceneMesh::ptr index(unsigned idx);
 
 		Framebuffer::ptr framebuffer;
 		Framebuffer::ptr framebufferMultisampled;
@@ -48,7 +48,7 @@ class renderFramebuffer {
 			0.5, 0.5,
 		};
 
-		std::vector<gameMesh::ptr> drawn_meshes;
+		std::vector<sceneMesh::ptr> drawn_meshes;
 };
 
 // namespace grendx;

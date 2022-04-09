@@ -84,7 +84,7 @@ void gameEditor::menubar(gameMain *game) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
 				selectedNode = game->state->rootnode
-					= std::make_shared<gameObject>();
+					= std::make_shared<sceneNode>();
 			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}

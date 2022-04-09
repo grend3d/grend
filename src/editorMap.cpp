@@ -57,7 +57,7 @@ static modelMap xxx_load_model(std::string filename, std::string objName) {
 // XXX: TODO: move to model loading code
 class modelCache {
 	public:
-		gameModel::ptr getModel(std::string source, std::string name) {
+		sceneModel::ptr getModel(std::string source, std::string name) {
 			if (sources.find(source) == sources.end()) {
 				sources[source] = xxx_load_model(source, name);
 			}
@@ -70,7 +70,7 @@ class modelCache {
 				: nullptr;
 		}
 
-		gameImport::ptr getScene(std::string source) {
+		sceneImport::ptr getScene(std::string source) {
 			if (scenes.find(source) == scenes.end()) {
 				if (auto scene = loadSceneData(source)) {
 					auto [objs, models] = *scene;
@@ -87,13 +87,13 @@ class modelCache {
 		}
 
 		std::map<std::string, modelMap> sources;
-		std::map<std::string, gameImport::ptr> scenes;
+		std::map<std::string, sceneImport::ptr> scenes;
 };
 
 // TODO: set to keep track of map files already being loaded to avoid
 //       recursive map loads
-gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
-	gameObject::ptr ret = nullptr;
+sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
+	sceneNode::ptr ret = nullptr;
 	std::vector<std::string> modelFiles;
 	bool recurse = true;
 
@@ -103,7 +103,7 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
 			std::cerr << "loadMap(): Unknown model "
 				<< jay["sourceFile"] << std::endl;
-			ret = std::make_shared<gameObject>();
+			ret = std::make_shared<sceneNode>();
 		}
 
 	} else if (jay["type"] == "Model") {
@@ -111,11 +111,11 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
 			std::cerr << "loadMap(): Unknown model " << name << std::endl;
-			ret = std::make_shared<gameObject>();
+			ret = std::make_shared<sceneNode>();
 		}
 
 	} else if (jay["type"] == "Point light") {
-		auto light = std::make_shared<gameLightPoint>();
+		auto light = std::make_shared<sceneLightPoint>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -124,10 +124,10 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->is_static = jay["is_static"];
 		light->radius = jay["radius"];
 
-		ret = std::dynamic_pointer_cast<gameObject>(light);
+		ret = std::dynamic_pointer_cast<sceneNode>(light);
 
 	} else if (jay["type"] == "Spot light") {
-		auto light = std::make_shared<gameLightSpot>();
+		auto light = std::make_shared<sceneLightSpot>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -137,10 +137,10 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->radius = jay["radius"];
 		light->angle  = jay["angle"];
 
-		ret = std::dynamic_pointer_cast<gameObject>(light);
+		ret = std::dynamic_pointer_cast<sceneNode>(light);
 
 	} else if (jay["type"] == "Directional light") {
-		auto light = std::make_shared<gameLightDirectional>();
+		auto light = std::make_shared<sceneLightDirectional>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -148,10 +148,10 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->casts_shadows = jay["casts_shadows"];
 		light->is_static = jay["is_static"];
 
-		ret = std::dynamic_pointer_cast<gameObject>(light);
+		ret = std::dynamic_pointer_cast<sceneNode>(light);
 
 	} else if (jay["type"] == "Reflection probe"){
-		auto probe = std::make_shared<gameReflectionProbe>();
+		auto probe = std::make_shared<sceneReflectionProbe>();
 		auto bbox = jay["boundingBox"];
 
 		auto bmin = bbox["min"];
@@ -160,10 +160,10 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		probe->is_static = jay["is_static"];
 		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
 		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = std::dynamic_pointer_cast<gameObject>(probe);
+		ret = std::dynamic_pointer_cast<sceneNode>(probe);
 
 	} else if (jay["type"] == "Irradiance probe"){
-		auto probe = std::make_shared<gameIrradianceProbe>();
+		auto probe = std::make_shared<sceneIrradianceProbe>();
 		auto bbox = jay["boundingBox"];
 
 		auto bmin = bbox["min"];
@@ -172,10 +172,10 @@ gameObject::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		probe->is_static = jay["is_static"];
 		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
 		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = std::dynamic_pointer_cast<gameObject>(probe);
+		ret = std::dynamic_pointer_cast<sceneNode>(probe);
 
 	} else {
-		ret = std::make_shared<gameObject>();
+		ret = std::make_shared<sceneNode>();
 	}
 
 	auto& pos   = jay["position"];
@@ -212,7 +212,7 @@ grendx::loadMapData(std::string name) noexcept {
 	}
 
 	try {
-		gameImport::ptr ret = std::make_shared<gameImport>(name);
+		sceneImport::ptr ret = std::make_shared<sceneImport>(name);
 		json j;
 		foo >> j;
 
@@ -220,7 +220,7 @@ grendx::loadMapData(std::string name) noexcept {
 		modelCache cache;
 		modelMap retmodels;
 
-		gameObject::ptr temp = loadNodes(cache, "", j["root"]);
+		sceneNode::ptr temp = loadNodes(cache, "", j["root"]);
 		ret->setTransform(temp->getTransformTRS());
 		ret->nodes = temp->nodes;
 
@@ -238,7 +238,7 @@ grendx::loadMapData(std::string name) noexcept {
 	}
 }
 
-grendx::result<gameImport::ptr>
+grendx::result<sceneImport::ptr>
 grendx::loadMapCompiled(std::string name) noexcept {
 	if (auto res = loadMapData(name)) {
 		auto [obj, models] = *res;
@@ -274,7 +274,7 @@ static inline std::string format_mat(T& mtx) {
 	return ret;
 }
 
-static json objectJson(gameObject::ptr obj) {
+static json objectJson(sceneNode::ptr obj) {
 	bool recurse = true;
 	TRS transform = obj->getTransformTRS();
 
@@ -294,18 +294,18 @@ static json objectJson(gameObject::ptr obj) {
 
 	// TODO: would make sense to avoid dynamic_pointer_cast here,
 	//       not storing pointers anywhere
-	if (obj->type == gameObject::objType::Import) {
-		gameImport::ptr imported = std::dynamic_pointer_cast<gameImport>(obj);
+	if (obj->type == sceneNode::objType::Import) {
+		sceneImport::ptr imported = std::dynamic_pointer_cast<sceneImport>(obj);
 		ret["sourceFile"] = imported->sourceFile;
 		recurse = false;
 
-	} else if (obj->type == gameObject::objType::Model) {
-		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
+	} else if (obj->type == sceneNode::objType::Model) {
+		sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(obj);
 		ret["sourceFile"] = model->sourceFile;
 		recurse = false;
 
-	} else if (obj->type == gameObject::objType::ReflectionProbe) {
-		auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(obj);
+	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
+		auto probe = std::dynamic_pointer_cast<sceneReflectionProbe>(obj);
 		auto bmin = probe->boundingBox.min;
 		auto bmax = probe->boundingBox.max;
 
@@ -315,8 +315,8 @@ static json objectJson(gameObject::ptr obj) {
 		};
 		ret["is_static"] = probe->is_static;
 
-	} else if (obj->type == gameObject::objType::IrradianceProbe) {
-		auto probe = std::dynamic_pointer_cast<gameIrradianceProbe>(obj);
+	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
+		auto probe = std::dynamic_pointer_cast<sceneIrradianceProbe>(obj);
 		auto bmin = probe->boundingBox.min;
 		auto bmax = probe->boundingBox.max;
 
@@ -326,8 +326,8 @@ static json objectJson(gameObject::ptr obj) {
 		};
 		ret["is_static"] = probe->is_static;
 
-	} else if (obj->type == gameObject::objType::Light) {
-		gameLight::ptr light = std::dynamic_pointer_cast<gameLight>(obj);
+	} else if (obj->type == sceneNode::objType::Light) {
+		sceneLight::ptr light = std::dynamic_pointer_cast<sceneLight>(obj);
 
 		auto& d = light->diffuse;
 		ret["diffuse"] = {d[0], d[1], d[2], d[3]};
@@ -335,18 +335,18 @@ static json objectJson(gameObject::ptr obj) {
 		ret["casts_shadows"] = light->casts_shadows;
 		ret["is_static"] = light->is_static;
 
-		if (light->lightType == gameLight::lightTypes::Point) {
-			gameLightPoint::ptr p = std::dynamic_pointer_cast<gameLightPoint>(obj);
+		if (light->lightType == sceneLight::lightTypes::Point) {
+			sceneLightPoint::ptr p = std::dynamic_pointer_cast<sceneLightPoint>(obj);
 			ret["radius"] = p->radius;
 		}
 
-		else if (light->lightType == gameLight::lightTypes::Spot) {
-			gameLightSpot::ptr p = std::dynamic_pointer_cast<gameLightSpot>(obj);
+		else if (light->lightType == sceneLight::lightTypes::Spot) {
+			sceneLightSpot::ptr p = std::dynamic_pointer_cast<sceneLightSpot>(obj);
 			ret["radius"] = p->radius;
 			ret["angle"]  = p->angle;
 		}
 
-		else if (light->lightType == gameLight::lightTypes::Directional) {
+		else if (light->lightType == sceneLight::lightTypes::Directional) {
 			// only base light members
 		}
 
@@ -366,7 +366,7 @@ static json objectJson(gameObject::ptr obj) {
 }
 
 void grendx::saveMap(gameMain *game,
-                     gameObject::ptr root,
+                     sceneNode::ptr root,
                      std::string name) noexcept
 {
 	std::ofstream foo(name);

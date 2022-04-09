@@ -14,12 +14,12 @@
 
 using namespace grendx;
 
-static gameModel::ptr  physmodel;
+static sceneModel::ptr  physmodel;
 
 gameEditor::gameEditor(gameMain *game)
 	: gameView()
 {
-	objects = gameObject::ptr(new gameObject());
+	objects = sceneNode::ptr(new sceneNode());
 	cam->setFar(1000.0);
 
 	// don't apply post-processing filters if this is an embedded profile
@@ -51,8 +51,8 @@ gameEditor::gameEditor(gameMain *game)
 	initImgui(game);
 	loadUIModels();
 
-	auto moda = std::make_shared<gameObject>();
-	auto modb = std::make_shared<gameObject>();
+	auto moda = std::make_shared<sceneNode>();
+	auto modb = std::make_shared<sceneNode>();
 	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
 	compileModel("testphys", physmodel);
 
@@ -63,10 +63,10 @@ gameEditor::gameEditor(gameMain *game)
 	showObjectEditorWindow = true;
 };
 
-class clicker : public gameObject {
+class clicker : public sceneNode {
 	public:
 		clicker(gameEditor *ptr, enum gameEditor::mode click)
-			: gameObject(), editor(ptr), clickmode(click) {}; 
+			: sceneNode(), editor(ptr), clickmode(click) {}; 
 
 		virtual void onLeftClick() {
 			std::cerr << "have mode: " << clickmode << std::endl;
@@ -98,16 +98,16 @@ void gameEditor::loadUIModels(void) {
 		= load_object(dir + "Cursor-Placement.obj");
 	UIModels["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
 
-	UIObjects = gameObject::ptr(new gameObject());
-	gameObject::ptr xptr = gameObject::ptr(new clicker(this, mode::MoveX));
-	gameObject::ptr yptr = gameObject::ptr(new clicker(this, mode::MoveY));
-	gameObject::ptr zptr = gameObject::ptr(new clicker(this, mode::MoveZ));
-	gameObject::ptr xrot = gameObject::ptr(new clicker(this, mode::RotateX));
-	gameObject::ptr yrot = gameObject::ptr(new clicker(this, mode::RotateY));
-	gameObject::ptr zrot = gameObject::ptr(new clicker(this, mode::RotateZ));
-	gameObject::ptr orientation = gameObject::ptr(new gameObject());
-	gameObject::ptr cursor      = gameObject::ptr(new gameObject());
-	gameObject::ptr bbox        = gameObject::ptr(new gameObject());
+	UIObjects = sceneNode::ptr(new sceneNode());
+	sceneNode::ptr xptr = sceneNode::ptr(new clicker(this, mode::MoveX));
+	sceneNode::ptr yptr = sceneNode::ptr(new clicker(this, mode::MoveY));
+	sceneNode::ptr zptr = sceneNode::ptr(new clicker(this, mode::MoveZ));
+	sceneNode::ptr xrot = sceneNode::ptr(new clicker(this, mode::RotateX));
+	sceneNode::ptr yrot = sceneNode::ptr(new clicker(this, mode::RotateY));
+	sceneNode::ptr zrot = sceneNode::ptr(new clicker(this, mode::RotateZ));
+	sceneNode::ptr orientation = sceneNode::ptr(new sceneNode());
+	sceneNode::ptr cursor      = sceneNode::ptr(new sceneNode());
+	sceneNode::ptr bbox        = sceneNode::ptr(new sceneNode());
 
 	setNode("X-Axis",           xptr,   UIModels["X-Axis-Pointer"]);
 	setNode("X-Rotation",       xrot,   UIModels["X-Axis-Rotation-Spinner"]);
@@ -205,7 +205,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	DO_ERROR_CHECK();
 
 	// XXX: wasteful, a bit wrong
-	static gameObject::ptr probeObj = std::make_shared<gameObject>();
+	static sceneNode::ptr probeObj = std::make_shared<sceneNode>();
 	setNode("model", probeObj, physmodel);
 
 	renderQueue tempque;
@@ -305,7 +305,7 @@ void gameEditor::addEditorCallback(editCallback func) {
 	callbacks.push_back(func);
 }
 
-void gameEditor::runCallbacks(gameObject::ptr node, editAction action) {
+void gameEditor::runCallbacks(sceneNode::ptr node, editAction action) {
 	for (auto& f : callbacks) {
 		f(node, action);
 	}
@@ -314,10 +314,10 @@ void gameEditor::runCallbacks(gameObject::ptr node, editAction action) {
 result<objectPair> grendx::loadModel(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
-		gameModel::ptr m = load_object(path);
+		sceneModel::ptr m = load_object(path);
 
 		// add the model at 0,0
-		auto obj = gameObject::ptr(new gameObject());
+		auto obj = sceneNode::ptr(new sceneNode());
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 
@@ -328,7 +328,7 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 
 	else if (ext == ".gltf" || ext == ".glb") {
 		modelMap mods = load_gltf_models(path);
-		auto obj = std::make_shared<gameObject>();
+		auto obj = std::make_shared<sceneNode>();
 
 		for (auto& [name, model] : mods) {
 			// add the models at 0,0
@@ -341,7 +341,7 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 	return {resultError, "loadModel: unknown file extension: " + ext};
 }
 
-//std::pair<gameImport::ptr, modelMap>
+//std::pair<sceneImport::ptr, modelMap>
 result<importPair> grendx::loadSceneData(std::string path) noexcept {
 	std::string ext = filename_extension(path);
 
@@ -361,7 +361,7 @@ result<importPair> grendx::loadSceneData(std::string path) noexcept {
 	return {resultError, "loadSceneData: unknown file extension: " + ext};
 }
 
-result<gameImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
+result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 	if (auto res = loadSceneData(path)) {
 		auto [obj, models] = *res;
 		compileModels(models);
@@ -373,9 +373,9 @@ result<gameImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 }
 
 // TODO: return result type here somehow
-std::pair<gameImport::ptr, std::future<bool>>
+std::pair<sceneImport::ptr, std::future<bool>>
 grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
-	auto ret = std::make_shared<gameImport>(path);
+	auto ret = std::make_shared<sceneImport>(path);
 
 	auto fut = game->jobs->addAsync([=] () {
 		if (auto res = loadSceneData(path)) {
@@ -383,7 +383,7 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 
 			// apparently you can't (officially) capture destructured bindings, only variables...
 			// ffs
-			gameImport::ptr objptr = obj;
+			sceneImport::ptr objptr = obj;
 			modelMap modelptr = models;
 
 			setNode("asyncData", ret, objptr);
@@ -397,7 +397,7 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 			//       model that just hasn't been compiled yet... hmmmmmmmmmmmmmmm
 			game->jobs->addDeferred([=] () {
 				compileModels(modelptr);
-				//setNode("asyncLoaded", ret, std::make_shared<gameObject>());
+				//setNode("asyncLoaded", ret, std::make_shared<sceneNode>());
 				return true;
 			});
 
@@ -491,9 +491,9 @@ void gameEditor::update(gameMain *game, float delta) {
 			ptr->setTransform(newtrans);
 		}
 
-		if (selectedNode->type == gameObject::objType::ReflectionProbe) {
+		if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
 			auto bbox = UIObjects->getNode("Bounding-Box");
-			auto probe = std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+			auto probe = std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
 
 			TRS transform = probe->getTransformTRS();
 			glm::vec3 bmin = transform.position + probe->boundingBox.min;
@@ -535,8 +535,8 @@ void gameEditor::showLoadingScreen(gameMain *game) {
 	SDL_GL_SwapWindow(game->ctx.window);
 }
 
-bool gameEditor::isUIObject(gameObject::ptr obj) {
-	for (gameObject::ptr temp = obj; temp; temp = temp->parent.lock()) {
+bool gameEditor::isUIObject(sceneNode::ptr obj) {
+	for (sceneNode::ptr temp = obj; temp; temp = temp->parent.lock()) {
 		if (temp == UIObjects) {
 			return true;
 		}
@@ -545,10 +545,10 @@ bool gameEditor::isUIObject(gameObject::ptr obj) {
 	return false;
 }
 
-gameObject::ptr gameEditor::getNonModel(gameObject::ptr obj) {
-	for (gameObject::ptr temp = obj; temp; temp = temp->parent.lock()) {
-		if (temp->type != gameObject::objType::Mesh
-		    && temp->type != gameObject::objType::Model)
+sceneNode::ptr gameEditor::getNonModel(sceneNode::ptr obj) {
+	for (sceneNode::ptr temp = obj; temp; temp = temp->parent.lock()) {
+		if (temp->type != sceneNode::objType::Mesh
+		    && temp->type != sceneNode::objType::Model)
 		{
 			return temp;
 		}
@@ -564,7 +564,7 @@ void gameEditor::clear(gameMain *game) {
 	models.clear();
 
 	// TODO: clear() for state
-	selectedNode = game->state->rootnode = gameObject::ptr(new gameObject());
+	selectedNode = game->state->rootnode = sceneNode::ptr(new sceneNode());
 }
 
 // TODO: rename 'renderer' to 'rend' or something

@@ -14,7 +14,7 @@
 using namespace grendx;
 
 // TODO: probably won't be used, convenience here is pretty minimal
-// TODO: move to gameModel stuff
+// TODO: move to sceneModel stuff
 modelMap load_library(std::string dir) {
 	modelMap ret;
 	struct dirent *dirent;
@@ -64,8 +64,8 @@ static modelMap gen_internal_models(void) {
 
 // TODO: should start thinking about splitting initialization into smaller functions
 gameState::gameState() {
-	rootnode = gameObject::ptr(new gameObject());
-	physObjects = gameObject::ptr(new gameObject());
+	rootnode = sceneNode::ptr(new sceneNode());
+	physObjects = sceneNode::ptr(new sceneNode());
 }
 
 gameState::~gameState() {

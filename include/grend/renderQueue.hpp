@@ -4,7 +4,7 @@
 #include <grend/renderContext.hpp>
 #include <grend/renderFramebuffer.hpp>
 
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 
 namespace grendx {
 
@@ -27,33 +27,33 @@ class renderQueue {
 			T         data;
 		};
 
-		void add(gameObject::ptr obj,
+		void add(sceneNode::ptr obj,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
 
 		void add(renderQueue& other);
 
-		void addSkinned(gameObject::ptr obj,
-		                gameSkin::ptr skin,
+		void addSkinned(sceneNode::ptr obj,
+		                sceneSkin::ptr skin,
 		                glm::mat4 trans = glm::mat4(1),
 		                bool inverted = false);
-		void addInstanced(gameObject::ptr obj,
-		                  gameParticles::ptr particles,
+		void addInstanced(sceneNode::ptr obj,
+		                  sceneParticles::ptr particles,
 		                  glm::mat4 outerTrans = glm::mat4(1),
 		                  glm::mat4 innerTrans = glm::mat4(1),
 		                  bool inverted = false);
-		void addBillboards(gameObject::ptr obj,
-		                   gameBillboardParticles::ptr particles,
+		void addBillboards(sceneNode::ptr obj,
+		                   sceneBillboardParticles::ptr particles,
 		                   glm::mat4 trans = glm::mat4(1),
 		                   bool inverted = false);
 
 		void clear(void);
 
-		using MeshQ  = std::vector<queueEnt<gameMesh::ptr>>;
-		using LightQ = std::vector<queueEnt<gameLight::ptr>>;
-		using RefQ   = std::vector<queueEnt<gameReflectionProbe::ptr>>;
-		using RadQ   = std::vector<queueEnt<gameIrradianceProbe::ptr>>;
-		using SkinQ  = std::map<gameSkin::ptr, MeshQ>;
+		using MeshQ  = std::vector<queueEnt<sceneMesh::ptr>>;
+		using LightQ = std::vector<queueEnt<sceneLight::ptr>>;
+		using RefQ   = std::vector<queueEnt<sceneReflectionProbe::ptr>>;
+		using RadQ   = std::vector<queueEnt<sceneIrradianceProbe::ptr>>;
+		using SkinQ  = std::map<sceneSkin::ptr, MeshQ>;
 
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
@@ -65,13 +65,13 @@ class renderQueue {
 
 		// TODO: hmm, having types that line wrap might be a code smell...
 		std::vector<std::tuple<glm::mat4, glm::mat4, bool,
-		                       gameParticles::ptr,
-		                       gameMesh::ptr>> instancedMeshes;
-		std::vector<std::tuple<glm::mat4, bool, gameBillboardParticles::ptr,
-		                       gameMesh::ptr>> billboardMeshes;
+		                       sceneParticles::ptr,
+		                       sceneMesh::ptr>> instancedMeshes;
+		std::vector<std::tuple<glm::mat4, bool, sceneBillboardParticles::ptr,
+		                       sceneMesh::ptr>> billboardMeshes;
 
-		gameReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
-		gameIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
+		sceneReflectionProbe::ptr nearest_reflection_probe(glm::vec3 pos);
+		sceneIrradianceProbe::ptr nearest_irradiance_probe(glm::vec3 pos);
 };
 
 struct multiRenderQueue {
@@ -81,7 +81,7 @@ struct multiRenderQueue {
 
 		// TODO: probably rename renderFlags to renderShader
 		void add(const renderFlags& shader,
-		         gameObject::ptr obj,
+		         sceneNode::ptr obj,
 		         const glm::mat4& trans = glm::mat4(1),
 		         bool inverted = false);
 

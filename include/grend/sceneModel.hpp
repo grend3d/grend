@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend/material.hpp>
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/boundingBox.hpp>
@@ -18,13 +18,13 @@ namespace grendx {
 class compiledMesh;
 class compiledModel;
 
-class gameMesh : public gameObject {
+class sceneMesh : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameMesh> ptr;
-		typedef std::weak_ptr<gameMesh> weakptr;
+		typedef std::shared_ptr<sceneMesh> ptr;
+		typedef std::weak_ptr<sceneMesh> weakptr;
 
-		gameMesh() : gameObject(objType::Mesh) {};
-		virtual ~gameMesh();
+		sceneMesh() : sceneNode(objType::Mesh) {};
+		virtual ~sceneMesh();
 
 		virtual std::string typeString(void) {
 			return "Mesh";
@@ -43,13 +43,13 @@ class gameMesh : public gameObject {
 typedef glm::vec<4, uint16_t, glm::defaultp> usvec4;
 typedef glm::vec<4, uint8_t,  glm::defaultp> ubvec4;
 
-class gameModel : public gameObject {
+class sceneModel : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameModel> ptr;
-		typedef std::weak_ptr<gameModel> weakptr;
+		typedef std::shared_ptr<sceneModel> ptr;
+		typedef std::weak_ptr<sceneModel> weakptr;
 
-		gameModel() : gameObject(objType::Model) {};
-		virtual ~gameModel();
+		sceneModel() : sceneNode(objType::Model) {};
+		virtual ~sceneModel();
 
 		virtual std::string typeString(void) {
 			return "Model";
@@ -102,15 +102,15 @@ class gameModel : public gameObject {
 		bool haveAABB = false;
 };
 
-typedef std::map<std::string, gameMesh::ptr> meshMap;
-typedef std::map<std::string, gameModel::ptr> modelMap;
+typedef std::map<std::string, sceneMesh::ptr> meshMap;
+typedef std::map<std::string, sceneModel::ptr> modelMap;
 
-gameModel::ptr load_object(std::string filename);
+sceneModel::ptr load_object(std::string filename);
 std::map<std::string, material::ptr>
-  load_materials(gameModel::ptr model, std::string filename);
+  load_materials(sceneModel::ptr model, std::string filename);
 
 modelMap load_gltf_models(std::string filename);
-std::pair<gameImport::ptr, modelMap> load_gltf_scene(std::string filename);
+std::pair<sceneImport::ptr, modelMap> load_gltf_scene(std::string filename);
 // TODO: load scene
 
 // namespace grendx

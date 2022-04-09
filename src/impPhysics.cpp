@@ -43,7 +43,7 @@ glm::vec3 impObject::getAcceleration(void) {
 
 physicsObject::ptr
 impPhysics::addStaticModels(void *data,
-                            gameObject::ptr obj,
+                            sceneNode::ptr obj,
                             glm::mat4 transform)
 {
 	glm::mat4 adjTrans = transform*obj->getTransform(0);
@@ -52,8 +52,8 @@ impPhysics::addStaticModels(void *data,
 	//      although it may be a useful thing in the future
 	physicsObject::ptr ret = 0;
 
-	if (obj->type == gameObject::objType::Model) {
-		gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(obj);
+	if (obj->type == sceneNode::objType::Model) {
+		sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(obj);
 		static_geom.add_model(model, adjTrans);
 	}
 
@@ -97,8 +97,8 @@ impPhysics::addBox(void *data,
 }
 
 // TODO: implement add_model_mesh_boxes()
-std::map<gameMesh::ptr, physicsObject::ptr>
-impPhysics::addModelMeshBoxes(gameModel::ptr mod) {
+std::map<sceneMesh::ptr, physicsObject::ptr>
+impPhysics::addModelMeshBoxes(sceneModel::ptr mod) {
 	return {};
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend/glmIncludes.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/octree.hpp>
 #include <grend/physics.hpp>
 
@@ -75,7 +75,7 @@ class impPhysics : public physics {
 		// non-moveable geometry, collisions with octree
 		virtual physicsObject::ptr
 			addStaticModels(void *data,
-		                    gameObject::ptr obj,
+		                    sceneNode::ptr obj,
 		                    glm::mat4 transform = glm::mat4(1));
 
 		// dynamic geometry, collisions with AABB tree
@@ -93,13 +93,13 @@ class impPhysics : public physics {
 			addMesh(void *data,
 			        glm::vec3 position,
 			        float mass,
-			        gameModel::ptr model,
-			        gameMesh::ptr mesh);
+			        sceneModel::ptr model,
+			        sceneMesh::ptr mesh);
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		virtual std::map<gameMesh::ptr, physicsObject::ptr>
-			addModelMeshBoxes(gameModel::ptr mod);
+		virtual std::map<sceneMesh::ptr, physicsObject::ptr>
+			addModelMeshBoxes(sceneModel::ptr mod);
 		virtual void remove(physicsObject::ptr obj);
 		virtual void clear(void);
 

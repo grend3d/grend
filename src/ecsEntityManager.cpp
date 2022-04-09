@@ -267,7 +267,7 @@ entity *findNearest(entityManager *manager,
 
 	auto ents = searchEntities(manager, tags);
 	for (auto& ent : ents) {
-		gameObject::ptr node = ent->getNode();
+		sceneNode::ptr node = ent->getNode();
 		float dist = glm::distance(position, node->getTransformTRS().position);
 
 		if (ent->active && dist < curmin) {

@@ -26,9 +26,9 @@
 
 namespace grendx {
 
-// defined in gameModel.hpp, included at end
-class gameMesh;
-class gameModel;
+// defined in sceneModel.hpp, included at end
+class sceneMesh;
+class sceneModel;
 
 void check_errors(int line, const char *filename, const char *func);
 
@@ -396,13 +396,13 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
 compiledMaterial::ptr matcache(material::ptr mat);
 
 void initializeOpengl(void);
-//void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<gameMesh>>& meshies);
-compiledMesh::ptr compileMesh(std::shared_ptr<gameMesh>& mesh);
-compiledModel::ptr compileModel(std::string name, std::shared_ptr<gameModel> mod);
-void compileModels(const std::map<std::string, std::shared_ptr<gameModel>>& models);
+//void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<sceneMesh>>& meshies);
+compiledMesh::ptr compileMesh(std::shared_ptr<sceneMesh>& mesh);
+compiledModel::ptr compileModel(std::string name, std::shared_ptr<sceneModel> mod);
+void compileModels(const std::map<std::string, std::shared_ptr<sceneModel>>& models);
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh);
 Vao::ptr preloadModelVao(compiledModel::ptr obj);
-void bindModel(std::shared_ptr<gameModel> model);
+void bindModel(std::shared_ptr<sceneModel> model);
 void bindCookedMeshes(void);
 Vao::ptr getCurrentVao(void);
 Vao::ptr getScreenquadVao(void);
@@ -456,4 +456,4 @@ GLenum surfaceGlFormat(const materialTexture& tex);
 // namespace grendx
 }
 
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>

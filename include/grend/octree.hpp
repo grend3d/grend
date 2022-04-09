@@ -1,6 +1,6 @@
 #pragma once
 #include <grend/glmIncludes.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <utility>
 #include <set>
 
@@ -25,7 +25,7 @@ class octree {
 		// TODO: clear()
 		void grow(double size);
 		void add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]);
-		void add_model(gameModel::ptr mod, glm::mat4 transform);
+		void add_model(sceneModel::ptr mod, glm::mat4 transform);
 		void set_leaf(glm::vec3 location, glm::vec3 normal);
 		node *get_leaf(glm::vec3 location);
 		uint32_t count_nodes(void);

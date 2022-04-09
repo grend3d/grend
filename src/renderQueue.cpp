@@ -5,7 +5,7 @@
 
 using namespace grendx;
 
-void renderQueue::add(gameObject::ptr obj,
+void renderQueue::add(sceneNode::ptr obj,
                       glm::mat4 trans,
                       bool inverted)
 {
@@ -29,42 +29,42 @@ void renderQueue::add(gameObject::ptr obj,
 		inverted = !inverted;
 	}
 
-	if (obj->type == gameObject::objType::Mesh) {
-		gameMesh::ptr mesh = std::static_pointer_cast<gameMesh>(obj);
+	if (obj->type == sceneNode::objType::Mesh) {
+		sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		meshes.push_back({adjTrans, center, inverted, mesh});
 
-	} else if (obj->type == gameObject::objType::Light) {
-		gameLight::ptr light = std::static_pointer_cast<gameLight>(obj);
+	} else if (obj->type == sceneNode::objType::Light) {
+		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		lights.push_back({adjTrans, center, inverted, light});
 
-	} else if (obj->type == gameObject::objType::ReflectionProbe) {
-		gameReflectionProbe::ptr probe =
-			std::static_pointer_cast<gameReflectionProbe>(obj);
+	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
+		sceneReflectionProbe::ptr probe =
+			std::static_pointer_cast<sceneReflectionProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		probes.push_back({adjTrans, center, inverted, probe});
 
-	} else if (obj->type == gameObject::objType::IrradianceProbe) {
-		gameIrradianceProbe::ptr probe =
-			std::static_pointer_cast<gameIrradianceProbe>(obj);
+	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
+		sceneIrradianceProbe::ptr probe =
+			std::static_pointer_cast<sceneIrradianceProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		irradProbes.push_back({adjTrans, center, inverted, probe});
 	}
 
-	if (obj->type == gameObject::objType::None
+	if (obj->type == sceneNode::objType::None
 	    && obj->hasNode("skin")
 	    && obj->hasNode("mesh"))
 	{
-		auto s = std::static_pointer_cast<gameSkin>(obj->getNode("skin"));
+		auto s = std::static_pointer_cast<sceneSkin>(obj->getNode("skin"));
 		addSkinned(obj->getNode("mesh"), s, adjTrans, inverted);
 
-	} else if (obj->type == gameObject::objType::Particles) {
-		auto p = std::static_pointer_cast<gameParticles>(obj);
+	} else if (obj->type == sceneNode::objType::Particles) {
+		auto p = std::static_pointer_cast<sceneParticles>(obj);
 		addInstanced(obj, p, adjTrans, glm::mat4(1), inverted);
 
-	} else if (obj->type == gameObject::objType::BillboardParticles) {
-		auto p = std::static_pointer_cast<gameBillboardParticles>(obj);
+	} else if (obj->type == sceneNode::objType::BillboardParticles) {
+		auto p = std::static_pointer_cast<sceneBillboardParticles>(obj);
 		addBillboards(obj, p, adjTrans, inverted);
 
 	} else {
@@ -89,8 +89,8 @@ void renderQueue::add(renderQueue& other) {
 #undef QUEAPPEND
 }
 
-void renderQueue::addSkinned(gameObject::ptr obj,
-                             gameSkin::ptr skin,
+void renderQueue::addSkinned(sceneNode::ptr obj,
+                             sceneSkin::ptr skin,
                              glm::mat4 trans,
                              bool inverted)
 {
@@ -98,8 +98,8 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 		return;
 	}
 
-	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::static_pointer_cast<gameMesh>(obj);
+	if (obj->type == sceneNode::objType::Mesh) {
+		auto m = std::static_pointer_cast<sceneMesh>(obj);
 		glm::vec3 center = applyTransform(trans, boxCenter(m->boundingBox));
 		skinnedMeshes[skin].push_back({trans, center, inverted, m});
 	}
@@ -109,8 +109,8 @@ void renderQueue::addSkinned(gameObject::ptr obj,
 	}
 }
 
-void renderQueue::addInstanced(gameObject::ptr obj,
-                               gameParticles::ptr particles,
+void renderQueue::addInstanced(sceneNode::ptr obj,
+                               sceneParticles::ptr particles,
                                glm::mat4 outerTrans,
                                glm::mat4 innerTrans,
                                bool inverted)
@@ -128,8 +128,8 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
 
-	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::static_pointer_cast<gameMesh>(obj);
+	if (obj->type == sceneNode::objType::Mesh) {
+		auto m = std::static_pointer_cast<sceneMesh>(obj);
 		instancedMeshes.push_back({adjTrans, outerTrans, inverted, particles, m});
 	}
 
@@ -138,8 +138,8 @@ void renderQueue::addInstanced(gameObject::ptr obj,
 	}
 }
 
-void renderQueue::addBillboards(gameObject::ptr obj,
-                                gameBillboardParticles::ptr particles,
+void renderQueue::addBillboards(sceneNode::ptr obj,
+                                sceneBillboardParticles::ptr particles,
                                 glm::mat4 trans,
                                 bool inverted)
 {
@@ -156,8 +156,8 @@ void renderQueue::addBillboards(gameObject::ptr obj,
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
 
-	if (obj->type == gameObject::objType::Mesh) {
-		auto m = std::static_pointer_cast<gameMesh>(obj);
+	if (obj->type == sceneNode::objType::Mesh) {
+		auto m = std::static_pointer_cast<sceneMesh>(obj);
 		billboardMeshes.push_back({adjTrans, inverted, particles, m});
 	}
 
@@ -175,11 +175,11 @@ void grendx::updateLights(renderContext::ptr rctx,
 			continue;
 		}
 
-		if (light.data->lightType == gameLight::lightTypes::Point) {
+		if (light.data->lightType == sceneLight::lightTypes::Point) {
 			// TODO: check against view frustum to see if this light is visible,
 			//       avoid rendering shadow maps if not
-			gameLightPoint::ptr plit =
-				std::static_pointer_cast<gameLightPoint>(light.data);
+			sceneLightPoint::ptr plit =
+				std::static_pointer_cast<sceneLightPoint>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			for (unsigned i = 0; i < 6; i++) {
@@ -191,9 +191,9 @@ void grendx::updateLights(renderContext::ptr rctx,
 
 			drawShadowCubeMap(que, plit, light.transform, rctx);
 
-		} else if (light.data->lightType == gameLight::lightTypes::Spot) {
-			gameLightSpot::ptr slit =
-				std::static_pointer_cast<gameLightSpot>(light.data);
+		} else if (light.data->lightType == sceneLight::lightTypes::Spot) {
+			sceneLightSpot::ptr slit =
+				std::static_pointer_cast<sceneLightSpot>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			if (!shatree.valid(slit->shadowmap)) {
@@ -203,7 +203,7 @@ void grendx::updateLights(renderContext::ptr rctx,
 
 			drawSpotlightShadow(que, slit, light.transform, rctx);
 
-		} else if (light.data->lightType == gameLight::lightTypes::Directional) {
+		} else if (light.data->lightType == sceneLight::lightTypes::Directional) {
 			// TODO: orthoganal shadow map
 		}
 	}
@@ -260,8 +260,8 @@ void grendx::updateReflections(renderContext::ptr rctx, renderQueue& que) {
 }
 
 void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
-	//typedef std::tuple<glm::mat4, bool, gameMesh::ptr>  draw_ent;
-	//typedef std::tuple<glm::mat4, bool, gameLight::ptr> light_ent;
+	//typedef std::tuple<glm::mat4, bool, sceneMesh::ptr>  draw_ent;
+	//typedef std::tuple<glm::mat4, bool, sceneLight::ptr> light_ent;
 
 	// TODO: better way to do this, in-place?
 	renderQueue::MeshQ transparent;
@@ -309,7 +309,7 @@ void grendx::cullQueue(renderQueue& queue,
 	// XXX: need vector for sorting, deleting elements from vector for culling
 	//      would make this quadratic in the worst case... copying isn't
 	//      ideal, but should be fast enough, still linear time complexity
-	//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempMeshes;
+	//std::vector<std::tuple<glm::mat4, bool, sceneMesh::ptr>> tempMeshes;
 	renderQueue::MeshQ tempMeshes;
 
 	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
@@ -333,8 +333,8 @@ void grendx::cullQueue(renderQueue& queue,
 	queue.meshes = tempMeshes;
 
 	for (auto& [skin, skmeshes] : queue.skinnedMeshes) {
-		//std::vector<std::tuple<glm::mat4, bool, gameMesh::ptr>> tempSkinned;
-		//std::vector<queueEnt<gameMesh::ptr>> tempSkinned;
+		//std::vector<std::tuple<glm::mat4, bool, sceneMesh::ptr>> tempSkinned;
+		//std::vector<queueEnt<sceneMesh::ptr>> tempSkinned;
 		renderQueue::MeshQ tempSkinned;
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
@@ -349,8 +349,8 @@ void grendx::cullQueue(renderQueue& queue,
 		skmeshes = tempSkinned;
 	}
 
-	//std::vector<std::tuple<glm::mat4, bool, gameLight::ptr>> tempLights;
-	//std::vector<queueEnt<gameLight::ptr>> tempLights;
+	//std::vector<std::tuple<glm::mat4, bool, sceneLight::ptr>> tempLights;
+	//std::vector<queueEnt<sceneLight::ptr>> tempLights;
 	renderQueue::LightQ tempLights;
 	for (auto it = queue.lights.begin(); it != queue.lights.end(); it++) {
 		auto& [trans, _, __, lit] = *it;
@@ -364,8 +364,8 @@ void grendx::cullQueue(renderQueue& queue,
 	queue.lights = tempLights;
 
 	std::vector<std::tuple<glm::mat4, glm::mat4, bool,
-	                       gameParticles::ptr,
-						   gameMesh::ptr>> tempInstanced;
+	                       sceneParticles::ptr,
+						   sceneMesh::ptr>> tempInstanced;
 
 	for (auto it = queue.instancedMeshes.begin();
 	     it != queue.instancedMeshes.end();
@@ -381,7 +381,7 @@ void grendx::cullQueue(renderQueue& queue,
 }
 
 void grendx::batchQueue(renderQueue& queue) {
-	std::map<gameMesh*, unsigned> meshCount;
+	std::map<sceneMesh*, unsigned> meshCount;
 	bool canBatch = false;
 	// TODO: configuration option
 	unsigned minbatch = 16;
@@ -396,7 +396,7 @@ void grendx::batchQueue(renderQueue& queue) {
 		return;
 	}
 
-	std::map<gameMesh::ptr, gameParticles::ptr> batches;
+	std::map<sceneMesh::ptr, sceneParticles::ptr> batches;
 	renderQueue::MeshQ tempMeshes;
 
 	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
@@ -408,7 +408,7 @@ void grendx::batchQueue(renderQueue& queue) {
 		}
 
 		if (batches.find(mesh) == batches.end()) {
-			batches[mesh] = std::make_shared<gameParticles>();
+			batches[mesh] = std::make_shared<sceneParticles>();
 		}
 
 		auto& batch = batches[mesh];
@@ -449,7 +449,7 @@ static void drawMesh(const renderFlags& flags,
                      Program::ptr program,
                      const glm::mat4& transform,
                      bool inverted,
-                     gameMesh::ptr mesh)
+                     sceneMesh::ptr mesh)
 {
 	if (!mesh->comped_mesh) {
 		// mesh not compiled, can't draw
@@ -514,8 +514,8 @@ static void drawMeshInstanced(const renderFlags& flags,
                               const glm::mat4& outerTrans,
                               const glm::mat4& innerTrans,
                               bool inverted,
-                              gameParticles::ptr particles,
-                              gameMesh::ptr mesh)
+                              sceneParticles::ptr particles,
+                              sceneMesh::ptr mesh)
 {
 	if (!mesh->comped_mesh) {
 		// mesh not compiled, nothing to draw
@@ -583,8 +583,8 @@ static void drawBillboards(const renderFlags& flags,
                            Program::ptr program,
                            const glm::mat4& transform,
                            bool inverted,
-                           gameBillboardParticles::ptr particles,
-                           gameMesh::ptr mesh)
+                           sceneBillboardParticles::ptr particles,
+                           sceneMesh::ptr mesh)
 {
 	if (!mesh->comped_mesh) {
 		// mesh not compiled, nothing to draw
@@ -784,7 +784,7 @@ unsigned grendx::flush(renderQueue& que,
 	flags.skinnedShader->set("v_inv", v_inv);
 	flags.skinnedShader->set("cameraPosition", cam->position());
 	shaderSync(flags.skinnedShader, rctx, que);
-	gameSkin::ptr lastskin = nullptr;
+	sceneSkin::ptr lastskin = nullptr;
 
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
@@ -881,9 +881,9 @@ unsigned grendx::flush(renderQueue& que,
 	return drawnMeshes;
 }
 
-typedef std::vector<std::pair<glm::mat4&, gameLightPoint::ptr>>       pointList;
-typedef std::vector<std::pair<glm::mat4&, gameLightSpot::ptr>>        spotList;
-typedef std::vector<std::pair<glm::mat4&, gameLightDirectional::ptr>> dirList;
+typedef std::vector<std::pair<glm::mat4&, sceneLightPoint::ptr>>       pointList;
+typedef std::vector<std::pair<glm::mat4&, sceneLightSpot::ptr>>        spotList;
+typedef std::vector<std::pair<glm::mat4&, sceneLightDirectional::ptr>> dirList;
 typedef std::tuple<pointList, spotList, dirList> lightLists;
 
 static void syncPlainUniforms(Program::ptr program,
@@ -904,7 +904,7 @@ static void syncPlainUniforms(Program::ptr program,
 		pactive, sactive, dactive);
 
 	for (size_t i = 0; i < pactive; i++) {
-		//gameLightPoint::ptr light = points[i];
+		//sceneLightPoint::ptr light = points[i];
 		auto& [trans, light] = points[i];
 		glm::vec3 pos = applyTransform(trans, light->getTransformTRS().position);
 
@@ -934,7 +934,7 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 
 	for (size_t i = 0; i < sactive; i++) {
-		//gameLightSpot::ptr light = spots[i];
+		//sceneLightSpot::ptr light = spots[i];
 		auto& [trans, light] = spots[i];
 
 		// TODO: possibly have a seperate version of this that uses UBOs
@@ -971,7 +971,7 @@ static void syncPlainUniforms(Program::ptr program,
 	}
 
 	for (size_t i = 0; i < dactive; i++) {
-		//gameLightDirectional::ptr light = directionals[i];
+		//sceneLightDirectional::ptr light = directionals[i];
 		auto& [trans, light] = directionals[i];
 
 		// TODO: also updating all these uniforms can't be very efficient for a lot of
@@ -1095,7 +1095,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 	}
 
 	// TODO: parallelism
-	auto buildTiles = [&] (gameLight::ptr lit, glm::mat4& trans, unsigned idx) {
+	auto buildTiles = [&] (sceneLight::ptr lit, glm::mat4& trans, unsigned idx) {
 		glm::vec3 lightpos = applyTransform(trans);
 		float ext = lit->extent(rctx->lightThreshold);
 
@@ -1110,7 +1110,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 			if (in == 6) {
 				unsigned clusidx = MAX_LIGHTS * cluster;
 
-				if (lit->lightType == gameLight::lightTypes::Point) {
+				if (lit->lightType == sceneLight::lightTypes::Point) {
 					unsigned cur  = pointbuf.indexes[clusidx];
 					unsigned next = cur + 1;
 
@@ -1119,7 +1119,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 						pointbuf.indexes[clusidx + next] = idx;
 					}
 
-				} else if (lit->lightType == gameLight::lightTypes::Spot) {
+				} else if (lit->lightType == sceneLight::lightTypes::Spot) {
 					unsigned cur  = spotbuf.indexes[clusidx];
 					unsigned next = cur + 1;
 
@@ -1135,10 +1135,10 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 	//for (auto& [trans, _, lit] : queue.lights) {
 	for (auto& lit : queue) {
 		if (activePoints < MAX_POINT_LIGHT_OBJECTS_TILED &&
-		    lit.data->lightType == gameLight::lightTypes::Point)
+		    lit.data->lightType == sceneLight::lightTypes::Point)
 		{
-			gameLightPoint::ptr plit =
-				std::static_pointer_cast<gameLightPoint>(lit.data);
+			sceneLightPoint::ptr plit =
+				std::static_pointer_cast<sceneLightPoint>(lit.data);
 
 			packLight(plit,
 					  lightbuf.upoint_lights + activePoints,
@@ -1147,10 +1147,10 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 			activePoints++;
 
 		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS_TILED
-		           && lit.data->lightType == gameLight::lightTypes::Spot)
+		           && lit.data->lightType == sceneLight::lightTypes::Spot)
 		{
-			gameLightSpot::ptr slit =
-				std::static_pointer_cast<gameLightSpot>(lit.data);
+			sceneLightSpot::ptr slit =
+				std::static_pointer_cast<sceneLightSpot>(lit.data);
 
 			packLight(slit,
 					  lightbuf.uspot_lights + activeSpots,
@@ -1159,10 +1159,10 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 			activeSpots++;
 
 		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
-		          && lit.data->lightType == gameLight::lightTypes::Directional)
+		          && lit.data->lightType == sceneLight::lightTypes::Directional)
 		{
-			gameLightDirectional::ptr dlit =
-				std::static_pointer_cast<gameLightDirectional>(lit.data);
+			sceneLightDirectional::ptr dlit =
+				std::static_pointer_cast<sceneLightDirectional>(lit.data);
 
 			packLight(dlit,
 					  lightbuf.udirectional_lights + activeDirs,
@@ -1226,26 +1226,26 @@ void grendx::shaderSync(Program::ptr program,
 		//for (auto& [trans, _, light] : lights) {
 		for (auto& light : que.lights) {
 			switch (light.data->lightType) {
-				case gameLight::lightTypes::Point:
+				case sceneLight::lightTypes::Point:
 					{
-						gameLightPoint::ptr plit =
-							std::static_pointer_cast<gameLightPoint>(light.data);
+						sceneLightPoint::ptr plit =
+							std::static_pointer_cast<sceneLightPoint>(light.data);
 						point_lights.push_back({light.transform, plit});
 					}
 					break;
 
-				case gameLight::lightTypes::Spot:
+				case sceneLight::lightTypes::Spot:
 					{
-						gameLightSpot::ptr slit =
-							std::static_pointer_cast<gameLightSpot>(light.data);
+						sceneLightSpot::ptr slit =
+							std::static_pointer_cast<sceneLightSpot>(light.data);
 						spot_lights.push_back({light.transform, slit});
 					}
 					break;
 
-				case gameLight::lightTypes::Directional:
+				case sceneLight::lightTypes::Directional:
 					{
-						gameLightDirectional::ptr dlit =
-							std::static_pointer_cast<gameLightDirectional>(light.data);
+						sceneLightDirectional::ptr dlit =
+							std::static_pointer_cast<sceneLightDirectional>(light.data);
 						directional_lights.push_back({light.transform, dlit});
 					}
 					break;
@@ -1281,8 +1281,8 @@ void grendx::shaderSync(Program::ptr program,
 	DO_ERROR_CHECK();
 }
 
-gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
-	gameReflectionProbe::ptr ret = nullptr;
+sceneReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
+	sceneReflectionProbe::ptr ret = nullptr;
 	float mindist = HUGE_VALF;
 
 	// TODO: optimize this, O(N) is meh
@@ -1297,8 +1297,8 @@ gameReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 	return ret;
 }
 
-gameIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
-	gameIrradianceProbe::ptr ret = nullptr;
+sceneIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
+	sceneIrradianceProbe::ptr ret = nullptr;
 	float mindist = HUGE_VALF;
 
 	// TODO: optimize this, O(N) is meh

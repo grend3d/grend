@@ -1,22 +1,22 @@
 #include <grend/geometryGeneration.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 
 namespace grendx {
 
-gameModel::ptr generatePlaneMesh(int sx, int sy, int w, int h) {
-	gameModel::ptr ret  = std::make_shared<gameModel>();
-	gameMesh::ptr  mesh = std::make_shared<gameMesh>();
+sceneModel::ptr generatePlaneMesh(int sx, int sy, int w, int h) {
+	sceneModel::ptr ret  = std::make_shared<sceneModel>();
+	sceneMesh::ptr  mesh = std::make_shared<sceneMesh>();
 
 	setNode("mesh", ret, mesh);
 
 	return ret;
 }
 
-gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
+sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
                                  float x, float y, heightFunction func)
 {
-	gameModel::ptr ret = gameModel::ptr(new gameModel());
-	gameMesh::ptr mesh = gameMesh::ptr(new gameMesh());
+	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
+	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
 
 	unsigned xverts = width / unitsPerVert + 1;
 	unsigned yverts = height / unitsPerVert + 1;
@@ -29,7 +29,7 @@ gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 			float vz = j * unitsPerVert;
 			float height = func(x + vx, y + vz);
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {vx, height, vz},
 				.uv       = {vx / 12.0, vz / 12.0},
 			});
@@ -65,10 +65,10 @@ gameModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 	return ret;
 }
 
-gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
+sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	//model ret;
-	gameModel::ptr ret = gameModel::ptr(new gameModel());
-	gameMesh::ptr mesh = gameMesh::ptr(new gameMesh());
+	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
+	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
 
 	unsigned i = 0;
 	for (int y = sx; y <= ey; y += spacing) {
@@ -78,37 +78,37 @@ gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 			float x1 = 0.2*sin((x)*0.2f);
 			float x2 = 0.2*sin((x + spacing)*0.2f);
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 0},
 			});
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x, x2+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
 			});
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x, x2+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 1},
 			});
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
-			ret->vertices.push_back((gameModel::vertex) {
+			ret->vertices.push_back((sceneModel::vertex) {
 				.position = {x, x2+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
@@ -130,9 +130,9 @@ gameModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	return ret;
 }
 
-gameModel::ptr generate_cuboid(float width, float height, float depth) {
-	gameModel::ptr ret = gameModel::ptr(new gameModel());
-	gameMesh::ptr mesh = gameMesh::ptr(new gameMesh());
+sceneModel::ptr generate_cuboid(float width, float height, float depth) {
+	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
+	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
 
 	float ax = width/2;
 	float ay = height/2;
@@ -197,7 +197,7 @@ gameModel::ptr generate_cuboid(float width, float height, float depth) {
 				glm::vec3 c = glm::vec3((n2&1), (n2&2), (n2&4));
 
 				for (auto& p : {a, b, c, a}) {
-					ret->vertices.push_back((gameModel::vertex) {
+					ret->vertices.push_back((sceneModel::vertex) {
 						.position = (p * dim) - dim/2.f,
 						.uv       = {int(p.x)&1, int(p.y)&2},
 					});

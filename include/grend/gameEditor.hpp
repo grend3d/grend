@@ -4,8 +4,8 @@
 #include <grend/renderPostStage.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/gameMain.hpp>
-#include <grend/gameObject.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneNode.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
@@ -31,7 +31,7 @@ class gameEditor : public gameView {
 			Deleted,
 		};
 
-		typedef std::function<void(gameObject::ptr, editAction action)> editCallback;
+		typedef std::function<void(sceneNode::ptr, editAction action)> editCallback;
 
 		gameEditor(gameMain *game);
 		renderPostChain::ptr post;
@@ -44,7 +44,7 @@ class gameEditor : public gameView {
 
 		void initImgui(gameMain *game);
 		void addEditorCallback(editCallback func);
-		void runCallbacks(gameObject::ptr node, editAction action);
+		void runCallbacks(sceneNode::ptr node, editAction action);
 		void clear(gameMain *game);
 
 		enum mode {
@@ -106,12 +106,12 @@ class gameEditor : public gameView {
 		void renderMapModels(gameMain *game);
 
 		modelMap::const_iterator edit_model;
-		gameObject::ptr objects;
-		gameObject::ptr UIObjects;
+		sceneNode::ptr objects;
+		sceneNode::ptr UIObjects;
 		modelMap models;
 		modelMap UIModels;
 
-		gameObject::ptr selectedNode = nullptr;
+		sceneNode::ptr selectedNode = nullptr;
 		ecs::entity *selectedEntity = nullptr;
 
 		float movementSpeed = 10.f;
@@ -142,11 +142,11 @@ class gameEditor : public gameView {
 
 		// populates map object tree
 		void addnodes(std::string name,
-		              gameObject::ptr obj,
-		              std::set<gameObject::ptr>& selectedPath);
+		              sceneNode::ptr obj,
+		              std::set<sceneNode::ptr>& selectedPath);
 		void addnodesRec(const std::string& name,
-		                  gameObject::ptr obj,
-		                  std::set<gameObject::ptr>& selectedPath);
+		                  sceneNode::ptr obj,
+		                  std::set<sceneNode::ptr>& selectedPath);
 
 		void handleMoveRotate(gameMain *game);
 		void handleSelectObject(gameMain *game);
@@ -154,10 +154,10 @@ class gameEditor : public gameView {
 		void loadUIModels(void);
 		void loadInputBindings(gameMain *game);
 		void showLoadingScreen(gameMain *game);
-		bool isUIObject(gameObject::ptr obj);
+		bool isUIObject(sceneNode::ptr obj);
 
 		// TODO: utility function, should be move somewhere else
-		gameObject::ptr getNonModel(gameObject::ptr obj);
+		sceneNode::ptr getNonModel(sceneNode::ptr obj);
 
 		std::vector<editCallback> callbacks;
 		modalSDLInput inputBinds;

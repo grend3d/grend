@@ -2,7 +2,7 @@
 // TODO: more doxygen, copyright, etc
 #pragma once
 
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/physics.hpp>
 #include <nlohmann/json.hpp>
 
@@ -174,7 +174,7 @@ class entityManager {
 			return (components.count(name))? components[name] : nullret;
 		}
 
-		gameObject::ptr root = std::make_shared<gameObject>();
+		sceneNode::ptr root = std::make_shared<sceneNode>();
 
 		// TODO: should this be similar to inputHandlerSystem, with
 		//       onCollision components?
@@ -263,7 +263,7 @@ class entity : public component {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 		virtual nlohmann::json serialize(entityManager *manager);
 
-		virtual gameObject::ptr getNode(void) { return node; };
+		virtual sceneNode::ptr getNode(void) { return node; };
 
 		template <typename T, typename... Args>
 		T* attach(Args... args) {
@@ -280,7 +280,7 @@ class entity : public component {
 			return getInterface<T>(manager, this);
 		}
 
-		gameObject::ptr node = std::make_shared<gameObject>();
+		sceneNode::ptr node = std::make_shared<sceneNode>();
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not

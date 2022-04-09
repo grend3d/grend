@@ -1,7 +1,7 @@
 #pragma once
 
-#include <grend/gameObject.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneNode.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
@@ -55,8 +55,8 @@ class gameState {
 		gameState();
 		virtual ~gameState();
 
-		gameObject::ptr rootnode;
-		gameObject::ptr physObjects;
+		sceneNode::ptr rootnode;
+		sceneNode::ptr physObjects;
 		// XXX: 
 		modelMap loadedModels;
 

@@ -1,5 +1,5 @@
 #include <grend/engine.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/textureAtlas.hpp>
 #include <grend/timers.hpp>
@@ -32,7 +32,7 @@ static const glm::vec3 cube_up[] = {
 
 // TODO: minimize duplicated code with drawReflectionProbe
 void grendx::drawShadowCubeMap(renderQueue& queue,
-                               gameLightPoint::ptr light,
+                               sceneLightPoint::ptr light,
                                glm::mat4& transform,
                                renderContext::ptr rctx)
 {
@@ -92,7 +92,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 
 // TODO: minimize duplicated code with drawReflectionProbe
 void grendx::drawSpotlightShadow(renderQueue& queue,
-                                 gameLightSpot::ptr light,
+                                 sceneLightSpot::ptr light,
                                  glm::mat4& transform,
                                  renderContext::ptr rctx)
 {
@@ -167,7 +167,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	profile::endGroup();
 }
 
-static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
+static void convoluteReflectionProbeMips(sceneReflectionProbe::ptr probe,
                                          renderContext::ptr rctx,
                                          unsigned level)
 {
@@ -225,7 +225,7 @@ static void convoluteReflectionProbeMips(gameReflectionProbe::ptr probe,
 }
 
 void grendx::drawReflectionProbe(renderQueue& queue,
-                                 gameReflectionProbe::ptr probe,
+                                 sceneReflectionProbe::ptr probe,
                                  glm::mat4& transform,
                                  renderContext::ptr rctx)
 {
@@ -302,7 +302,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 }
 
 void grendx::drawIrradianceProbe(renderQueue& queue,
-                                 gameIrradianceProbe::ptr probe,
+                                 sceneIrradianceProbe::ptr probe,
                                  glm::mat4& transform,
                                  renderContext::ptr rctx)
 {

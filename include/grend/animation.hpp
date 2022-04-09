@@ -47,7 +47,7 @@ class animationChannel {
 
 
 // maps node names -> animation channels
-// gameObject nodes store a corresponding hash, this way
+// sceneNode nodes store a corresponding hash, this way
 // animations and models/skins can be loaded from seperate files
 class animationMap
 	: public std::unordered_map<uint32_t, std::vector<animationChannel::ptr>>

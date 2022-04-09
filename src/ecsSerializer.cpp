@@ -1,4 +1,4 @@
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>

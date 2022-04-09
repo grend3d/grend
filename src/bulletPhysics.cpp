@@ -147,20 +147,20 @@ void bulletPhysics::setDebugMode(int mode) {
 
 void
 bulletPhysics::addStaticModels(void *data,
-                               gameObject::ptr obj,
+                               sceneNode::ptr obj,
                                const TRS& transform,
                                std::vector<physicsObject::ptr>& collector,
                                std::string propFilter)
 {
-	if (obj->type == gameObject::objType::Mesh) {
+	if (obj->type == sceneNode::objType::Mesh) {
 		if (!propFilter.empty() && !obj->extraProperties.count(propFilter)) {
 			// have filter and this mesh doesn't match it
 			return;
 		}
 
 		if (auto p = obj->parent.lock()) {
-			gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(obj);
-			gameModel::ptr model = std::dynamic_pointer_cast<gameModel>(p);
+			sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(obj);
+			sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(p);
 
 			if (mesh && model) {
 				collector.push_back(addStaticMesh(data, transform, model, mesh));
@@ -330,8 +330,8 @@ bulletPhysics::addCapsule(void *data,
 physicsObject::ptr
 bulletPhysics::addStaticMesh(void *data,
                              const TRS& transform,
-                             gameModel::ptr model,
-                             gameMesh::ptr mesh)
+                             sceneModel::ptr model,
+                             sceneMesh::ptr mesh)
 {
 	std::lock_guard<std::mutex> lock(bulletMutex);
 
@@ -347,7 +347,7 @@ bulletPhysics::addStaticMesh(void *data,
 		                               sizeof(GLuint[3]),
 		                               model->vertices.size(),
 		                               (GLfloat*)model->vertices.data(),
-									   sizeof(gameModel::vertex));
+									   sizeof(sceneModel::vertex));
 
 	bulletObject::ptr ret = std::make_shared<bulletObject>();
 	ret->runtime = this;
@@ -382,8 +382,8 @@ bulletPhysics::addStaticMesh(void *data,
 // TODO: remove, don't think this is being used anywhere, don't remember what I
 //       had planned to do with it...
 //       must not be important then :P
-std::map<gameMesh::ptr, physicsObject::ptr>
-bulletPhysics::addModelMeshBoxes(gameModel::ptr mod) {
+std::map<sceneMesh::ptr, physicsObject::ptr>
+bulletPhysics::addModelMeshBoxes(sceneModel::ptr mod) {
 	return {};
 }
 

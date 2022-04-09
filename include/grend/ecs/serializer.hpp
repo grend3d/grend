@@ -1,6 +1,6 @@
 #pragma once
 
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/ecs/ecs.hpp>
 
 #include <iostream>

@@ -1,4 +1,4 @@
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/animation.hpp>
 #include <tinygltf/tiny_gltf.h>
@@ -472,8 +472,8 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 	materialTexture::ptr lightmap = load_gltf_lightmap(gltf);
 
 	for (auto& mesh : gltf.data.meshes) {
-		grendx::gameModel::ptr curModel =
-			grendx::gameModel::ptr(new grendx::gameModel());
+		grendx::sceneModel::ptr curModel =
+			grendx::sceneModel::ptr(new grendx::sceneModel());
 		ret[mesh.name] = curModel;
 
 		/*
@@ -494,7 +494,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			std::cerr << "        mode: " << prim.mode << std::endl;
 			*/
 
-			grendx::gameMesh::ptr modmesh = grendx::gameMesh::ptr(new grendx::gameMesh());
+			grendx::sceneMesh::ptr modmesh = grendx::sceneMesh::ptr(new grendx::sceneMesh());
 			setNode(temp_name, curModel, modmesh);
 
 			// copy over extra property values
@@ -687,7 +687,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			}
 
 			for (; !positionIt.atEnd(); positionIt++) {
-				gameModel::vertex vert;
+				sceneModel::vertex vert;
 
 				vert.position = *positionIt;
 				if (!normalIt.atEnd())  {vert.normal   = *normalIt;  normalIt++;};
@@ -745,7 +745,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			}
 
 			for (; !weightIt.atEnd(); weightIt++) {
-				gameModel::jointWeights joint;
+				sceneModel::jointWeights joint;
 
 				if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
 					if (!jointItByte.atEnd()) {
@@ -787,7 +787,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 	return ret;
 }
 
-typedef std::map<std::string, gameObject::ptr> node_map;
+typedef std::map<std::string, sceneNode::ptr> node_map;
 
 static void assert_accessor_type(tinygltf::Model& mod, int accidx, int expected)
 {
@@ -804,7 +804,7 @@ static void assert_componentType(tinygltf::Model& mod, int accidx, int expected)
 }
 
 static void
-set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
+set_object_gltf_transform(sceneNode::ptr ptr, tinygltf::Node& node) {
 	glm::quat rotation(1, 0, 0, 0);
 	glm::vec3 translation = {0, 0, 0};
 	glm::vec3 scale = {1, 1, 1};
@@ -834,13 +834,13 @@ set_object_gltf_transform(gameObject::ptr ptr, tinygltf::Node& node) {
 	ptr->setTransform(newtrans);
 }
 
-static gameObject::ptr 
+static sceneNode::ptr 
 load_gltf_skin_node_top(gltfModel& gltf, int nodeidx) {
 	if (nodeidx < 0) {
 		return nullptr;
 	}
 
-	gameObject::ptr ret = std::make_shared<gameObject>();
+	sceneNode::ptr ret = std::make_shared<sceneNode>();
 
 	// TODO: range check
 	auto& node = gltf.data.nodes[nodeidx];
@@ -850,7 +850,7 @@ load_gltf_skin_node_top(gltfModel& gltf, int nodeidx) {
 	return ret;
 }
 
-static gameSkin::ptr
+static sceneSkin::ptr
 load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 	if (nodeidx < 0) {
 		return nullptr;
@@ -858,9 +858,9 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 
 	// TODO: range checko
 	auto& skin = gltf.data.skins[nodeidx];
-	gameSkin::ptr   obj    = std::make_shared<gameSkin>();
-	gameObject::ptr sub    = std::make_shared<gameObject>();
-	gameObject::ptr joints = std::make_shared<gameObject>();
+	sceneSkin::ptr   obj    = std::make_shared<sceneSkin>();
+	sceneNode::ptr sub    = std::make_shared<sceneNode>();
+	sceneNode::ptr joints = std::make_shared<sceneNode>();
 	std::string sname = "skin["+skin.name+"]";
 	setNode(sname, obj, sub);
 	setNode("joints", sub, joints);
@@ -868,15 +868,15 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 	/*
 	for (auto& idx : skin.joints) {
 		auto& cnode = gltf.data.nodes[idx];
-		gameObject::ptr jnt = load_gltf_skin_nodes_rec(gltf, animations, idx);
+		sceneNode::ptr jnt = load_gltf_skin_nodes_rec(gltf, animations, idx);
 		obj->joints.push_back(jnt);
 	}
 	*/
 
-	std::map<int, gameObject::ptr> jointidxs;
+	std::map<int, sceneNode::ptr> jointidxs;
 
 	for (auto& idx : skin.joints) {
-		gameObject::ptr jnt = load_gltf_skin_node_top(gltf, idx);
+		sceneNode::ptr jnt = load_gltf_skin_node_top(gltf, idx);
 		obj->joints.push_back(jnt);
 		jointidxs[idx] = jnt;
 	}
@@ -920,7 +920,7 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 
 static void load_gltf_node_light(gltfModel& gltf,
                                  tinygltf::Node& node,
-                                 gameObject::ptr obj)
+                                 sceneNode::ptr obj)
 {
 	auto it = node.extensions.find("KHR_lights_punctual");
 	if (it != node.extensions.end()) {
@@ -948,7 +948,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 		std::cerr << " GLTF > node light! " << light.name << ": " << light.type << std::endl;
 
 		if (light.type == "point") {
-			gameLightPoint::ptr point = std::make_shared<gameLightPoint>();
+			sceneLightPoint::ptr point = std::make_shared<sceneLightPoint>();
 			point->intensity = light.intensity;
 			//point->casts_shadows = true;
 			point->casts_shadows = false;
@@ -961,7 +961,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 			setNode(light.name, obj, point);
 
 		} else if (light.type == "spot") {
-			gameLightSpot::ptr spot = std::make_shared<gameLightSpot>();
+			sceneLightSpot::ptr spot = std::make_shared<sceneLightSpot>();
 			spot->intensity = 10*light.intensity;
 			//spot->casts_shadows = true;
 			spot->casts_shadows = false;
@@ -980,7 +980,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 	}
 }
 
-static gameObject::ptr
+static sceneNode::ptr
 load_gltf_scene_nodes_rec(gltfModel& gltf,
                           modelMap& models,
                           node_map& names,
@@ -988,7 +988,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 {
 	// TODO: range check
 	auto& node = gltf.data.nodes[nodeidx];
-	gameObject::ptr ret = std::make_shared<gameObject>();
+	sceneNode::ptr ret = std::make_shared<sceneNode>();
 	set_object_gltf_transform(ret, node);
 	load_gltf_node_light(gltf, node, ret);
 
@@ -1128,19 +1128,19 @@ static animationCollection::ptr collectAnimations(gltfModel& gltf) {
 	return ret;
 }
 
-static gameImport::ptr
+static sceneImport::ptr
 load_gltf_scene_nodes(std::string filename,
                       gltfModel& gltf,
                       modelMap& models)
 {
-	gameImport::ptr ret = std::make_shared<gameImport>(filename);
+	sceneImport::ptr ret = std::make_shared<sceneImport>(filename);
 	auto anims = collectAnimations(gltf);
 	node_map names;
 
 	// TODO: how to return animations?
 	//       could just stuff it in the import object
 
-	gameImport::ptr sceneobj = std::make_shared<gameImport>(filename);
+	sceneImport::ptr sceneobj = std::make_shared<sceneImport>(filename);
 	for (auto& scene : gltf.data.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
@@ -1149,7 +1149,7 @@ load_gltf_scene_nodes(std::string filename,
 		}
 	}
 
-	auto nameobj = std::make_shared<gameObject>();
+	auto nameobj = std::make_shared<sceneNode>();
 	nameobj->visible = false;
 
 	for (auto& [name, obj] : names) {
@@ -1219,7 +1219,7 @@ grendx::modelMap grendx::load_gltf_models(std::string filename) {
 }
 
 // TODO: return optional
-std::pair<grendx::gameImport::ptr, grendx::modelMap>
+std::pair<grendx::sceneImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
 	SDL_Log("Opening gltf scene %s...", filename.c_str());
 
@@ -1227,7 +1227,7 @@ grendx::load_gltf_scene(std::string filename) {
 		SDL_Log("Loading gltf scene %s...", filename.c_str());
 		grendx::modelMap models = load_gltf_models(*gltf);
 		SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
-		gameImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
+		sceneImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
 
 		SDL_Log("updating sources %s...", filename.c_str());
 		updateModelSources(models, filename);
@@ -1236,6 +1236,6 @@ grendx::load_gltf_scene(std::string filename) {
 
 	} else {
 		// XXX: should return an optional here
-		return {std::make_shared<gameImport>(""), {}};
+		return {std::make_shared<sceneImport>(""), {}};
 	}
 }

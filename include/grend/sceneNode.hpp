@@ -22,7 +22,7 @@ namespace grendx {
 
 size_t allocateObjID(void);
 
-class gameObject {
+class sceneNode {
 	public:
 		// used for type checking, dynamically-typed tree here
 		enum objType {
@@ -40,11 +40,11 @@ class gameObject {
 			Camera,             // TODO: camera position marker
 		} type = objType::None;
 
-		typedef std::shared_ptr<gameObject> ptr;
-		typedef std::weak_ptr<gameObject> weakptr;
+		typedef std::shared_ptr<sceneNode> ptr;
+		typedef std::weak_ptr<sceneNode> weakptr;
 
-		gameObject(enum objType t = objType::None) : type(t) {};
-		virtual ~gameObject();
+		sceneNode(enum objType t = objType::None) : type(t) {};
+		virtual ~sceneNode();
 
 		// handlers for basic input events
 		virtual void onLeftClick() {
@@ -69,7 +69,7 @@ class gameObject {
 		};
 
 		virtual std::string typeString(void) {
-			return "gameObject";
+			return "sceneNode";
 		}
 
 		virtual std::string idString(void) {
@@ -90,7 +90,7 @@ class gameObject {
 
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
-		gameObject::ptr getNode(std::string name);
+		sceneNode::ptr getNode(std::string name);
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
 
@@ -104,8 +104,8 @@ class gameObject {
 		// whether the node visible
 		bool visible = true;
 
-		gameObject::weakptr parent;
-		std::map<std::string, gameObject::ptr> nodes;
+		sceneNode::weakptr parent;
+		std::map<std::string, sceneNode::ptr> nodes;
 		// intended to map to gltf extra properties, useful for exporting
 		// info from blender
 		std::map<std::string, float> extraProperties;
@@ -130,7 +130,7 @@ class gameObject {
 };
 
 static inline
-void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
+void setNode(std::string name, sceneNode::ptr obj, sceneNode::ptr sub) {
 	assert(obj != nullptr && sub != nullptr);
 
 	obj->nodes[name] = sub;
@@ -138,7 +138,7 @@ void setNode(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 }
 
 static inline
-void setNodeXXX(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
+void setNodeXXX(std::string name, sceneNode::ptr obj, sceneNode::ptr sub) {
 	assert(obj != nullptr && sub != nullptr);
 
 	obj->nodes[name] = sub;
@@ -147,19 +147,19 @@ void setNodeXXX(std::string name, gameObject::ptr obj, gameObject::ptr sub) {
 
 // TODO: just realized these overload syscalls, should that be avoided?
 //       in principle it's fine, might be confusing in code though
-gameObject::ptr unlink(gameObject::ptr node);
-gameObject::ptr clone(gameObject::ptr node);     // shallow copy
-gameObject::ptr duplicate(gameObject::ptr node); // deep copy
-std::string     getNodeName(gameObject::ptr node);
+sceneNode::ptr unlink(sceneNode::ptr node);
+sceneNode::ptr clone(sceneNode::ptr node);     // shallow copy
+sceneNode::ptr duplicate(sceneNode::ptr node); // deep copy
+std::string    getNodeName(sceneNode::ptr node);
 
-class gameImport : public gameObject {
+class sceneImport : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameImport> ptr;
-		typedef std::weak_ptr<gameImport>   weakptr;
+		typedef std::shared_ptr<sceneImport> ptr;
+		typedef std::weak_ptr<sceneImport>   weakptr;
 
-		gameImport(std::string path)
-			: gameObject(objType::Import), sourceFile(path) {}
-		virtual ~gameImport();
+		sceneImport(std::string path)
+			: sceneNode(objType::Import), sourceFile(path) {}
+		virtual ~sceneImport();
 
 		virtual std::string typeString(void) {
 			return "Imported file";
@@ -180,13 +180,13 @@ class gameImport : public gameObject {
 class Buffer;
 class Program;
 
-class gameSkin : public gameObject {
+class sceneSkin : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameSkin> ptr;
-		typedef std::weak_ptr<gameSkin>   weakptr;
+		typedef std::shared_ptr<sceneSkin> ptr;
+		typedef std::weak_ptr<sceneSkin>   weakptr;
 
-		gameSkin() : gameObject(objType::Skin) {}
-		virtual ~gameSkin();
+		sceneSkin() : sceneNode(objType::Skin) {}
+		virtual ~sceneSkin();
 
 		virtual std::string typeString(void) {
 			return "Skin";
@@ -197,18 +197,18 @@ class gameSkin : public gameObject {
 		std::vector<glm::mat4> inverseBind;
 		std::vector<glm::mat4> transforms;
 		// keep internal pointers to joints, same nodes as in the tree
-		std::vector<gameObject::ptr> joints;
+		std::vector<sceneNode::ptr> joints;
 
 		std::shared_ptr<Buffer> ubuffer = nullptr;
 };
 
-class gameParticles : public gameObject {
+class sceneParticles : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameParticles> ptr;
-		typedef std::weak_ptr<gameParticles>   weakptr;
+		typedef std::shared_ptr<sceneParticles> ptr;
+		typedef std::weak_ptr<sceneParticles>   weakptr;
 
-		gameParticles(unsigned _maxInstances = 256);
-		virtual ~gameParticles();
+		sceneParticles(unsigned _maxInstances = 256);
+		virtual ~sceneParticles();
 
 		virtual std::string typeString(void) {
 			return "Particle system";
@@ -228,13 +228,13 @@ class gameParticles : public gameObject {
 		std::shared_ptr<Buffer> ubuffer = nullptr;
 };
 
-class gameBillboardParticles : public gameObject {
+class sceneBillboardParticles : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameBillboardParticles> ptr;
-		typedef std::weak_ptr<gameBillboardParticles>   weakptr;
+		typedef std::shared_ptr<sceneBillboardParticles> ptr;
+		typedef std::weak_ptr<sceneBillboardParticles>   weakptr;
 
-		gameBillboardParticles(unsigned _maxInstances = 1024);
-		virtual ~gameBillboardParticles();
+		sceneBillboardParticles(unsigned _maxInstances = 1024);
+		virtual ~sceneBillboardParticles();
 
 		virtual std::string typeString(void) {
 			return "Particle system";
@@ -255,10 +255,10 @@ class gameBillboardParticles : public gameObject {
 		std::shared_ptr<Buffer> ubuffer = nullptr;
 };
 
-class gameLight : public gameObject {
+class sceneLight : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameLight> ptr;
-		typedef std::weak_ptr<gameLight> weakptr;
+		typedef std::shared_ptr<sceneLight> ptr;
+		typedef std::weak_ptr<sceneLight> weakptr;
 
 		enum lightTypes {
 			None,
@@ -270,9 +270,9 @@ class gameLight : public gameObject {
 			BoundedPoint, // TODO:
 		} lightType;
 
-		gameLight(enum lightTypes t)
-			: gameObject(objType::Light), lightType(t) {};
-		virtual ~gameLight();
+		sceneLight(enum lightTypes t)
+			: sceneNode(objType::Light), lightType(t) {};
+		virtual ~sceneLight();
 
 		virtual std::string typeString(void) {
 			return "Light (abstract)";
@@ -290,13 +290,13 @@ class gameLight : public gameObject {
 		bool have_map  = false;
 };
 
-class gameLightPoint : public gameLight {
+class sceneLightPoint : public sceneLight {
 	public:
-		typedef std::shared_ptr<gameLightPoint> ptr;
-		typedef std::weak_ptr<gameLightPoint> weakptr;
+		typedef std::shared_ptr<sceneLightPoint> ptr;
+		typedef std::weak_ptr<sceneLightPoint> weakptr;
 
-		gameLightPoint() : gameLight(lightTypes::Point) {};
-		virtual ~gameLightPoint();
+		sceneLightPoint() : sceneLight(lightTypes::Point) {};
+		virtual ~sceneLightPoint();
 
 		virtual std::string typeString(void) {
 			return "Point light";
@@ -309,13 +309,13 @@ class gameLightPoint : public gameLight {
 		quadtree::node_id shadowmap[6];
 };
 
-class gameLightSpot : public gameLight {
+class sceneLightSpot : public sceneLight {
 	public:
-		typedef std::shared_ptr<gameLightSpot> ptr;
-		typedef std::weak_ptr<gameLightSpot> weakptr;
+		typedef std::shared_ptr<sceneLightSpot> ptr;
+		typedef std::weak_ptr<sceneLightSpot> weakptr;
 
-		gameLightSpot() : gameLight(lightTypes::Spot) {};
-		virtual ~gameLightSpot();
+		sceneLightSpot() : sceneLight(lightTypes::Spot) {};
+		virtual ~sceneLightSpot();
 
 		virtual std::string typeString(void) {
 			return "Spot light";
@@ -331,13 +331,13 @@ class gameLightSpot : public gameLight {
 		glm::mat4 shadowproj;
 };
 
-class gameLightDirectional : public gameLight {
+class sceneLightDirectional : public sceneLight {
 	public:
-		typedef std::shared_ptr<gameLightDirectional> ptr;
-		typedef std::weak_ptr<gameLightDirectional> weakptr;
+		typedef std::shared_ptr<sceneLightDirectional> ptr;
+		typedef std::weak_ptr<sceneLightDirectional> weakptr;
 
-		gameLightDirectional() : gameLight(lightTypes::Directional) {};
-		virtual ~gameLightDirectional();
+		sceneLightDirectional() : sceneLight(lightTypes::Directional) {};
+		virtual ~sceneLightDirectional();
 
 		virtual std::string typeString(void) {
 			return "Directional light";
@@ -350,17 +350,17 @@ class gameLightDirectional : public gameLight {
 		glm::mat4 shadowproj;
 };
 
-class gameReflectionProbe : public gameObject {
+class sceneReflectionProbe : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameReflectionProbe> ptr;
-		typedef std::weak_ptr<gameReflectionProbe> weakptr;
+		typedef std::shared_ptr<sceneReflectionProbe> ptr;
+		typedef std::weak_ptr<sceneReflectionProbe> weakptr;
 
 		virtual std::string typeString(void) {
 			return "Reflection probe";
 		}
 
-		gameReflectionProbe() : gameObject(objType::ReflectionProbe) {};
-		virtual ~gameReflectionProbe();
+		sceneReflectionProbe() : sceneNode(objType::ReflectionProbe) {};
+		virtual ~sceneReflectionProbe();
 
 		quadtree::node_id faces[5][6];
 		// bounding box for parallax correction
@@ -375,21 +375,21 @@ class gameReflectionProbe : public gameObject {
 		bool have_convolved = false;
 };
 
-class gameIrradianceProbe : public gameObject {
+class sceneIrradianceProbe : public sceneNode {
 	public:
-		typedef std::shared_ptr<gameIrradianceProbe> ptr;
-		typedef std::weak_ptr<gameIrradianceProbe> weakptr;
+		typedef std::shared_ptr<sceneIrradianceProbe> ptr;
+		typedef std::weak_ptr<sceneIrradianceProbe> weakptr;
 
 		virtual std::string typeString(void) {
 			return "Irradiance probe";
 		}
 
-		gameIrradianceProbe() : gameObject(objType::IrradianceProbe) {
-			source = std::make_shared<gameReflectionProbe>();
+		sceneIrradianceProbe() : sceneNode(objType::IrradianceProbe) {
+			source = std::make_shared<sceneReflectionProbe>();
 		};
-		virtual ~gameIrradianceProbe();
+		virtual ~sceneIrradianceProbe();
 
-		gameReflectionProbe::ptr source;
+		sceneReflectionProbe::ptr source;
 		quadtree::node_id faces[6];
 		quadtree::node_id coefficients[6];
 

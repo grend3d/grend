@@ -1,7 +1,7 @@
 #pragma once
 
 #include <grend/gameMain.hpp>
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/camera.hpp>
 #include <grend/renderPostStage.hpp>
@@ -22,7 +22,7 @@ bindFunc camAngled2DRotatable(camera::ptr cam,
 		// limit degrees of rotation for up/down movement, default is unrestricted
 		float minY = -M_PI,
 		float maxY =  M_PI);
-bindFunc camFocus(camera::ptr cam, gameObject::ptr focus);
+bindFunc camFocus(camera::ptr cam, sceneNode::ptr focus);
 bindFunc camScrollZoom(camera::ptr cam, float *zoom, float scale=1.f);
 
 // namespace controller

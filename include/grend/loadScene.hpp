@@ -1,5 +1,5 @@
 #pragma once
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/gameMain.hpp>
 
 #include <string>
@@ -51,8 +51,8 @@ void printError(result<T>& res) {
 	}
 }
 
-using importPair = std::pair<gameImport::ptr, modelMap>;
-using objectPair = std::pair<gameObject::ptr, modelMap>;
+using importPair = std::pair<sceneImport::ptr, modelMap>;
+using objectPair = std::pair<sceneNode::ptr, modelMap>;
 
 result<objectPair> loadModel(std::string path) noexcept;
 result<importPair> loadSceneData(std::string path) noexcept;
@@ -63,9 +63,9 @@ result<importPair> loadSceneData(std::string path) noexcept;
  *
  * @param path Path to the scene.
  *
- * @return gameImport::ptr representing the scene.
+ * @return sceneImport::ptr representing the scene.
  */
-result<gameImport::ptr> loadSceneCompiled(std::string path) noexcept;
+result<sceneImport::ptr> loadSceneCompiled(std::string path) noexcept;
 
 /**
  * Load a scene asyncronously.
@@ -75,23 +75,23 @@ result<gameImport::ptr> loadSceneCompiled(std::string path) noexcept;
  *
  * @return A pair with a node that will contain the loaded scene, and a future to
  *         wait on, if needed.
- *         If the scene couldn't be loaded, the result will be a gameImport::ptr
+ *         If the scene couldn't be loaded, the result will be a sceneImport::ptr
  *         with no subnodes. (Should probably return an error of some sort...)
  */
-std::pair<gameImport::ptr, std::future<bool>>
+std::pair<sceneImport::ptr, std::future<bool>>
 loadSceneAsyncCompiled(gameMain *game, std::string path);
 
 void saveMap(gameMain *game,
-			 gameObject::ptr root,
+			 sceneNode::ptr root,
 			 std::string name="save.map") noexcept;
 
 result<importPair>
 loadMapData(std::string name="save.map") noexcept;
 
-result<gameImport::ptr>
+result<sceneImport::ptr>
 loadMapCompiled(std::string name="save.map") noexcept;
 
-result<gameImport::ptr>
+result<sceneImport::ptr>
 loadMapAsyncCompiled(gameMain *game, std::string name="save.map") noexcept;
 
 // namespace grendx

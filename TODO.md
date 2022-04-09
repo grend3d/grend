@@ -10,7 +10,6 @@
   purposes
 - remove onClick(), etc functions from gameObject, should have callbacks
   mapped from click IDs
-- rename gameObject to sceneNode or something
 - consider how material editing and overrides will work 
 - render world into seperate framebuffer in editor so that docking stuff
   actually makes sense

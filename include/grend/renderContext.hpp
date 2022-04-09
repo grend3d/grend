@@ -17,7 +17,7 @@ class skybox {
 		void draw(camera::ptr cam, unsigned width, unsigned height);
 		void draw(camera::ptr cam, renderFramebuffer::ptr fb);
 
-		gameModel::ptr model;
+		sceneModel::ptr model;
 		Program::ptr program;
 		Texture::ptr map;
 };
@@ -67,14 +67,14 @@ class renderContext {
 		// see drawn_entities below
 		void newframe(void);
 		// look up stencil buffer index in drawn objects
-		gameMesh::ptr index(unsigned idx);
+		sceneMesh::ptr index(unsigned idx);
 		void setArrayMode(enum lightingModes mode);
 
 		// XXX
 		struct renderFlags getLightingFlags(std::string name="");
-		void setReflectionProbe(gameReflectionProbe::ptr probe,
+		void setReflectionProbe(sceneReflectionProbe::ptr probe,
 		                        Program::ptr program);
-		void setIrradianceProbe(gameIrradianceProbe::ptr probe,
+		void setIrradianceProbe(sceneIrradianceProbe::ptr probe,
 		                        Program::ptr program);
 
 		// TODO: would be ideal to have "low", "medium", "high" or something
@@ -120,20 +120,20 @@ class renderContext {
 		Program::ptr shader;
 
 		/*
-		gameReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
+		sceneReflectionProbe::ptr get_nearest_refprobes(glm::vec3 pos);
 		// list of models to draw
 		// TODO: meshes, need to pair materials with meshes though, which
 		//       currently is part of the model classes
 		//       possible solution is to have a global namespace for materials,
 		//       which would be easier to work with probably
 		//       (also might make unintentional dependencies easier though...)
-		//std::vector<gameMesh::ptr> draw_queue;
+		//std::vector<sceneMesh::ptr> draw_queue;
 		// sorted after dqueue_sort_draws(), and flushed along with
 		// dqueue_flush_draws(), this is sorted back-to-front rather than
 		// front-to-back
-		std::vector<gameMesh::ptr> transparent_draws;
-		std::vector<gameLight::ptr> active_lights;
-		std::vector<gameReflectionProbe::ptr> active_refprobes;
+		std::vector<sceneMesh::ptr> transparent_draws;
+		std::vector<sceneLight::ptr> active_lights;
+		std::vector<sceneReflectionProbe::ptr> active_refprobes;
 		*/
 };
 

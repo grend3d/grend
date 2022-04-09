@@ -6,7 +6,7 @@
 
 using namespace grendx;
 
-static void editPointLight(gameMain *game, gameLightPoint::ptr light) {
+static void editPointLight(gameMain *game, sceneLightPoint::ptr light) {
 	ImGui::Text("%s", "Point light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -14,7 +14,7 @@ static void editPointLight(gameMain *game, gameLightPoint::ptr light) {
 	ImGui::Unindent(16.f);
 }
 
-static void editSpotLight(gameMain *game, gameLightSpot::ptr light) {
+static void editSpotLight(gameMain *game, sceneLightSpot::ptr light) {
 	ImGui::Text("%s", "Spot light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -23,7 +23,7 @@ static void editSpotLight(gameMain *game, gameLightSpot::ptr light) {
 	ImGui::Unindent(16.f);
 }
 
-static void editDirectionalLight(gameMain *game, gameLightDirectional::ptr light) {
+static void editDirectionalLight(gameMain *game, sceneLightDirectional::ptr light) {
 	ImGui::Text("%s", "Directional light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -31,7 +31,7 @@ static void editDirectionalLight(gameMain *game, gameLightDirectional::ptr light
 	ImGui::Unindent(16.f);
 }
 
-static void editLight(gameMain *game, gameLight::ptr light) {
+static void editLight(gameMain *game, sceneLight::ptr light) {
 	ImGui::Text("%s", "Light properties");
 	ImGui::Indent(16.f);
 	ImGui::Separator();
@@ -43,16 +43,16 @@ static void editLight(gameMain *game, gameLight::ptr light) {
 	ImGui::Unindent(16.f);
 
 	switch (light->lightType) {
-		case gameLight::lightTypes::Point:
-			editPointLight(game, std::dynamic_pointer_cast<gameLightPoint>(light));
+		case sceneLight::lightTypes::Point:
+			editPointLight(game, std::dynamic_pointer_cast<sceneLightPoint>(light));
 			break;
 
-		case gameLight::lightTypes::Spot:
-			editSpotLight(game, std::dynamic_pointer_cast<gameLightSpot>(light));
+		case sceneLight::lightTypes::Spot:
+			editSpotLight(game, std::dynamic_pointer_cast<sceneLightSpot>(light));
 			break;
 
-		case gameLight::lightTypes::Directional:
-			editDirectionalLight(game, std::dynamic_pointer_cast<gameLightDirectional>(light));
+		case sceneLight::lightTypes::Directional:
+			editDirectionalLight(game, std::dynamic_pointer_cast<sceneLightDirectional>(light));
 			break;
 
 		default:
@@ -72,7 +72,7 @@ static void editRefProbe(gameMain *game, T probe) {
 	ImGui::Unindent(16.f);
 }
 
-static void editModel(gameMain *game, gameModel::ptr model) {
+static void editModel(gameMain *game, sceneModel::ptr model) {
 	if (model->comped_model) {
 		// TODO: reimplement material editing stuff, will be able to do much
 		//       more after refactoring stuff here
@@ -121,19 +121,19 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 	ImGui::Checkbox("Visible", &selectedNode->visible);
 	ImGui::Unindent(16.f);
 
-	if (selectedNode->type == gameObject::objType::Light) {
-		editLight(game, std::dynamic_pointer_cast<gameLight>(selectedNode));
+	if (selectedNode->type == sceneNode::objType::Light) {
+		editLight(game, std::dynamic_pointer_cast<sceneLight>(selectedNode));
 
-	} else if(selectedNode->type == gameObject::objType::ReflectionProbe) {
+	} else if(selectedNode->type == sceneNode::objType::ReflectionProbe) {
 		editRefProbe(game,
-			std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode));
+			std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode));
 
-	} else if(selectedNode->type == gameObject::objType::IrradianceProbe) {
+	} else if(selectedNode->type == sceneNode::objType::IrradianceProbe) {
 		editRefProbe(game,
-			std::dynamic_pointer_cast<gameIrradianceProbe>(selectedNode));
+			std::dynamic_pointer_cast<sceneIrradianceProbe>(selectedNode));
 
-	} else if(selectedNode->type == gameObject::objType::Model) {
-		editModel(game, std::dynamic_pointer_cast<gameModel>(selectedNode));
+	} else if(selectedNode->type == sceneNode::objType::Model) {
+		editModel(game, std::dynamic_pointer_cast<sceneModel>(selectedNode));
 	}
 
 	ImGui::Separator();

@@ -42,8 +42,8 @@ static const ImGuiTreeNodeFlags base_flags
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
 void gameEditor::addnodesRec(const std::string& name,
-                               gameObject::ptr obj,
-                               std::set<gameObject::ptr>& selectedPath)
+                               sceneNode::ptr obj,
+                               std::set<sceneNode::ptr>& selectedPath)
 {
 	if (obj) {
 		ImGuiTreeNodeFlags flags
@@ -102,25 +102,25 @@ void gameEditor::addnodesRec(const std::string& name,
 }
 
 void gameEditor::addnodes(std::string name,
-                          gameObject::ptr obj,
-                          std::set<gameObject::ptr>& selectedPath)
+                          sceneNode::ptr obj,
+                          std::set<sceneNode::ptr>& selectedPath)
 {
 	addnodesRec(name, obj, selectedPath);
 }
 
 void gameEditor::mapWindow(gameMain *game) {
-	static gameObject::ptr clipboard = nullptr;
+	static sceneNode::ptr clipboard = nullptr;
 	static std::string     clipboardName;
 
-	std::set<gameObject::ptr> selectedPath;
-	for (gameObject::ptr p = selectedNode; p; p = p->parent.lock()) {
+	std::set<sceneNode::ptr> selectedPath;
+	for (sceneNode::ptr p = selectedNode; p; p = p->parent.lock()) {
 		selectedPath.insert(p);
 	}
 
 	ImGui::Begin("Objects", &showMapWindow);
 
 	if (ImGui::Button("Add Node") && selectedNode) {
-		setNode("New node", selectedNode, std::make_shared<gameObject>());
+		setNode("New node", selectedNode, std::make_shared<sceneNode>());
 	}
 
 	ImGui::SameLine();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/TRS.hpp>
 #include <grend/boundingBox.hpp>
@@ -15,9 +15,9 @@
 
 namespace grendx {
 
-// forward declaration, gameModel.hpp at end
-class gameModel;
-class gameMesh;
+// forward declaration, sceneModel.hpp at end
+class sceneModel;
+class sceneMesh;
 
 class physicsObject;
 
@@ -80,12 +80,12 @@ class physics {
 		 *                  these pointers should be stored for as long as you want
 		 *                  the collision objects to persist.
 		 * @param propFilter If not empty, this will only add mesh objects which
-		 *                   have a property (in gameObject::extraProperties) equal
+		 *                   have a property (in sceneNode::extraProperties) equal
 		 *                   to the filter name.
 		 */
 		virtual void
 		addStaticModels(void *data,
-		                gameObject::ptr obj,
+		                sceneNode::ptr obj,
 		                const TRS& transform,
 		                std::vector<physicsObject::ptr>& collector,
 		                std::string propFilter = "") = 0;
@@ -117,13 +117,13 @@ class physics {
 		virtual physicsObject::ptr
 		addStaticMesh(void *data,
 		              const TRS& transform,
-		              std::shared_ptr<gameModel> model,
-		              std::shared_ptr<gameMesh>  mesh) = 0;
+		              std::shared_ptr<sceneModel> model,
+		              std::shared_ptr<sceneMesh>  mesh) = 0;
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		virtual std::map<std::shared_ptr<gameMesh>, physicsObject::ptr>
-		addModelMeshBoxes(std::shared_ptr<gameModel> mod) = 0;
+		virtual std::map<std::shared_ptr<sceneMesh>, physicsObject::ptr>
+		addModelMeshBoxes(std::shared_ptr<sceneModel> mod) = 0;
 
 		virtual void remove(physicsObject::ptr obj) = 0;
 		virtual void clear(void) = 0;
@@ -135,4 +135,4 @@ class physics {
 // namespace grendx
 }
 
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>

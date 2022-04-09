@@ -1,7 +1,7 @@
 #include <grend-config.h>
 
 #include <grend/engine.hpp>
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 
 #include <vector>
@@ -298,7 +298,7 @@ struct renderFlags renderContext::getLightingFlags(std::string name) {
  * NOTE: This isn't used in OpenGL 3.3+ profiles, the reflection probe
  *       is synced in the lighting UBO then.
  */
-void renderContext::setReflectionProbe(gameReflectionProbe::ptr probe,
+void renderContext::setReflectionProbe(sceneReflectionProbe::ptr probe,
                                        Program::ptr program)
 {
 	if (!probe) {
@@ -334,7 +334,7 @@ void renderContext::setReflectionProbe(gameReflectionProbe::ptr probe,
 /**
  * Set the irradiance probe in a program.
  */
-void renderContext::setIrradianceProbe(gameIrradianceProbe::ptr probe,
+void renderContext::setIrradianceProbe(sceneIrradianceProbe::ptr probe,
                                        Program::ptr program)
 {
 	if (!probe) {
@@ -486,7 +486,7 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 	return glm::mat4_cast(rotation);
 }
 
-void grendx::packLight(gameLightPoint::ptr light,
+void grendx::packLight(sceneLightPoint::ptr light,
                        point_std140 *p,
                        renderContext::ptr rctx,
                        glm::mat4& trans)
@@ -507,7 +507,7 @@ void grendx::packLight(gameLightPoint::ptr light,
 	}
 }
 
-void grendx::packLight(gameLightSpot::ptr light,
+void grendx::packLight(sceneLightSpot::ptr light,
                        spot_std140 *p,
                        renderContext::ptr rctx,
                        glm::mat4& trans)
@@ -531,7 +531,7 @@ void grendx::packLight(gameLightSpot::ptr light,
 	}
 }
 
-void grendx::packLight(gameLightDirectional::ptr light,
+void grendx::packLight(sceneLightDirectional::ptr light,
                        directional_std140 *p,
                        renderContext::ptr rctx,
                        glm::mat4& trans)
@@ -554,7 +554,7 @@ void grendx::packLight(gameLightDirectional::ptr light,
 	}
 }
 
-void grendx::packRefprobe(gameReflectionProbe::ptr probe,
+void grendx::packRefprobe(sceneReflectionProbe::ptr probe,
                           lights_std140 *p,
                           renderContext::ptr rctx,
                           glm::mat4& trans)
@@ -592,21 +592,21 @@ void grendx::packRefprobe(gameReflectionProbe::ptr probe,
 	memcpy(p->refprobePosition, glm::value_ptr(rpos), sizeof(GLfloat[3]));
 }
 
-void grendx::invalidateLightMaps(gameObject::ptr tree) {
-	if (tree->type == gameObject::objType::Light) {
-		gameLight::ptr light = std::static_pointer_cast<gameLight>(tree);
+void grendx::invalidateLightMaps(sceneNode::ptr tree) {
+	if (tree->type == sceneNode::objType::Light) {
+		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(tree);
 		light->have_map = false;
 
 	// TODO: reflection probes and irradiance probes are basically the
 	//       same structure, should have a base class they derive from
-	} else if (tree->type == gameObject::objType::ReflectionProbe) {
-		gameReflectionProbe::ptr probe
-			= std::static_pointer_cast<gameReflectionProbe>(tree);
+	} else if (tree->type == sceneNode::objType::ReflectionProbe) {
+		sceneReflectionProbe::ptr probe
+			= std::static_pointer_cast<sceneReflectionProbe>(tree);
 		probe->have_map = false;
 
-	} else if (tree->type == gameObject::objType::IrradianceProbe) {
-		gameIrradianceProbe::ptr probe
-			= std::static_pointer_cast<gameIrradianceProbe>(tree);
+	} else if (tree->type == sceneNode::objType::IrradianceProbe) {
+		sceneIrradianceProbe::ptr probe
+			= std::static_pointer_cast<sceneIrradianceProbe>(tree);
 		probe->have_map = false;
 	}
 

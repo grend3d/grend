@@ -1,4 +1,4 @@
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 
 #include <stb/stb_image.h>
@@ -18,17 +18,17 @@
 namespace grendx {
 
 // XXX: "key functions"
-gameMesh::~gameMesh() {};
-gameModel::~gameModel() {};
+sceneMesh::~sceneMesh() {};
+sceneModel::~sceneModel() {};
 
-void gameModel::genNormals(void) {
+void sceneModel::genNormals(void) {
 	std::cerr << " > generating new normals... " << vertices.size() << std::endl;
 
 	for (auto& [name, ptr] : nodes) {
-		if (ptr->type != gameObject::objType::Mesh) {
+		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
 			// TODO: bounds check
@@ -58,14 +58,14 @@ void gameModel::genNormals(void) {
 	}
 }
 
-void gameModel::genTexcoords(void) {
+void sceneModel::genTexcoords(void) {
 	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
 
 	for (auto& [name, ptr] : nodes) {
-		if (ptr->type != gameObject::objType::Mesh) {
+		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		for (unsigned i = 0; i < mesh->faces.size(); i++) {
 			// TODO: bounds check
@@ -82,14 +82,14 @@ void gameModel::genTexcoords(void) {
 	}
 }
 
-void gameModel::genAABBs(void) {
+void sceneModel::genAABBs(void) {
 	std::cerr << " > generating axis-aligned bounding boxes..." << std::endl;
 
 	for (auto& [name, ptr] : nodes) {
-		if (ptr->type != gameObject::objType::Mesh) {
+		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		if (mesh->faces.size() == 0) {
 			std::cerr << " > have face with no vertices...?" << std::endl;
@@ -117,16 +117,16 @@ void gameModel::genAABBs(void) {
 	}
 }
 
-void gameModel::genTangents(void) {
+void sceneModel::genTangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
 	unsigned mod = 3;
 
 	// generate tangents for each triangle
 	for (auto& [name, ptr] : nodes) {
-		if (ptr->type != gameObject::objType::Mesh) {
+		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		gameMesh::ptr mesh = std::dynamic_pointer_cast<gameMesh>(ptr);
+		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		for (std::size_t i = 0; i+2 < mesh->faces.size(); i += 3) {
 			// TODO: bounds check

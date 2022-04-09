@@ -1,4 +1,4 @@
-#include <grend/gameModel.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 
 #include <stb/stb_image.h>
@@ -27,14 +27,14 @@ static std::string base_dir(std::string filename) {
 	return filename;
 }
 
-gameModel::ptr load_object(std::string filename) {
+sceneModel::ptr load_object(std::string filename) {
 	std::cerr << " > loading " << filename << std::endl;
 	std::ifstream input(filename);
 	std::string line;
 	std::string mesh_name = "default";
 	std::string mesh_material = "(null)";
 	std::string current_mesh_name = mesh_name + ":" + mesh_material;
-	gameMesh::ptr current_mesh = nullptr;
+	sceneMesh::ptr current_mesh = nullptr;
 
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
@@ -47,7 +47,7 @@ gameModel::ptr load_object(std::string filename) {
 		return nullptr;
 	}
 
-	gameModel::ptr ret = gameModel::ptr(new gameModel());
+	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
 	ret->sourceFile = filename;
 
 	// TODO: split this into a seperate parse function
@@ -63,7 +63,7 @@ gameModel::ptr load_object(std::string filename) {
 			//       of this loop?
 			mesh_name = statement[1];
 			current_mesh_name = mesh_name + ":(null)";
-			current_mesh = gameMesh::ptr(new gameMesh());
+			current_mesh = sceneMesh::ptr(new sceneMesh());
 			setNode(current_mesh_name, ret, current_mesh);
 		}
 
@@ -76,7 +76,7 @@ gameModel::ptr load_object(std::string filename) {
 
 		else if (statement[0] == "usemtl") {
 			std::cerr << " > using material " << statement[1] << std::endl;
-			current_mesh = gameMesh::ptr(new gameMesh());
+			current_mesh = sceneMesh::ptr(new sceneMesh());
 			//current_mesh->material = statement[1];
 			// TODO: check that material exists
 			current_mesh->meshMaterial = materials[statement[1]];
@@ -118,7 +118,7 @@ gameModel::ptr load_object(std::string filename) {
 					normal = normbuf[std::stoi(spec[2]) - 1];
 				}
 
-				ret->vertices.push_back((gameModel::vertex) {
+				ret->vertices.push_back((sceneModel::vertex) {
 					.position = position,
 					.normal   = normal,
 					.uv       = texcoord,
@@ -194,7 +194,7 @@ void materialTexture::load_texture(std::string filename) {
 }
 
 std::map<std::string, material::ptr>
-load_materials(gameModel::ptr model, std::string filename) {
+load_materials(sceneModel::ptr model, std::string filename) {
 	std::map<std::string, material::ptr> ret;
 	std::ifstream input(filename);
 	std::string current_material = "default";

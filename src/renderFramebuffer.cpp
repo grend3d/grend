@@ -164,7 +164,7 @@ void renderFramebuffer::setSize(int Width, int Height) {
 #endif
 }
 
-gameMesh::ptr renderFramebuffer::index(float x, float y) {
+sceneMesh::ptr renderFramebuffer::index(float x, float y) {
 #if GLSL_VERSION == 100 || GLSL_VERSION == 300
 	// can't read from the stencil buffer in gles profiles,
 	// could have a fallback picking pass (which could handle more objects anyway)
@@ -190,7 +190,7 @@ gameMesh::ptr renderFramebuffer::index(float x, float y) {
 #endif
 }
 
-gameMesh::ptr renderFramebuffer::index(unsigned idx) {
+sceneMesh::ptr renderFramebuffer::index(unsigned idx) {
 	if (idx > 0 && idx <= drawn_meshes.size()) {
 		puts("got here");
 		return drawn_meshes[idx - 1];

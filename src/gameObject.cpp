@@ -1,27 +1,27 @@
-#include <grend/gameObject.hpp>
+#include <grend/sceneNode.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
 #include <math.h>
 
 using namespace grendx;
 
-gameObject::~gameObject() {
+sceneNode::~sceneNode() {
 	// TODO: toggleable debug log, or profile events, etc
 	//std::cerr << "Freeing a " << idString() << std::endl;
 }
 
 // XXX: "key functions", needed to do dynamic_cast across .so boundries
 //      Requires that the function be a "non-inline, non-pure virtual function"
-gameImport::~gameImport() {};
-gameSkin::~gameSkin() {};
-gameParticles::~gameParticles() {};
-gameBillboardParticles::~gameBillboardParticles() {};
-gameLight::~gameLight() {};
-gameLightPoint::~gameLightPoint() {};
-gameLightSpot::~gameLightSpot() {};
-gameLightDirectional::~gameLightDirectional() {};
-gameReflectionProbe::~gameReflectionProbe() {};
-gameIrradianceProbe::~gameIrradianceProbe() {};
+sceneImport::~sceneImport() {};
+sceneSkin::~sceneSkin() {};
+sceneParticles::~sceneParticles() {};
+sceneBillboardParticles::~sceneBillboardParticles() {};
+sceneLight::~sceneLight() {};
+sceneLightPoint::~sceneLightPoint() {};
+sceneLightSpot::~sceneLightSpot() {};
+sceneLightDirectional::~sceneLightDirectional() {};
+sceneReflectionProbe::~sceneReflectionProbe() {};
+sceneIrradianceProbe::~sceneIrradianceProbe() {};
 
 size_t grendx::allocateObjID(void) {
 	static size_t counter = 0;
@@ -29,17 +29,17 @@ size_t grendx::allocateObjID(void) {
 }
 
 // TODO: should have this return a const ref
-TRS gameObject::getTransformTRS() {
+TRS sceneNode::getTransformTRS() {
 	return transform;
 }
 
 // TODO: should have this return a const ref
-TRS gameObject::getOrigTransform() {
+TRS sceneNode::getOrigTransform() {
 	return origTransform;
 }
 
 // TODO: also const ref
-glm::mat4 gameObject::getTransformMatrix() {
+glm::mat4 sceneNode::getTransformMatrix() {
 	if (updated) {
 		cachedTransformMatrix = transform.getTransform();
 		updated = false;
@@ -49,7 +49,7 @@ glm::mat4 gameObject::getTransformMatrix() {
 	return cachedTransformMatrix;
 }
 
-void gameObject::setTransform(const TRS& t) {
+void sceneNode::setTransform(const TRS& t) {
 	if (isDefault) {
 		origTransform = t;
 	}
@@ -60,34 +60,34 @@ void gameObject::setTransform(const TRS& t) {
 	transform = t;
 }
 
-void gameObject::setPosition(const glm::vec3& position) {
+void sceneNode::setPosition(const glm::vec3& position) {
 	TRS temp = getTransformTRS();
 	temp.position = position;
 	setTransform(temp);
 }
 
-void gameObject::setScale(const glm::vec3& scale) {
+void sceneNode::setScale(const glm::vec3& scale) {
 	TRS temp = getTransformTRS();
 	temp.scale = scale;
 	setTransform(temp);
 }
 
-void gameObject::setRotation(const glm::quat& rotation) {
+void sceneNode::setRotation(const glm::quat& rotation) {
 	TRS temp = getTransformTRS();
 	temp.rotation = rotation;
 	setTransform(temp);
 }
 
-gameObject::ptr gameObject::getNode(std::string name) {
+sceneNode::ptr sceneNode::getNode(std::string name) {
 	return hasNode(name)? nodes[name] : nullptr;
 }
 
-gameObject::ptr grendx::unlink(gameObject::ptr node) {
+sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
 	if (node != nullptr) {
 		if (auto p = node->parent.lock()) {
 			for (auto& [key, ptr] : p->nodes) {
 				if (node == ptr) {
-					gameObject::ptr ret = p;
+					sceneNode::ptr ret = p;
 					p->nodes.erase(key);
 					node->parent.reset();
 					return ret;
@@ -99,8 +99,8 @@ gameObject::ptr grendx::unlink(gameObject::ptr node) {
 	return node;
 }
 
-gameObject::ptr grendx::clone(gameObject::ptr node) {
-	gameObject::ptr ret = std::make_shared<gameObject>();
+sceneNode::ptr grendx::clone(sceneNode::ptr node) {
+	sceneNode::ptr ret = std::make_shared<sceneNode>();
 
 	ret->setTransform(node->getTransformTRS());
 
@@ -147,22 +147,22 @@ static int indexOf(const std::vector<T>& vec, const T& value) {
 	return -1;
 }
 
-static gameObject::ptr copySkinNodes(gameSkin::ptr target,
-                                     gameSkin::ptr skin,
-                                     gameObject::ptr node)
+static sceneNode::ptr copySkinNodes(sceneSkin::ptr target,
+                                     sceneSkin::ptr skin,
+                                     sceneNode::ptr node)
 {
 	if (node == nullptr) {
 		return node;
 	}
 
-	if (node->type != gameObject::objType::None) {
+	if (node->type != sceneNode::objType::None) {
 		// should only have pure node types under skin nodes
 		return node;
 	}
 
-	gameObject::ptr ret = std::make_shared<gameObject>();
+	sceneNode::ptr ret = std::make_shared<sceneNode>();
 
-	// copy generic gameObject members
+	// copy generic sceneNode members
 	// XXX: two set transforms to ensure origTransform is the same
 	ret->setTransform(node->getOrigTransform());
 	ret->setTransform(node->getTransformTRS());
@@ -183,7 +183,7 @@ static gameObject::ptr copySkinNodes(gameSkin::ptr target,
 	return ret;
 }
 
-static void copySkin(gameSkin::ptr target, gameSkin::ptr skin) {
+static void copySkin(sceneSkin::ptr target, sceneSkin::ptr skin) {
 	target->inverseBind = skin->inverseBind;
 	target->transforms  = skin->transforms;
 
@@ -194,34 +194,34 @@ static void copySkin(gameSkin::ptr target, gameSkin::ptr skin) {
 	}
 }
 
-gameObject::ptr grendx::duplicate(gameObject::ptr node) {
+sceneNode::ptr grendx::duplicate(sceneNode::ptr node) {
 	// TODO: need to copy all attributes
 
-	gameObject::ptr ret;
+	sceneNode::ptr ret;
 
 	// copy specific per-type object members
 	switch (node->type) {
-		case gameObject::objType::None:
-			ret = std::make_shared<gameObject>();
+		case sceneNode::objType::None:
+			ret = std::make_shared<sceneNode>();
 			break;
 
-		case gameObject::objType::Import:
+		case sceneNode::objType::Import:
 			{
-				auto foo = std::static_pointer_cast<gameImport>(node);
-				auto temp = std::make_shared<gameImport>(foo->sourceFile);
+				auto foo = std::static_pointer_cast<sceneImport>(node);
+				auto temp = std::make_shared<sceneImport>(foo->sourceFile);
 				temp->animations = copyCollection(foo->animations);
 
 				ret = temp;
 				break;
 			}
 
-		case gameObject::objType::Skin:
+		case sceneNode::objType::Skin:
 			{
-				ret = std::make_shared<gameSkin>();
+				ret = std::make_shared<sceneSkin>();
 
 				// small XXX: need to copy skin information after copying subnodes
-				auto skin = std::static_pointer_cast<gameSkin>(node);
-				auto temp = std::static_pointer_cast<gameSkin>(ret);
+				auto skin = std::static_pointer_cast<sceneSkin>(node);
+				auto temp = std::static_pointer_cast<sceneSkin>(ret);
 
 				copySkin(temp, skin);
 				return ret;
@@ -234,7 +234,7 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 			return node;
 	}
 
-	// copy generic gameObject members
+	// copy generic sceneNode members
 	// XXX: two set transforms to ensure origTransform is the same
 	ret->setTransform(node->getOrigTransform());
 	ret->setTransform(node->getTransformTRS());
@@ -252,7 +252,7 @@ gameObject::ptr grendx::duplicate(gameObject::ptr node) {
 	return ret;
 }
 
-std::string grendx::getNodeName(gameObject::ptr node) {
+std::string grendx::getNodeName(sceneNode::ptr node) {
 	if (node != nullptr) {
 		if (auto p = node->parent.lock()) {
 			for (auto& [key, ptr] : p->nodes) {
@@ -266,7 +266,7 @@ std::string grendx::getNodeName(gameObject::ptr node) {
 	return "";
 }
 
-void gameObject::removeNode(std::string name) {
+void sceneNode::removeNode(std::string name) {
 	auto it = nodes.find(name);
 
 	if (it != nodes.end()) {
@@ -274,32 +274,32 @@ void gameObject::removeNode(std::string name) {
 	}
 }
 
-bool gameObject::hasNode(std::string name) {
+bool sceneNode::hasNode(std::string name) {
 	return nodes.find(name) != nodes.end();
 }
 
-float gameLightPoint::extent(float threshold) {
+float sceneLightPoint::extent(float threshold) {
 	return radius * (sqrt((intensity * diffuse.w)/threshold) - 1);
 }
 
-float gameLightSpot::extent(float threshold) {
+float sceneLightSpot::extent(float threshold) {
 	return radius * (sqrt((intensity * diffuse.w)/threshold) - 1);
 }
 
-float gameLightDirectional::extent(float threshold) {
+float sceneLightDirectional::extent(float threshold) {
 	// infinite extent
 	return HUGE_VALF;
 }
 
 // TODO: better name
-static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
-                        gameObject *root,
-                        gameObject *ptr)
+static glm::mat4 lookup(std::map<sceneNode*, glm::mat4>& cache,
+                        sceneNode *root,
+                        sceneNode *ptr)
 {
 	auto it = cache.find(ptr);
 
 	if (it == cache.end()) {
-		gameObject::ptr parent = ptr->parent.lock();
+		sceneNode::ptr parent = ptr->parent.lock();
 		glm::mat4 mat(1);
 
 		if (ptr != root && parent) {
@@ -314,7 +314,7 @@ static glm::mat4 lookup(std::map<gameObject*, glm::mat4>& cache,
 	}
 }
 
-void gameSkin::sync(Program::ptr program) { 
+void sceneSkin::sync(Program::ptr program) { 
 	size_t numjoints = min(inverseBind.size(), 256);
 
 	if (transforms.size() != inverseBind.size()) {
@@ -330,7 +330,7 @@ void gameSkin::sync(Program::ptr program) {
 	}
 #endif
 
-	std::map<gameObject*, glm::mat4> accumTransforms;
+	std::map<sceneNode*, glm::mat4> accumTransforms;
 
 	for (unsigned i = 0; i < inverseBind.size(); i++) {
 		if (!joints[i]) {
@@ -359,7 +359,7 @@ void gameSkin::sync(Program::ptr program) {
 #endif
 }
 
-void gameParticles::syncBuffer(void) {
+void sceneParticles::syncBuffer(void) {
 	if (!ubuffer) {
 		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
 		ubuffer->allocate(sizeof(GLfloat[16*256]));
@@ -371,7 +371,7 @@ void gameParticles::syncBuffer(void) {
 	}
 }
 
-void gameParticles::update(void) {
+void sceneParticles::update(void) {
 	// just set a flag indicating that the buffer isn't synced,
 	// will get synced in the render loop somewhere
 	// (need to do it this way since things will be updated in threads, and
@@ -379,8 +379,8 @@ void gameParticles::update(void) {
 	synced = false;
 }
 
-gameParticles::gameParticles(unsigned _maxInstances)
-	: gameObject(objType::Particles)
+sceneParticles::sceneParticles(unsigned _maxInstances)
+	: sceneNode(objType::Particles)
 {
 	positions.reserve(_maxInstances);
 	positions.resize(positions.capacity());
@@ -389,7 +389,7 @@ gameParticles::gameParticles(unsigned _maxInstances)
 	activeInstances = 0;
 };
 
-void gameBillboardParticles::syncBuffer(void) {
+void sceneBillboardParticles::syncBuffer(void) {
 	if (!ubuffer) {
 		ubuffer = genBuffer(GL_UNIFORM_BUFFER, GL_DYNAMIC_DRAW);
 		ubuffer->allocate(sizeof(GLfloat[4*1024]));
@@ -401,7 +401,7 @@ void gameBillboardParticles::syncBuffer(void) {
 	}
 }
 
-void gameBillboardParticles::update(void) {
+void sceneBillboardParticles::update(void) {
 	// just set a flag indicating that the buffer isn't synced,
 	// will get synced in the render loop somewhere
 	// (need to do it this way since things will be updated in threads, and
@@ -409,8 +409,8 @@ void gameBillboardParticles::update(void) {
 	synced = false;
 }
 
-gameBillboardParticles::gameBillboardParticles(unsigned _maxInstances)
-	: gameObject(objType::BillboardParticles)
+sceneBillboardParticles::sceneBillboardParticles(unsigned _maxInstances)
+	: sceneNode(objType::BillboardParticles)
 {
 	positions.reserve(_maxInstances);
 	positions.resize(positions.capacity());

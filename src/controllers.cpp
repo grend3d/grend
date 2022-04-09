@@ -242,7 +242,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	};
 }
 
-bindFunc grendx::controller::camFocus(camera::ptr cam, gameObject::ptr focus) {
+bindFunc grendx::controller::camFocus(camera::ptr cam, sceneNode::ptr focus) {
 	return [=] (const SDL_Event& ev, unsigned flags) {
 		// TODO: camFocus()
 		return MODAL_NO_CHANGE;

@@ -16,7 +16,7 @@ void gameEditor::handleSelectObject(gameMain *game) {
 	float fx = x/(1.f*win_x);
 	float fy = y/(1.f*win_y);
 
-	gameObject::ptr clicked = game->rend->framebuffer->index(fx, fy);
+	sceneNode::ptr clicked = game->rend->framebuffer->index(fx, fy);
 	std::cerr << "clicked object: " << clicked << std::endl;
 
 	if (clicked) {
@@ -61,7 +61,7 @@ static bool imguiWantsMouse(void) {
 
 static void handleAddNode(gameEditor *editor,
                           std::string name,
-                          gameObject::ptr obj)
+                          sceneNode::ptr obj)
 {
 	assert(editor->selectedNode != nullptr);
 
@@ -194,7 +194,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			    && flags & bindFlags::Shift
 			    && selectedNode && !selectedNode->parent.expired())
 			{
-				gameObject::ptr temp = clone(selectedNode);
+				sceneNode::ptr temp = clone(selectedNode);
 				std::string name = "cloned " + std::to_string(temp->id);
 				setNode(name, selectedNode->parent.lock(), temp);
 				runCallbacks(selectedNode, editAction::Added);
@@ -350,7 +350,7 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			int ret = MODAL_NO_CHANGE;
 
 			if (selectedNode == nullptr
-			    || selectedNode->type != gameObject::objType::ReflectionProbe)
+			    || selectedNode->type != sceneNode::objType::ReflectionProbe)
 			{
 				// only reflection probes have editable bounding boxes for the
 				// time being
@@ -377,8 +377,8 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			}
 
 			if (ret != MODAL_NO_CHANGE) {
-				gameReflectionProbe::ptr probe =
-					std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+				sceneReflectionProbe::ptr probe =
+					std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
 
 				// XXX: put bounding box in position/scale transform...
 				// TODO: don't do that
@@ -395,27 +395,27 @@ void gameEditor::loadInputBindings(gameMain *game) {
 		imguiWantsKeyboard);
 
 	inputBinds.bind(mode::AddObject,
-		makeClicker<gameObject>(this, game, "object E"),
+		makeClicker<sceneNode>(this, game, "object E"),
 		imguiWantsMouse);
 
 	inputBinds.bind(mode::AddPointLight,
-		makeClicker<gameLightPoint>(this, game, "point light E"),
+		makeClicker<sceneLightPoint>(this, game, "point light E"),
 		imguiWantsMouse);
 
 	inputBinds.bind(mode::AddSpotLight,
-		makeClicker<gameLightSpot>(this, game, "spot light E"),
+		makeClicker<sceneLightSpot>(this, game, "spot light E"),
 		imguiWantsMouse);
 
 	inputBinds.bind(mode::AddDirectionalLight,
-		makeClicker<gameLightDirectional>(this, game, "directional light E"),
+		makeClicker<sceneLightDirectional>(this, game, "directional light E"),
 		imguiWantsMouse);
 
 	inputBinds.bind(mode::AddReflectionProbe,
-		makeClicker<gameReflectionProbe>(this, game, "reflection probe E"),
+		makeClicker<sceneReflectionProbe>(this, game, "reflection probe E"),
 		imguiWantsMouse);
 
 	inputBinds.bind(mode::AddIrradianceProbe,
-		makeClicker<gameIrradianceProbe>(this, game, "irradiance probe E"),
+		makeClicker<sceneIrradianceProbe>(this, game, "irradiance probe E"),
 		imguiWantsMouse);
 
 	auto releaseMove = [&, game] (const SDL_Event& ev, unsigned flags) {
@@ -618,9 +618,9 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 			break;
 	}
 
-	if (selectedNode->type == gameObject::objType::ReflectionProbe) {
-		gameReflectionProbe::ptr probe =
-			std::dynamic_pointer_cast<gameReflectionProbe>(selectedNode);
+	if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
+		sceneReflectionProbe::ptr probe =
+			std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
 
 		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
 		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));

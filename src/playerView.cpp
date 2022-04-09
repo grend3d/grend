@@ -7,8 +7,8 @@
 
 using namespace grendx;
 
-static gameObject::ptr testweapon = nullptr;
-static gameModel::ptr cuboid = generate_cuboid(1.0, 1.0, 1.0);
+static sceneNode::ptr testweapon = nullptr;
+static sceneModel::ptr cuboid = generate_cuboid(1.0, 1.0, 1.0);
 
 struct nvg_data {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
