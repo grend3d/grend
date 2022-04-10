@@ -53,9 +53,10 @@ void renderFramebuffer::bind(void) {
 }
 
 void renderFramebuffer::clear(void) {
-	drawn_meshes.clear();
-
 	framebuffer->bind();
+
+	allocatedIDs = 0;
+
 	glClearStencil(0);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -164,12 +165,16 @@ void renderFramebuffer::setSize(int Width, int Height) {
 #endif
 }
 
-sceneMesh::ptr renderFramebuffer::index(float x, float y) {
+uint32_t renderFramebuffer::index(float x, float y) {
 #if GLSL_VERSION == 100 || GLSL_VERSION == 300
 	// can't read from the stencil buffer in gles profiles,
 	// could have a fallback picking pass (which could handle more objects anyway)
-	return nullptr;
+	return 0xffffffff;
 #else
+
+	if (x > width || y > height) {
+		return 0xffffffff;
+	}
 
 	// TODO: use these at some point
 	//GLbyte color[4];
@@ -186,15 +191,10 @@ sceneMesh::ptr renderFramebuffer::index(float x, float y) {
 	glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &idx);
 	DO_ERROR_CHECK();
 
-	return index(idx);
+	return idx;
 #endif
 }
 
-sceneMesh::ptr renderFramebuffer::index(unsigned idx) {
-	if (idx > 0 && idx <= drawn_meshes.size()) {
-		puts("got here");
-		return drawn_meshes[idx - 1];
-	}
-
-	return nullptr;
+uint32_t renderFramebuffer::allocID(void) {
+	return ++allocatedIDs;
 }

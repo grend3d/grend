@@ -16,10 +16,11 @@ void gameEditor::handleSelectObject(gameMain *game) {
 	float fx = x/(1.f*win_x);
 	float fy = y/(1.f*win_y);
 
-	sceneNode::ptr clicked = game->rend->framebuffer->index(fx, fy);
-	std::cerr << "clicked object: " << clicked << std::endl;
+	uint32_t clickidx = game->rend->framebuffer->index(fx, fy);
+	std::cerr << "clicked object: " << clickidx << std::endl;
 
-	if (clicked) {
+	if (false && clickidx) {
+		sceneMesh::ptr clicked; //TODO: look up mesh
 		clicked->onLeftClick();
 		clickedX = (x*1.f / win_x);
 		clickedY = ((win_y - y)*1.f / win_y);

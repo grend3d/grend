@@ -5,10 +5,13 @@
 #include <grend/glManager.hpp>
 
 #include <vector>
+#include <stdint.h>
 
 namespace grendx {
 
 class renderFramebuffer {
+	uint32_t allocatedIDs = 0;
+
 	public:
 		typedef std::shared_ptr<renderFramebuffer> ptr;
 		typedef std::weak_ptr<renderFramebuffer> weakptr;
@@ -24,8 +27,8 @@ class renderFramebuffer {
 		// TODO: reference/optional, avoid copying
 		void resolve(Shader::parameters options = {});
 		void setSize(int Width, int Height);
-		sceneMesh::ptr index(float x, float y);
-		sceneMesh::ptr index(unsigned idx);
+		uint32_t index(float x, float y);
+		uint32_t allocID(void);
 
 		Framebuffer::ptr framebuffer;
 		Framebuffer::ptr framebufferMultisampled;
@@ -47,8 +50,6 @@ class renderFramebuffer {
 			1.0, 1.0,
 			0.5, 0.5,
 		};
-
-		std::vector<sceneMesh::ptr> drawn_meshes;
 };
 
 // namespace grendx;

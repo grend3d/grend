@@ -19,15 +19,18 @@ class renderQueue {
 			probes        = other.probes;
 		}
 
+		// TODO: version of this for particle queues
 		template <typename T>
 		struct queueEnt {
 			glm::mat4 transform;
 			glm::vec3 center;
 			bool      inverted;
 			T         data;
+			uint32_t  renderID;
 		};
 
 		void add(sceneNode::ptr obj,
+		         uint32_t renderID = 0,
 		         glm::mat4 trans = glm::mat4(1),
 		         bool inverted = false);
 
@@ -35,15 +38,18 @@ class renderQueue {
 
 		void addSkinned(sceneNode::ptr obj,
 		                sceneSkin::ptr skin,
+		                uint32_t renderID = 0,
 		                glm::mat4 trans = glm::mat4(1),
 		                bool inverted = false);
 		void addInstanced(sceneNode::ptr obj,
 		                  sceneParticles::ptr particles,
+		                  uint32_t renderID = 0,
 		                  glm::mat4 outerTrans = glm::mat4(1),
 		                  glm::mat4 innerTrans = glm::mat4(1),
 		                  bool inverted = false);
 		void addBillboards(sceneNode::ptr obj,
 		                   sceneBillboardParticles::ptr particles,
+		                   uint32_t renderID = 0,
 		                   glm::mat4 trans = glm::mat4(1),
 		                   bool inverted = false);
 
@@ -82,6 +88,7 @@ struct multiRenderQueue {
 		// TODO: probably rename renderFlags to renderShader
 		void add(const renderFlags& shader,
 		         sceneNode::ptr obj,
+		         uint32_t renderID = 0,
 		         const glm::mat4& trans = glm::mat4(1),
 		         bool inverted = false);
 

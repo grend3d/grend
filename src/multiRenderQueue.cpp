@@ -7,6 +7,7 @@ using namespace grendx;
 
 void multiRenderQueue::add(const renderFlags& shader,
                            sceneNode::ptr obj,
+                           uint32_t renderID,
                            const glm::mat4& trans,
                            bool inverted)
 {
@@ -16,7 +17,7 @@ void multiRenderQueue::add(const renderFlags& shader,
 		shadermap[h] = shader;
 	}
 
-	queues[h].add(obj, trans, inverted);
+	queues[h].add(obj, renderID, trans, inverted);
 }
 
 void grendx::cullQueue(multiRenderQueue& renque,

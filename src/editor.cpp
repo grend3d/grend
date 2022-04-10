@@ -222,16 +222,16 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 		refShader->bind();
 
-		for (auto& [_, center, __, probe] : tempque.probes) {
+		for (auto& entry : tempque.probes) {
 			probeObj->setTransform((TRS) {
-				.position = center,
+				.position = entry.center,
 				.scale    = glm::vec3(0.5),
 			});
 
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
-					game->rend->atlases.reflections->tex_vector(probe->faces[0][i]);
+					game->rend->atlases.reflections->tex_vector(entry.data->faces[0][i]);
 				refShader->set(loc, facevec);
 				DO_ERROR_CHECK();
 			}
@@ -241,20 +241,22 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
 		}
 
-		probeFlags.mainShader = probeFlags.skinnedShader =
-			probeFlags.instancedShader = irradShader;
+		probeFlags.mainShader
+			= probeFlags.skinnedShader
+			= probeFlags.instancedShader
+			= irradShader;
 		irradShader->bind();
 
-		for (auto& [_, center, __, probe] : tempque.irradProbes) {
+		for (auto& entry : tempque.irradProbes) {
 			probeObj->setTransform((TRS) {
-				.position = center,
+				.position = entry.center,
 				.scale    = glm::vec3(0.5),
 			});
 
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
-					game->rend->atlases.irradiance->tex_vector(probe->faces[i]); 
+					game->rend->atlases.irradiance->tex_vector(entry.data->faces[i]);
 				irradShader->set(loc, facevec);
 			}
 
@@ -266,12 +268,12 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	if (showLights) {
 		renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 
-		for (auto& [_, center, __, light] : tempque.lights) {
-			glm::vec3 pos = center;
+		for (auto& entry : tempque.lights) {
+			glm::vec3 pos = entry.center;
 
 			if (cam->sphereInFrustum(pos, 0.5)) {
 				probeObj->setTransform((TRS) {
-					.position = center,
+					.position = entry.center,
 					.scale    = glm::vec3(0.5),
 				});
 

@@ -6,6 +6,7 @@
 using namespace grendx;
 
 void renderQueue::add(sceneNode::ptr obj,
+                      uint32_t renderID,
                       glm::mat4 trans,
                       bool inverted)
 {
@@ -13,7 +14,7 @@ void renderQueue::add(sceneNode::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans =
+	const glm::mat4& adjTrans =
 		// default transform is identity, so no need to waste
 		// cycles on the matrix multiply
 		obj->hasDefaultTransform()
@@ -57,20 +58,20 @@ void renderQueue::add(sceneNode::ptr obj,
 	    && obj->hasNode("mesh"))
 	{
 		auto s = std::static_pointer_cast<sceneSkin>(obj->getNode("skin"));
-		addSkinned(obj->getNode("mesh"), s, adjTrans, inverted);
+		addSkinned(obj->getNode("mesh"), s, renderID, adjTrans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Particles) {
 		auto p = std::static_pointer_cast<sceneParticles>(obj);
-		addInstanced(obj, p, adjTrans, glm::mat4(1), inverted);
+		addInstanced(obj, p, renderID, adjTrans, glm::mat4(1), inverted);
 
 	} else if (obj->type == sceneNode::objType::BillboardParticles) {
 		auto p = std::static_pointer_cast<sceneBillboardParticles>(obj);
-		addBillboards(obj, p, adjTrans, inverted);
+		addBillboards(obj, p, renderID, adjTrans, inverted);
 
 	} else {
 		for (auto& [name, ptr] : obj->nodes) {
 			//std::cerr << "add(): subnode " << name << std::endl;
-			add(ptr, adjTrans, inverted);
+			add(ptr, renderID, adjTrans, inverted);
 		}
 	}
 
@@ -91,6 +92,7 @@ void renderQueue::add(renderQueue& other) {
 
 void renderQueue::addSkinned(sceneNode::ptr obj,
                              sceneSkin::ptr skin,
+                             uint32_t renderID,
                              glm::mat4 trans,
                              bool inverted)
 {
@@ -105,12 +107,13 @@ void renderQueue::addSkinned(sceneNode::ptr obj,
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		addSkinned(ptr, skin, trans, inverted);
+		addSkinned(ptr, skin, renderID, trans, inverted);
 	}
 }
 
 void renderQueue::addInstanced(sceneNode::ptr obj,
                                sceneParticles::ptr particles,
+                               uint32_t renderID,
                                glm::mat4 outerTrans,
                                glm::mat4 innerTrans,
                                bool inverted)
@@ -134,12 +137,13 @@ void renderQueue::addInstanced(sceneNode::ptr obj,
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		addInstanced(ptr, particles, outerTrans, adjTrans, inverted);
+		addInstanced(ptr, particles, renderID, outerTrans, adjTrans, inverted);
 	}
 }
 
 void renderQueue::addBillboards(sceneNode::ptr obj,
                                 sceneBillboardParticles::ptr particles,
+                                uint32_t renderID,
                                 glm::mat4 trans,
                                 bool inverted)
 {
@@ -162,7 +166,7 @@ void renderQueue::addBillboards(sceneNode::ptr obj,
 	}
 
 	for (auto& [name, ptr] : obj->nodes) {
-		addBillboards(ptr, particles, adjTrans, inverted);
+		addBillboards(ptr, particles, renderID, adjTrans, inverted);
 	}
 }
 
@@ -260,8 +264,9 @@ void grendx::updateReflections(renderContext::ptr rctx, renderQueue& que) {
 }
 
 void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
-	//typedef std::tuple<glm::mat4, bool, sceneMesh::ptr>  draw_ent;
-	//typedef std::tuple<glm::mat4, bool, sceneLight::ptr> light_ent;
+	// TODO: reserve a vector containing indexes and sort on that,
+	//       then copy indexes into the final output vector,
+	//       copying here when sorting is disgustingly bad
 
 	// TODO: better way to do this, in-place?
 	renderQueue::MeshQ transparent;
@@ -280,8 +285,6 @@ void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 		});
 
 	for (auto& it : queue.meshes) {
-		//auto [transform, inverted, mesh] = it;
-
 		if (it.data->comped_mesh
 		    && it.data->comped_mesh->blend != material::blend_mode::Opaque)
 		{
@@ -306,14 +309,17 @@ void grendx::cullQueue(renderQueue& queue,
                        unsigned height,
                        float lightext)
 {
-	// XXX: need vector for sorting, deleting elements from vector for culling
-	//      would make this quadratic in the worst case... copying isn't
-	//      ideal, but should be fast enough, still linear time complexity
-	//std::vector<std::tuple<glm::mat4, bool, sceneMesh::ptr>> tempMeshes;
+	// TODO: reserve a vector containing indexes and cull on that,
+	//       then copy indexes into the final output vector,
+	//       push_back() here is disgustingly bad
+	// TODO: do a conservative bounding sphere culling before testing OBBs
+	// TODO: maybe multithreaded
+	// TODO: occlusion culling (maybe a seperate function)
 	renderQueue::MeshQ tempMeshes;
 
 	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
-		auto& [trans, _, __, mesh] = *it;
+		auto& trans = it->transform;
+		auto& mesh  = it->data;
 		auto obb = trans * mesh->boundingBox;
 
 		bool visible =
@@ -333,12 +339,11 @@ void grendx::cullQueue(renderQueue& queue,
 	queue.meshes = tempMeshes;
 
 	for (auto& [skin, skmeshes] : queue.skinnedMeshes) {
-		//std::vector<std::tuple<glm::mat4, bool, sceneMesh::ptr>> tempSkinned;
-		//std::vector<queueEnt<sceneMesh::ptr>> tempSkinned;
 		renderQueue::MeshQ tempSkinned;
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
-			auto& [trans, _, __, mesh] = *it;
+			auto& trans = it->transform;
+			auto& mesh  = it->data;
 			auto obb = (trans) * mesh->boundingBox;
 
 			if (cam->boxInFrustum(obb)) {
@@ -349,11 +354,10 @@ void grendx::cullQueue(renderQueue& queue,
 		skmeshes = tempSkinned;
 	}
 
-	//std::vector<std::tuple<glm::mat4, bool, sceneLight::ptr>> tempLights;
-	//std::vector<queueEnt<sceneLight::ptr>> tempLights;
 	renderQueue::LightQ tempLights;
 	for (auto it = queue.lights.begin(); it != queue.lights.end(); it++) {
-		auto& [trans, _, __, lit] = *it;
+		auto& trans = it->transform;
+		auto& lit   = it->data;
 
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
@@ -386,8 +390,8 @@ void grendx::batchQueue(renderQueue& queue) {
 	// TODO: configuration option
 	unsigned minbatch = 16;
 
-	for (auto& [_, __, ___, mesh] : queue.meshes) {
-		canBatch |= ++meshCount[mesh.get()] >= minbatch;
+	for (auto& ent : queue.meshes) {
+		canBatch |= ++meshCount[ent.data.get()] >= minbatch;
 	}
 
 	if (!canBatch) {
@@ -400,7 +404,8 @@ void grendx::batchQueue(renderQueue& queue) {
 	renderQueue::MeshQ tempMeshes;
 
 	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
-		auto& [trans, __, ___, mesh] = *it;
+		auto& trans = it->transform;
+		auto& mesh  = it->data;
 
 		if (meshCount[mesh.get()] < minbatch) {
 			tempMeshes.push_back(*it);
@@ -457,6 +462,7 @@ static void drawMesh(const renderFlags& flags,
 		return;
 	}
 
+	/*
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
 		// TODO: remove this, going to move this functionality outside
 		//       of the render queue
@@ -468,6 +474,7 @@ static void drawMesh(const renderFlags& flags,
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 		}
 	}
+	*/
 
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
@@ -522,6 +529,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 		return;
 	}
 
+	/*
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
 		// TODO: remove this, going to move this functionality outside
 		//       of the render queue
@@ -533,6 +541,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 		}
 	}
+	*/
 
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(outerTrans)));
