@@ -46,28 +46,6 @@ class sceneNode {
 		sceneNode(enum objType t = objType::None) : type(t) {};
 		virtual ~sceneNode();
 
-		// handlers for basic input events
-		virtual void onLeftClick() {
-			// default handlers just call upwards
-			std::cerr << "left click " << idString() << std::endl;
-			if (auto p = parent.lock()) { p->onLeftClick(); }
-		};
-
-		virtual void onMiddleClick() {
-			std::cerr << "middle click " << idString() << std::endl;
-			if (auto p = parent.lock()) { p->onMiddleClick(); }
-		};
-
-		virtual void onRightClick() {
-			std::cerr << "right click " << idString() << std::endl;
-			if (auto p = parent.lock()) { p->onRightClick(); }
-		};
-
-		virtual void onHover() {
-			std::cerr << "hover " << idString() << std::endl;
-			if (auto p = parent.lock()) { p->onHover(); }
-		};
-
 		virtual std::string typeString(void) {
 			return "sceneNode";
 		}

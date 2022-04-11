@@ -7,8 +7,6 @@
   providing a clean way to remap bindings
 - use seperate R16/R32 attachment for renderIDs so stencil buffer is free
   for other purposes
-- remove onClick(), etc functions from gameObject, should have callbacks
-  mapped from click IDs
 - consider how material editing and overrides will work 
 - render world into seperate framebuffer in editor so that docking stuff
   actually makes sense
