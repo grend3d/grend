@@ -19,20 +19,27 @@ void gameEditor::handleSelectObject(gameMain *game) {
 	uint32_t clickidx = game->rend->framebuffer->index(fx, fy);
 	std::cerr << "clicked object: " << clickidx << std::endl;
 
-	if (false && clickidx) {
-		sceneMesh::ptr clicked; //TODO: look up mesh
-		clicked->onLeftClick();
+	if (clickidx && selectedNode) {
 		clickedX = (x*1.f / win_x);
 		clickedY = ((win_y - y)*1.f / win_y);
 
-		if (isUIObject(clicked)) {
+		if (clickidx > 0 && clickidx <= 6) {
 			transformBuf = selectedNode->getTransformTRS();
 			std::cerr << "It's a UI model" << std::endl;
 
 		} else {
-			selectedNode = getNonModel(clicked);
-			assert(selectedNode != nullptr);
-			std::cerr << "Not a UI model" << std::endl;
+			// TODO: store, look up entity IDs as render IDs
+			//selectedNode = getNonModel(clicked);
+		}
+
+		switch (clickidx) {
+			case 1: setMode(MoveX); break;
+			case 2: setMode(MoveY); break;
+			case 3: setMode(MoveZ); break;
+			case 4: setMode(RotateX); break;
+			case 5: setMode(RotateY); break;
+			case 6: setMode(RotateZ); break;
+			default: break;
 		}
 
 		if (selectedNode) {

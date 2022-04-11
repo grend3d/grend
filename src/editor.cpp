@@ -63,6 +63,7 @@ gameEditor::gameEditor(gameMain *game)
 	showObjectEditorWindow = true;
 };
 
+/*
 class clicker : public sceneNode {
 	public:
 		clicker(gameEditor *ptr, enum gameEditor::mode click)
@@ -80,6 +81,7 @@ class clicker : public sceneNode {
 		gameEditor *editor;
 		enum gameEditor::mode clickmode;
 };
+*/
 
 void gameEditor::loadUIModels(void) {
 	// TODO: Need to swap Z/Y pointer and spinner models
@@ -99,15 +101,21 @@ void gameEditor::loadUIModels(void) {
 	UIModels["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
 
 	UIObjects = sceneNode::ptr(new sceneNode());
-	sceneNode::ptr xptr = sceneNode::ptr(new clicker(this, mode::MoveX));
-	sceneNode::ptr yptr = sceneNode::ptr(new clicker(this, mode::MoveY));
-	sceneNode::ptr zptr = sceneNode::ptr(new clicker(this, mode::MoveZ));
-	sceneNode::ptr xrot = sceneNode::ptr(new clicker(this, mode::RotateX));
-	sceneNode::ptr yrot = sceneNode::ptr(new clicker(this, mode::RotateY));
-	sceneNode::ptr zrot = sceneNode::ptr(new clicker(this, mode::RotateZ));
-	sceneNode::ptr orientation = sceneNode::ptr(new sceneNode());
-	sceneNode::ptr cursor      = sceneNode::ptr(new sceneNode());
-	sceneNode::ptr bbox        = sceneNode::ptr(new sceneNode());
+	sceneNode::ptr xptr = std::make_shared<sceneNode>();
+	sceneNode::ptr yptr = std::make_shared<sceneNode>();
+	sceneNode::ptr zptr = std::make_shared<sceneNode>();
+	sceneNode::ptr xrot = std::make_shared<sceneNode>();
+	sceneNode::ptr yrot = std::make_shared<sceneNode>();
+	sceneNode::ptr zrot = std::make_shared<sceneNode>();
+	//sceneNode::ptr xptr = sceneNode::ptr(new clicker(this, mode::MoveX));
+	//sceneNode::ptr yptr = sceneNode::ptr(new clicker(this, mode::MoveY));
+	//sceneNode::ptr zptr = sceneNode::ptr(new clicker(this, mode::MoveZ));
+	//sceneNode::ptr xrot = sceneNode::ptr(new clicker(this, mode::RotateX));
+	//sceneNode::ptr yrot = sceneNode::ptr(new clicker(this, mode::RotateY));
+	//sceneNode::ptr zrot = sceneNode::ptr(new clicker(this, mode::RotateZ));
+	sceneNode::ptr orientation = std::make_shared<sceneNode>();
+	sceneNode::ptr cursor      = std::make_shared<sceneNode>();
+	sceneNode::ptr bbox        = std::make_shared<sceneNode>();
 
 	setNode("X-Axis",           xptr,   UIModels["X-Axis-Pointer"]);
 	setNode("X-Rotation",       xrot,   UIModels["X-Axis-Rotation-Spinner"]);
@@ -145,12 +153,19 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	drawMultiQueue(game, world, fb, cam);
 	renderWorldObjects(game);
 
-	// TODO: this results in cursor not being clickable if the render
-	//       object buffer has more than the stencil buffer can hold...
-	//       also current stencil buffer access results in syncronizing the pipeline,
-	//       need an overall better solution for clickable things
+	auto p = UIObjects->getNode("Orientation-Indicator");
+	auto m = p->getTransformMatrix();
+	que.add(p->nodes["X-Axis"],     1, m);
+	que.add(p->nodes["Y-Axis"],     2, m);
+	que.add(p->nodes["Z-Axis"],     3, m);
+	que.add(p->nodes["X-Rotation"], 4, m);
+	que.add(p->nodes["Y-Rotation"], 5, m);
+	que.add(p->nodes["Z-Rotation"], 6, m);
 
-	que.add(UIObjects);
+	auto cursor = UIObjects->getNode("Cursor-Placement");
+	auto bbox   = UIObjects->getNode("Bounding-Box");
+	que.add(cursor, 0, m);
+	que.add(bbox,   0, m);
 
 	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 	renderFlags constantFlags = game->rend->getLightingFlags("constant-color");

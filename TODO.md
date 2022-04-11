@@ -5,9 +5,8 @@
 - completely phase out modalSDLInput, need a better way of abstracting
   away input events, polling input rather than passing around events,
   providing a clean way to remap bindings
-- rework clicking code, maybe pass a click ID to renderQueue::add,
-  use seperate R16/R32 attachment so stencil buffer is free for other
-  purposes
+- use seperate R16/R32 attachment for renderIDs so stencil buffer is free
+  for other purposes
 - remove onClick(), etc functions from gameObject, should have callbacks
   mapped from click IDs
 - consider how material editing and overrides will work 

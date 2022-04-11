@@ -33,7 +33,7 @@ void renderQueue::add(sceneNode::ptr obj,
 	if (obj->type == sceneNode::objType::Mesh) {
 		sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
-		meshes.push_back({adjTrans, center, inverted, mesh});
+		meshes.push_back({adjTrans, center, inverted, mesh, renderID});
 
 	} else if (obj->type == sceneNode::objType::Light) {
 		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
@@ -454,6 +454,7 @@ static void drawMesh(const renderFlags& flags,
                      Program::ptr program,
                      const glm::mat4& transform,
                      bool inverted,
+                     uint32_t renderID,
                      sceneMesh::ptr mesh)
 {
 	if (!mesh->comped_mesh) {
@@ -462,19 +463,10 @@ static void drawMesh(const renderFlags& flags,
 		return;
 	}
 
-	/*
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
-		// TODO: remove this, going to move this functionality outside
-		//       of the render queue
-		if (fb->drawn_meshes.size() < 0xff) {
-			fb->drawn_meshes.push_back(mesh);
-			glStencilFunc(GL_ALWAYS, fb->drawn_meshes.size(), ~0);
-
-		} else {
-			glStencilFunc(GL_ALWAYS, 0, ~0);
-		}
+		// TODO: abstraction for this, maybe part of renderFramebuffer
+		glStencilFunc(GL_ALWAYS, renderID, ~0);
 	}
-	*/
 
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
@@ -540,6 +532,13 @@ static void drawMeshInstanced(const renderFlags& flags,
 		} else {
 			glStencilFunc(GL_ALWAYS, 0, ~0);
 		}
+	}
+	*/
+
+	/*
+	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
+		// TODO: abstraction for this, maybe part of renderFramebuffer
+		glStencilFunc(GL_ALWAYS, renderID, ~0);
 	}
 	*/
 
@@ -701,7 +700,7 @@ unsigned grendx::flush(renderQueue& que,
 			}
 
 			drawMesh(flags, nullptr, flags.skinnedShader,
-			         mesh.transform, mesh.inverted, mesh.data);
+			         mesh.transform, mesh.inverted, mesh.renderID, mesh.data);
 		}
 
 		// TODO: check whether this skin is already synced
@@ -722,7 +721,8 @@ unsigned grendx::flush(renderQueue& que,
 				flags.mainShader);
 		}
 
-		drawMesh(flags, nullptr, flags.mainShader, mesh.transform, mesh.inverted, mesh.data);
+		drawMesh(flags, nullptr, flags.mainShader, mesh.transform,
+		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
@@ -804,7 +804,9 @@ unsigned grendx::flush(renderQueue& que,
 					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
-			drawMesh(flags, fb, flags.skinnedShader, mesh.transform, mesh.inverted, mesh.data);
+
+			drawMesh(flags, fb, flags.skinnedShader, mesh.transform,
+			         mesh.inverted, mesh.renderID, mesh.data);
 			drawnMeshes++;
 		}
 
@@ -827,7 +829,8 @@ unsigned grendx::flush(renderQueue& que,
 				flags.mainShader);
 		}
 
-		drawMesh(flags, fb, flags.mainShader, mesh.transform, mesh.inverted, mesh.data);
+		drawMesh(flags, fb, flags.mainShader, mesh.transform,
+		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
