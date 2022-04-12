@@ -9,6 +9,7 @@ precision mediump samplerCube;
 //#define MRP_USE_LAMBERT_DIFFUSE
 //#define DEBUG_CLUSTERS
 
+//#define NO_POSTPROCESSING 1
 #define LIGHT_FUNCTION mrp_lighting
 
 #include <lib/compat.glsl>
@@ -27,12 +28,8 @@ void main(void) {
 	uint cluster = CURRENT_CLUSTER();
 
 	// diffuse and emissive maps can be vector textures
-	vec4  texcolor = diffuse_vec
-		? decode_vec(diffuse_map, f_texcoord)
-		: texture2D(diffuse_map, f_texcoord);
-	vec3  emissive = emissive_vec
-		? decode_vec(emissive_map, f_texcoord).rgb
-		: texture2D(emissive_map, f_texcoord).rgb;
+	vec4  texcolor = texture2D(diffuse_map, f_texcoord);
+	vec3  emissive = texture2D(emissive_map, f_texcoord).rgb;
 
 	//vec4  texcolor            = decode_vec(diffuse_map, f_texcoord);
 	vec3  metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
