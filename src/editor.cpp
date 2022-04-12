@@ -63,26 +63,6 @@ gameEditor::gameEditor(gameMain *game)
 	showObjectEditorWindow = true;
 };
 
-/*
-class clicker : public sceneNode {
-	public:
-		clicker(gameEditor *ptr, enum gameEditor::mode click)
-			: sceneNode(), editor(ptr), clickmode(click) {}; 
-
-		virtual void onLeftClick() {
-			std::cerr << "have mode: " << clickmode << std::endl;
-			editor->setMode(clickmode);
-
-			if (auto p = parent.lock()) {
-				p->onLeftClick();
-			}
-		}
-
-		gameEditor *editor;
-		enum gameEditor::mode clickmode;
-};
-*/
-
 void gameEditor::loadUIModels(void) {
 	// TODO: Need to swap Z/Y pointer and spinner models
 	//       blender coordinate system isn't the same as opengl's (duh)

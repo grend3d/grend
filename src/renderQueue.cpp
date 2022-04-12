@@ -86,6 +86,7 @@ void renderQueue::add(renderQueue& other) {
 	//QUEAPPEND(skinnedMeshes);
 	QUEAPPEND(lights);
 	QUEAPPEND(probes);
+	QUEAPPEND(irradProbes);
 	skinnedMeshes.insert(other.skinnedMeshes.begin(), other.skinnedMeshes.end());
 #undef QUEAPPEND
 }
