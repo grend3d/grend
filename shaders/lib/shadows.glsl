@@ -1,6 +1,7 @@
 #pragma once
 #include <lib/shading-uniforms.glsl>
 #include <lib/atlas_cubemap.glsl>
+#include <lib/davehash.glsl>
 
 // TODO: make these uniforms
 float near = 0.1;
@@ -11,12 +12,15 @@ float far = 50.0;
 #define DEPTH_BIAS 0.001
 //#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
+//#define SHADOW_FILTER shadow_sample_noisy
 #define SHADOW_FILTER shadow_pcf
+//#define SHADOW_PCF_RANGE   0.5
 #define SHADOW_PCF_RANGE   1.0
 #define SHADOW_PCF_STEP    1.0
 
 //#define SHADOW_PCF_SAMPLER shadow_sample_linear
-#define SHADOW_PCF_SAMPLER shadow_sample
+#define SHADOW_PCF_SAMPLER shadow_sample_noisy
+//#define SHADOW_PCF_SAMPLER shadow_sample
 
 // possible parameter macro implementation:
 // PARAMETER_UNIFORM_1F(name, default);
@@ -36,6 +40,17 @@ float vec_to_depth(vec3 vec) {
 
 float shadow_sample(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
 	float depth = texture2DAtlas(atlas, slice, uv).r;
+
+	return ((depth + DEPTH_BIAS) > vec_to_depth(vert))? 1.0 : 0.0;
+}
+
+float shadow_sample_noisy(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
+	float texsize = float(textureSize(atlas, 0).x) * slice.z;
+	float pixsize = 2.0/texsize;
+
+	//vec2 tuv = clamp(vec2(0), vec2(1), uv + (hash22(uv) - 0.5)*pixsize);
+	vec2 tuv = uv + (hash22(64935.0*vert.xy + slice.xy + uv) - 0.5)*pixsize + 0.5/texsize;
+	float depth = texture2DAtlas(atlas, slice, tuv).r;
 
 	return ((depth + DEPTH_BIAS) > vec_to_depth(vert))? 1.0 : 0.0;
 }
