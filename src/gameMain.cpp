@@ -279,8 +279,8 @@ void grendx::drawMultiQueue(gameMain *game,
 #include <grend/ecs/shader.hpp>
 grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr cam) {
 	using namespace ecs;
-	entityManager *entities = game->entities.get();
-	auto drawable = searchEntities(entities, {getTypeName<abstractShader>()});
+	//auto drawable = searchEntities(game->entities.get(), {getTypeName<abstractShader>()});
+	auto drawable = game->entities->search<abstractShader>();
 
 	multiRenderQueue que;
 

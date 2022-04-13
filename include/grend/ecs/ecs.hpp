@@ -37,6 +37,44 @@ const char *getTypeName(T& thing) {
 	return typeid(T).name();
 }
 
+template <typename T, typename... Us>
+const char *getFirstTypeName() {
+	return getTypeName<T>();
+}
+
+template <typename... T>
+std::array<const char *, sizeof...(T)> getTypeNames() {
+	return { getTypeName<T>()... };
+}
+
+// assumes that the entity ptr is valid
+template <typename... Us>
+struct matchesType {
+	// TODO: should define map types as part of entityManager
+	using CompMap = std::multimap<const char *, component*>;
+
+	bool operator()(entity *ptr, const CompMap& compmap) const {
+		return compmap.contains(getFirstTypeName<Us...>())
+			&& matchesType<Us...>{}(ptr, compmap);
+	}
+};
+
+template <>
+struct matchesType<> {
+	bool operator()(entity *ptr) const {
+		return true;
+	}
+};
+
+template <typename... T>
+struct searchIterator;
+
+template <typename... T>
+struct searchResults;
+
+template <typename... T>
+searchResults<T...> searchEntities(entityManager *manager);
+
 /*
 template <typename T, typename U>
 concept differing_types =
@@ -137,11 +175,14 @@ class entityManager {
 		entity *getEntity(component *com); 
 		std::multimap<const char *, component*>& getEntityComponents(entity *ent);
 
-		//bool hasComponents(entity *ent, std::vector<std::string> tags);
+		template <typename... T>
+		searchResults<T...> search() {
+			return searchEntities<T...>(this);
+		}
 
 		template <typename... T>
 		bool hasComponents(entity *ent) {
-			return hasComponents(ent, { getTypeName<T>()... });
+			return matchesType<T...>{}(ent, getEntityComponents(ent));
 		}
 
 		bool hasComponents(entity *ent, std::initializer_list<const char *> tags);
@@ -455,6 +496,105 @@ bool intersects(std::multimap<const char *, component*>& entdata,
 
 bool intersects(std::multimap<const char *, component*>& entdata,
                 std::vector<const char *>& test);
+
+template <typename... T>
+struct searchIterator {
+	using IterType = std::set<component*>::iterator;
+	IterType it;
+	IterType end;
+
+	searchIterator(IterType startit, IterType endit)
+		: it(startit), end(endit)
+	{
+		// find first result to return
+		searchToNextMatch();
+	};
+
+	void searchToNextMatch(void) {
+		if (it != end) {
+			component *comp = *it;
+			entity *ent = comp->manager->getEntity(comp);
+
+			if (sizeof...(T) > 1) {
+				const auto& compmap = ent->manager->getEntityComponents(ent);
+
+				while (it != end && !matchesType<T...>{}(ent, compmap)) {
+					it++;
+				}
+
+			} else {
+				// when called with one type parameter,
+				// every entity in the set will be returned,
+				// equivalent to getComponents()
+				it++;
+			}
+		}
+	}
+
+	const searchIterator& operator++(void) {
+		it++;
+		searchToNextMatch();
+		return *this;
+	}
+
+	entity *operator*(void) {
+		if (it == end) {
+			return nullptr;
+		}
+
+		component *comp = *it;
+		return comp->manager->getEntity(comp);
+	}
+
+	bool operator==(const searchIterator& other) {
+		return it == other.it;
+	}
+
+	bool operator!=(const searchIterator& other) {
+		return !(*this == other);
+	}
+};
+
+template <typename... T>
+struct searchResults {
+	std::set<component*>::iterator it;
+	std::set<component*>::iterator endit;
+
+	searchIterator<T...> begin() {
+		return searchIterator<T...>(it, endit);
+	}
+
+	searchIterator<T...> end() {
+		return searchIterator<T...>(endit, endit);
+	}
+};
+
+// TODO: documentation
+// O(mn log p) time, O(1) storage
+// where m is the number of entities in the smallest entity group,
+// n is the number of types being searched
+// p is the number of entities that contain each type
+// equivalent to getComponents(type) when called with one type
+template <typename... T>
+searchResults<T...> searchEntities(entityManager *manager) {
+	// find smallest (most exclusive) set of candidates
+	size_t curmin = UINT_MAX;
+	auto temp = getTypeNames<T...>();
+
+	searchResults<T...> ret;
+
+	for (const char *str : temp) {
+		auto comps = manager->getComponents(str);
+
+		if (comps.size() < curmin) {
+			ret.it    = comps.begin();
+			ret.endit = comps.end();
+			curmin    = comps.size();
+		}
+	}
+
+	return ret;
+}
 
 // namespace grendx::ecs
 };
