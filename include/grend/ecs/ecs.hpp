@@ -47,22 +47,23 @@ std::array<const char *, sizeof...(T)> getTypeNames() {
 	return { getTypeName<T>()... };
 }
 
+// TODO: should define map types as part of entityManager
+using CompMap = std::multimap<const char *, component*>;
+
 // assumes that the entity ptr is valid
-template <typename... Us>
+template <typename T, typename... Us>
 struct matchesType {
-	// TODO: should define map types as part of entityManager
-	using CompMap = std::multimap<const char *, component*>;
 
 	bool operator()(entity *ptr, const CompMap& compmap) const {
-		return compmap.contains(getFirstTypeName<Us...>())
+		return compmap.contains(getTypeName<T>())
 			&& matchesType<Us...>{}(ptr, compmap);
 	}
 };
 
-template <>
-struct matchesType<> {
-	bool operator()(entity *ptr) const {
-		return true;
+template <typename T>
+struct matchesType<T> {
+	bool operator()(entity *ptr, const CompMap& compmap) const {
+		return compmap.contains(getTypeName<T>());
 	}
 };
 
@@ -502,33 +503,30 @@ struct searchIterator {
 	};
 
 	void searchToNextMatch(void) {
-		if (it != end) {
-			component *comp = *it;
-			entity *ent = comp->manager->getEntity(comp);
+		if (it != end && sizeof...(T) > 1) {
+			entity *ent = (*it)->manager->getEntity(*it);
+			const auto& compmap = ent->manager->getEntityComponents(ent);
 
-			if (sizeof...(T) > 1) {
-				const auto& compmap = ent->manager->getEntityComponents(ent);
-
-				while (it != end && !matchesType<T...>{}(ent, compmap)) {
-					it++;
-				}
-
-			} else {
-				// when called with one type parameter,
-				// every entity in the set will be returned,
-				// equivalent to getComponents()
+			while (!matchesType<T...>{}(ent, compmap)) {
 				it++;
+				if (it == end)
+					break;
+
+				ent = (*it)->manager->getEntity(*it);
 			}
 		}
 	}
 
 	const searchIterator& operator++(void) {
-		it++;
-		searchToNextMatch();
+		if (it != end) {
+			it++;
+			searchToNextMatch();
+		}
+
 		return *this;
 	}
 
-	entity *operator*(void) {
+	entity *operator*(void) const {
 		if (it == end) {
 			return nullptr;
 		}
@@ -537,12 +535,13 @@ struct searchIterator {
 		return comp->manager->getEntity(comp);
 	}
 
-	bool operator==(const searchIterator& other) {
+	bool operator==(const searchIterator& other) const {
 		return it == other.it;
 	}
 
-	bool operator!=(const searchIterator& other) {
-		return !(*this == other);
+	bool operator!=(const searchIterator& other) const {
+		//return !(*this == other);
+		return it != other.it;
 	}
 };
 
@@ -575,7 +574,7 @@ searchResults<T...> searchEntities(entityManager *manager) {
 	searchResults<T...> ret;
 
 	for (const char *str : temp) {
-		auto comps = manager->getComponents(str);
+		std::set<component*>& comps = manager->getComponents(str);
 
 		if (comps.size() < curmin) {
 			ret.it    = comps.begin();
