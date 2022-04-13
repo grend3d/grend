@@ -125,7 +125,7 @@ void gameMainDevWindow::handleInput(void) {
 			mode = modes::Player;
 		}
 
-		if (mode == modes::Player
+		else if (mode == modes::Player
 			&& ev.type == SDL_KEYDOWN
 			&& ev.key.keysym.sym == SDLK_F1
 			/*&& (flags & bindFlags::Control)*/)
