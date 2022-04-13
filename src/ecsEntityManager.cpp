@@ -129,8 +129,7 @@ void entityManager::activate(entity *ent) {
 	ent->active = ent->node->visible = true;
 
 	// run activators, if any
-	auto comps = entityComponents[ent];
-	auto activators = getRange<activatable>(comps);
+	auto activators = ent->getAll<activatable>();
 
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
@@ -148,8 +147,7 @@ void entityManager::deactivate(entity *ent) {
 	ent->active = ent->node->visible = false;
 
 	// run deactivators, if any
-	auto comps = entityComponents[ent];
-	auto activators = getRange<activatable>(comps);
+	auto activators = ent->getAll<activatable>();
 
 	for (auto it = activators.first; it != activators.second; it++) {
 		activatable* act = dynamic_cast<activatable*>(it->second);
@@ -188,7 +186,7 @@ void entityManager::freeEntity(entity *ent) {
 
 	// first free component objects
 	auto comps = entityComponents[ent];
-	auto uniqueComponents = getRange<component>(comps);
+	auto uniqueComponents = ent->getAll<component>();
 
 	for (auto it = uniqueComponents.first; it != uniqueComponents.second; it++) {
 		auto& [name, comp] = *it;

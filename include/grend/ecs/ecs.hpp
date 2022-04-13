@@ -230,24 +230,6 @@ class entityManager {
 		void registerInterface(entity *ent, const char *name, void *ptr);
 };
 
-template <typename T>
-std::pair<std::multimap<const char *, component*>::iterator,
-          std::multimap<const char *, component*>::iterator>
-getRange(std::multimap<const char *, component*>& compmap)
-{
-	return compmap.equal_range(getTypeName<T>());
-}
-
-template <typename... U>
-struct query {
-	bool hasComponents(entityManager *manager, entity *ent);
-};
-
-template <typename T>
-struct query<T> {
-	bool hasComponents(entityManager *manager, entity *ent);
-};
-
 class component {
 	public:
 		static const nlohmann::json defaultProperties(void) {
@@ -314,6 +296,15 @@ class entity : public component {
 		template <typename T>
 		T* get() {
 			return getComponent<T>(manager, this);
+		}
+
+		template <typename T>
+		std::pair<std::multimap<const char *, component*>::iterator,
+				  std::multimap<const char *, component*>::iterator>
+		getAll()
+		{
+			auto& compmap = manager->getEntityComponents(this);
+			return compmap.equal_range(getTypeName<T>());
 		}
 
 		template <typename T>

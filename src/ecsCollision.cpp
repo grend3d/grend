@@ -64,8 +64,8 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 			}
 
 			if (manager->hasComponents<collisionHandler, entity>(self)) {
-				auto entcomps = manager->getEntityComponents(self);
-				auto range = getRange<collisionHandler>(entcomps);
+				//auto entcomps = manager->getEntityComponents(self);
+				auto range = self->getAll<collisionHandler>();
 
 				for (auto it = range.first; it != range.second; it++) {
 					auto& [_, comp] = *it;
