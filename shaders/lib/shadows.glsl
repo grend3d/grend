@@ -9,7 +9,7 @@ float far = 50.0;
 
 // TODO: compile-time and uniform parameter macros, once I get to
 //       doing hot shader reloading
-#define DEPTH_BIAS 0.001
+#define DEPTH_BIAS 0.00075
 //#define SHADOW_FILTER shadow_sample // to disable shadow filtering
 //#define SHADOW_FILTER shadow_sample_linear // linear interpolation only
 //#define SHADOW_FILTER shadow_sample_noisy
@@ -46,13 +46,14 @@ float shadow_sample(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
 
 float shadow_sample_noisy(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
 	float texsize = float(textureSize(atlas, 0).x) * slice.z;
-	float pixsize = 2.0/texsize;
+	float pixsize = 3.0/texsize;
 
+	vec3 noiz = hash32(1049.0*vert.xy + slice.xy + uv);
 	//vec2 tuv = clamp(vec2(0), vec2(1), uv + (hash22(uv) - 0.5)*pixsize);
-	vec2 tuv = uv + (hash22(64935.0*vert.xy + slice.xy + uv) - 0.5)*pixsize + 0.5/texsize;
+	vec2 tuv = uv + (noiz.xy - 0.5)*pixsize + 0.5/texsize;
 	float depth = texture2DAtlas(atlas, slice, tuv).r;
 
-	return ((depth + DEPTH_BIAS) > vec_to_depth(vert))? 1.0 : 0.0;
+	return ((depth + DEPTH_BIAS + noiz.z*DEPTH_BIAS) > vec_to_depth(vert))? 1.0 : 0.0;
 }
 
 float shadow_sample_linear(in sampler2D atlas, vec3 slice, vec3 vert, vec2 uv) {
