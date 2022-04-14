@@ -277,6 +277,8 @@ void grendx::drawMultiQueue(gameMain *game,
 }
 
 #include <grend/ecs/shader.hpp>
+#include <grend/ecs/sceneComponent.hpp>
+
 grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr cam) {
 	using namespace ecs;
 	//auto drawable = searchEntities(game->entities.get(), {getTypeName<abstractShader>()});
@@ -284,9 +286,19 @@ grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr 
 
 	multiRenderQueue que;
 
-	for (entity *shader : drawable) {
-		auto flags = shader->get<abstractShader>();
-		que.add(flags->getShader(), shader->node);
+	for (entity *ent : drawable) {
+		auto flags = ent->get<abstractShader>();
+		auto trans = ent->node->getTransformMatrix();
+		auto scenes = ent->getAll<sceneComponent>();
+		// TODO: do clicky things
+		uint32_t renderID = 0;
+
+		que.add(flags->getShader(), ent->node, renderID);
+
+		for (auto it = scenes.first; it != scenes.second; it++) {
+			sceneComponent *comp = static_cast<sceneComponent*>(it->second);
+			que.add(flags->getShader(), comp->getNode(), renderID, trans);
+		}
 	}
 
 	return que;
