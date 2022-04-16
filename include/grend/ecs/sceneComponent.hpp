@@ -36,11 +36,17 @@ class sceneComponent : public component {
 		               entity *ent,
 		               const std::string& path,
 		               enum Usage usage)
-			: component(manager, ent),
-			  curPath(path)
+			: component(manager, ent)
 		{
 			manager->registerComponent(ent, this);
 
+			load(path, usage);
+		}
+
+		virtual ~sceneComponent();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
+
+		void load(const std::string& path, enum Usage usage) {
 			auto it = sceneCache.find(path);
 			sceneImport::weakptr lookup;
 			sceneImport::ptr res;
@@ -63,11 +69,9 @@ class sceneComponent : public component {
 				}
 			}
 
+			curPath = path;
 			node = (usage == Copy)? duplicate(res) : res;
 		}
-
-		virtual ~sceneComponent();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		sceneNode::ptr getNode() {
 			return node;

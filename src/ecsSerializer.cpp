@@ -97,8 +97,10 @@ entity *serializer::build(entityManager *manager, json serialized)
 	}
 
 	for (auto& subtype : manager->componentTypes[ret]) {
-		if (deserializers.contains(subtype)) {
-			deserializers[subtype](ret, *entprops);
+		const std::string& demangled = demangle(subtype);
+
+		if (deserializers.contains(demangled)) {
+			deserializers[demangled](ret, *entprops);
 		}
 		//factories[subtype].
 	}
@@ -118,6 +120,7 @@ component *serializer::build(entityManager *manager,
 		return nullptr;
 	}
 
+	// unmangled name stored in serialized form
 	std::string type = serialized[0].get<std::string>();
 	SDL_Log("Attempting to add component %s to entity %p...",
 	        type.c_str(), ent);
@@ -136,8 +139,14 @@ component *serializer::build(entityManager *manager,
 		*/
 
 	for (auto& subtype : manager->componentTypes[ret]) {
-		if (deserializers.contains(subtype)) {
-			deserializers[subtype](ret, serialized[1]);
+		// indexing into component names registered under the component,
+		// need to demangle to search for suitable deserializers
+		// TODO: should probably warn (or have an option for warning, set by default)
+		//       if a subcomponent wasn't found
+		const std::string& demangled = demangle(subtype);
+
+		if (deserializers.contains(demangled)) {
+			deserializers[demangled](ret, serialized[1]);
 		}
 	}
 
