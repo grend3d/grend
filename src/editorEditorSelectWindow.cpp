@@ -75,6 +75,7 @@ static void drawJson(nlohmann::json& value) {
 }
 
 void gameEditor::addEntityWindow(gameMain *game) {
+#if 0
 	static char comboBuf[0x1000];
 	static const size_t bufsize = sizeof(comboBuf) - 1;
 
@@ -223,6 +224,7 @@ void gameEditor::addEntityWindow(gameMain *game) {
 	}
 
 	ImGui::End();
+#endif
 }
 
 void gameEditor::entitySelectWindow(gameMain *game) {

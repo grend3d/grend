@@ -12,7 +12,9 @@
 #include <initializer_list>
 
 #include <nlohmann/json.hpp>
+#include <grend/utility.hpp>
 
+// TODO: add 'serialize' namespace?
 namespace grendx::ecs {
 
 // abstract component bean serializer factory
@@ -27,9 +29,7 @@ class abstractFactory {
 		typedef std::weak_ptr<abstractFactory>   weakptr;
 
 		virtual ~abstractFactory();
-		virtual component *allocate(entityManager *manager,
-		                            entity *ent,
-		                            nlohmann::json properties={}) = 0;
+		virtual component *allocate(entityManager *manager, entity *ent) = 0;
 };
 
 template <class T>
@@ -38,48 +38,54 @@ class factory : public abstractFactory {
 		factory() {};
 		virtual ~factory() {};
 
-		virtual component *allocate(entityManager *manager,
-		                            entity *ent,
-		                            nlohmann::json properties={})
+		virtual component *allocate(entityManager *manager, entity *ent)
 		{
-			return new T(manager, ent, properties);
+			return new T(manager, ent);
 		}
 };
 
-class factories {
-	public:
-		typedef std::shared_ptr<factories> ptr;
-		typedef std::weak_ptr<factories>   weakptr;
+using SerializeFunc   = std::function<nlohmann::json(component *comp)>;
+using DeserializeFunc = std::function<bool(component *comp, nlohmann::json& properties)>;
 
-		void add(std::string name, abstractFactory::ptr ser) {
-			factories[name] = ser;
-		}
+template <typename T>
+concept InlineSerializers
+	= requires(T a) {
+		static_cast<SerializeFunc>(T::serialize);
+		static_cast<DeserializeFunc>(T::deserialize);
+		//SerializeFunc   ser = T::serialize;
+		//DeserializeFunc des = T::deserialize;
+	};
+
+class serializer {
+	public:
+		typedef std::shared_ptr<serializer> ptr;
+		typedef std::weak_ptr<serializer>   weakptr;
 
 		template <class T>
-		void add() {
+		void add(const SerializeFunc& ser, const DeserializeFunc& deser) {
+			const char *name = getTypeName<T>();
+			const std::string& demangled = demangle(name);
+
 			std::cerr << "Registering factory for component "
-				<< T::serializedType
+				<< demangled << " (" << name << "@" << (void*)name << ")"
 				<< std::endl;
 
-			factories[T::serializedType] = std::make_shared<factory<T>>();
-			defaults[T::serializedType]  = T::defaultProperties();
+			factories[demangled]     = std::make_shared<factory<T>>();
+			serializers[demangled]   = ser;
+			deserializers[demangled] = deser;
 		}
 
-		bool has(std::string name) {
+		template <InlineSerializers T>
+		void add() {
+			add<T>(T::serializer, T::deserializer);
+		}
+
+		bool has(const std::string& name) {
 			auto f = factories.find(name);
-			auto d = defaults.find(name);
-
-			return f != factories.end() && d != defaults.end();
-		}
-
-		nlohmann::json properties(std::string name) {
-			auto it = defaults.find(name);
-
-			if (it != defaults.end()) {
-				return it->second;
-			}
-
-			return {};
+			// shouldn't need to check for serializers/deserializers,
+			// by construction there should never be a factory without corresponding
+			// serialization functions
+			return f != factories.end();
 		}
 
 		entity    *build(entityManager *manager, nlohmann::json serialized);
@@ -88,7 +94,8 @@ class factories {
 		                 nlohmann::json serialized);
 
 		std::map<std::string, abstractFactory::ptr> factories;
-		std::map<std::string, nlohmann::json> defaults;
+		std::map<std::string, SerializeFunc>   serializers;
+		std::map<std::string, DeserializeFunc> deserializers;
 };
 
 // namespace grendx::ecs

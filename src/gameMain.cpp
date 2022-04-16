@@ -42,7 +42,7 @@ gameMain::gameMain(const std::string& name, const renderSettings& _settings)
 	jobs   = std::make_shared<jobQueue>();
 
 	entities  = std::make_shared<ecs::entityManager>(this);
-	factories = std::make_shared<ecs::factories>();
+	factories = std::make_shared<ecs::serializer>();
 }
 
 void gameMain::applySettings(const renderSettings& newSettings) {

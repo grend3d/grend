@@ -4,7 +4,6 @@
 
 #include <grend/sceneNode.hpp>
 #include <grend/physics.hpp>
-#include <nlohmann/json.hpp>
 
 #include <iostream>
 #include <map>
@@ -233,13 +232,7 @@ class entityManager {
 
 class component {
 	public:
-		static const nlohmann::json defaultProperties(void) {
-			return {};
-		};
-
-		component(entityManager *_manager,
-		          entity *ent,
-		          nlohmann::json properties = defaultProperties())
+		component(entityManager *_manager, entity *ent)
 			: manager(_manager)
 		{
 			manager->registerComponent(ent, this);
@@ -247,7 +240,6 @@ class component {
 
 		virtual ~component();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
-		virtual nlohmann::json serialize(entityManager *manager) { return {}; };
 
 		// draw the imgui widgets for this component, TODO
 		// also, this class needs a polymorphic member in order to upcast,
@@ -259,34 +251,14 @@ class component {
 
 class entity : public component {
 	public:
-		static const nlohmann::json defaultProperties(void) {
-			return {
-				{"type",        "entity"},
-				//{"entity-type", serializedType},
-				{"entity-type", "TODO"},
-				{"node", {
-					{"position", {0.f, 0.f, 0.f}},
-					{"rotation", {1.f, 0.f, 0.f, 0.f}},
-					{"scale",    {1.f, 1.f, 1.f}},
-				}},
-				{"components", {}},
-			};
-		};
-
 		typedef std::shared_ptr<entity> ptr;
 		typedef std::weak_ptr<entity>   weakptr;
 
-		entity(entityManager *manager,
-		       nlohmann::json properties = defaultProperties());
-
-		entity(entityManager *manager,
-		       entity *ent,
-		       nlohmann::json properties);
+		entity(entityManager *manager);
+		entity(entityManager *manager, entity *ent);
 
 		virtual ~entity();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
-		virtual nlohmann::json serialize(entityManager *manager);
-
 		virtual sceneNode::ptr getNode(void) { return node; };
 
 		template <typename T, typename... Args>

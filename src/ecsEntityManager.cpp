@@ -12,13 +12,12 @@ entityEventSystem::~entityEventSystem() {};
 updatable::~updatable() {};
 activatable::~activatable() {};
 
-entity::entity(entityManager *manager,
-		       nlohmann::json properties)
-	: component(manager, this, properties)
+entity::entity(entityManager *manager)
+	: component(manager, this)
 {
-	//manager->registerComponent(this, "entity", this);
 	manager->registerComponent(this, this);
 
+	/*
 	glm::vec3 pos(properties["node"]["position"][0],
 	              properties["node"]["position"][1],
 	              properties["node"]["position"][2]);
@@ -37,15 +36,16 @@ entity::entity(entityManager *manager,
 		.rotation = rot,
 		.scale    = scale,
 	});
+	*/
 }
 
 // TODO: register entities as components of other entities...
-entity::entity(entityManager *manager,
-               entity *ent,
-               nlohmann::json properties)
-	: entity(manager, properties)
+// TODO: keep this? I'm leaning more towards the idea of entity relationships
+//       being tracked as components using an indexer system,
+//       entity trees seem unwieldy and not as flexible
+entity::entity(entityManager *manager, entity *ent)
+	: entity(manager)
 {
-	
 }
 
 void entityManager::update(float delta) {
@@ -394,6 +394,7 @@ void entityManager::unregisterComponentType(entity *ent, std::string name) {
 	// TODO:
 }
 
+/*
 nlohmann::json entity::serialize(entityManager *manager) {
 	nlohmann::json components = {};
 
@@ -440,6 +441,7 @@ nlohmann::json entity::serialize(entityManager *manager) {
 		{"components",  components}, 
 	};
 }
+*/
 
 bool intersects(std::multimap<const char *, component*>& entdata,
                 std::initializer_list<const char *> test)

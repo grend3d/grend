@@ -11,19 +11,21 @@ using namespace nlohmann;
 
 abstractFactory::~abstractFactory() {};
 
-entity *factories::build(entityManager *manager,
-                         json serialized)
+entity *serializer::build(entityManager *manager, json serialized)
 {
 	auto components = serialized.find("components");
 	auto enttype    = serialized.find("entity-type");
+	auto entprops   = serialized.find("entity-properties");
 	auto node       = serialized.find("node");
-	auto type       = serialized.find("type");
+	//auto type       = serialized.find("type");
 
 	bool complete =
-		components != serialized.end()
-		&& enttype != serialized.end()
-		&& node    != serialized.end()
-		&& type    != serialized.end();
+		components  != serialized.end()
+		&& enttype  != serialized.end()
+		&& entprops != serialized.end()
+		&& node     != serialized.end()
+		/*&& type     != serialized.end()*/
+		;
 
 	if (!complete) {
 		return nullptr;
@@ -36,12 +38,22 @@ entity *factories::build(entityManager *manager,
 	entity *ret = nullptr;
 
 	if (has(typestr)) {
-		component *built = factories[typestr]->allocate(manager, nullptr, serialized);
-		ret = dynamic_cast<entity*>(built);
+		component *built = factories[typestr]->allocate(manager, nullptr);
+		if ((ret = dynamic_cast<entity*>(built)) == nullptr) {
+			// TODO: need to delete 'built' and return,
+			//       given type was not an entity type
+		}
 	}
 
 	if (!ret) {
 		return nullptr;
+	}
+
+	for (auto& subtype : manager->componentTypes[ret]) {
+		if (deserializers.contains(subtype)) {
+			deserializers[subtype](ret, *entprops);
+		}
+		//factories[subtype].
 	}
 
 	for (auto& comp : *components) {
@@ -51,9 +63,9 @@ entity *factories::build(entityManager *manager,
 	return ret;
 }
 
-component *factories::build(entityManager *manager,
-                            entity *ent,
-                            json serialized)
+component *serializer::build(entityManager *manager,
+                             entity *ent,
+                             json serialized)
 {
 	if (!serialized.is_array() /*|| serialized.size() < 2*/) {
 		return nullptr;
@@ -69,9 +81,19 @@ component *factories::build(entityManager *manager,
 
 	SDL_Log("Found component type %s", type.c_str());
 
+	component *ret = factories[type]->allocate(manager, ent);
+	/*
 	nlohmann::json props = serialized[1].is_null()
 		? properties(type)
 		: serialized[1];
+		*/
 
-	return factories[type]->allocate(manager, ent, props);
+	for (auto& subtype : manager->componentTypes[ret]) {
+		if (deserializers.contains(subtype)) {
+			deserializers[subtype](ret, serialized[1]);
+		}
+	}
+
+	return ret;
+
 }

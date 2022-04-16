@@ -20,36 +20,48 @@ syncRigidBodyPosition::~syncRigidBodyPosition() {};
 syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
 syncRigidBodySystem::~syncRigidBodySystem() {};
 
-rigidBody::rigidBody(entityManager *manager,
-                     entity *ent,
-                     nlohmann::json properties)
+rigidBody::rigidBody(entityManager *manager, entity *ent)
 	: component(manager, ent)
 {
 	manager->registerComponent(ent, this);
 	manager->registerInterface<activatable>(ent, this);
 	manager->registerInterface<transformUpdatable>(ent, this);
-}
-
-rigidBodySphere::rigidBodySphere(entityManager *manager,
-                                 entity *ent,
-                                 nlohmann::json properties)
-	: rigidBody(manager, ent, properties)
-{
-	manager->registerComponent(ent, this);
-
-	glm::vec3 position = ent->node->getTransformTRS().position;
-	phys = manager->engine->phys->addSphere(ent, position, 1.f, properties["radius"]);
 	registerCollisionQueue(manager->collisions);
 }
 
-rigidBodyBox::rigidBodyBox(entityManager *manager,
-                           entity *ent,
-                           nlohmann::json properties)
-	: rigidBody(manager, ent, properties)
+rigidBody::rigidBody(entityManager *manager, entity *ent, float _mass)
+	: rigidBody(manager, ent)
+{
+	mass = _mass;
+}
+
+rigidBodySphere::rigidBodySphere(entityManager *manager, entity *ent)
+	: rigidBody(manager, ent)
 {
 	manager->registerComponent(ent, this);
-
 	glm::vec3 position = ent->node->getTransformTRS().position;
+	// incomplete initialization, needs properties set
+	// TODO: warn somehow if the body is used before initialization
+
+	/*
+	phys = manager->engine->phys->addSphere(ent, position, 1.f, properties["radius"]);
+	registerCollisionQueue(manager->collisions);
+	*/
+}
+
+rigidBodyBox::rigidBodyBox(entityManager *manager, entity *ent)
+	: rigidBody(manager, ent)
+{
+	nlohmann::json foo;
+	manager->registerComponent(ent, this);
+
+	// TODO: position is a common attribute, also duplicated between
+	//       the entity transform, why not in the base rigidBody class,
+	//       if here at all?
+	glm::vec3 position = ent->node->getTransformTRS().position;
+	// incomplete initialization, needs properties set
+
+	/*
 	auto center = properties["center"];
 	auto extent = properties["extent"];
 
@@ -60,16 +72,17 @@ rigidBodyBox::rigidBodyBox(entityManager *manager,
 
 	phys = manager->engine->phys->addBox(ent, position, 1.f, box);
 	registerCollisionQueue(manager->collisions);
+	*/
 }
 
-rigidBodyCylinder::rigidBodyCylinder(entityManager *manager,
-                                     entity *ent,
-                                     nlohmann::json properties)
-	: rigidBody(manager, ent, properties)
+rigidBodyCylinder::rigidBodyCylinder(entityManager *manager, entity *ent)
+	: rigidBody(manager, ent)
 {
 	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
+	// incomplete initialization, needs properties set
+	/*
 	auto center = properties["center"];
 	auto extent = properties["extent"];
 
@@ -80,41 +93,22 @@ rigidBodyCylinder::rigidBodyCylinder(entityManager *manager,
 
 	phys = manager->engine->phys->addCylinder(ent, position, 1.f, box);
 	registerCollisionQueue(manager->collisions);
+	*/
 }
 
-rigidBodyCapsule::rigidBodyCapsule(entityManager *manager,
-                                   entity *ent,
-                                   nlohmann::json properties)
-	: rigidBody(manager, ent, properties)
+rigidBodyCapsule::rigidBodyCapsule(entityManager *manager, entity *ent)
+	: rigidBody(manager, ent)
 {
 	manager->registerComponent(ent, this);
 
 	glm::vec3 position = ent->node->getTransformTRS().position;
+	/*
 	float radius = properties["radius"];
 	float height = properties["height"];
 
 	phys = manager->engine->phys->addCapsule(ent, position, 1.f, radius, height);
 	registerCollisionQueue(manager->collisions);
-}
-
-nlohmann::json rigidBodySphere::serialize(entityManager *manager) {
-	// TODO: actually serialize
-	return defaultProperties();
-}
-
-nlohmann::json rigidBodyBox::serialize(entityManager *manager) {
-	// TODO: actually serialize
-	return defaultProperties();
-}
-
-nlohmann::json rigidBodyCylinder::serialize(entityManager *manager) {
-	// TODO: actually serialize
-	return defaultProperties();
-}
-
-nlohmann::json rigidBodyCapsule::serialize(entityManager *manager) {
-	// TODO: actually serialize
-	return defaultProperties();
+	*/
 }
 
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
@@ -187,7 +181,8 @@ void updateEntityTransforms(entityManager *manager,
 {
 	auto& m = manager->getEntityComponents(ent);
 	//auto updaters = m.equal_range("transformUpdatable");
-	auto updaters = m.equal_range(getTypeName<transformUpdatable>());
+	//auto updaters = m.equal_range(getTypeName<transformUpdatable>());
+	auto updaters = ent->getAll<transformUpdatable>();
 
 	for (auto it = updaters.first; it != updaters.second; it++) {
 		auto& [_, comp] = *it;
