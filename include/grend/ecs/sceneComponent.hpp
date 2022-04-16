@@ -12,11 +12,19 @@ inline std::map<std::string, sceneImport::weakptr> sceneCache;
 
 class sceneComponent : public component {
 	sceneNode::ptr node = nullptr;
+	std::string curPath = "";
 
 	public:
 		enum Usage {
 			Reference,
 			Copy,
+		};
+
+		// TODO: constructors for single empty node, maybe copying other nodes
+		sceneComponent(entityManager *manager, entity *ent)
+			: component(manager, ent)
+		{
+			manager->registerComponent(ent, this);
 		};
 
 		sceneComponent(entityManager *manager,
@@ -28,7 +36,8 @@ class sceneComponent : public component {
 		               entity *ent,
 		               const std::string& path,
 		               enum Usage usage)
-			: component(manager, ent)
+			: component(manager, ent),
+			  curPath(path)
 		{
 			manager->registerComponent(ent, this);
 
@@ -57,8 +66,15 @@ class sceneComponent : public component {
 			node = (usage == Copy)? duplicate(res) : res;
 		}
 
+		virtual ~sceneComponent();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
+
 		sceneNode::ptr getNode() {
 			return node;
+		}
+
+		const std::string& getPath() {
+			return curPath;
 		}
 };
 

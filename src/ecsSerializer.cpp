@@ -11,19 +11,66 @@ using namespace nlohmann;
 
 abstractFactory::~abstractFactory() {};
 
+nlohmann::json serializer::serialize(entityManager *manager, entity *ent) {
+	for (auto [name, _] : factories) {
+		std::cout << "got a " << name << std::endl;
+	}
+	using namespace nlohmann;
+
+	json components = {};
+	auto uniq = ent->getAll<component>();
+
+	for (auto it = uniq.first; it != uniq.second; it++) {
+		auto& [_, comp] = *it;
+
+		// entities have themselves as components, don't recurse infinitely
+		if (comp != ent) {
+			json props = json::object();;
+
+			for (auto& subtype : manager->componentTypes[comp]) {
+				const std::string& demangled = demangle(subtype);
+
+				if (has(demangled)) {
+					json temp = serializers[demangled](comp);
+					props.insert(temp.begin(), temp.end());
+				}
+			}
+
+			components.push_back({ demangle(comp->typeString()), props });
+		}
+	}
+
+	json entprops = json::object();
+	for (auto& subtype : manager->componentTypes[ent]) {
+		const std::string& demangled = demangle(subtype);
+
+		if (has(demangled)) {
+			std::cout << "got here, serializing a " << demangled << std::endl;
+			json temp = serializers[demangled](ent);
+			entprops.insert(temp.begin(), temp.end());
+		}
+	}
+
+	return {
+		{"entity-type",       demangle(ent->typeString())},
+		{"entity-properties", entprops},
+		{"components",        components},
+	};
+}
+
 entity *serializer::build(entityManager *manager, json serialized)
 {
 	auto components = serialized.find("components");
 	auto enttype    = serialized.find("entity-type");
 	auto entprops   = serialized.find("entity-properties");
-	auto node       = serialized.find("node");
+	//auto node       = serialized.find("node");
 	//auto type       = serialized.find("type");
 
 	bool complete =
 		components  != serialized.end()
 		&& enttype  != serialized.end()
 		&& entprops != serialized.end()
-		&& node     != serialized.end()
+		//&& node     != serialized.end()
 		/*&& type     != serialized.end()*/
 		;
 

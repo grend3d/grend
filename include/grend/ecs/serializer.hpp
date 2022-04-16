@@ -80,6 +80,8 @@ class serializer {
 			add<T>(T::serializer, T::deserializer);
 		}
 
+		nlohmann::json serialize(entityManager *manager, entity *ent);
+
 		bool has(const std::string& name) {
 			auto f = factories.find(name);
 			// shouldn't need to check for serializers/deserializers,

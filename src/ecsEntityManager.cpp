@@ -1,7 +1,12 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/search.hpp>
+#include <grend/ecs/sceneComponent.hpp>
 
 namespace grendx::ecs {
+
+// TODO: sceneComponent.cpp
+// key function for rtti
+sceneComponent::~sceneComponent() {};
 
 // key functions for rtti
 component::~component() {}

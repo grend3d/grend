@@ -13,6 +13,7 @@ class abstractShader : public component {
 	public:
 		abstractShader(entityManager *manager, entity *ent);
 		virtual ~abstractShader();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		// TODO: rename renderFlags to renderShader or something
 		// TODO: renderFlags& should be const, need to refactor renderQueue
@@ -24,6 +25,7 @@ class abstractShader : public component {
 class staticShader : public abstractShader {
 	public:
 		staticShader(entityManager *manager, entity *ent, const renderFlags& flags);
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual ~staticShader();
 		virtual renderFlags& getShader();
@@ -37,12 +39,14 @@ class PBRShader : public staticShader {
 	public:
 		PBRShader(entityManager *manager, entity *ent);
 		virtual ~PBRShader();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 };
 
 class UnlitShader : public staticShader {
 	public:
 		UnlitShader(entityManager *manager, entity *ent);
 		virtual ~UnlitShader();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 };
 
 // namespace grendx::ecs
