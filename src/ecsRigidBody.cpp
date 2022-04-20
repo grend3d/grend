@@ -20,26 +20,24 @@ syncRigidBodyPosition::~syncRigidBodyPosition() {};
 syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
 syncRigidBodySystem::~syncRigidBodySystem() {};
 
-rigidBody::rigidBody(entityManager *manager, entity *ent)
-	: component(manager, ent)
+rigidBody::rigidBody(regArgs t)
+	: component(doRegister(this, t))
 {
-	manager->registerComponent(ent, this);
-	manager->registerInterface<activatable>(ent, this);
-	manager->registerInterface<transformUpdatable>(ent, this);
+	manager->registerInterface<activatable>(t.ent, this);
+	manager->registerInterface<transformUpdatable>(t.ent, this);
 	registerCollisionQueue(manager->collisions);
 }
 
-rigidBody::rigidBody(entityManager *manager, entity *ent, float _mass)
-	: rigidBody(manager, ent)
+rigidBody::rigidBody(regArgs t, float _mass)
+	: rigidBody(std::move(t))
 {
 	mass = _mass;
 }
 
-rigidBodySphere::rigidBodySphere(entityManager *manager, entity *ent)
-	: rigidBody(manager, ent)
+rigidBodySphere::rigidBodySphere(regArgs t)
+	: rigidBody(doRegister(this, t))
 {
-	manager->registerComponent(ent, this);
-	glm::vec3 position = ent->node->getTransformTRS().position;
+	glm::vec3 position = t.ent->node->getTransformTRS().position;
 	// incomplete initialization, needs properties set
 	// TODO: warn somehow if the body is used before initialization
 
@@ -49,16 +47,15 @@ rigidBodySphere::rigidBodySphere(entityManager *manager, entity *ent)
 	*/
 }
 
-rigidBodyBox::rigidBodyBox(entityManager *manager, entity *ent)
-	: rigidBody(manager, ent)
+rigidBodyBox::rigidBodyBox(regArgs t)
+	: rigidBody(doRegister(this, t))
 {
 	nlohmann::json foo;
-	manager->registerComponent(ent, this);
 
 	// TODO: position is a common attribute, also duplicated between
 	//       the entity transform, why not in the base rigidBody class,
 	//       if here at all?
-	glm::vec3 position = ent->node->getTransformTRS().position;
+	glm::vec3 position = t.ent->node->getTransformTRS().position;
 	// incomplete initialization, needs properties set
 
 	/*
@@ -75,12 +72,10 @@ rigidBodyBox::rigidBodyBox(entityManager *manager, entity *ent)
 	*/
 }
 
-rigidBodyCylinder::rigidBodyCylinder(entityManager *manager, entity *ent)
-	: rigidBody(manager, ent)
+rigidBodyCylinder::rigidBodyCylinder(regArgs t)
+	: rigidBody(doRegister(this, t))
 {
-	manager->registerComponent(ent, this);
-
-	glm::vec3 position = ent->node->getTransformTRS().position;
+	glm::vec3 position = t.ent->node->getTransformTRS().position;
 	// incomplete initialization, needs properties set
 	/*
 	auto center = properties["center"];
@@ -96,12 +91,10 @@ rigidBodyCylinder::rigidBodyCylinder(entityManager *manager, entity *ent)
 	*/
 }
 
-rigidBodyCapsule::rigidBodyCapsule(entityManager *manager, entity *ent)
-	: rigidBody(manager, ent)
+rigidBodyCapsule::rigidBodyCapsule(regArgs t)
+	: rigidBody(doRegister(this, t))
 {
-	manager->registerComponent(ent, this);
-
-	glm::vec3 position = ent->node->getTransformTRS().position;
+	glm::vec3 position = t.ent->node->getTransformTRS().position;
 	/*
 	float radius = properties["radius"];
 	float height = properties["height"];

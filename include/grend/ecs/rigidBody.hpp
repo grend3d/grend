@@ -18,8 +18,8 @@ class rigidBody
       public activatable
 {
 	public:
-		rigidBody(entityManager *manager, entity *ent, float mass);
-		rigidBody(entityManager *manager, entity *ent);
+		rigidBody(regArgs t, float mass);
+		rigidBody(regArgs t);
 
 		virtual ~rigidBody();
 
@@ -73,21 +73,37 @@ class rigidBody
 		std::shared_ptr<std::vector<collision>> cachedQueue = nullptr;
 
 		// serialization stuff
-		constexpr static const char *serializedType = "rigidBody";
-		virtual const char* typeString(void) const { return serializedType; };
+		virtual const char* typeString(void) const { return getTypeName(*this); };
+
+		static nlohmann::json serializer(component *comp) {
+			rigidBody *body = static_cast<rigidBody*>(comp);
+
+			auto& p = body->position;
+			return {
+				{"mass",     body->mass},
+				{"position", {p.x, p.y, p.z}},
+			};
+		}
+
+		static void deserializer(component *comp, nlohmann::json& j) {
+			rigidBody *body = static_cast<rigidBody*>(comp);
+
+			auto p = j["position"];
+			body->mass = j["mass"];
+			body->position = {p[0], p[1], p[2]};
+		}
 };
 
 class rigidBodySphere : public rigidBody {
 	public:
-		rigidBodySphere(entityManager *manager,
-		                entity *ent,
+		rigidBodySphere(regArgs t,
 		                const glm::vec3& _position,
 		                float _mass,
 		                float _radius)
-			: rigidBody(manager, ent, _mass)
+			: rigidBody(doRegister(this, t), _mass)
 		{
 			//manager->registerComponent(ent, serializedType, this);
-			manager->registerComponent(ent, this);
+			//manager->registerComponent(ent, this);
 
 			position = _position;
 			mass     = _mass;
@@ -95,10 +111,10 @@ class rigidBodySphere : public rigidBody {
 
 			//setRadius(radius);
 			//phys = manager->engine->phys->addSphere(ent, position, mass, radius);
-			activate(manager, ent);
+			activate(t.manager, t.ent);
 		}
 
-		rigidBodySphere(entityManager *manager, entity *ent);
+		rigidBodySphere(regArgs t);
 
 		virtual ~rigidBodySphere();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -123,23 +139,20 @@ class rigidBodySphere : public rigidBody {
 
 class rigidBodyBox : public rigidBody {
 	public:
-		rigidBodyBox(entityManager *manager,
-		             entity *ent,
+		rigidBodyBox(regArgs t,
 		             const glm::vec3& _position,
 		             float _mass,
 		             const AABBExtent& _extent)
-			: rigidBody(manager, ent, _mass)
+			: rigidBody(doRegister(this, t), _mass)
 		{
-			manager->registerComponent(ent, this);
-
 			position = _position;
 			mass     = _mass;
 			extent   = _extent;
 
-			activate(manager, ent);
+			activate(t.manager, t.ent);
 		}
 
-		rigidBodyBox(entityManager *manager, entity *ent);
+		rigidBodyBox(regArgs t);
 
 		virtual ~rigidBodyBox();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -157,23 +170,20 @@ class rigidBodyBox : public rigidBody {
 // TODO: activatable
 class rigidBodyCylinder : public rigidBody {
 	public:
-		rigidBodyCylinder(entityManager *manager,
-		             entity *ent,
-		             const glm::vec3& _position,
-		             float _mass,
-		             const AABBExtent& _extent)
-			: rigidBody(manager, ent, mass)
+		rigidBodyCylinder(regArgs t,
+		                  const glm::vec3& _position,
+		                  float _mass,
+		                  const AABBExtent& _extent)
+			: rigidBody(doRegister(this, t), mass)
 		{
-			manager->registerComponent(ent, this);
-
 			position = _position;
 			mass = _mass;
 			extent = _extent;
 
-			activate(manager, ent);
+			activate(t.manager, t.ent);
 		}
 
-		rigidBodyCylinder(entityManager *manager, entity *ent);
+		rigidBodyCylinder(regArgs t);
 
 		virtual ~rigidBodyCylinder();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -190,25 +200,22 @@ class rigidBodyCylinder : public rigidBody {
 
 class rigidBodyCapsule : public rigidBody {
 	public:
-		rigidBodyCapsule(entityManager *manager,
-		                 entity *ent,
+		rigidBodyCapsule(regArgs t,
 		                 const glm::vec3& _position,
 		                 float _mass,
 		                 float _radius,
 		                 float _height)
-			: rigidBody(manager, ent, mass)
+			: rigidBody(doRegister(this, t), mass)
 		{
-			manager->registerComponent(ent, this);
-
 			position = _position;
 			mass     = _mass;
 			radius   = _radius;
 			height   = _height;
 
-			activate(manager, ent);
+			activate(t.manager, t.ent);
 		}
 
-		rigidBodyCapsule(entityManager *manager, entity *ent);
+		rigidBodyCapsule(regArgs t);
 
 		virtual ~rigidBodyCapsule();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -226,11 +233,8 @@ class rigidBodyCapsule : public rigidBody {
 
 class syncRigidBody : public component {
 	public:
-		syncRigidBody(entityManager *manager, entity *ent)
-			: component(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-		}
+		syncRigidBody(regArgs t)
+			: component(doRegister(this, t)) {}
 
 		virtual ~syncRigidBody();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -240,11 +244,8 @@ class syncRigidBody : public component {
 
 class syncRigidBodyTransform : public syncRigidBody {
 	public:
-		syncRigidBodyTransform(entityManager *manager, entity *ent)
-			: syncRigidBody(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-		}
+		syncRigidBodyTransform(regArgs t)
+			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyTransform();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -254,11 +255,8 @@ class syncRigidBodyTransform : public syncRigidBody {
 
 class syncRigidBodyPosition : public syncRigidBody {
 	public:
-		syncRigidBodyPosition(entityManager *manager, entity *ent)
-			: syncRigidBody(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-		}
+		syncRigidBodyPosition(regArgs t)
+			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyPosition();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -268,14 +266,12 @@ class syncRigidBodyPosition : public syncRigidBody {
 
 class syncRigidBodyXZVelocity : public syncRigidBody {
 	public:
-		syncRigidBodyXZVelocity(entityManager *manager, entity *ent)
-			: syncRigidBody(manager, ent)
-		{
-			manager->registerComponent(ent, this);
-		}
+		syncRigidBodyXZVelocity(regArgs t)
+			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyXZVelocity();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
+
 		virtual void sync(entityManager *manager, entity *ent);
 };
 

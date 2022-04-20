@@ -32,7 +32,10 @@ nlohmann::json serializer::serialize(entityManager *manager, entity *ent) {
 
 				if (has(demangled)) {
 					json temp = serializers[demangled](comp);
-					props.insert(temp.begin(), temp.end());
+
+					if (!temp.empty()) {
+						props.insert(temp.begin(), temp.end());
+					}
 				}
 			}
 
@@ -47,7 +50,10 @@ nlohmann::json serializer::serialize(entityManager *manager, entity *ent) {
 		if (has(demangled)) {
 			std::cout << "got here, serializing a " << demangled << std::endl;
 			json temp = serializers[demangled](ent);
-			entprops.insert(temp.begin(), temp.end());
+
+			if (!temp.empty()) {
+				entprops.insert(temp.begin(), temp.end());
+			}
 		}
 	}
 

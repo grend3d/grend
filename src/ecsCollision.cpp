@@ -17,13 +17,12 @@ collisionHandler::collisionHandler(entityManager *manager, entity *ent,
 }
 */
 
-collisionHandler::collisionHandler(entityManager *manager,
-                                   entity *ent,
+collisionHandler::collisionHandler(regArgs t,
                                    std::initializer_list<const char *> taglist)
-	: component(manager, ent),
+	: component(doRegister(this, t)),
 	  tags(taglist.begin(), taglist.end())
 {
-	manager->registerComponent(ent, this);
+	//manager->registerComponent(ent, this);
 }
 
 nlohmann::json collisionHandler::serialize(entityManager *manager) {

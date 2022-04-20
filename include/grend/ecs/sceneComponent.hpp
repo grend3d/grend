@@ -21,25 +21,20 @@ class sceneComponent : public component {
 		};
 
 		// TODO: constructors for single empty node, maybe copying other nodes
-		sceneComponent(entityManager *manager, entity *ent)
-			: component(manager, ent)
+		sceneComponent(regArgs t)
+			: component(doRegister(this, t))
 		{
-			manager->registerComponent(ent, this);
+			//manager->registerComponent(ent, this);
 		};
 
-		sceneComponent(entityManager *manager,
-		               entity *ent,
-		               const std::string& path)
-			: sceneComponent(manager, ent, path, Reference) {};
+		sceneComponent(regArgs t, const std::string& path)
+			: sceneComponent(std::move(t), path, Reference) {};
 
-		sceneComponent(entityManager *manager,
-		               entity *ent,
+		sceneComponent(regArgs t,
 		               const std::string& path,
 		               enum Usage usage)
-			: component(manager, ent)
+			: component(doRegister(this, t))
 		{
-			manager->registerComponent(ent, this);
-
 			load(path, usage);
 		}
 

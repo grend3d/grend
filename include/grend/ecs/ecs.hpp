@@ -75,45 +75,35 @@ struct searchResults;
 template <typename... T>
 searchResults<T...> searchEntities(entityManager *manager);
 
-/*
-template <typename T, typename U>
-concept differing_types =
-	std::is_same<T, U>::value
-	// make sure the serialized type member has been overloaded
-	|| (T::serializedType != U::serializedType);
-	*/
+// empty value returned to enforce calls to registerComponent
+struct [[nodiscard]] regArgs {
+	// constant arguments for each constructor
+	entity *ent;
+	entityManager *manager;
 
-// all ECS objects derived from component
-// TODO: now that I'm using typeid() could just attach any object
-//       as a component
-template <typename T>
-concept is_ECSObject
-	// XXX: basic check to make sure the serialized type has been overridden,
-	//      need something more robust than this
-	//=  differing_types<component, T>
-	//&& differing_types<entity, T>
-	//&& (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
-	= (std::is_same<T, component>::value || std::is_base_of<component, T>::value);
-
-template <typename T>
-concept Nameable =
-	is_ECSObject<T>
-	;
-	//&& requires(T a) { a.typeString(); };
-
-template <typename T>
-concept Constructable =
-	is_ECSObject<T>
-	&& requires(T a) {
-		T::defaultProperties();
-		new T((entityManager*)nullptr, (entity*)nullptr, T::defaultProperties());
+	struct you_should_not_construct_this_directly {
+		enum magic {
+			OK = 0xabadc0de,
+		} ok_cool;
 	};
 
-template <typename T>
-concept Serializeable
-	=  Nameable<T>
-	&& Constructable<T>
-	&& requires(T a) { a.serialize(); };
+	regArgs(entityManager *_manager,
+	        entity *_ent,
+	        const you_should_not_construct_this_directly& v)
+	{
+		ent = _ent;
+		manager = _manager;
+		// shouldn't need to actually check the magic value
+	}
+
+	// no copy constructor
+	regArgs(const regArgs&) = delete;
+	regArgs& operator=(const regArgs&) = delete;
+
+	// only move constructor
+	regArgs(regArgs&&) = default;
+	regArgs& operator=(regArgs&&) = default;
+};
 
 class entityManager {
 	public:
@@ -144,11 +134,15 @@ class entityManager {
 		std::set<entity*> added;
 		std::set<entity*> condemned;
 
-		//void registerComponent(entity *ent, std::string name, component *ptr);
+		template <typename T, typename... Args>
+		T *construct(entity *ent, Args... args) {
+			return new T(regArgs(this, ent, {regArgs::you_should_not_construct_this_directly::magic::OK}),
+				args...);
+		}
+
 		template <typename T>
-		void registerComponent(entity *ent, T *ptr) {
-			//registerComponent(ent, T::serializedType, ptr);
-			registerComponent(ent, getTypeName<T>(), ptr);
+		regArgs registerComponent(T *ptr, const regArgs& t) {
+			return registerComponent(getTypeName<T>(), ptr, t);
 		};
 
 		// should be called from interface constructors
@@ -188,13 +182,6 @@ class entityManager {
 		bool hasComponents(entity *ent, std::initializer_list<const char *> tags);
 		bool hasComponents(entity *ent, std::vector<const char *> tags);
 
-		/*
-		template <typename T>
-		bool hasComponent(entity *ent) {
-			//return hasComponents(ent, {T::serializedType});
-		};
-		*/
-
 		// remove() doesn't immediately free, just adds the entity
 		// to a queue of the condemned, clearFreedEntities() banishes the
 		// condemned from memory
@@ -215,8 +202,6 @@ class entityManager {
 			return (components.count(name))? components[name] : nullret;
 		}
 
-		sceneNode::ptr root = std::make_shared<sceneNode>();
-
 		// TODO: should this be similar to inputHandlerSystem, with
 		//       onCollision components?
 		std::shared_ptr<std::vector<collision>> collisions
@@ -226,25 +211,27 @@ class entityManager {
 		gameMain *engine;
 
 	private:
-		void registerComponent(entity *ent, const char *name, component *ptr);
+		regArgs registerComponent(const char *name,
+		                          component *ptr,
+		                          const regArgs& t);
 		void registerInterface(entity *ent, const char *name, void *ptr);
 };
 
+template <typename T>
+regArgs doRegister(T *ptr, const regArgs& t) {
+	return t.manager->registerComponent(ptr, t);
+}
+
 class component {
 	public:
-		component(entityManager *_manager, entity *ent)
-			: manager(_manager)
+		component(regArgs t)
+			: manager(t.manager)
 		{
-			manager->registerComponent(ent, this);
+			(void)manager->registerComponent(this, t);
 		}
 
 		virtual ~component();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
-
-		// draw the imgui widgets for this component, TODO
-		// also, this class needs a polymorphic member in order to upcast,
-		// so this fills that role.
-		virtual void drawEditorWidgets(void) { };
 
 		entityManager *manager;
 };
@@ -254,8 +241,7 @@ class entity : public component {
 		typedef std::shared_ptr<entity> ptr;
 		typedef std::weak_ptr<entity>   weakptr;
 
-		entity(entityManager *manager);
-		entity(entityManager *manager, entity *ent);
+		entity(regArgs t);
 
 		virtual ~entity();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
@@ -263,7 +249,7 @@ class entity : public component {
 
 		template <typename T, typename... Args>
 		T* attach(Args... args) {
-			return new T(manager, this, args...);
+			return manager->construct<T>(this, args...);
 		}
 
 		template <typename T>
@@ -410,13 +396,6 @@ To* castEntityComponent(entityManager *m, entity *e, const char *name) {
 #endif
 }
 
-/*
-template <class T>
-T castEntityComponent(T& val, entityManager *m, entity *e, std::string name) {
-	val = castEntityComponent<T>(m, e, name);
-	return val;
-}
-*/
 template <class To, class From>
 To*& castEntityComponent(To*& val, entityManager *m, entity *e) {
 	const char *name = getTypeName<From>();
@@ -446,13 +425,6 @@ template <class To>
 To* getComponent(entityManager *m, entity *e, const char *type) {
 	return castEntityComponent<To>(m, e, type);
 }
-
-/*
-template <Nameable T>
-T* castEntityComponent(entityManager *m, entity *e) {
-	return castEntityComponent<T*>(m, e, T::serializedType);
-}
-*/
 
 // TODO: generalized for any iterable container type
 bool intersects(std::multimap<const char *, component*>& entdata,
@@ -512,7 +484,6 @@ struct searchIterator {
 	}
 
 	bool operator!=(const searchIterator& other) const {
-		//return !(*this == other);
 		return it != other.it;
 	}
 };

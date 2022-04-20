@@ -17,10 +17,10 @@ entityEventSystem::~entityEventSystem() {};
 updatable::~updatable() {};
 activatable::~activatable() {};
 
-entity::entity(entityManager *manager)
-	: component(manager, this)
+entity::entity(regArgs t)
+	: component(doRegister(this, t))
 {
-	manager->registerComponent(this, this);
+	//manager->registerComponent(this, this);
 
 	/*
 	glm::vec3 pos(properties["node"]["position"][0],
@@ -44,14 +44,17 @@ entity::entity(entityManager *manager)
 	*/
 }
 
+/*
 // TODO: register entities as components of other entities...
 // TODO: keep this? I'm leaning more towards the idea of entity relationships
 //       being tracked as components using an indexer system,
 //       entity trees seem unwieldy and not as flexible
-entity::entity(entityManager *manager, entity *ent)
-	: entity(manager)
+entity::entity(entityManager *manager, entity *ent, regArgs t)
+	: component(manager, this, manager->registerComponent(this, t))
+	//: entity(manager, )
 {
 }
+*/
 
 void entityManager::update(float delta) {
 	for (auto& [name, system] : systems) {
@@ -115,7 +118,7 @@ void entityManager::update(float delta) {
 void entityManager::add(entity *ent) {
 	// TODO: toggleable messages
 	//SDL_Log("Adding entity %s", ent->typeString());
-	setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
+	//setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
 	entities.insert(ent);
 	added.insert(ent);
 }
@@ -187,7 +190,7 @@ void entityManager::freeEntity(entity *ent) {
 		return;
 	}
 
-	root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
+	//root->removeNode("entity["+std::to_string((uintptr_t)ent)+"]");
 
 	// first free component objects
 	auto comps = entityComponents[ent];
@@ -323,18 +326,22 @@ entity *entityManager::getEntity(component *com) {
 	}
 }
 
-void entityManager::registerComponent(entity *ent,
-                                      const char *name,
-                                      //std::string name,
-                                      component *ptr)
+regArgs entityManager::registerComponent(const char *name,
+                                         component *ptr,
+                                         const regArgs& t)
 {
 	// TODO: toggleable messages
 	//SDL_Log("registering component '%s' for %p", demangle(name).c_str(), ptr);
+
+	entity *ent = t.ent;
 
 	components[name].insert(ptr);
 	componentEntities.insert({ptr, ent});
 	componentTypes[ptr].insert(name);
 	entityComponents[ent].insert({name, ptr});
+
+	return regArgs(t.manager, t.ent, {regArgs::you_should_not_construct_this_directly::magic::OK});
+	//return t;
 }
 
 void entityManager::registerInterface(entity *ent,
@@ -356,7 +363,11 @@ void entityManager::registerInterface(entity *ent,
 	root = static_cast<component*>(ptr);
 #endif
 
-	registerComponent(ent, name, root);
+	(void)registerComponent(name, root,
+		// XXX: not this
+	regArgs(nullptr, ent, {regArgs::you_should_not_construct_this_directly::magic::OK})
+	//return t;
+			);
 }
 
 

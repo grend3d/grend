@@ -6,8 +6,7 @@ namespace grendx::ecs {
 
 class collisionHandler : public component {
 	public:
-		collisionHandler(entityManager *manager,
-		                 entity *ent,
+		collisionHandler(regArgs t,
 		                 std::initializer_list<const char *> tags);
 
 		virtual ~collisionHandler();

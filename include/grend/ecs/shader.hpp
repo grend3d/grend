@@ -11,7 +11,7 @@ namespace grendx::ecs {
 // programmatically, based on time, state, distance from camera, etc
 class abstractShader : public component {
 	public:
-		abstractShader(entityManager *manager, entity *ent);
+		abstractShader(regArgs t);
 		virtual ~abstractShader();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
@@ -24,7 +24,7 @@ class abstractShader : public component {
 // Returns the same shader each invocation
 class staticShader : public abstractShader {
 	public:
-		staticShader(entityManager *manager, entity *ent, const renderFlags& flags);
+		staticShader(regArgs t, const renderFlags& flags);
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual ~staticShader();
@@ -37,14 +37,14 @@ class staticShader : public abstractShader {
 // Returns the default built-in PBR shader
 class PBRShader : public staticShader {
 	public:
-		PBRShader(entityManager *manager, entity *ent);
+		PBRShader(regArgs t);
 		virtual ~PBRShader();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 };
 
 class UnlitShader : public staticShader {
 	public:
-		UnlitShader(entityManager *manager, entity *ent);
+		UnlitShader(regArgs t);
 		virtual ~UnlitShader();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 };

@@ -7,36 +7,26 @@ staticShader::~staticShader() {};
 PBRShader::~PBRShader() {};
 UnlitShader::~UnlitShader() {};
 
-abstractShader::abstractShader(entityManager *manager, entity *ent)
-	: component(manager, ent)
-{
-	manager->registerComponent(ent, this);
-}
+abstractShader::abstractShader(regArgs t)
+	: component(doRegister(this, t)) {}
 
-staticShader::staticShader(entityManager *manager, entity *ent, const renderFlags& flags)
-	: abstractShader(manager, ent),
-	  shader(flags)
-{
-	manager->registerComponent(ent, this);
-};
+staticShader::staticShader(regArgs t, const renderFlags& flags)
+	: abstractShader(doRegister(this, t)),
+	  shader(flags) { };
 
 renderFlags& staticShader::getShader() {
 	return shader;
 }
 
-PBRShader::PBRShader(entityManager *manager, entity *ent)
+PBRShader::PBRShader(regArgs t)
 	// TODO: reference PBR shader somehow, don't load internally inside the engine
-	: staticShader(manager, ent, manager->engine->rend->getLightingFlags())
-{
-	manager->registerComponent(ent, this);
-}
+	: staticShader(doRegister(this, t),
+	               t.manager->engine->rend->getLightingFlags()) {}
 
-UnlitShader::UnlitShader(entityManager *manager, entity *ent)
+UnlitShader::UnlitShader(regArgs t)
 	// TODO: reference unshaded shader somehow, don't load internally inside the engine
-	: staticShader(manager, ent, manager->engine->rend->getLightingFlags("unshaded"))
-{
-	manager->registerComponent(ent, this);
-}
+	: staticShader(doRegister(this, t),
+	               t.manager->engine->rend->getLightingFlags("unshaded")) {}
 
 // namespace grendx::ecs
 }

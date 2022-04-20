@@ -40,20 +40,18 @@ class factory : public abstractFactory {
 
 		virtual component *allocate(entityManager *manager, entity *ent)
 		{
-			return new T(manager, ent);
+			return manager->construct<T>(ent);
 		}
 };
 
 using SerializeFunc   = std::function<nlohmann::json(component *comp)>;
-using DeserializeFunc = std::function<bool(component *comp, nlohmann::json& properties)>;
+using DeserializeFunc = std::function<void(component *comp, nlohmann::json& properties)>;
 
 template <typename T>
 concept InlineSerializers
 	= requires(T a) {
-		static_cast<SerializeFunc>(T::serialize);
-		static_cast<DeserializeFunc>(T::deserialize);
-		//SerializeFunc   ser = T::serialize;
-		//DeserializeFunc des = T::deserialize;
+		(SerializeFunc)T::serializer;
+		(DeserializeFunc)T::deserializer;
 	};
 
 class serializer {
