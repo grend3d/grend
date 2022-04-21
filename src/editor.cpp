@@ -8,6 +8,10 @@
 #include <grend/loadScene.hpp>
 #include <grend/scancodes.hpp>
 
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/shader.hpp>
+#include <grend/ecs/sceneComponent.hpp>
+
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -124,23 +128,68 @@ void gameEditor::loadUIModels(void) {
 	compileModels(UIModels);
 }
 
+using entClicks = std::vector<std::pair<uint32_t, grendx::ecs::entity*>>;
+
+grendx::multiRenderQueue
+buildClickableQueue(gameMain *game,
+                    camera::ptr cam,
+                    entClicks& clicks)
+{
+	using namespace grendx;
+	using namespace ecs;
+	//auto drawable = searchEntities(game->entities.get(), {getTypeName<abstractShader>()});
+	auto drawable = game->entities->search<abstractShader>();
+
+	multiRenderQueue que;
+	uint32_t renderID = 10;
+
+	for (entity *ent : drawable) {
+		auto flags = ent->get<abstractShader>();
+		auto trans = ent->node->getTransformMatrix();
+		auto scenes = ent->getAll<sceneComponent>();
+		// TODO: do clicky things
+
+		renderFlags foo = flags->getShader();
+		foo.features |= renderFlags::Features::StencilTest;
+
+		que.add(foo, ent->node, renderID);
+		clicks.push_back({renderID, ent});
+
+		for (auto it = scenes.first; it != scenes.second; it++) {
+			sceneComponent *comp = static_cast<sceneComponent*>(it->second);
+			que.add(foo, comp->getNode(), renderID, trans);
+		}
+
+		renderID++;
+	}
+
+	return que;
+}
+
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	renderQueue que;
-	auto flags = game->rend->getLightingFlags();
+	renderFlags flags = game->rend->getLightingFlags();
+	flags.features |= renderFlags::Features::StencilTest;
 
-	auto world = buildDrawableQueue(game, cam);
+	// TODO: avoid clearing then reallocating all of this state...
+	//       lots of allocations
+	clickState.clear();
+	auto world = buildClickableQueue(game, cam, clickState);
 	world.add(flags, game->state->rootnode);
 	drawMultiQueue(game, world, fb, cam);
 	renderWorldObjects(game);
 
 	auto p = UIObjects->getNode("Orientation-Indicator");
 	auto m = p->getTransformMatrix();
-	que.add(p->nodes["X-Axis"],     1, m);
-	que.add(p->nodes["Y-Axis"],     2, m);
-	que.add(p->nodes["Z-Axis"],     3, m);
-	que.add(p->nodes["X-Rotation"], 4, m);
-	que.add(p->nodes["Y-Rotation"], 5, m);
-	que.add(p->nodes["Z-Rotation"], 6, m);
+
+	if (selectedNode) {
+		que.add(p->nodes["X-Axis"],     1, m);
+		que.add(p->nodes["Y-Axis"],     2, m);
+		que.add(p->nodes["Z-Axis"],     3, m);
+		que.add(p->nodes["X-Rotation"], 4, m);
+		que.add(p->nodes["Y-Rotation"], 5, m);
+		que.add(p->nodes["Z-Rotation"], 6, m);
+	}
 
 	auto cursor = UIObjects->getNode("Cursor-Placement");
 	auto bbox   = UIObjects->getNode("Bounding-Box");

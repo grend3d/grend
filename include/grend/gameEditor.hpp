@@ -128,6 +128,7 @@ class gameEditor : public gameView {
 		std::vector<editorEntry> dynamic_models;
 
 	private:
+		void updateSelected(const TRS& updated);
 		void renderWorldObjects(gameMain *game);
 		void menubar(gameMain *game);
 		void mapWindow(gameMain *game);
@@ -160,6 +161,8 @@ class gameEditor : public gameView {
 		sceneNode::ptr getNonModel(sceneNode::ptr obj);
 
 		std::vector<editCallback> callbacks;
+		std::vector<std::pair<uint32_t, ecs::entity*>> clickState;
+
 		modalSDLInput inputBinds;
 		bool showMapWindow = false;
 		bool showObjectEditorWindow = false;

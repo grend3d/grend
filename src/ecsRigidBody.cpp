@@ -172,7 +172,7 @@ void updateEntityTransforms(entityManager *manager,
                             entity *ent,
                             const TRS& transform)
 {
-	auto& m = manager->getEntityComponents(ent);
+	//auto& m = manager->getEntityComponents(ent);
 	//auto updaters = m.equal_range("transformUpdatable");
 	//auto updaters = m.equal_range(getTypeName<transformUpdatable>());
 	auto updaters = ent->getAll<transformUpdatable>();
@@ -183,6 +183,7 @@ void updateEntityTransforms(entityManager *manager,
 		transformUpdatable *updater = dynamic_cast<transformUpdatable*>(comp);
 
 		if (updater) {
+			std::cerr << "got here, updated transform" << std::endl;
 			updater->setTransform(transform);
 		}
 	}
