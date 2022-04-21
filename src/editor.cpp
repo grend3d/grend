@@ -533,7 +533,13 @@ void gameEditor::update(gameMain *game, float delta) {
 			auto ptr = orientation->getNode(str);
 
 			TRS newtrans = selectedNode->getTransformTRS();
-			newtrans.scale = glm::vec3(glm::distance(newtrans.position, cam->position()) * 0.22);
+			// project position relative to camera onto camera direction vector
+			// to get depth, then scale with depth to keep size constant on screen
+			glm::vec3 u = newtrans.position - cam->position();
+			glm::vec3 v = cam->direction();
+
+			float t = glm::dot(u, v) / glm::dot(v, v);
+			newtrans.scale = glm::vec3(t*0.20f);
 			ptr->setTransform(newtrans);
 		}
 
