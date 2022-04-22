@@ -22,10 +22,13 @@ static void drawSelectableLabel(const char *txt) {
 	}
 }
 
-static void drawJson(nlohmann::json& value) {
+static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	static ImGuiTreeNodeFlags flags
+		= ImGuiTreeNodeFlags_DefaultOpen;
+		/*
 		= ImGuiTreeNodeFlags_Bullet
 		| ImGuiTreeNodeFlags_DefaultOpen
+		*/
 		/*
 		| ImGuiTreeNodeFlags_OpenOnArrow
 		| ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -38,7 +41,7 @@ static void drawJson(nlohmann::json& value) {
 			std::string name = "[" + std::to_string(i) + "]";
 
 			if (ImGui::TreeNodeEx(name.c_str(), flags)) {
-				drawJson(value[i]);
+				drawJson(value[i], path + name);
 				ImGui::TreePop();
 			}
 		}
@@ -46,8 +49,9 @@ static void drawJson(nlohmann::json& value) {
 
 	else if (value.is_object()) {
 		for (auto& [name, em] : value.items()) {
-			if (ImGui::TreeNodeEx(name.c_str(), flags)) {
-				drawJson(em);
+			std::string temp = path + ":" + name;
+			if (ImGui::TreeNodeEx(temp.c_str(), flags)) {
+				drawJson(em, path + ":" + name);
 				ImGui::TreePop();
 			}
 		}
@@ -64,8 +68,19 @@ static void drawJson(nlohmann::json& value) {
 	}
 
 	else if (value.is_string()) {
-		ImGui::SameLine();
-		ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+		if (ImGui::TreeNodeEx(path.c_str(), flags)) {
+			ImGui::SameLine();
+			ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+
+			static char namebuf[128];
+			ImGui::InputText("##edit", namebuf, sizeof(namebuf));
+
+			ImGui::SameLine();
+			if (ImGui::Button("OK")) {
+				value = namebuf;
+			}
+			ImGui::TreePop();
+		}
 	}
 
 	else if (value.is_null()) {
@@ -246,11 +261,35 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 	ImGui::SameLine();
 	if (ImGui::Button("New entity")) {
-		showAddEntityWindow = true;
+		//showAddEntityWindow = true;
+		ImGui::OpenPopup("new_entity_popup");
 	}
+
+	if (ImGui::BeginPopup("new_entity_popup")) {
+		for (const auto& [name, _] : game->entities->components) {
+			if (ImGui::Selectable(demangle(name).c_str())) {
+				nlohmann::json j = {
+					{"entity-type", demangle(name)},
+					{"entity-properties", {
+						{"position", {0,0,0}},
+						{"rotation", {1,0,0,0}},
+						{"scale",    {1,1,1}}
+					}},
+					{"components", {}},
+				};
+
+				ecs::entity *ent = game->factories->build(game->entities.get(), j);
+				game->entities->add(ent);
+			}
+			//drawSelectableLabel(demangle(name).c_str());
+		}
+		ImGui::EndPopup();
+	}
+
 	ImGui::Separator();
 
-	ImGui::Columns(2);
+	ImGui::Columns(3);
+
 	ImGui::BeginChild("components");
 	ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Active components");
 	ImGui::Separator();
@@ -278,14 +317,15 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 		std::string entstr = "entity #" + std::to_string((uintptr_t)ent);
 		std::string contextstr = entstr + ":context";
+		std::string popupstr = entstr + ":popup";
 
 		if (game->entities->condemned.count(ent)) {
 			entstr = "[deleted] " + entstr;
 		}
 
 		if (ImGui::Selectable(entstr.c_str(), ent == selectedEntity)) {
-			selectedEntity = ent;
-			selectedNode = ent->node;
+			selectedNode      = ent->node;
+			selectedEntity    = ent;
 		}
 
 		if (ImGui::BeginPopupContextItem(contextstr.c_str())) {
@@ -313,7 +353,13 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 		for (auto& [name, comp] : components) {
 			if (!seen.count(name)) {
-				drawSelectableLabel(demangle(name).c_str());
+				if (ImGui::Selectable(demangle(name).c_str())) {
+					// TODO: need a way to serialize a specific component,
+					//       avoid recreating an entire entity
+					//selectedComponent = comp;
+					selectedEntity = ent;
+				}
+
 				ImGui::NextColumn();
 				seen.insert(name);
 			}
@@ -321,12 +367,59 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 		ImGui::TreePop();
 		ImGui::Columns(1);
+
+		std::string asdf = entstr + ":sec";
+		ImGui::TreePush(asdf.c_str());
+		if (ImGui::Button("Attach")) {
+			ImGui::OpenPopup(popupstr.c_str());
+		}
+
+		if (ImGui::BeginPopup(popupstr.c_str())) {
+			for (const auto& [name, _] : game->entities->components) {
+				if (ImGui::Selectable(demangle(name).c_str())) {
+					nlohmann::json j = {demangle(name), {}};
+
+					game->factories->build(game->entities.get(), ent, j);
+				}
+			}
+			ImGui::EndPopup();
+		}
+		ImGui::TreePop();
+
 		ImGui::Unindent(16.f);
 		ImGui::Separator();
 	}
 
 	ImGui::EndChild();
 	ImGui::EndChild();
+	ImGui::NextColumn();
+
+	ImGui::BeginChild("editComponent");
+	ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Active components");
+	ImGui::Separator();
+
+	ImGui::BeginChild("editView");
+	static nlohmann::json curjson;
+	static ecs::entity* curcomp = nullptr;
+
+	if (selectedEntity != curcomp && selectedEntity) {
+		curjson = game->factories->serialize(game->entities.get(), selectedEntity);
+		curcomp = selectedEntity;
+	}
+
+	drawJson(curjson);
+
+	if (ImGui::Button("Apply")) {
+		ecs::entity *ent = game->factories->build(game->entities.get(), curjson);
+		game->entities->remove(selectedEntity);
+		game->entities->clearFreedEntities();
+		game->entities->add(ent);
+		selectedEntity = ent;
+	}
+
+	ImGui::EndChild();
+	ImGui::EndChild();
+
 	ImGui::Columns(1);
 	ImGui::End();
 }

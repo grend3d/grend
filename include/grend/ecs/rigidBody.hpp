@@ -88,8 +88,11 @@ class rigidBody
 		static void deserializer(component *comp, nlohmann::json& j) {
 			rigidBody *body = static_cast<rigidBody*>(comp);
 
-			auto p = j["position"];
-			body->mass = j["mass"];
+			std::array<float, 3> p = j.contains("position")
+				? j["position"].get<std::array<float, 3>>()
+				: std::array<float, 3> {0, 0, 0};
+
+			body->mass = j.contains("mass")? j["mass"].get<float>() : 0.f;
 			body->position = {p[0], p[1], p[2]};
 		}
 };
