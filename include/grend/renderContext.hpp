@@ -12,7 +12,8 @@ namespace grendx {
 // TODO: where should this be moved to?
 class skybox {
 	public:
-		skybox(); 
+		skybox(const std::string& cubepath  = GR_PREFIX "assets/tex/cubes/default/",
+		       const std::string& extension = ".png");
 
 		void draw(camera::ptr cam, unsigned width, unsigned height);
 		void draw(camera::ptr cam, renderFramebuffer::ptr fb);

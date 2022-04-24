@@ -6,7 +6,10 @@
 
 using namespace grendx;
 
-skybox::skybox() {
+// TODO: just look for recognized extensions
+skybox::skybox(const std::string& cubepath,
+               const std::string& extension)
+{
 	model = generate_cuboid(1, 1, 1); // unit cube
 	compileModel("defaultSkyboxCuboid", model);
 	// TODO: need like a "bind new meshes" function
@@ -16,7 +19,8 @@ skybox::skybox() {
 	Shader::parameters nullopts; // XXX
 	program = loadProgram(
 		GR_PREFIX "shaders/baked/skybox.vert",
-		GR_PREFIX "shaders/baked/dynamic-skybox.frag",
+		//GR_PREFIX "shaders/baked/dynamic-skybox.frag",
+		GR_PREFIX "shaders/baked/skybox.frag",
 		nullopts
 	);
 
@@ -26,13 +30,8 @@ skybox::skybox() {
 		throw std::logic_error(program->log());
 	}
 
-	/*
-	glBindAttribLocation(program->obj, 0, "v_position");
-	link_program(program);
-	*/
-
 	map = genTexture();
-	map->cubemap(GR_PREFIX "assets/tex/cubes/default/", ".png");
+	map->cubemap(cubepath, extension);
 }
 
 void skybox::draw(camera::ptr cam, unsigned width, unsigned height) {
