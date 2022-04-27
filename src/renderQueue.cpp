@@ -264,15 +264,53 @@ void grendx::updateReflections(renderContext::ptr rctx, renderQueue& que) {
 	}
 }
 
-void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
-	// TODO: reserve a vector containing indexes and sort on that,
-	//       then copy indexes into the final output vector,
-	//       copying here when sorting is disgustingly bad
+// TODO:
+template <typename E>
+std::vector<E> idxSort(std::vector<E>& vec, std::function<bool(unsigned, unsigned)> compare) {
+	std::vector<unsigned> ret;
 
+	ret.resize(vec.size());
+
+	for (size_t i = 0; i < ret.size(); i++) {
+		ret[i] = i;
+	}
+
+	std::sort(ret.begin(), ret.end(), compare);
+
+	std::vector<E> foo;
+	foo.resize(vec.size());
+
+	for (size_t i = 0; i < ret.size(); i++) {
+		foo[i] = vec[ret[i]];
+	}
+
+	return foo;
+}
+
+void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 	// TODO: better way to do this, in-place?
 	renderQueue::MeshQ transparent;
 	renderQueue::MeshQ opaque;
 
+	transparent.reserve(queue.meshes.size());
+	opaque.reserve(queue.meshes.size());
+
+	using Ent = renderQueue::queueEnt<sceneMesh::ptr>;
+	std::vector<float> distances;
+	distances.resize(queue.meshes.size());
+
+	for (size_t i = 0; i < distances.size(); i++) {
+		distances[i] = glm::distance(cam->position(), queue.meshes[i].center);
+	}
+
+	queue.meshes = idxSort(queue.meshes,
+		[&] (unsigned a, unsigned b) {
+			return distances[a] < distances[b];
+		});
+
+	// Wait, did I need light sorting? Don't know why I have this here
+	// probably for shadow map ordering? shouldn't be necessary
+	/*
 	std::sort(queue.lights.begin(), queue.lights.end(),
 		[&] (auto& a, auto& b) {
 			return glm::distance(cam->position(), a.center)
@@ -284,7 +322,11 @@ void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 			return glm::distance(cam->position(), a.center)
 			     < glm::distance(cam->position(), b.center);
 		});
+		*/
 
+	// TODO: probably better to split transparent meshes out
+	//       when adding to the queue, then sort individually rather than
+	//       split after sorting
 	for (auto& it : queue.meshes) {
 		if (it.data->comped_mesh
 		    && it.data->comped_mesh->blend != material::blend_mode::Opaque)
@@ -304,6 +346,9 @@ void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 	queue.meshes.insert(queue.meshes.end(), transparent.begin(), transparent.end());
 }
 
+// TODO: seperate culls into functions for more granular culling
+//       (particularly lights, need to trim lights before updating
+//        shadow maps)
 void grendx::cullQueue(renderQueue& queue,
                        camera::ptr cam,
                        unsigned width,
@@ -313,19 +358,33 @@ void grendx::cullQueue(renderQueue& queue,
 	// TODO: reserve a vector containing indexes and cull on that,
 	//       then copy indexes into the final output vector,
 	//       push_back() here is disgustingly bad
-	// TODO: do a conservative bounding sphere culling before testing OBBs
+	// TODO: optional OBB test after testing spheres (maybe separate function)
 	// TODO: maybe multithreaded
 	// TODO: occlusion culling (maybe a seperate function)
 	renderQueue::MeshQ tempMeshes;
+	tempMeshes.reserve(queue.meshes.size());
 
 	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
 		auto& trans = it->transform;
 		auto& mesh  = it->data;
+		/*
 		auto obb = trans * mesh->boundingBox;
 
 		bool visible =
 			// TODO: might want just AABBs for performance, maybe an option?
 			cam->boxInFrustum(obb)
+			// need a compiled mesh
+			&& mesh->comped_mesh
+			// never need to draw fully transparent meshes
+			&& (!mesh->comped_mesh->mat
+			    || mesh->comped_mesh->mat->factors.opacity > 0.0001);
+				*/
+
+		auto sphere = trans * mesh->boundingSphere;
+
+		bool visible =
+			// TODO: might want just AABBs for performance, maybe an option?
+			cam->sphereInFrustum(sphere)
 			// need a compiled mesh
 			&& mesh->comped_mesh
 			// never need to draw fully transparent meshes
@@ -341,6 +400,7 @@ void grendx::cullQueue(renderQueue& queue,
 
 	for (auto& [skin, skmeshes] : queue.skinnedMeshes) {
 		renderQueue::MeshQ tempSkinned;
+		tempSkinned.reserve(skmeshes.size());
 
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
 			auto& trans = it->transform;
@@ -356,13 +416,20 @@ void grendx::cullQueue(renderQueue& queue,
 	}
 
 	renderQueue::LightQ tempLights;
+	tempLights.reserve(queue.lights.size());
+
 	for (auto it = queue.lights.begin(); it != queue.lights.end(); it++) {
 		auto& trans = it->transform;
 		auto& lit   = it->data;
 
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
-		if (cam->sphereInFrustum(applyTransform(trans), lit->extent(lightext))) {
+		BSphere sphere = {
+			.center = applyTransform(trans),
+			.extent = lit->extent(lightext),
+		};
+
+		if (cam->sphereInFrustum(sphere)) {
 			tempLights.push_back(*it);
 		}
 	}
@@ -372,13 +439,19 @@ void grendx::cullQueue(renderQueue& queue,
 	                       sceneParticles::ptr,
 						   sceneMesh::ptr>> tempInstanced;
 
+	tempInstanced.reserve(queue.instancedMeshes.size());
 	for (auto it = queue.instancedMeshes.begin();
 	     it != queue.instancedMeshes.end();
 	     it++)
 	{
 		auto& [_, trans, __, particles, ___] = *it;
 
-		if (cam->sphereInFrustum(applyTransform(trans), particles->radius)) {
+		BSphere sphere = {
+			.center = applyTransform(trans),
+			.extent = particles->radius,
+		};
+
+		if (cam->sphereInFrustum(sphere)) {
 			tempInstanced.push_back(*it);
 		}
 	}

@@ -114,6 +114,8 @@ void sceneModel::genAABBs(void) {
 			mesh->boundingBox.min = min(mesh->boundingBox.min, foo);
 			mesh->boundingBox.max = max(mesh->boundingBox.max, foo);
 		}
+
+		mesh->boundingSphere = AABBToBSphere(mesh->boundingBox);
 	}
 }
 

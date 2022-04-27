@@ -66,6 +66,10 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	renderFlags flags = rctx->probeShaders["shadow"];
 	flags.features |= renderFlags::Features::Shadowmap;
 
+	// TODO: 'cull radius' function for queues to avoid reprocessing the
+	//       entire render queue 6 times
+	// TODO: could also split queue culling into multiple threads, if it's
+	//       still a problem after culling by radius
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
 			std::cerr
@@ -74,14 +78,20 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 			continue;
 		}
 
+		// TODO: this might result in shader recompilation?
+		//       need all clear bits I think, test later
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 		renderQueue porque = queue;
 		// TODO: texture atlas should have some tree wrappers, just for
 		//       clean encapsulation...
 		quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap[i]);
+
 		cam->setDirection(cube_dirs[i], cube_up[i]);
 		cam->setViewport(info.size, info.size);
+
+		cullQueue(porque, cam, info.size, info.size, rctx->lightThreshold);
+		sortQueue(porque, cam);
 
 		flush(porque, cam, info.size, info.size, rctx, flags);
 	}
@@ -137,6 +147,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	profile::endGroup();
 
 	profile::startGroup("Clear");
+	// TODO: this might result in shader recompilation?
 	glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 	profile::endGroup();
 
@@ -152,8 +163,9 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setViewport(info.size, info.size);
 	profile::endGroup();
 
-	profile::startGroup("Cull");
-	cullQueue(porque, cam, info.size, info.size, 1.0);
+	profile::startGroup("Cull + Sort");
+	cullQueue(porque, cam, info.size, info.size, rctx->lightThreshold);
+	sortQueue(porque, cam);
 	renderQueue& newque = porque;
 	profile::endGroup();
 

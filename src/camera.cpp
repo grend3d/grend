@@ -174,13 +174,13 @@ bool camera::onScreen(glm::vec4 pos) {
 	    && pos.z >= -1 && pos.z <= 1;
 }
 
-bool camera::sphereInFrustum(const glm::vec3& v, float r) {
+bool camera::sphereInFrustum(const BSphere& sphere) {
 	recalculatePlanes();
 
 	for (unsigned i = 0; i < 6; i++) {
 		auto& p = planes[i];
 		//float dist = p.n.x*v.x + p.n.y*v.y + p.n.z*v.z + p.d + r;
-		float dist = glm::dot(p.n, v) + p.d + r;
+		float dist = glm::dot(p.n, sphere.center) + p.d + sphere.extent;
 
 		if (dist < 0) {
 			return false;

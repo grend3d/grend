@@ -315,7 +315,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		for (auto& entry : tempque.lights) {
 			glm::vec3 pos = entry.center;
 
-			if (cam->sphereInFrustum(pos, 0.5)) {
+			if (cam->sphereInFrustum(BSphere {pos, 0.5})) {
 				probeObj->setTransform((TRS) {
 					.position = entry.center,
 					.scale    = glm::vec3(0.5),

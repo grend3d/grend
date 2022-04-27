@@ -3,6 +3,11 @@
 
 namespace grendx {
 
+struct BSphere {
+	glm::vec3 center;
+	float     extent;
+};
+
 struct AABB {
 	glm::vec3 min;
 	glm::vec3 max;
@@ -40,6 +45,17 @@ static inline AABB ExtentsToAABB(const struct AABBExtent& box) {
 	};
 }
 
+static inline BSphere ExtentsToBSphere(const AABBExtent& box) {
+	return {
+		.center = box.center,
+		.extent = glm::length(box.extent),
+	};
+}
+
+static inline BSphere AABBToBSphere(const AABB& box) {
+	return ExtentsToBSphere(AABBToExtents(box));
+}
+
 // return OBB from AABB translation, m*a can rotate, skew, etc, the box,
 // resulting in a box that isn't aligned with the original axis.
 // this also preserves the volume contained in the box, results in more exact
@@ -73,6 +89,15 @@ static inline struct OBB operator*(glm::mat4 m, struct AABB& a) {
 	ret.center = 0.5f*(vmin + vmax);
 
 	return ret;
+}
+
+static inline BSphere operator*(const glm::mat4& m, const BSphere& sphere) {
+	static const glm::vec4 unit = {0.71, 0.71, 0.71, 0};
+
+	return BSphere {
+		.center = glm::vec3(m*glm::vec4(sphere.center, 1)),
+		.extent = glm::length(m*unit) * sphere.extent,
+	};
 }
 
 // namespace grendx

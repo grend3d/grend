@@ -1,5 +1,6 @@
 #pragma once
 #include <grend/glmIncludes.hpp>
+#include <grend/boundingBox.hpp>
 #include <memory>
 
 #undef near
@@ -54,7 +55,7 @@ class camera {
 		glm::vec4 worldToScreenPosition(glm::vec3 pos);
 		bool onScreen(glm::vec4 pos);
 
-		bool sphereInFrustum(const glm::vec3& pos, float r);
+		bool sphereInFrustum(const BSphere& sphere);
 		bool boxInFrustum(const struct AABB& box);
 		bool boxInFrustum(const struct OBB& box);
 

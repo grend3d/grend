@@ -36,7 +36,9 @@ class sceneMesh : public sceneNode {
 		std::string meshName = "unit_cube:default";
 		material::ptr meshMaterial;
 		std::vector<GLuint> faces;
-		struct AABB boundingBox;
+
+		struct AABB    boundingBox;
+		struct BSphere boundingSphere;
 };
 
 // used for joint indices

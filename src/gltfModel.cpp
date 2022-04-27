@@ -779,9 +779,18 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			curModel->genTangents();
 		}
 
+		// TODO: need a way to also generate BSpheres for each mesh,
+		//       just calling this all the time for now
+		curModel->genAABBs();
+
+		/*
 		if (!curModel->haveAABB) {
 			curModel->genAABBs();
+
+		} else {
+			curModel->boundingSphere = AABBToBSphere(curModel->boundingBox);
 		}
+		*/
 	}
 
 	return ret;
