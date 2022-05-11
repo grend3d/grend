@@ -1,5 +1,6 @@
 #include <grend/gameEditor.hpp>
 #include <grend/utility.hpp>
+#include <grend/fileDialog.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -10,6 +11,7 @@
 using namespace grendx;
 
 static char searchBuffer[0x1000] = "";
+static fileDialog export_entity_dialog("Export entity");
 
 static void drawSelectableLabel(const char *txt) {
 	if (ImGui::Selectable(txt)) {
@@ -242,6 +244,27 @@ void gameEditor::addEntityWindow(gameMain *game) {
 #endif
 }
 
+static void handle_prompts(gameEditor *editor, gameMain *game) {
+	if (export_entity_dialog.promptFilename()) {
+		const std::string& name = export_entity_dialog.selection;
+
+		if (!editor->selectedEntity) {
+			std::cerr << "No entity selected, can't export to "
+				<< name << std::endl;
+			return;
+		}
+
+		std::cerr << "Exporting entity to " << name << std::endl;
+
+		std::ofstream out(name);
+		auto curjson = game->factories->serialize(game->entities.get(), editor->selectedEntity);
+
+		out << curjson.dump();
+
+		export_entity_dialog.clear();
+	}
+}
+
 void gameEditor::entitySelectWindow(gameMain *game) {
 	ImGui::Begin("Entities", &showEntitySelectWindow);
 	if (ImGui::Button("Clear")) {
@@ -374,6 +397,12 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 			ImGui::OpenPopup(popupstr.c_str());
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("Save")) {
+			selectedEntity = ent;
+			export_entity_dialog.show();
+		}
+
 		if (ImGui::BeginPopup(popupstr.c_str())) {
 			for (const auto& [name, _] : game->entities->components) {
 				if (ImGui::Selectable(demangle(name).c_str())) {
@@ -422,4 +451,6 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 
 	ImGui::Columns(1);
 	ImGui::End();
+
+	handle_prompts(this, game);
 }

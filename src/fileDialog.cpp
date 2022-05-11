@@ -64,6 +64,9 @@ bool fileDialog::promptFilename(void) {
 	if (ImGui::Button("OK")) {
 		if (cursorPos > -1) {
 			select(dirContents[cursorPos]);
+		} else {
+			selected = true;
+			selection = currentDir;
 		}
 	}
 

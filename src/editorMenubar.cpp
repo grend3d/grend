@@ -18,6 +18,9 @@ static fileDialog import_model_dialog("Import Model");
 static fileDialog import_scene_dialog("Import Scene");
 static fileDialog import_map_dialog("Import Map");
 
+// TODO: move this to entity file
+static fileDialog load_entity_dialog("Load Entity");
+
 static void handle_prompts(gameEditor *editor, gameMain *game) {
 	if (open_dialog.promptFilename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
@@ -73,6 +76,27 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 			std::string name = "map["+std::to_string(obj->id)+"]";
 			setNode(name, editor->selectedNode, obj);
 		} else printError(res);
+	}
+
+	if (load_entity_dialog.promptFilename()) {
+		const auto& name = load_entity_dialog.selection;
+		std::cerr << "Importing an entity! at " << name << std::endl;
+
+		std::ifstream in(name);
+
+		if (in.good()) {
+			nlohmann::json j;
+			in >> j;
+
+			ecs::entity *ent = game->factories->build(game->entities.get(), j);
+			game->entities->add(ent);
+
+			load_entity_dialog.clear();
+
+		} else {
+			// TODO: errors need to be message boxes
+			std::cerr << "Invalid filename." << std::endl;
+		}
 	}
 }
 
@@ -204,8 +228,9 @@ void gameEditor::menubar(gameMain *game) {
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Add Entity")) {
-				showAddEntityWindow = true;
+			if (ImGui::MenuItem("Load Entity")) {
+				load_entity_dialog.show();
+				//showAddEntityWindow = true;
 			}
 
 			if (ImGui::MenuItem("Edit Entity")) {
