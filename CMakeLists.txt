@@ -146,7 +146,7 @@ if (ANDROID)
 	#       every library that touches C/C++ file i/o
 	#add_compile_options(-DGR_PREFIX="/sdcard/grend/")
 	if (NOT PORTABLE_BUILD)
-		set(GR_PREFIX "/sdcard/grend/")
+		set(GR_PREFIX "${CMAKE_INSTALL_PREFIX}/share/grend/")
 	endif()
 
 	target_compile_options(Grend PUBLIC -DMAX_LIGHTS=8)
