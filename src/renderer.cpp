@@ -14,7 +14,7 @@ using namespace grendx;
 material::ptr default_material;
 compiledMaterial::ptr default_compiledMat;
 
-void renderContext::applySettings(renderSettings& newsettings) {
+void renderContext::applySettings(const renderSettings& newsettings) {
 	settings = newsettings;
 
 	atlases = renderAtlases(settings.reflectionAtlasSize,
@@ -26,7 +26,7 @@ void renderContext::applySettings(renderSettings& newsettings) {
 	framebuffer = std::make_shared<renderFramebuffer>(adjX, adjY, settings.msaaLevel);
 }
 
-renderContext::renderContext(context& ctx, renderSettings _settings) {
+renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	applySettings(_settings);
 
 	Framebuffer().bind();

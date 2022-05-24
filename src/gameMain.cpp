@@ -37,7 +37,7 @@ gameMain::gameMain(const std::string& name, const renderSettings& _settings)
 #endif
 
 	state  = std::make_shared<gameState>();
-	rend   = std::make_shared<renderContext>(ctx);
+	rend   = std::make_shared<renderContext>(ctx, _settings);
 	audio  = std::make_shared<audioMixer>(ctx);
 	jobs   = std::make_shared<jobQueue>();
 

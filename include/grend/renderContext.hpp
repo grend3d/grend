@@ -58,10 +58,10 @@ class renderContext {
 			PlainArray,
 		};
 
-		renderContext(context& ctx, renderSettings _settings = renderSettings());
+		renderContext(context& ctx, const renderSettings& _settings);
 		~renderContext() { };
 
-		void applySettings(renderSettings& settings);
+		void applySettings(const renderSettings& settings);
 		void loadShaders(void);
 
 		// TODO: 
