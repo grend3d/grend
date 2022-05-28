@@ -134,10 +134,19 @@ class entityManager {
 		std::set<entity*> added;
 		std::set<entity*> condemned;
 
+		// TODO: might be a good idea to rename constructComponent and constructEntity,
+		//       would be annoyingly verbose though...
+		//       makeComponent, makeEntity?
+		// TODO: could use a concept type for T
 		template <typename T, typename... Args>
 		T *construct(entity *ent, Args... args) {
 			return new T(regArgs(this, ent, {regArgs::you_should_not_construct_this_directly::magic::OK}),
 				args...);
+		}
+
+		template <typename T, typename... Args>
+		T *construct(Args... args) {
+			return construct<T>((entity*)nullptr, args...);
 		}
 
 		template <typename T>
