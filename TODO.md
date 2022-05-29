@@ -1,20 +1,11 @@
-- make a prototype of UI layout on top of imgui/nuklear
+### General
 - work on building and streaming mesh data in real time
 - add a marching cubes implementation
 - start merging in nscheme stuff
 - handle controllers in scancode header
 - split editor into seperate library
 - come up with a better name for the "scancode" header
-- completely phase out modalSDLInput, need a better way of abstracting
-  away input events, polling input rather than passing around events,
-  providing a clean way to remap bindings
-- use seperate R16/R32 attachment for renderIDs so stencil buffer is free
-  for other purposes
-- render world into seperate framebuffer in editor so that docking stuff
-  actually makes sense
-- have a convenient way to render text, UI stuff into textures to be
-  displayed in the world
-- perhaps remove gameObject from entities
+- maybe remove gameObject from entities
   and have only an entity transform (or even have that as a component)
 - less OOP in ECS, it was a worthy experiment but a more typical data-oriented
   approach seems to be the way to go
@@ -26,3 +17,33 @@
 - more physics stuff, constraints, sphere collision checks
 - generic particle system, optionally renderable
 - start on a netcode prototype using ECS stuff
+- handle window resizing (again)
+
+### UI
+- make a prototype of UI layout on top of imgui/nuklear
+- completely phase out modalSDLInput, need a better way of abstracting
+  away input events, polling input rather than passing around events,
+  providing a clean way to remap bindings
+- have a convenient way to render text, UI stuff into textures to be
+  displayed in the world
+
+### Rendering
+- Store render IDs (not mesh IDs) in a framebuffer attachment rather than the
+  stencil buffer
+- Store normals, metalness, roughness in framebuffer attachment (for SSAO, SSR),
+  metal/roughness could be stored in the same buffer, or maybe store all of it
+  in a single buffer w/ packed normals
+- Compute shader to determine average brightness, automatically adjust exposure
+- Specular convolution for reflection probes
+- SSAO
+- SSR
+- render world into seperate framebuffer in editor so that docking stuff
+  actually makes sense
+  
+### Experimental
+- Compute shader to bin lights
+- Store delta transforms from last frame in buffer indexed by mesh ID,
+  store mesh IDs in framebuffer attachment
+  (this would be used to derive velocities, adjust surfel positions in a surfel GI)
+- TSSAA
+- Surfel GI
