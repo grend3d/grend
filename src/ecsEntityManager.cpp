@@ -490,5 +490,36 @@ bool intersects(std::multimap<const char *, component*>& entdata,
 	return true;
 }
 
+nlohmann::json entity::serializer(component *comp) {
+	entity *ent = static_cast<entity*>(comp);
+	const TRS& trs = ent->node->getTransformTRS();
+
+	auto& t = trs.position;
+	auto& r = trs.rotation;
+	auto& s = trs.scale;
+
+	return {
+		{"position", {t.x, t.y, t.z}},
+		{"rotation", {r.w, r.x, r.y, r.z}},
+		{"scale",    {s.x, s.y, s.z}},
+	};
+}
+
+void entity::deserializer(component *comp, nlohmann::json j) {
+	entity *ent = static_cast<entity*>(comp);
+
+	std::cout << "Got here! setting transform" << std::endl;
+
+	auto& t = j["position"];
+	auto& r = j["rotation"];
+	auto& s = j["scale"];
+
+	ent->node->setTransform((TRS) {
+		.position = {t[0], t[1], t[2]},
+		.rotation = {r[0], r[1], r[2], r[3]},
+		.scale    = {s[0], s[1], s[2]},
+	});
+}
+
 // namespace grendx::ecs
 };

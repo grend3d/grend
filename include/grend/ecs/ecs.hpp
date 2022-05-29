@@ -13,6 +13,8 @@
 #include <memory>
 #include <initializer_list>
 
+#include <nlohmann/json.hpp>
+
 // XXX: forward declaration for gameMain.hpp (at end)
 //      entityManager keeps a gameMain pointer, avoids pointlessly having to
 //      pass it as a function parameter all the time
@@ -279,6 +281,9 @@ class entity : public component {
 		T* getInterface() {
 			return getInterface<T>(manager, this);
 		}
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		sceneNode::ptr node = std::make_shared<sceneNode>();
 		// TODO: should have a seperate entity list for deactivated

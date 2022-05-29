@@ -54,6 +54,12 @@ concept InlineSerializers
 		(DeserializeFunc)T::deserializer;
 	};
 
+template <typename T>
+static inline
+T tryGet(nlohmann::json& value, const std::string& name, T defaultVal) {
+	return value.contains(name)? value[name].get<T>() : defaultVal;
+}
+
 class serializer {
 	public:
 		typedef std::shared_ptr<serializer> ptr;

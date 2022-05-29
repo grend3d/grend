@@ -75,6 +75,26 @@ class sceneComponent : public component {
 		const std::string& getPath() {
 			return curPath;
 		}
+
+		static nlohmann::json serializer(component *comp) {
+			sceneComponent *scn = static_cast<sceneComponent*>(comp);
+
+			return {
+				{"path", scn->getPath()},
+			};
+		}
+
+		static void deserializer(component *comp, nlohmann::json j) {
+			sceneComponent *scn = static_cast<sceneComponent*>(comp);
+			std::string path = tryGet<std::string>(j, "path", "");
+
+			std::cout << "Loading "  << j["path"] << std::endl;
+
+			if (!path.empty()) {
+				// TODO: should store usage?????
+				scn->load(path, sceneComponent::Reference);
+			}
+		}
 };
 
 // namespace grend::ecs
