@@ -262,6 +262,9 @@ class syncRigidBody : public component {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void sync(entityManager *manager, entity *ent) = 0;
+
+		static nlohmann::json serializer(component *comp) { return {}; }
+		static void deserializer(component *comp, nlohmann::json j) { };
 };
 
 class syncRigidBodyTransform : public syncRigidBody {
