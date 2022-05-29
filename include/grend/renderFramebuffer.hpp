@@ -32,10 +32,18 @@ class renderFramebuffer {
 
 		Framebuffer::ptr framebuffer;
 		Framebuffer::ptr framebufferMultisampled;
-		Texture::ptr colorMultisampled;
+
 		Texture::ptr color;
-		Texture::ptr depthMultisampled;
 		Texture::ptr depth;
+		Texture::ptr colorMultisampled;
+		Texture::ptr depthMultisampled;
+
+#if GLSL_VERSION >= 300 && GREND_USE_G_BUFFER
+		Texture::ptr normal;
+		Texture::ptr position;
+		Texture::ptr normalMultisampled;
+		Texture::ptr positionMultisampled;
+#endif
 
 		// shader to blit multisampled buffer to a normal framebuffer
 		Program::ptr msaaResolver = nullptr;

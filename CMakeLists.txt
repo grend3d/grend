@@ -30,8 +30,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 #option(BUILD_SHARED_LIBS "build the shared stuff" ON)
+option(GREND_ERROR_CHECK  "Enable graphics library error checks (Development only)" ON)
+option(GREND_USE_G_BUFFER "Enable G-Buffer output (uses more memory, but more advanced rendering techniques depend on it)" ON)
 option(PHYSICS_BULLET "Use the bullet physics library" ON)
-option(GREND_ERROR_CHECK "Enable graphics library error checks" ON)
 option(PORTABLE_BUILD    "Portable build, include all dependancies in the install" OFF)
 message(STATUS "ASSETS:  ${CMAKE_ANDROID_ASSETS_DIRECTORIES}")
 message(STATUS "ASSETS2: ${APK_DIR}")
@@ -375,6 +376,7 @@ foreach(_shaderpath ${SHADER_SRC})
 
 	add_custom_command(OUTPUT ${_shaderout}
 		COMMAND cpp
+			-DGREND_USE_G_BUFFER=${GREND_USE_G_BUFFER}
 			-DGLSL_VERSION=${GLSL_VERSION}
 			-I${PROJECT_SOURCE_DIR}/shaders
 			-I${PROJECT_BINARY_DIR}

@@ -83,6 +83,11 @@ void main(void) {
 	// apply tonemapping here if there's no postprocessing step afterwards
 	total_light = vec3(EARLY_TONEMAP(vec4(total_light, 1.0), 1.0, f_texcoord));
 
+#if GREND_USE_G_BUFFER
+	FRAG_NORMAL   = normal_dir;
+	FRAG_POSITION = f_position.xyz;
+#endif
+
 #ifdef DEBUG_CLUSTERS
 	float N = float(ACTIVE_POINTS(cluster)) / float(MAX_LIGHTS);
 	const float thresh = 0.75;

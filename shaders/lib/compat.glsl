@@ -1,5 +1,9 @@
 #pragma once
 
+// for settings passed in from cmake
+#define OFF 0
+#define ON  1
+
 #ifndef VERTEX_SHADER
 #ifndef FRAGMENT_SHADER
 #error You need to define the shader type! (VERTEX_SHADER or FRAGMENT_SHADER)
@@ -50,8 +54,17 @@
 	#endif
 
 	#ifdef FRAGMENT_SHADER
-		OUT vec4 FragColor;
-		#define FRAG_COLOR FragColor
+		#define FRAG_COLOR    FragColor
+		layout (location = 0) out vec4 FragColor;
+
+		#if GREND_USE_G_BUFFER
+			layout (location = 1) out vec3 FragNormal;
+			layout (location = 2) out vec3 FragPosition;
+			// TODO: mesh, render ID
+
+			#define FRAG_NORMAL   FragNormal
+			#define FRAG_POSITION FragPosition
+		#endif
 	#endif
 
 	#define textureCube(tex, coord) texture(tex, coord)

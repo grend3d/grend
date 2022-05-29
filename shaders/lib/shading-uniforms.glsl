@@ -2,6 +2,9 @@
 #include <lib/compat.glsl>
 #include <lib/shading-varying.glsl>
 
+// XXX: TODO: pass this in from settings
+#define TILED_LIGHT_ARRAY 1
+
 struct material {
 	vec4 diffuse;
 	vec4 ambient;

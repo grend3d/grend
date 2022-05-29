@@ -12,6 +12,14 @@ IN vec2 f_texcoord;
 uniform int samples;
 uniform sampler2DMS colorMS;
 
+// TODO: MSAA with G-buffers might not make a lot of sense, just
+//       want to experiment with it
+//       (particularly to see if it gives better results with temporal upscaling)
+#if GREND_USE_G_BUFFER
+	uniform sampler2DMS normalMS;
+	uniform sampler2DMS positionMS;
+#endif
+
 void main(void) {
 	ivec2 size = textureSize(colorMS);
 	ivec2 uv   = ivec2(size*f_texcoord);
@@ -24,4 +32,9 @@ void main(void) {
 	}
 
 	FRAG_COLOR = color / float(samples);
+	#if GREND_USE_G_BUFFER
+		// don't average G-buffer info, pass along first sample
+		FRAG_NORMAL   = texelFetch(normalMS, uv, 0).rgb;
+		FRAG_POSITION = texelFetch(positionMS, uv, 0).rgb;
+	#endif
 }

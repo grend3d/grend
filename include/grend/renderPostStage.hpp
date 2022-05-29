@@ -88,6 +88,8 @@ class renderPostStage : public Storage {
 			draw(nullptr, nullptr);
 		}
 
+		// TODO: hmmm... can't do this with gbuffers...
+		//       maybe a struct holding all gbuffer textures?
 		void draw(Texture::ptr previous, Texture::ptr depth) {
 			this->framebuffer->bind();
 			program->bind();
@@ -101,11 +103,13 @@ class renderPostStage : public Storage {
 				program->set("render_fb", TEXU_SCRATCH);
 			}
 
+			/*
 			if (depth) {
 				glActiveTexture(TEX_GL_SCRATCHB);
 				depth->bind();
 				program->set("render_depth", TEXU_SCRATCHB);
 			}
+			*/
 
 			// No scaling for previous postprocessing stages, although that
 			// could be useful for doing expensive effects at reduced resolution
@@ -129,9 +133,11 @@ class renderPostStage : public Storage {
 			previous->color->bind();
 			program->set("render_fb", TEXU_SCRATCH);
 
+			/*
 			glActiveTexture(TEX_GL_SCRATCHB);
 			previous->depth->bind();
 			program->set("render_depth", TEXU_SCRATCHB);
+			*/
 
 			program->set("scale_x", previous->scale.x);
 			program->set("scale_y", previous->scale.y);
@@ -210,6 +216,22 @@ class renderPostChain {
 		void draw(renderFramebuffer::ptr fb) {
 			fb->resolve(uniforms);
 			Texture::ptr current = fb->color;
+
+			#if GREND_USE_G_BUFFER
+				glActiveTexture(TEX_GL_NORMAL);
+				fb->normal->bind();
+				//program->set("normal_fb", TEXU_NORMAL);
+				setUniform("normal_fb", TEXU_NORMAL);
+
+				glActiveTexture(TEX_GL_SKYBOX);
+				fb->position->bind();
+				//program->set("position_fb", TEXU_SKYBOX);
+				setUniform("position_fb", TEXU_SKYBOX);
+			#endif
+
+			glActiveTexture(TEX_GL_SCRATCHB);
+			fb->depth->bind();
+			setUniform("render_depth", TEXU_SCRATCHB);
 
 			for (auto& stage : prestages) {
 				stage->setUniforms(uniforms, uniformBlocks);

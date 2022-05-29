@@ -82,15 +82,35 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 	}
 
 	if (msaaResolver) {
+		unsigned bufs[] = {
+			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2
+		};
+
+		glDrawBuffers(3, bufs);
+
 		// custom resolver, for tonemapping in particular
 		// TODO: could this be unified with the postprocessing code
 		framebuffer->bind();
 		msaaResolver->bind();
 		DO_ERROR_CHECK();
 
+		glDrawBuffers(3, bufs);
+
 		glActiveTexture(TEX_GL_SCRATCH);
 		colorMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
 		msaaResolver->set("colorMS", TEXU_SCRATCH);
+
+#if GREND_USE_G_BUFFER
+		glActiveTexture(TEX_GL_NORMAL);
+		normalMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		msaaResolver->set("normalMS", TEXU_NORMAL);
+
+		glActiveTexture(TEX_GL_SCRATCHB);
+		positionMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		msaaResolver->set("positionMS", TEXU_SCRATCHB);
+#endif
 		DO_ERROR_CHECK();
 
 		for (auto& [key, val] : options) {
@@ -104,8 +124,8 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		disable(GL_DEPTH_TEST);
 		DO_ERROR_CHECK();
 
-		DO_ERROR_CHECK();
 		drawScreenquad();
+		DO_ERROR_CHECK();
 
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferMultisampled->obj);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer->obj);
@@ -129,10 +149,29 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	auto h = height = max(1, Height);
 
 	framebuffer->bind();
-	color = framebuffer->attach(GL_COLOR_ATTACHMENT0,
-			genTextureColor(w, h, rgbaf_if_supported()));
-	depth = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT,
-			genTextureDepthStencil(w, h));
+
+	color = genTextureColor(w, h, rgbaf_if_supported());
+	depth = genTextureDepthStencil(w, h);
+
+	framebuffer->attach(GL_COLOR_ATTACHMENT0,        color);
+	framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, depth);
+
+#if GREND_USE_G_BUFFER
+	normal   = genTextureColor(w, h, rgbaf_if_supported());
+	position = genTextureColor(w, h, rgbaf_if_supported());
+
+	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
+	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
+
+	const unsigned bufs[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT1,
+		GL_COLOR_ATTACHMENT2
+	};
+
+	glDrawBuffers(3, bufs);
+#endif
+
 	DO_ERROR_CHECK();
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -143,8 +182,14 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	if (multisample) {
 		framebufferMultisampled->bind();
 
-		colorMultisampled = genTextureColorMultisample(w, h, multisample,
-		                                               rgbaf_if_supported());
+		auto gentex = [&]() {
+			// make big function call less verbose
+			return genTextureColorMultisample(w, h,
+			                                  multisample,
+			                                  rgbaf_if_supported());
+		};
+
+		colorMultisampled = gentex();
 		depthMultisampled = genTextureDepthStencilMultisample(w, h, multisample);
 
 		framebufferMultisampled->attach(GL_COLOR_ATTACHMENT0,
@@ -154,6 +199,22 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		framebufferMultisampled->attach(GL_DEPTH_STENCIL_ATTACHMENT,
 		                                depthMultisampled,
 		                                GL_TEXTURE_2D_MULTISAMPLE);
+
+		#if GREND_USE_G_BUFFER
+			normalMultisampled   = gentex();
+			positionMultisampled = gentex();
+
+			framebufferMultisampled->attach(GL_COLOR_ATTACHMENT1,
+											normalMultisampled,
+											GL_TEXTURE_2D_MULTISAMPLE);
+
+			framebufferMultisampled->attach(GL_COLOR_ATTACHMENT2,
+											positionMultisampled,
+											GL_TEXTURE_2D_MULTISAMPLE);
+
+			glDrawBuffers(3, bufs);
+		#endif
+
 
 		DO_ERROR_CHECK();
 

@@ -4,7 +4,10 @@
 #define ON  1
 
 #cmakedefine GLSL_VERSION @GLSL_VERSION@
-#cmakedefine PHYSICS_BULLET
+#cmakedefine GREND_USE_G_BUFFER @GREND_USE_G_BUFFER@
 #cmakedefine GREND_ERROR_CHECK @GREND_ERROR_CHECK@
+
+// TODO: rename stuff to be more consistent
+#cmakedefine PHYSICS_BULLET
 #cmakedefine GR_PREFIX "@GR_PREFIX@"
 #cmakedefine PORTABLE_BUILD @PORTABLE_BUILD@
