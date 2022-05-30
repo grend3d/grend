@@ -261,8 +261,11 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		auto& refShader = game->rend->internalShaders["refprobe_debug"];
 		auto& irradShader = game->rend->internalShaders["irradprobe_debug"];
 
-		probeFlags.mainShader = probeFlags.skinnedShader =
-			probeFlags.instancedShader = probeFlags.billboardShader = refShader;
+		probeFlags.mainShader
+			= probeFlags.skinnedShader
+			= probeFlags.instancedShader
+			= probeFlags.billboardShader
+			= refShader;
 
 		refShader->bind();
 
@@ -288,6 +291,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 		probeFlags.mainShader
 			= probeFlags.skinnedShader
 			= probeFlags.instancedShader
+			= probeFlags.billboardShader
 			= irradShader;
 		irradShader->bind();
 
@@ -305,6 +309,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			}
 
 			que.add(probeObj);
+			DO_ERROR_CHECK();
 			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
 		}
 	}
