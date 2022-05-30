@@ -47,6 +47,15 @@ void renderFramebuffer::bind(void) {
 	} else {
 		framebuffer->bind();
 	}
+
+	#if GREND_USE_G_BUFFER
+		const unsigned bufs[] = {
+			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2
+		};
+		glDrawBuffers(3, bufs);
+	#endif
 #else
 	framebuffer->bind();
 #endif
@@ -157,8 +166,8 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, depth);
 
 #if GREND_USE_G_BUFFER
-	normal   = genTextureColor(w, h, rgbaf_if_supported());
-	position = genTextureColor(w, h, rgbaf_if_supported());
+	normal   = genTextureColor(w, h, rgbf_if_supported());
+	position = genTextureColor(w, h, rgbf_if_supported());
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
 	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
@@ -182,35 +191,31 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	if (multisample) {
 		framebufferMultisampled->bind();
 
-		auto gentex = [&]() {
+		auto gentex = [&](GLenum format) {
 			// make big function call less verbose
 			return genTextureColorMultisample(w, h,
 			                                  multisample,
-			                                  rgbaf_if_supported());
+			                                  format);
 		};
 
-		colorMultisampled = gentex();
+		auto attach = [&](GLenum attachment, Texture::ptr tex) {
+			return framebufferMultisampled->attach(attachment,
+			                                       tex,
+			                                       GL_TEXTURE_2D_MULTISAMPLE);
+		};
+
+		colorMultisampled = gentex(rgbaf_if_supported());
 		depthMultisampled = genTextureDepthStencilMultisample(w, h, multisample);
 
-		framebufferMultisampled->attach(GL_COLOR_ATTACHMENT0,
-		                                colorMultisampled,
-		                                GL_TEXTURE_2D_MULTISAMPLE);
-
-		framebufferMultisampled->attach(GL_DEPTH_STENCIL_ATTACHMENT,
-		                                depthMultisampled,
-		                                GL_TEXTURE_2D_MULTISAMPLE);
+		attach(GL_COLOR_ATTACHMENT0,        colorMultisampled);
+		attach(GL_DEPTH_STENCIL_ATTACHMENT, depthMultisampled);
 
 		#if GREND_USE_G_BUFFER
-			normalMultisampled   = gentex();
-			positionMultisampled = gentex();
+			normalMultisampled   = gentex(rgbf_if_supported());
+			positionMultisampled = gentex(rgbf_if_supported());
 
-			framebufferMultisampled->attach(GL_COLOR_ATTACHMENT1,
-											normalMultisampled,
-											GL_TEXTURE_2D_MULTISAMPLE);
-
-			framebufferMultisampled->attach(GL_COLOR_ATTACHMENT2,
-											positionMultisampled,
-											GL_TEXTURE_2D_MULTISAMPLE);
+			attach(GL_COLOR_ATTACHMENT1, normalMultisampled);
+			attach(GL_COLOR_ATTACHMENT2, positionMultisampled);
 
 			glDrawBuffers(3, bufs);
 		#endif

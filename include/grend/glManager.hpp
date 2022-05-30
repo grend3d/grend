@@ -427,8 +427,10 @@ Framebuffer::ptr genFramebuffer(void);
 //       determining this at runtime
 #ifdef NO_FLOATING_FB
 static inline GLenum rgbaf_if_supported(void) { return GL_RGBA; }
+static inline GLenum rgbf_if_supported(void)  { return GL_RGB; }
 #else
 static inline GLenum rgbaf_if_supported(void) { return GL_RGBA16F; }
+static inline GLenum rgbf_if_supported(void)  { return GL_RGB16F; }
 #endif
 
 Texture::ptr genTextureColor(unsigned width, unsigned height,
