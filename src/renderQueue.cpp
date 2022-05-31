@@ -742,18 +742,41 @@ static void drawBillboards(const renderOptions& flags,
 #endif
 }
 
-
-unsigned grendx::flush(renderQueue& que,
-                       camera::ptr cam,
-                       unsigned width,
-                       unsigned height,
-                       renderContext::ptr rctx,
-                       const renderFlags& flags,
-                       const renderOptions& options)
+static void setFlushUniforms(renderQueue& que,
+                             renderContext::ptr rctx,
+                             Program::ptr prog,
+                             camera::ptr cam)
 {
-	// TODO: deduplicate code
-	unsigned drawnMeshes = 0;
+	glm::mat4 view       = cam->viewTransform();
+	glm::mat4 projection = cam->projectionTransform();
+	glm::mat4 v_inv      = glm::inverse(view);
 
+	prog->set("v", view);
+	prog->set("p", projection);
+	prog->set("v_inv", v_inv);
+	prog->set("cameraPosition", cam->position());
+
+	shaderSync(prog, rctx, que);
+}
+
+static void setFlushUniformsFlags(renderQueue& que,
+                                  renderContext::ptr rctx,
+                                  const renderFlags& flags,
+                                  camera::ptr cam)
+{
+	for (auto& p : {flags.mainShader,
+	                flags.skinnedShader,
+	                flags.instancedShader,
+	                flags.billboardShader,})
+	{
+		p->bind();
+		setFlushUniforms(que, rctx, p, cam);
+	}
+}
+
+static void setFlushOptions(renderContext::ptr rctx,
+                            const renderOptions& options)
+{
 	disable(GL_BLEND);
 
 	if (hasFlag(options.features, renderOptions::CullFaces)) {
@@ -763,6 +786,7 @@ unsigned grendx::flush(renderQueue& que,
 
 	if (hasFlag(options.features, renderOptions::StencilTest)) {
 		enable(GL_STENCIL_TEST);
+
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glStencilOp(options.stencilOpToGL(options.stencilFail),
 		            options.stencilOpToGL(options.depthFail),
@@ -780,67 +804,68 @@ unsigned grendx::flush(renderQueue& que,
 	bool depthMask = hasFlag(options.features, renderOptions::DepthMask);
 	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
 
+	DO_ERROR_CHECK();
+}
+
+static void trySetIrradProbe(renderQueue& que,
+                             renderContext::ptr rctx,
+                             const renderOptions& options,
+                             Program::ptr prog,
+                             glm::vec3 center)
+{
+	if (!hasFlag(options.features, renderOptions::Shadowmap)) {
+		auto probe = que.nearest_irradiance_probe(center);
+		rctx->setIrradianceProbe(probe, prog);
+	}
+}
+
+// originally intended as a simplified flush for drawing probes,
+// might be removed in the future
+unsigned grendx::flush(renderQueue& que,
+                       camera::ptr cam,
+                       unsigned width,
+                       unsigned height,
+                       renderContext::ptr rctx,
+                       const renderFlags& flags,
+                       const renderOptions& options)
+{
+	unsigned drawnMeshes = 0;
+
+	setFlushOptions(rctx, options);
 	cam->setViewport(width, height);
-	glm::mat4 view = cam->viewTransform();
-	glm::mat4 projection = cam->projectionTransform();
-	glm::mat4 v_inv = glm::inverse(view);
+	setFlushUniformsFlags(que, rctx, flags, cam);
 
 	flags.skinnedShader->bind();
-	flags.skinnedShader->set("v", view);
-	flags.skinnedShader->set("p", projection);
-	flags.skinnedShader->set("v_inv", v_inv);
-	flags.skinnedShader->set("cameraPosition", cam->position());
-
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
+			// TODO: check whether this skin is already synced
 			skin->sync(flags.skinnedShader);
 
-			if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-				rctx->setIrradianceProbe(
-					que.nearest_irradiance_probe(mesh.center),
-					flags.skinnedShader);
-			}
-
+			trySetIrradProbe(que, rctx, options, flags.skinnedShader, mesh.center);
 			drawMesh(options, nullptr, flags.skinnedShader,
 			         mesh.transform, mesh.inverted, mesh.renderID, mesh.data);
 		}
-
-		// TODO: check whether this skin is already synced
-		DO_ERROR_CHECK();
 	}
 
 	flags.mainShader->bind();
-	flags.mainShader->set("v", view);
-	flags.mainShader->set("p", projection);
-	flags.mainShader->set("v_inv", v_inv);
-	flags.mainShader->set("cameraPosition", cam->position());
 
-	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-			rctx->setIrradianceProbe(
-				que.nearest_irradiance_probe(mesh.center),
-				flags.mainShader);
-		}
-
+		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
 		drawMesh(options, nullptr, flags.mainShader, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
-	/*
-	meshes.clear();
-	lights.clear();
-	probes.clear();
-	skinnedMeshes.clear();
-	instancedMeshes.clear();
-	billboardMeshes.clear();
-	*/
-	que.clear();
+	// TODO: instanced
+	// TODO: can draw clipped transparency here
 
+	que.clear();
 	return drawnMeshes;
 }
 
+// flush for full-screen renders, assumes you want to
+// draw over the entire framebuffer
+// TODO: unify the flushes
 unsigned grendx::flush(renderQueue& que,
                        camera::ptr cam,
                        renderFramebuffer::ptr fb,
@@ -851,66 +876,25 @@ unsigned grendx::flush(renderQueue& que,
 	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
 
-	//if (flags.sort) { sort(); }
-
-	disable(GL_BLEND);
-	if (hasFlag(options.features, renderOptions::CullFaces)) {
-		enable(GL_CULL_FACE);
-		glFrontFace(GL_CCW);
-	}
-
-	if (hasFlag(options.features, renderOptions::StencilTest)) {
-		enable(GL_STENCIL_TEST);
-
-		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilOp(options.stencilOpToGL(options.stencilFail),
-		            options.stencilOpToGL(options.depthFail),
-		            options.stencilOpToGL(options.depthPass));
-	}
-
-	glDepthFunc(options.valueToGL(options.depthFunc));
-
-	if (hasFlag(options.features, renderOptions::DepthTest)) {
-		enable(GL_DEPTH_TEST);
-	} else {
-		disable(GL_DEPTH_TEST);
-	}
-
-	bool depthMask = hasFlag(options.features, renderOptions::DepthMask);
-	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
-
-	DO_ERROR_CHECK();
-	assert(fb != nullptr);
-	//fb->framebuffer->bind();
 	fb->bind();
-
 	disable(GL_SCISSOR_TEST);
 	glViewport(0, 0, fb->width, fb->height);
 	glScissor(0, 0, fb->width, fb->height);
 
-	cam->setViewport(fb->width/rctx->settings.scaleX, fb->height/rctx->settings.scaleY);
-	glm::mat4 view = cam->viewTransform();
-	glm::mat4 projection = cam->projectionTransform();
-	glm::mat4 v_inv = glm::inverse(view);
+	setFlushOptions(rctx, options);
+	cam->setViewport(fb->width /rctx->settings.scaleX,
+	                 fb->height/rctx->settings.scaleY);
+	setFlushUniformsFlags(que, rctx, flags, cam);
 
 	flags.skinnedShader->bind();
-	flags.skinnedShader->set("v", view);
-	flags.skinnedShader->set("p", projection);
-	flags.skinnedShader->set("v_inv", v_inv);
-	flags.skinnedShader->set("cameraPosition", cam->position());
-	shaderSync(flags.skinnedShader, rctx, que);
+	// TODO: what was this for?
 	sceneSkin::ptr lastskin = nullptr;
 
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
-			if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-				rctx->setIrradianceProbe(
-					que.nearest_irradiance_probe(mesh.center),
-					flags.skinnedShader);
-			}
-
+			trySetIrradProbe(que, rctx, options, flags.skinnedShader, mesh.center);
 			drawMesh(options, fb, flags.skinnedShader, mesh.transform,
 			         mesh.inverted, mesh.renderID, mesh.data);
 			drawnMeshes++;
@@ -921,81 +905,40 @@ unsigned grendx::flush(renderQueue& que,
 	}
 
 	flags.mainShader->bind();
-	flags.mainShader->set("v", view);
-	flags.mainShader->set("p", projection);
-	flags.mainShader->set("v_inv", v_inv);
-	flags.mainShader->set("cameraPosition", cam->position());
-	shaderSync(flags.mainShader, rctx, que);
-
-	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-			rctx->setIrradianceProbe(
-				que.nearest_irradiance_probe(mesh.center),
-				flags.mainShader);
-		}
-
+		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
 		drawMesh(options, fb, flags.mainShader, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
 	flags.instancedShader->bind();
-	flags.instancedShader->set("v", view);
-	flags.instancedShader->set("p", projection);
-	flags.instancedShader->set("v_inv", v_inv);
-	flags.instancedShader->set("cameraPosition", cam->position());
-	shaderSync(flags.instancedShader, rctx, que);
-
 	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
-		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-			rctx->setIrradianceProbe(
-				que.nearest_irradiance_probe(applyTransform(outerTrans)),
-				flags.instancedShader);
-		}
-
+		trySetIrradProbe(que, rctx, options,
+		                 flags.instancedShader,
+		                 applyTransform(outerTrans));
 		drawMeshInstanced(options, fb, flags.instancedShader,
 		                  innerTrans, outerTrans, inverted,
 		                  particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
 	}
 
+	flags.billboardShader->bind();
+	// TODO: should billboards write to depth?
 	glDepthMask(GL_FALSE);
 
-	flags.billboardShader->bind();
-	DO_ERROR_CHECK();
-	flags.billboardShader->set("v", view);
-	flags.billboardShader->set("p", projection);
-	flags.billboardShader->set("v_inv", v_inv);
-	flags.billboardShader->set("cameraPosition", cam->position());
-	DO_ERROR_CHECK();
-	shaderSync(flags.billboardShader, rctx, que);
-	DO_ERROR_CHECK();
-
 	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
-		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
-			rctx->setIrradianceProbe(
-				que.nearest_irradiance_probe(applyTransform(transform)),
-				flags.billboardShader);
-		}
-
+		trySetIrradProbe(que, rctx, options, flags.billboardShader,
+		                 applyTransform(transform));
 		drawBillboards(options, fb, flags.billboardShader,
 		               transform, inverted, particleSystem, mesh);
+
+		// TODO: track meshes drawn or draw calls?
+		//       return pair with both?
 		drawnMeshes += particleSystem->activeInstances;
-		DO_ERROR_CHECK();
 	}
 
-	// TODO: clear()
-	/*
-	meshes.clear();
-	lights.clear();
-	probes.clear();
-	skinnedMeshes.clear();
-	instancedMeshes.clear();
-	billboardMeshes.clear();
-	*/
 	que.clear();
-
 	return drawnMeshes;
 }
 
