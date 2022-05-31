@@ -282,7 +282,10 @@ bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
 			auto width = ev.window.data1;
 			auto height = ev.window.data2;
 
-			game->rend->framebuffer->setSize(width, height);
+			float scaleX = game->rend->settings.scaleX;
+			float scaleY = game->rend->settings.scaleY;
+
+			game->rend->framebuffer->setSize(width*scaleX, height*scaleY);
 
 			if (post != nullptr) {
 				post->setSize(width, height);
