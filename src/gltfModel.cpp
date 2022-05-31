@@ -426,7 +426,8 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 			ret->factors.blend = grendx::material::blend_mode::Blend;
 
 		} else if (mat.alphaMode == "MASK") {
-			ret->factors.blend = grendx::material::blend_mode::Mask;
+			ret->factors.blend       = grendx::material::blend_mode::Mask;
+			ret->factors.alphaCutoff = mat.alphaCutoff;
 		}
 
 		auto& ev = mat.emissiveFactor;
@@ -437,8 +438,6 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 		// XXX: is there really a point in having RGBA base color and an
 		//      opacity field...
 		ret->factors.opacity = mat_diffuse[3];
-		// TODO: alpha cutoff field
-		//ret->factors.opacity = mat.alphaCutoff;
 
 		return ret;
 	}

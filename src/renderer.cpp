@@ -378,13 +378,15 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 	}
 
 	if (program->cacheObject("current_material", mat.get())) {
-		program->set("anmaterial.diffuse",   mat->factors.diffuse);
-		program->set("anmaterial.ambient",   mat->factors.ambient);
-		program->set("anmaterial.specular",  mat->factors.specular);
-		program->set("anmaterial.emissive",  mat->factors.emissive);
-		program->set("anmaterial.roughness", mat->factors.roughness);
-		program->set("anmaterial.metalness", mat->factors.metalness);
-		program->set("anmaterial.opacity",   mat->factors.opacity);
+		// TODO: UBOs for materialis
+		program->set("anmaterial.diffuse",     mat->factors.diffuse);
+		program->set("anmaterial.ambient",     mat->factors.ambient);
+		program->set("anmaterial.specular",    mat->factors.specular);
+		program->set("anmaterial.emissive",    mat->factors.emissive);
+		program->set("anmaterial.roughness",   mat->factors.roughness);
+		program->set("anmaterial.metalness",   mat->factors.metalness);
+		program->set("anmaterial.opacity",     mat->factors.opacity);
+		program->set("anmaterial.alphaCutoff", mat->factors.alphaCutoff);
 
 		// with the new-found power of cacheObject, can keep track
 		// of which texture object is currently bound

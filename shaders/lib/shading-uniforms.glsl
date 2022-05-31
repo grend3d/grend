@@ -13,6 +13,7 @@ struct material {
 	float roughness;
 	float metalness;
 	float opacity;
+	float alphaCutoff;
 };
 
 // light maps

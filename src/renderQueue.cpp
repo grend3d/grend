@@ -378,6 +378,7 @@ void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 // TODO: seperate culls into functions for more granular culling
 //       (particularly lights, need to trim lights before updating
 //        shadow maps)
+// TODO: optional finer-grained culling function, or flag, or something
 void grendx::cullQueue(renderQueue& queue,
                        camera::ptr cam,
                        unsigned width,
@@ -390,47 +391,46 @@ void grendx::cullQueue(renderQueue& queue,
 	// TODO: optional OBB test after testing spheres (maybe separate function)
 	// TODO: maybe multithreaded
 	// TODO: occlusion culling (maybe a seperate function)
-	renderQueue::MeshQ tempMeshes;
-	tempMeshes.reserve(queue.meshes.size());
+	renderQueue::MeshQ tempMeshes, tempMeshesBlend, tempMeshesMasked;
+	//tempMeshes.reserve(queue.meshes.size());
+	//tempMeshesBlend.reserve(queue.meshesBlend.size());
+	//tempMeshesMasked.reserve(queue.meshesMasked.size());
 
-	for (auto it = queue.meshes.begin(); it != queue.meshes.end(); it++) {
-		auto& trans = it->transform;
-		auto& mesh  = it->data;
-		/*
-		auto obb = trans * mesh->boundingBox;
+	auto doCull = [&](auto& que, auto& out) {
+		if (que.size() > 0) {
+			out.reserve(que.size());
 
-		bool visible =
-			// TODO: might want just AABBs for performance, maybe an option?
-			cam->boxInFrustum(obb)
-			// need a compiled mesh
-			&& mesh->comped_mesh
-			// never need to draw fully transparent meshes
-			&& (!mesh->comped_mesh->mat
-			    || mesh->comped_mesh->mat->factors.opacity > 0.0001);
-				*/
+			for (auto it = que.begin(); it != que.end(); it++) {
+				auto& trans = it->transform;
+				auto& mesh  = it->data;
+				auto sphere = trans * mesh->boundingSphere;
+				//auto obb = trans * mesh->boundingBox;
 
-		auto sphere = trans * mesh->boundingSphere;
-
-		bool visible =
-			// TODO: might want just AABBs for performance, maybe an option?
-			cam->sphereInFrustum(sphere)
-			// need a compiled mesh
-			&& mesh->comped_mesh
-			// never need to draw fully transparent meshes
-			&& (!mesh->comped_mesh->mat
-			    || mesh->comped_mesh->mat->factors.opacity > 0.0001);
-
-		if (visible) {
-			tempMeshes.push_back(*it);
+				// cam->boxInFrustum(obb)
+				if (cam->sphereInFrustum(sphere)) {
+					out.push_back(*it);
+				}
+			}
 		}
-	}
 
-	queue.meshes = tempMeshes;
+		que = std::move(out);
+	};
+
+	doCull(queue.meshes,       tempMeshes);
+	doCull(queue.meshesBlend,  tempMeshesBlend);
+	doCull(queue.meshesMasked, tempMeshesMasked);
+
+	/*
+	queue.meshes       = tempMeshes;
+	queue.meshesBlend  = tempMeshesBlend;
+	queue.meshesMasked = tempMeshesMasked;
+	*/
 
 	for (auto& [skin, skmeshes] : queue.skinnedMeshes) {
 		renderQueue::MeshQ tempSkinned;
 		tempSkinned.reserve(skmeshes.size());
 
+		// TODO: can replace with doCull(
 		for (auto it = skmeshes.begin(); it != skmeshes.end(); it++) {
 			auto& trans = it->transform;
 			auto& mesh  = it->data;
@@ -576,19 +576,9 @@ static void drawMesh(const renderOptions& flags,
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
 	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
+		// TODO: only want to set materials for materials with masked transparency
+		// TODO: seperate shaders for alpha masking
 		set_material(program, mesh->comped_mesh);
-
-	/*
-		// enable()/disable() cache state, no need to worry about toggling
-		// too much state if queue is sorted
-		if (mesh->comped_mesh->blend != material::blend_mode::Opaque)
-		{
-			// TODO: handle mask blends
-			enable(GL_BLEND);
-		} else {
-			disable(GL_BLEND);
-		}
-	*/
 	}
 
 	// TODO: need to keep track of the model face order
@@ -598,6 +588,7 @@ static void drawMesh(const renderOptions& flags,
 
 	bindVao(mesh->comped_mesh->vao);
 
+	// TODO: wrappers to draw lines
 	/*
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glLineWidth(2.0);
@@ -648,18 +639,8 @@ static void drawMeshInstanced(const renderOptions& flags,
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
 	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
+		// TODO: masked transparency
 		set_material(program, mesh->comped_mesh);
-
-	/*
-		// enable()/disable() cache state, no need to worry about toggling
-		// too much state if queue is sorted
-		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
-			// TODO: handle mask blends
-			enable(GL_BLEND);
-		} else {
-			disable(GL_BLEND);
-		}
-	*/
 	}
 
 	// TODO: need to keep track of the model face order
@@ -695,18 +676,8 @@ static void drawBillboards(const renderOptions& flags,
                            sceneMesh::ptr mesh)
 {
 	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
+		// TODO: masked transparency
 		set_material(program, mesh->comped_mesh);
-
-	/*
-		// enable()/disable() cache state, no need to worry about toggling
-		// too much state if queue is sorted
-		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
-			// TODO: handle mask blends
-			enable(GL_BLEND);
-		} else {
-			disable(GL_BLEND);
-		}
-	*/
 	}
 
 	glm::mat3 m_3x3_inv_transp =
@@ -906,6 +877,35 @@ unsigned grendx::flush(renderQueue& que,
 
 	flags.mainShader->bind();
 	for (auto& mesh : que.meshes) {
+		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
+		drawMesh(options, fb, flags.mainShader, mesh.transform,
+		         mesh.inverted, mesh.renderID, mesh.data);
+		drawnMeshes++;
+	}
+
+	/*
+	// TODO: hmmmm, still broken...
+	enable(GL_BLEND);
+	unsigned bufsAll[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT1,
+		GL_COLOR_ATTACHMENT2
+	};
+
+	unsigned bufsColor[] = { GL_COLOR_ATTACHMENT0, };
+
+	glDrawBuffers(1, bufsColor);
+	for (auto& mesh : que.meshesBlend) {
+		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
+		drawMesh(options, fb, flags.mainShader, mesh.transform,
+		         mesh.inverted, mesh.renderID, mesh.data);
+		drawnMeshes++;
+	}
+	disable(GL_BLEND);
+	glDrawBuffers(3, bufsAll);
+	*/
+
+	for (auto& mesh : que.meshesMasked) {
 		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
 		drawMesh(options, fb, flags.mainShader, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);

@@ -86,13 +86,15 @@ struct material {
 		glm::vec4 ambient = {0, 0, 0, 0};
 		glm::vec4 specular = {1, 1, 1, 1};
 		glm::vec4 emissive = {0, 0, 0, 1};
-		GLfloat   roughness = 1.0;
+
+		GLfloat   roughness      = 1.0;
 		// XXX: default metalness factor should be 1.0 for gltf, but
 		//      gltf always includes a metalness factor, so use 0.f (no metalness)
 		//      for .obj files
-		GLfloat   metalness = 0.0;
-		GLfloat   opacity = 1.0;
-		GLfloat   refract_idx = 1.5;
+		GLfloat   metalness      = 0.0;
+		GLfloat   opacity        = 1.0;
+		GLfloat   alphaCutoff    = 0.5;
+		GLfloat   refract_idx    = 1.5;
 		enum blend_mode blend = blend_mode::Opaque;
 	} factors;
 
