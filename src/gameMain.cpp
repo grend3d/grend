@@ -283,6 +283,8 @@ void grendx::drawMultiQueue(gameMain *game,
 			  game->rend->framebuffer->height,
 			  game->rend->lightThreshold);
 	sortQueue(hax, cam);
+
+	// don't count prepass as drawn meshes
 	flush(hax, cam, fb, game->rend, flags, depthOpts);
 
 	// lighting pass
@@ -291,7 +293,7 @@ void grendx::drawMultiQueue(gameMain *game,
 			  game->rend->framebuffer->height,
 			  game->rend->lightThreshold);
 	sortQueue(que, cam);
-	flush(que, cam, fb, game->rend, regOpts);
+	game->metrics.drawnMeshes += flush(que, cam, fb, game->rend, regOpts);
 }
 
 #include <grend/ecs/shader.hpp>
