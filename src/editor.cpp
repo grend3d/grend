@@ -7,6 +7,7 @@
 #include <grend/geometryGeneration.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/scancodes.hpp>
+#include <grend/interpolation.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/shader.hpp>
@@ -527,7 +528,12 @@ void gameEditor::handleCursorUpdate(gameMain *game) {
 }
 
 void gameEditor::update(gameMain *game, float delta) {
-	cam->updatePosition(delta);
+	static glm::vec3 target = glm::vec3(0);
+	glm::mat3 m = {cam->right(), cam->up(), cam->direction()};
+	glm::vec3 vpos = m*(cam->velocity());
+
+	target = interp::average(vpos, target, 8.f, delta);
+	cam->setPosition(cam->position() + target*delta);
 
 	auto orientation = UIObjects->getNode("Orientation-Indicator");
 	auto cursor      = UIObjects->getNode("Cursor-Placement");
