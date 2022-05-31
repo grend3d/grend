@@ -31,9 +31,35 @@ void renderQueue::add(sceneNode::ptr obj,
 	}
 
 	if (obj->type == sceneNode::objType::Mesh) {
+		// TODO: addMesh()
 		sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
-		glm::vec3 center = applyTransform(adjTrans);
-		meshes.push_back({adjTrans, center, inverted, mesh, renderID});
+
+		if (mesh->comped_mesh) {
+			glm::vec3 center = applyTransform(adjTrans);
+
+			queueEnt<sceneMesh::ptr> entry = {
+				adjTrans,
+				center,
+				inverted,
+				mesh,
+				renderID
+			};
+
+			switch (mesh->comped_mesh->blend) {
+				case material::blend_mode::Blend:
+					meshesBlend.push_back(entry);
+					break;
+
+				case material::blend_mode::Mask:
+					meshesMasked.push_back(entry);
+					break;
+
+				case material::blend_mode::Opaque:
+				default:
+					meshes.push_back(entry);
+					break;
+			}
+		}
 
 	} else if (obj->type == sceneNode::objType::Light) {
 		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
@@ -83,6 +109,9 @@ void renderQueue::add(renderQueue& other) {
 	SYM.insert(SYM.end(), other.SYM.begin(), other.SYM.end())
 
 	QUEAPPEND(meshes);
+	QUEAPPEND(meshesBlend);
+	QUEAPPEND(meshesMasked);
+
 	//QUEAPPEND(skinnedMeshes);
 	QUEAPPEND(lights);
 	QUEAPPEND(probes);
@@ -515,6 +544,8 @@ void grendx::batchQueue(renderQueue& queue) {
 
 void renderQueue::clear(void) {
 	meshes.clear();
+	meshesBlend.clear();
+	meshesMasked.clear();
 	skinnedMeshes.clear();
 	lights.clear();
 	probes.clear();
@@ -531,12 +562,6 @@ static void drawMesh(const renderFlags& flags,
                      uint32_t renderID,
                      sceneMesh::ptr mesh)
 {
-	if (!mesh->comped_mesh) {
-		// mesh not compiled, can't draw
-		// TODO: toggleable warnings
-		return;
-	}
-
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
 		// TODO: abstraction for this, maybe part of renderFramebuffer
 		glStencilFunc(GL_ALWAYS, renderID, ~0);
@@ -551,6 +576,7 @@ static void drawMesh(const renderFlags& flags,
 	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
+	/*
 		// enable()/disable() cache state, no need to worry about toggling
 		// too much state if queue is sorted
 		if (mesh->comped_mesh->blend != material::blend_mode::Opaque)
@@ -560,6 +586,7 @@ static void drawMesh(const renderFlags& flags,
 		} else {
 			disable(GL_BLEND);
 		}
+	*/
 	}
 
 	// TODO: need to keep track of the model face order
@@ -590,11 +617,6 @@ static void drawMeshInstanced(const renderFlags& flags,
                               sceneParticles::ptr particles,
                               sceneMesh::ptr mesh)
 {
-	if (!mesh->comped_mesh) {
-		// mesh not compiled, nothing to draw
-		return;
-	}
-
 	/*
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
 		// TODO: remove this, going to move this functionality outside
@@ -626,6 +648,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
+	/*
 		// enable()/disable() cache state, no need to worry about toggling
 		// too much state if queue is sorted
 		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
@@ -634,6 +657,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 		} else {
 			disable(GL_BLEND);
 		}
+	*/
 	}
 
 	// TODO: need to keep track of the model face order
@@ -668,14 +692,10 @@ static void drawBillboards(const renderFlags& flags,
                            sceneBillboardParticles::ptr particles,
                            sceneMesh::ptr mesh)
 {
-	if (!mesh->comped_mesh) {
-		// mesh not compiled, nothing to draw
-		return;
-	}
-
 	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
+	/*
 		// enable()/disable() cache state, no need to worry about toggling
 		// too much state if queue is sorted
 		if (mesh->comped_mesh->blend != material::blend_mode::Opaque) {
@@ -684,6 +704,7 @@ static void drawBillboards(const renderFlags& flags,
 		} else {
 			disable(GL_BLEND);
 		}
+	*/
 	}
 
 	glm::mat3 m_3x3_inv_transp =
@@ -692,7 +713,7 @@ static void drawBillboards(const renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	enable(GL_BLEND);
+	//enable(GL_BLEND);
 
 	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		// TODO: face order
@@ -729,6 +750,8 @@ unsigned grendx::flush(renderQueue& que,
 {
 	// TODO: deduplicate code
 	unsigned drawnMeshes = 0;
+
+	disable(GL_BLEND);
 
 	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		enable(GL_CULL_FACE);
@@ -824,6 +847,7 @@ unsigned grendx::flush(renderQueue& que,
 
 	//if (flags.sort) { sort(); }
 
+	disable(GL_BLEND);
 	if (hasFlag(flags.features, renderFlags::CullFaces)) {
 		enable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);

@@ -64,6 +64,9 @@ class renderQueue {
 		// mat4 is calculated transform for the position of the node in the tree
 		// bool is inverted flag
 		MeshQ  meshes;
+		MeshQ  meshesBlend;   // blend opacity
+		MeshQ  meshesMasked;  // mask/clip opacity
+
 		SkinQ  skinnedMeshes;
 		LightQ lights;
 		RefQ   probes;
