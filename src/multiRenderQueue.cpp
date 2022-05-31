@@ -40,14 +40,15 @@ void grendx::sortQueue(multiRenderQueue& renque, camera::ptr cam) {
 unsigned grendx::flush(multiRenderQueue&      que,
                        camera::ptr            cam,
                        renderFramebuffer::ptr fb,
-                       renderContext::ptr     rctx)
+                       renderContext::ptr     rctx,
+                       const renderOptions&   options)
 {
 	unsigned sum = 0;
 
 	// TODO: flush in descending order depending on the number of
 	//       objects using each shader
 	for (auto& [id, flags] : que.shadermap) {
-		sum += flush(que.queues[id], cam, fb, rctx, flags);
+		sum += flush(que.queues[id], cam, fb, rctx, flags, options);
 	}
 
 	return sum;

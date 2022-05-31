@@ -182,6 +182,7 @@ void grendx::renderWorld(gameMain *game,
                          renderQueue& base,
                          renderFlags& flags)
 {
+#if 0
 	profile::startGroup("renderWorld()");
 	assert(game->rend && game->rend->framebuffer);
 
@@ -245,6 +246,7 @@ void grendx::renderWorld(gameMain *game,
 	}
 
 	profile::endGroup();
+#endif
 }
 
 // TODO: Maybe replaces drawWorld?
@@ -273,7 +275,7 @@ void grendx::drawMultiQueue(gameMain *game,
 			  game->rend->lightThreshold);
 	sortQueue(que, cam);
 
-	flush(que, cam, fb, game->rend);
+	flush(que, cam, fb, game->rend, renderOptions());
 }
 
 #include <grend/ecs/shader.hpp>

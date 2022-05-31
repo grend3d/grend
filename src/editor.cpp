@@ -150,7 +150,7 @@ buildClickableQueue(gameMain *game,
 		// TODO: do clicky things
 
 		renderFlags foo = flags->getShader();
-		foo.features |= renderFlags::Features::StencilTest;
+		//foo.features |= renderFlags::Features::StencilTest;
 
 		que.add(foo, ent->node, renderID);
 		clicks.push_back({renderID, ent});
@@ -169,7 +169,7 @@ buildClickableQueue(gameMain *game,
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	renderQueue que;
 	renderFlags flags = game->rend->getLightingFlags();
-	flags.features |= renderFlags::Features::StencilTest;
+	//flags.features |= renderFlags::Features::StencilTest;
 
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
@@ -199,11 +199,24 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
 	renderFlags constantFlags = game->rend->getLightingFlags("constant-color");
 
+	renderOptions frontOpts, backOpts;
+	frontOpts.features |=  renderOptions::Features::DepthTest;
+	frontOpts.features |=  renderOptions::Features::StencilTest;
+	frontOpts.features &= ~renderOptions::Features::DepthMask;
+	backOpts.features = frontOpts.features;
+
+	frontOpts.depthFunc = renderOptions::Less;
+	backOpts.depthFunc  = renderOptions::GreaterEqual;
+
+	/*
 	constantFlags.features |=  renderFlags::Features::DepthTest;
 	constantFlags.features |=  renderFlags::Features::StencilTest;
 	constantFlags.features &= ~renderFlags::Features::DepthMask;
 	unshadedFlags.features = constantFlags.features;
+	*/
 
+	// TODO: should have uniform setting flags that pass values
+	//       to the underlying shaders...
 	renderQueue por = que;
 	for (auto& prog : {constantFlags.mainShader,
 	                   constantFlags.skinnedShader,
@@ -214,12 +227,12 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	}
 
 	// TODO: depth mode in render flags
-	glDepthFunc(GL_GEQUAL);
-	flush(por, cam, game->rend->framebuffer, game->rend, constantFlags);
+	//glDepthFunc(GL_GEQUAL);
+	flush(por, cam, game->rend->framebuffer, game->rend, constantFlags, backOpts);
 
 	por = que;
-	glDepthFunc(GL_LESS);
-	flush(por, cam, game->rend->framebuffer, game->rend, unshadedFlags);
+	//glDepthFunc(GL_LESS);
+	flush(por, cam, game->rend->framebuffer, game->rend, unshadedFlags, frontOpts);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
@@ -285,7 +298,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
+			flush(que, cam, game->rend->framebuffer,
+			      game->rend, probeFlags, renderOptions());
 		}
 
 		probeFlags.mainShader
@@ -310,7 +324,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			flush(que, cam, game->rend->framebuffer, game->rend, probeFlags);
+			flush(que, cam, game->rend->framebuffer,
+			      game->rend, probeFlags, renderOptions());
 		}
 	}
 
@@ -327,7 +342,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 				});
 
 				que.add(probeObj);
-				flush(que, cam, game->rend->framebuffer, game->rend, unshadedFlags);
+				flush(que, cam, game->rend->framebuffer,
+				      game->rend, unshadedFlags, renderOptions());
 			}
 		}
 	}

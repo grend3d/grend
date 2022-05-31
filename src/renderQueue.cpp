@@ -554,7 +554,7 @@ void renderQueue::clear(void) {
 	billboardMeshes.clear();
 }
 
-static void drawMesh(const renderFlags& flags,
+static void drawMesh(const renderOptions& flags,
                      renderFramebuffer::ptr fb,
                      Program::ptr program,
                      const glm::mat4& transform,
@@ -562,10 +562,12 @@ static void drawMesh(const renderFlags& flags,
                      uint32_t renderID,
                      sceneMesh::ptr mesh)
 {
+	/*
 	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
 		// TODO: abstraction for this, maybe part of renderFramebuffer
 		glStencilFunc(GL_ALWAYS, renderID, ~0);
 	}
+	*/
 
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
@@ -573,7 +575,7 @@ static void drawMesh(const renderFlags& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 	/*
@@ -590,7 +592,7 @@ static void drawMesh(const renderFlags& flags,
 	}
 
 	// TODO: need to keep track of the model face order
-	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+	if (hasFlag(flags.features, renderOptions::CullFaces)) {
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
@@ -608,7 +610,7 @@ static void drawMesh(const renderFlags& flags,
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-static void drawMeshInstanced(const renderFlags& flags,
+static void drawMeshInstanced(const renderOptions& flags,
                               renderFramebuffer::ptr fb,
                               Program::ptr program,
                               const glm::mat4& outerTrans,
@@ -618,7 +620,7 @@ static void drawMeshInstanced(const renderFlags& flags,
                               sceneMesh::ptr mesh)
 {
 	/*
-	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
+	if (fb != nullptr && hasFlag(flags.features, renderOptions::StencilTest)) {
 		// TODO: remove this, going to move this functionality outside
 		//       of the render queue
 		if (fb->drawn_meshes.size() < 0xff) {
@@ -632,7 +634,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	*/
 
 	/*
-	if (fb != nullptr && hasFlag(flags.features, renderFlags::StencilTest)) {
+	if (fb != nullptr && hasFlag(flags.features, renderOptions::StencilTest)) {
 		// TODO: abstraction for this, maybe part of renderFramebuffer
 		glStencilFunc(GL_ALWAYS, renderID, ~0);
 	}
@@ -645,7 +647,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	program->set("innerTrans", innerTrans);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 	/*
@@ -661,7 +663,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 	}
 
 	// TODO: need to keep track of the model face order
-	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+	if (hasFlag(flags.features, renderOptions::CullFaces)) {
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
 
@@ -684,7 +686,7 @@ static void drawMeshInstanced(const renderFlags& flags,
 #endif
 }
 
-static void drawBillboards(const renderFlags& flags,
+static void drawBillboards(const renderOptions& flags,
                            renderFramebuffer::ptr fb,
                            Program::ptr program,
                            const glm::mat4& transform,
@@ -692,7 +694,7 @@ static void drawBillboards(const renderFlags& flags,
                            sceneBillboardParticles::ptr particles,
                            sceneMesh::ptr mesh)
 {
-	if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
 		set_material(program, mesh->comped_mesh);
 
 	/*
@@ -715,7 +717,7 @@ static void drawBillboards(const renderFlags& flags,
 
 	//enable(GL_BLEND);
 
-	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+	if (hasFlag(flags.features, renderOptions::CullFaces)) {
 		// TODO: face order
 		setFaceOrder(inverted? GL_CW : GL_CCW);
 	}
@@ -746,33 +748,34 @@ unsigned grendx::flush(renderQueue& que,
                        unsigned width,
                        unsigned height,
                        renderContext::ptr rctx,
-                       const renderFlags& flags)
+                       const renderFlags& flags,
+                       const renderOptions& options)
 {
 	// TODO: deduplicate code
 	unsigned drawnMeshes = 0;
 
 	disable(GL_BLEND);
 
-	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+	if (hasFlag(options.features, renderOptions::CullFaces)) {
 		enable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
 	}
 
-	if (hasFlag(flags.features, renderFlags::StencilTest)) {
+	if (hasFlag(options.features, renderOptions::StencilTest)) {
 		enable(GL_STENCIL_TEST);
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilOp(flags.stencilOpToGL(flags.stencilFail),
-		            flags.stencilOpToGL(flags.depthFail),
-		            flags.stencilOpToGL(flags.depthPass));
+		glStencilOp(options.stencilOpToGL(options.stencilFail),
+		            options.stencilOpToGL(options.depthFail),
+		            options.stencilOpToGL(options.depthPass));
 	}
 
-	if (hasFlag(flags.features, renderFlags::DepthTest)) {
+	if (hasFlag(options.features, renderOptions::DepthTest)) {
 		enable(GL_DEPTH_TEST);
 	} else {
 		disable(GL_DEPTH_TEST);
 	}
 
-	bool depthMask = hasFlag(flags.features, renderFlags::DepthMask);
+	bool depthMask = hasFlag(options.features, renderOptions::DepthMask);
 	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
 
 	cam->setViewport(width, height);
@@ -790,13 +793,13 @@ unsigned grendx::flush(renderQueue& que,
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
-			if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+			if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 				rctx->setIrradianceProbe(
 					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
 
-			drawMesh(flags, nullptr, flags.skinnedShader,
+			drawMesh(options, nullptr, flags.skinnedShader,
 			         mesh.transform, mesh.inverted, mesh.renderID, mesh.data);
 		}
 
@@ -812,13 +815,13 @@ unsigned grendx::flush(renderQueue& que,
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
-		drawMesh(flags, nullptr, flags.mainShader, mesh.transform,
+		drawMesh(options, nullptr, flags.mainShader, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
@@ -840,7 +843,8 @@ unsigned grendx::flush(renderQueue& que,
                        camera::ptr cam,
                        renderFramebuffer::ptr fb,
                        renderContext::ptr rctx,
-                       const renderFlags& flags)
+                       const renderFlags& flags,
+                       const renderOptions& options)
 {
 	DO_ERROR_CHECK();
 	unsigned drawnMeshes = 0;
@@ -848,27 +852,27 @@ unsigned grendx::flush(renderQueue& que,
 	//if (flags.sort) { sort(); }
 
 	disable(GL_BLEND);
-	if (hasFlag(flags.features, renderFlags::CullFaces)) {
+	if (hasFlag(options.features, renderOptions::CullFaces)) {
 		enable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
 	}
 
-	if (hasFlag(flags.features, renderFlags::StencilTest)) {
+	if (hasFlag(options.features, renderOptions::StencilTest)) {
 		enable(GL_STENCIL_TEST);
 
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilOp(flags.stencilOpToGL(flags.stencilFail),
-		            flags.stencilOpToGL(flags.depthFail),
-		            flags.stencilOpToGL(flags.depthPass));
+		glStencilOp(options.stencilOpToGL(options.stencilFail),
+		            options.stencilOpToGL(options.depthFail),
+		            options.stencilOpToGL(options.depthPass));
 	}
 
-	if (hasFlag(flags.features, renderFlags::DepthTest)) {
+	if (hasFlag(options.features, renderOptions::DepthTest)) {
 		enable(GL_DEPTH_TEST);
 	} else {
 		disable(GL_DEPTH_TEST);
 	}
 
-	bool depthMask = hasFlag(flags.features, renderFlags::DepthMask);
+	bool depthMask = hasFlag(options.features, renderOptions::DepthMask);
 	glDepthMask(depthMask? GL_TRUE : GL_FALSE);
 
 	DO_ERROR_CHECK();
@@ -897,13 +901,13 @@ unsigned grendx::flush(renderQueue& que,
 		for (auto& mesh : drawinfo) {
 			skin->sync(flags.skinnedShader);
 
-			if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+			if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 				rctx->setIrradianceProbe(
 					que.nearest_irradiance_probe(mesh.center),
 					flags.skinnedShader);
 			}
 
-			drawMesh(flags, fb, flags.skinnedShader, mesh.transform,
+			drawMesh(options, fb, flags.skinnedShader, mesh.transform,
 			         mesh.inverted, mesh.renderID, mesh.data);
 			drawnMeshes++;
 		}
@@ -921,13 +925,13 @@ unsigned grendx::flush(renderQueue& que,
 
 	//for (auto& [transform, inverted, mesh] : meshes) {
 	for (auto& mesh : que.meshes) {
-		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(mesh.center),
 				flags.mainShader);
 		}
 
-		drawMesh(flags, fb, flags.mainShader, mesh.transform,
+		drawMesh(options, fb, flags.mainShader, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
@@ -940,13 +944,13 @@ unsigned grendx::flush(renderQueue& que,
 	shaderSync(flags.instancedShader, rctx, que);
 
 	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
-		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(applyTransform(outerTrans)),
 				flags.instancedShader);
 		}
 
-		drawMeshInstanced(flags, fb, flags.instancedShader,
+		drawMeshInstanced(options, fb, flags.instancedShader,
 		                  innerTrans, outerTrans, inverted,
 		                  particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
@@ -965,13 +969,13 @@ unsigned grendx::flush(renderQueue& que,
 	DO_ERROR_CHECK();
 
 	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
-		if (!hasFlag(flags.features, renderFlags::Shadowmap)) {
+		if (!hasFlag(options.features, renderOptions::Shadowmap)) {
 			rctx->setIrradianceProbe(
 				que.nearest_irradiance_probe(applyTransform(transform)),
 				flags.billboardShader);
 		}
 
-		drawBillboards(flags, fb, flags.billboardShader,
+		drawBillboards(options, fb, flags.billboardShader,
 		               transform, inverted, particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
 		DO_ERROR_CHECK();

@@ -113,16 +113,19 @@ void batchQueue(renderQueue& queue);
 void shaderSync(Program::ptr program, renderContext::ptr rctx, renderQueue& que);
 
 // TODO: rename flushQueue
+// TODO: renderFlags -> renderShader, renderOptions -> renderFlags
 unsigned flush(renderQueue& que,
                camera::ptr cam,
                renderFramebuffer::ptr fb,
                renderContext::ptr rctx,
-               const renderFlags& flags);
+               const renderFlags& flags,
+               const renderOptions& options);
 
 unsigned flush(multiRenderQueue& que,
                camera::ptr cam,
                renderFramebuffer::ptr fb,
-               renderContext::ptr rctx);
+               renderContext::ptr rctx,
+               const renderOptions& options);
 
 // TODO: this for multiRenderQueue
 unsigned flush(renderQueue& que,
@@ -130,7 +133,8 @@ unsigned flush(renderQueue& que,
                unsigned width,
                unsigned height,
                renderContext::ptr rctx,
-               const renderFlags& flags);
+               const renderFlags& flags,
+               const renderOptions& options);
 
 // namespace grendx
 }

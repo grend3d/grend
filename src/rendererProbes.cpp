@@ -64,7 +64,8 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
-	flags.features |= renderFlags::Features::Shadowmap;
+	renderOptions opts;
+	opts.features |= renderOptions::Features::Shadowmap;
 
 	// TODO: 'cull radius' function for queues to avoid reprocessing the
 	//       entire render queue 6 times
@@ -95,7 +96,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		cullQueue(porque, cam, info.size, info.size, rctx->lightThreshold);
 		sortQueue(porque, cam);
 
-		flush(porque, cam, info.size, info.size, rctx, flags);
+		flush(porque, cam, info.size, info.size, rctx, flags, opts);
 	}
 
 	light->have_map = true;
@@ -138,7 +139,8 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	cam->setFar(50);
 
 	renderFlags flags = rctx->probeShaders["shadow"];
-	flags.features |= renderFlags::Features::Shadowmap;
+	renderOptions opts;
+	opts.features |= renderOptions::Shadowmap;
 
 	if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap)) {
 		std::cerr
@@ -172,7 +174,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	profile::endGroup();
 
 	profile::startGroup("Draw");
-	flush(newque, cam, info.size, info.size, rctx, flags);
+	flush(newque, cam, info.size, info.size, rctx, flags, opts);
 	profile::endGroup();
 	DO_ERROR_CHECK();
 
@@ -267,6 +269,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	cam->setFovx(90);
 
 	const renderFlags& flags = rctx->probeShaders["refprobe"];
+	const renderOptions opts;
 
 	glActiveTexture(TEX_GL_SHADOWS);
 	rctx->atlases.shadows->depth_tex->bind();
@@ -299,7 +302,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		cam->setViewport(info.size, info.size);
 		DO_ERROR_CHECK();
 
-		flush(porque, cam, info.size, info.size, rctx, flags);
+		flush(porque, cam, info.size, info.size, rctx, flags, opts);
 		DO_ERROR_CHECK();
 
 		rctx->defaultSkybox.draw(cam, info.size, info.size);
