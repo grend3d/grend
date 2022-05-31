@@ -269,13 +269,29 @@ void grendx::drawMultiQueue(gameMain *game,
 	buildTilemap(hax.lights, cam, game->rend);
 	updateReflectionProbe(game->rend, hax, cam);
 
+	renderOptions depthOpts, regOpts;
+	depthOpts.features |= renderOptions::Shadowmap;
+	regOpts.depthFunc = renderOptions::Equal;
+	// no need to write depth
+	regOpts.features &= ~(renderOptions::DepthMask);
+
+	// depth pass
+	// TODO: optional, should be able to tweak this... maybe seperate function?
+	renderFlags flags = game->rend->probeShaders["shadow"];
+	cullQueue(hax, cam,
+			  game->rend->framebuffer->width,
+			  game->rend->framebuffer->height,
+			  game->rend->lightThreshold);
+	sortQueue(hax, cam);
+	flush(hax, cam, fb, game->rend, flags, depthOpts);
+
+	// lighting pass
 	cullQueue(que, cam,
 			  game->rend->framebuffer->width,
 			  game->rend->framebuffer->height,
 			  game->rend->lightThreshold);
 	sortQueue(que, cam);
-
-	flush(que, cam, fb, game->rend, renderOptions());
+	flush(que, cam, fb, game->rend, regOpts);
 }
 
 #include <grend/ecs/shader.hpp>

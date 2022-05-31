@@ -769,6 +769,8 @@ unsigned grendx::flush(renderQueue& que,
 		            options.stencilOpToGL(options.depthPass));
 	}
 
+	glDepthFunc(options.valueToGL(options.depthFunc));
+
 	if (hasFlag(options.features, renderOptions::DepthTest)) {
 		enable(GL_DEPTH_TEST);
 	} else {
@@ -865,6 +867,8 @@ unsigned grendx::flush(renderQueue& que,
 		            options.stencilOpToGL(options.depthFail),
 		            options.stencilOpToGL(options.depthPass));
 	}
+
+	glDepthFunc(options.valueToGL(options.depthFunc));
 
 	if (hasFlag(options.features, renderOptions::DepthTest)) {
 		enable(GL_DEPTH_TEST);

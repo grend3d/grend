@@ -36,6 +36,7 @@ struct renderOptions {
 		Never,
 		Less,
 		LessEqual,
+		Equal,
 		Greater,
 		GreaterEqual,
 		NotEqual,
@@ -60,6 +61,7 @@ struct renderOptions {
 			case Never:        return GL_NEVER;
 			case Less:         return GL_LESS;
 			case LessEqual:    return GL_LEQUAL;
+			case Equal:        return GL_EQUAL;
 			case Greater:      return GL_GREATER;
 			case GreaterEqual: return GL_GEQUAL;
 			case NotEqual:     return GL_NOTEQUAL;
