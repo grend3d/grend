@@ -148,10 +148,8 @@ buildClickableQueue(gameMain *game,
 		auto flags = ent->get<abstractShader>();
 		auto trans = ent->node->getTransformMatrix();
 		auto scenes = ent->getAll<sceneComponent>();
-		// TODO: do clicky things
 
 		renderFlags foo = flags->getShader();
-		//foo.features |= renderFlags::Features::StencilTest;
 
 		que.add(foo, ent->node, renderID);
 		clicks.push_back({renderID, ent});
@@ -209,30 +207,20 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	frontOpts.depthFunc = renderOptions::Less;
 	backOpts.depthFunc  = renderOptions::GreaterEqual;
 
-	/*
-	constantFlags.features |=  renderFlags::Features::DepthTest;
-	constantFlags.features |=  renderFlags::Features::StencilTest;
-	constantFlags.features &= ~renderFlags::Features::DepthMask;
-	unshadedFlags.features = constantFlags.features;
-	*/
-
 	// TODO: should have uniform setting flags that pass values
 	//       to the underlying shaders...
 	renderQueue por = que;
-	for (auto& prog : {constantFlags.mainShader,
-	                   constantFlags.skinnedShader,
-	                   constantFlags.instancedShader})
-	{
-		prog->bind();
-		prog->set("outputColor", glm::vec4(0.2, 0.05, 0.0, 0.5));
+
+	for (auto& var : flags.variants) {
+		for (auto& shader : var.shaders) {
+			shader->bind();
+			shader->set("outputColor", glm::vec4(0.2, 0.05, 0.0, 0.5));
+		}
 	}
 
-	// TODO: depth mode in render flags
-	//glDepthFunc(GL_GEQUAL);
 	flush(por, cam, game->rend->framebuffer, game->rend, constantFlags, backOpts);
 
 	por = que;
-	//glDepthFunc(GL_LESS);
 	flush(por, cam, game->rend->framebuffer, game->rend, unshadedFlags, frontOpts);
 
 	// TODO: function to do this
@@ -272,14 +260,15 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 	if (showProbes) {
 		renderFlags probeFlags;
-		auto& refShader = game->rend->internalShaders["refprobe_debug"];
-		auto& irradShader = game->rend->internalShaders["irradprobe_debug"];
+		auto refShader = game->rend->internalShaders["refprobe_debug"];
+		auto irradShader = game->rend->internalShaders["irradprobe_debug"];
 
-		probeFlags.mainShader
-			= probeFlags.skinnedShader
-			= probeFlags.instancedShader
-			= probeFlags.billboardShader
-			= refShader;
+		// TODO: function in renderFlags that sets every shader
+		for (auto& v : probeFlags.variants) {
+			for (auto& p : v.shaders) {
+				p = refShader;
+			}
+		}
 
 		refShader->bind();
 
@@ -303,11 +292,12 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			      game->rend, probeFlags, renderOptions());
 		}
 
-		probeFlags.mainShader
-			= probeFlags.skinnedShader
-			= probeFlags.instancedShader
-			= probeFlags.billboardShader
-			= irradShader;
+		for (auto& v : probeFlags.variants) {
+			for (auto& p : v.shaders) {
+				p = refShader;
+			}
+		}
+
 		irradShader->bind();
 
 		for (auto& entry : tempque.irradProbes) {
@@ -480,6 +470,8 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 }
 
 void gameEditor::reloadShaders(gameMain *game) {
+	// TODO: redo this (again (sigh))
+#if 0
 	// push everything into one vector for simplicity, this will be
 	// run only from the editor so it doesn't need to be really efficient
 	std::vector<std::pair<std::string, Program::ptr>> shaders;
@@ -511,6 +503,7 @@ void gameEditor::reloadShaders(gameMain *game) {
 			std::cerr << ">> couldn't reload shader: " << name << std::endl;
 		}
 	}
+#endif
 }
 
 void gameEditor::setMode(enum mode newmode) {

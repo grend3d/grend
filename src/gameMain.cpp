@@ -269,6 +269,9 @@ void grendx::drawMultiQueue(gameMain *game,
 	buildTilemap(hax.lights, cam, game->rend);
 	updateReflectionProbe(game->rend, hax, cam);
 
+	// TODO: better config
+#define DEPTH_PASS 1
+#if DEPTH_PASS
 	renderOptions depthOpts, regOpts;
 	depthOpts.features |= renderOptions::Shadowmap;
 	regOpts.depthFunc = renderOptions::Equal;
@@ -276,7 +279,6 @@ void grendx::drawMultiQueue(gameMain *game,
 	regOpts.features &= ~(renderOptions::DepthMask);
 
 	// depth pass
-	// TODO: optional, should be able to tweak this... maybe seperate function?
 	renderFlags flags = game->rend->probeShaders["shadow"];
 	cullQueue(hax, cam,
 			  game->rend->framebuffer->width,
@@ -286,6 +288,10 @@ void grendx::drawMultiQueue(gameMain *game,
 
 	// don't count prepass as drawn meshes
 	flush(hax, cam, fb, game->rend, flags, depthOpts);
+#else
+	renderOptions regOpts;
+	regOpts.depthFunc = renderOptions::Less;
+#endif
 
 	// lighting pass
 	cullQueue(que, cam,

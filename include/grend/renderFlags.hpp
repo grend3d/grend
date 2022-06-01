@@ -90,11 +90,46 @@ struct renderOptions {
 };
 
 // TODO: rename renderShaders
+// hmm, shader permutations... an ominous development :O
 struct renderFlags {
-	Program::ptr mainShader;
-	Program::ptr skinnedShader;
-	Program::ptr instancedShader;
-	Program::ptr billboardShader;
+	enum shaderTypes {
+		Main,
+		Skinned,
+		Instanced,
+		Billboard,
+		MaxShaders
+	};
+
+	enum variantTypes {
+		Opaque,
+		Masked,
+		DitheredBlend,
+		MaxVariants
+	};
+
+	struct shaderVariant {
+		Program::ptr shaders[MaxShaders];
+
+		bool operator==(const shaderVariant& other) const {
+			for (unsigned i = 0; i < MaxShaders; i++) {
+				if (shaders[i] != other.shaders[i]) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+	};
+
+	renderFlags() {
+		for (auto& var : variants) {
+			for (auto& shader : var.shaders) {
+				shader.reset();
+			}
+		}
+	}
+
+	shaderVariant variants[MaxVariants];
 };
 
 static inline bool hasFlag(const uint32_t& value, uint32_t flag) {
@@ -111,20 +146,13 @@ static inline void unsetFlag(uint32_t& value, uint32_t flag) {
 
 static inline
 bool operator==(const renderFlags& lhs, const renderFlags& rhs) noexcept {
-	return lhs.mainShader      == rhs.mainShader
-	    && lhs.skinnedShader   == rhs.skinnedShader
-	    && lhs.instancedShader == rhs.instancedShader
-	    && lhs.billboardShader == rhs.billboardShader
-#if 0
-	    && lhs.features        == rhs.features
-	    && lhs.faceOrder       == rhs.faceOrder
-	    && lhs.depthFunc       == rhs.depthFunc
-	    && lhs.stencilFunc     == rhs.stencilFunc
-	    && lhs.stencilFail     == rhs.stencilFail
-	    && lhs.depthFail       == rhs.depthFail
-	    && lhs.depthPass       == rhs.depthPass
-#endif
-	    ;
+	for (unsigned v = 0; v < renderFlags::MaxVariants; v++) {
+		if (lhs.variants[v] != rhs.variants[v]) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 // namespace grendx
@@ -136,22 +164,11 @@ struct std::hash<grendx::renderFlags> {
 	std::size_t operator()(const grendx::renderFlags& r) const noexcept {
 		std::size_t ret = 737;
 
-#if 0
-		unsigned k = (r.features    << 14)
-		           | (r.faceOrder   << 13)
-		           | (r.depthFunc   << 12)
-		           | (r.stencilFunc << 9)
-		           | (r.stencilFail << 6)
-		           | (r.depthFail   << 3)
-		           | (r.depthPass   << 0)
-		           ;
-#endif
-
-		ret = ret*33 + (uintptr_t)r.mainShader.get();
-		ret = ret*33 + (uintptr_t)r.skinnedShader.get();
-		ret = ret*33 + (uintptr_t)r.instancedShader.get();
-		ret = ret*33 + (uintptr_t)r.billboardShader.get();
-		//ret = ret*33 + k;
+		for (auto& var : r.variants) {
+			for (auto& shader : var.shaders) {
+				ret = ret*33 + (uintptr_t)shader.get();
+			}
+		}
 
 		return ret;
 	}

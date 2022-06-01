@@ -58,7 +58,7 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 	return compiled;
 }
 
-Shader::parameters mergeOpts(std::initializer_list<Shader::parameters>& opts) {
+Shader::parameters mergeOpts(const std::initializer_list<Shader::parameters>& opts) {
 	Shader::parameters ret;
 
 	for (auto& optmap : opts) {

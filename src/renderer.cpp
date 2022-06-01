@@ -109,47 +109,64 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	SDL_Log("Initialized render context");
 }
 
-renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
+renderFlags grendx::loadShaderToFlags(std::string fragPath,
                                       std::string mainVertex,
                                       std::string skinnedVertex,
                                       std::string instancedVertex,
                                       std::string billboardVertex,
-                                      const Shader::parameters& options)
+                                      const Shader::parameters& opts)
 {
 	renderFlags ret;
 
-	SDL_Log("\nLoading shaders for fragment shader %s", fragmentPath.c_str());
-	ret.mainShader      = loadProgram(mainVertex,       fragmentPath, options);
-	ret.skinnedShader   = loadProgram(skinnedVertex,    fragmentPath, options);
-	ret.instancedShader = loadProgram(instancedVertex,  fragmentPath, options);
-	ret.billboardShader = loadProgram(billboardVertex,  fragmentPath, options);
+	SDL_Log("\nLoading shaders for fragment shader %s", fragPath.c_str());
 
-	for (Program::ptr prog : {ret.mainShader,
-	                          ret.skinnedShader,
-	                          ret.instancedShader,
-	                          ret.billboardShader})
-	{
-		// TODO: consistent naming, just go with "a_*" since that's what's in
-		//       gltf docs, as good a convention as any
-		prog->attribute("in_Position", VAO_VERTICES);
-		prog->attribute("v_normal",    VAO_NORMALS);
-		prog->attribute("v_tangent",   VAO_TANGENTS);
-		prog->attribute("v_color",     VAO_COLORS);
-		prog->attribute("texcoord",    VAO_TEXCOORDS);
-		prog->attribute("a_lightmap",  VAO_LIGHTMAP);
+	using R = renderFlags;
+
+	static const std::array<std::string, R::MaxVariants> modestrs = {
+		"opaque",
+		"blend",
+		"masked",
+	};
+
+	for (unsigned i = 0; i < R::MaxVariants; i++) {
+		const std::string str = modestrs[i];
+		Shader::parameters usropts = {
+			{"BLEND_MODE_OPAQUE",          (GLint)(i == R::Opaque)},
+			{"BLEND_MODE_DITHERED_BLEND",  (GLint)(i == R::DitheredBlend)},
+			{"BLEND_MODE_MASKED",          (GLint)(i == R::Masked)},
+		};
+		//{"BLEND_MODE_OPAQUE" + modestrs[i], 1}};
+		auto usr = mergeOpts({opts, usropts});
+		auto& var = ret.variants[i];
+
+		var.shaders[R::Main]      = loadProgram(mainVertex,      fragPath, usr);
+		var.shaders[R::Skinned]   = loadProgram(skinnedVertex,   fragPath, usr);
+		var.shaders[R::Instanced] = loadProgram(instancedVertex, fragPath, usr);
+		var.shaders[R::Billboard] = loadProgram(billboardVertex, fragPath, usr);
 	}
 
-	// skinned shader also has some joint attributes
-	ret.skinnedShader->attribute("a_joints",  VAO_JOINTS);
-	ret.skinnedShader->attribute("a_weights", VAO_JOINT_WEIGHTS);
+	for (auto& var : ret.variants) {
+		for (unsigned i = 0; i < R::MaxShaders; i++) {
+			// TODO: consistent naming, just go with "a_*" since that's what's in
+			//       gltf docs, as good a convention as any
+			var.shaders[i]->attribute("in_Position", VAO_VERTICES);
+			var.shaders[i]->attribute("v_normal",    VAO_NORMALS);
+			var.shaders[i]->attribute("v_tangent",   VAO_TANGENTS);
+			var.shaders[i]->attribute("v_color",     VAO_COLORS);
+			var.shaders[i]->attribute("texcoord",    VAO_TEXCOORDS);
+			var.shaders[i]->attribute("a_lightmap",  VAO_LIGHTMAP);
+		}
 
-	for (Program::ptr prog : {ret.mainShader,
-	                          ret.skinnedShader,
-	                          ret.instancedShader,
-	                          ret.billboardShader})
-	{
-		prog->link();
-		DO_ERROR_CHECK();
+		// skinned shader also has some joint attributes
+		var.shaders[R::Skinned]->attribute("a_joints",  VAO_JOINTS);
+		var.shaders[R::Skinned]->attribute("a_weights", VAO_JOINT_WEIGHTS);
+	}
+
+	for (auto& var : ret.variants) {
+		for (unsigned i = 0; i < R::MaxShaders; i++) {
+			var.shaders[i]->link();
+			DO_ERROR_CHECK();
+		}
 	}
 
 	return ret;

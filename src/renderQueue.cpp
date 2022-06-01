@@ -575,7 +575,7 @@ static void drawMesh(const renderOptions& flags,
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
-	if (!hasFlag(flags.features, renderOptions::Shadowmap)) {
+	if (true || !hasFlag(flags.features, renderOptions::Shadowmap)) {
 		// TODO: only want to set materials for materials with masked transparency
 		// TODO: seperate shaders for alpha masking
 		set_material(program, mesh->comped_mesh);
@@ -735,13 +735,11 @@ static void setFlushUniformsFlags(renderQueue& que,
                                   const renderFlags& flags,
                                   camera::ptr cam)
 {
-	for (auto& p : {flags.mainShader,
-	                flags.skinnedShader,
-	                flags.instancedShader,
-	                flags.billboardShader,})
-	{
-		p->bind();
-		setFlushUniforms(que, rctx, p, cam);
+	for (auto& var : flags.variants) {
+		for (auto& shader : var.shaders) {
+			shader->bind();
+			setFlushUniforms(que, rctx, shader, cam);
+		}
 	}
 }
 
@@ -806,23 +804,28 @@ unsigned grendx::flush(renderQueue& que,
 	cam->setViewport(width, height);
 	setFlushUniformsFlags(que, rctx, flags, cam);
 
-	flags.skinnedShader->bind();
+	using R = renderFlags;
+	auto skinnedProg = flags.variants[R::Opaque].shaders[R::Skinned];
+	auto mainProg    = flags.variants[R::Opaque].shaders[R::Main];
+
+	skinnedProg->bind();
+
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
 			// TODO: check whether this skin is already synced
-			skin->sync(flags.skinnedShader);
+			skin->sync(skinnedProg);
 
-			trySetIrradProbe(que, rctx, options, flags.skinnedShader, mesh.center);
-			drawMesh(options, nullptr, flags.skinnedShader,
-			         mesh.transform, mesh.inverted, mesh.renderID, mesh.data);
+			trySetIrradProbe(que, rctx, options, skinnedProg, mesh.center);
+			drawMesh(options, nullptr, skinnedProg, mesh.transform,
+			         mesh.inverted, mesh.renderID, mesh.data);
 		}
 	}
 
-	flags.mainShader->bind();
+	mainProg->bind();
 
 	for (auto& mesh : que.meshes) {
-		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
-		drawMesh(options, nullptr, flags.mainShader, mesh.transform,
+		trySetIrradProbe(que, rctx, options, mainProg, mesh.center);
+		drawMesh(options, nullptr, mainProg, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
@@ -857,16 +860,25 @@ unsigned grendx::flush(renderQueue& que,
 	                 fb->height/rctx->settings.scaleY);
 	setFlushUniformsFlags(que, rctx, flags, cam);
 
-	flags.skinnedShader->bind();
-	// TODO: what was this for?
-	sceneSkin::ptr lastskin = nullptr;
+	using R = renderFlags;
+	auto& opaque = flags.variants[R::Opaque];
+	auto& masked = flags.variants[R::Masked];
+	auto& blend  = flags.variants[R::DitheredBlend];
 
+	auto  skinnedProg   = opaque.shaders[R::Skinned];
+	auto  mainProg      = opaque.shaders[R::Main];
+	auto  instancedProg = opaque.shaders[R::Instanced];
+	auto  billboardProg = opaque.shaders[R::Billboard];
+	auto  maskedMain    = masked.shaders[R::Main];
+	auto  blendMain     = blend.shaders[R::Main];
+
+	skinnedProg->bind();
 	for (auto& [skin, drawinfo] : que.skinnedMeshes) {
 		for (auto& mesh : drawinfo) {
-			skin->sync(flags.skinnedShader);
+			skin->sync(skinnedProg);
 
-			trySetIrradProbe(que, rctx, options, flags.skinnedShader, mesh.center);
-			drawMesh(options, fb, flags.skinnedShader, mesh.transform,
+			trySetIrradProbe(que, rctx, options, skinnedProg, mesh.center);
+			drawMesh(options, fb, skinnedProg, mesh.transform,
 			         mesh.inverted, mesh.renderID, mesh.data);
 			drawnMeshes++;
 		}
@@ -875,62 +887,86 @@ unsigned grendx::flush(renderQueue& que,
 		DO_ERROR_CHECK();
 	}
 
-	flags.mainShader->bind();
+	mainProg->bind();
 	for (auto& mesh : que.meshes) {
-		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
-		drawMesh(options, fb, flags.mainShader, mesh.transform,
+		trySetIrradProbe(que, rctx, options, mainProg, mesh.center);
+		drawMesh(options, fb, mainProg, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
-	/*
-	// TODO: hmmmm, still broken...
-	enable(GL_BLEND);
-	unsigned bufsAll[] = {
-		GL_COLOR_ATTACHMENT0,
-		GL_COLOR_ATTACHMENT1,
-		GL_COLOR_ATTACHMENT2
-	};
-
-	unsigned bufsColor[] = { GL_COLOR_ATTACHMENT0, };
-
-	glDrawBuffers(1, bufsColor);
-	for (auto& mesh : que.meshesBlend) {
-		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
-		drawMesh(options, fb, flags.mainShader, mesh.transform,
-		         mesh.inverted, mesh.renderID, mesh.data);
-		drawnMeshes++;
-	}
-	disable(GL_BLEND);
-	glDrawBuffers(3, bufsAll);
-	*/
-
+	maskedMain->bind();
 	for (auto& mesh : que.meshesMasked) {
-		trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
-		drawMesh(options, fb, flags.mainShader, mesh.transform,
+		trySetIrradProbe(que, rctx, options, maskedMain, mesh.center);
+		drawMesh(options, fb, maskedMain, mesh.transform,
 		         mesh.inverted, mesh.renderID, mesh.data);
 		drawnMeshes++;
 	}
 
-	flags.instancedShader->bind();
+	// TODO: well, this doesn't really work either
+	// TODO: flag to specify whether to use real blending or dithered transparency
+	if (1) {
+		blendMain->bind();
+		for (auto& mesh : que.meshesBlend) {
+			trySetIrradProbe(que, rctx, options, blendMain, mesh.center);
+			drawMesh(options, fb, blendMain, mesh.transform,
+			         mesh.inverted, mesh.renderID, mesh.data);
+			drawnMeshes++;
+		}
+
+	} else {
+		enable(GL_BLEND);
+		mainProg->bind();
+		for (auto& mesh : que.meshesBlend) {
+			trySetIrradProbe(que, rctx, options, mainProg, mesh.center);
+			drawMesh(options, fb, mainProg, mesh.transform,
+			         mesh.inverted, mesh.renderID, mesh.data);
+			drawnMeshes++;
+		}
+		disable(GL_BLEND);
+
+		/*
+		// TODO: hmmmm, still broken...
+		enable(GL_BLEND);
+		unsigned bufsAll[] = {
+			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2
+		};
+
+		unsigned bufsColor[] = { GL_COLOR_ATTACHMENT0, };
+
+		glDrawBuffers(1, bufsColor);
+		for (auto& mesh : que.meshesBlend) {
+			trySetIrradProbe(que, rctx, options, flags.mainShader, mesh.center);
+			drawMesh(options, fb, flags.mainShader, mesh.transform,
+					 mesh.inverted, mesh.renderID, mesh.data);
+			drawnMeshes++;
+		}
+		disable(GL_BLEND);
+		glDrawBuffers(3, bufsAll);
+		*/
+	}
+
+	instancedProg->bind();
 	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
 		trySetIrradProbe(que, rctx, options,
-		                 flags.instancedShader,
+		                 instancedProg,
 		                 applyTransform(outerTrans));
-		drawMeshInstanced(options, fb, flags.instancedShader,
+		drawMeshInstanced(options, fb, instancedProg,
 		                  innerTrans, outerTrans, inverted,
 		                  particleSystem, mesh);
 		drawnMeshes += particleSystem->activeInstances;
 	}
 
-	flags.billboardShader->bind();
+	billboardProg->bind();
 	// TODO: should billboards write to depth?
 	glDepthMask(GL_FALSE);
 
 	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
-		trySetIrradProbe(que, rctx, options, flags.billboardShader,
+		trySetIrradProbe(que, rctx, options, billboardProg,
 		                 applyTransform(transform));
-		drawBillboards(options, fb, flags.billboardShader,
+		drawBillboards(options, fb, billboardProg,
 		               transform, inverted, particleSystem, mesh);
 
 		// TODO: track meshes drawn or draw calls?

@@ -112,5 +112,7 @@ std::string grendx::preprocessShader(std::string& source,
 	std::set<std::string> includes;
 	std::string processed = preprocess(source, includes);
 
+	std::string full = version + defines + optstr + processed;
+	//std::cerr << full << std::endl;
 	return full;
 }

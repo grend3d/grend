@@ -274,13 +274,12 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	glActiveTexture(TEX_GL_SHADOWS);
 	rctx->atlases.shadows->depth_tex->bind();
 
-	for (Program::ptr prog : {flags.mainShader,
-	                          flags.skinnedShader,
-	                          flags.instancedShader})
-	{
-		prog->bind();
-		shaderSync(prog, rctx, queue);
-		prog->set("shadowmap_atlas", TEXU_SHADOWS);
+	for (auto& var : flags.variants) {
+		for (auto& prog : var.shaders) {
+			prog->bind();
+			shaderSync(prog, rctx, queue);
+			prog->set("shadowmap_atlas", TEXU_SHADOWS);
+		}
 	}
 
 	DO_ERROR_CHECK();

@@ -22,20 +22,53 @@ precision mediump samplerCube;
 #include <lighting/metal-roughness-pbr.glsl>
 #include <lighting/lightingLoop.glsl>
 #include <lib/reflectionMipmap.glsl>
-#include <lib/vecdecoder.glsl>
 
 void main(void) {
 	uint cluster = CURRENT_CLUSTER();
 
 	// diffuse and emissive maps can be vector textures
-	vec4  texcolor = texture2D(diffuse_map, f_texcoord);
-	vec3  emissive = texture2D(emissive_map, f_texcoord).rgb;
-
-	//vec4  texcolor            = decode_vec(diffuse_map, f_texcoord);
+	vec4  texcolor            = texture2D(diffuse_map, f_texcoord);
+	vec3  emissive            = texture2D(emissive_map, f_texcoord).rgb;
 	vec3  metal_roughness_idx = texture2D(specular_map, f_texcoord).rgb;
 	float aoidx               = texture2D(ambient_occ_map, f_texcoord).r;
 	vec3  lightmapped         = texture2D(lightmap, f_lightmap).rgb;
 	vec3  normidx             = texture2D(normal_map, f_texcoord).rgb;
+
+	float opacity = texcolor.a * anmaterial.opacity;
+
+	// XXX: assume that the glsl compiler will remove constantly false branches
+	//      easy optimization, so should be a safe bet...
+	// TODO: do own preprocessing that eliminates these, or better yet,
+	//       write my own darn shading language already
+	// TODO: move these to macros
+	if (BLEND_MODE_MASKED == 1) {
+		if (opacity < anmaterial.alphaCutoff) {
+			discard;
+		}
+	}
+
+	if (BLEND_MODE_DITHERED_BLEND == 1) {
+		float noise = hash12(gl_FragCoord.xy*1.0);
+		if (opacity < noise) {
+			discard;
+		}
+	}
+
+	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
+	vec3 view_vec = view_pos - f_position.xyz;
+	vec3 view_dir = normalize(view_vec);
+
+/*
+	// TODO: specialized shader for nearby objects
+	float viewdist = length(view_vec);
+	if (viewdist < 1.0) {
+		float noise = hash12(gl_FragCoord.xy*1.0);
+		if (viewdist < noise) {
+			discard;
+		}
+	}
+*/
+
 
 	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
 
@@ -47,13 +80,8 @@ void main(void) {
 		* anmaterial.diffuse.w
 		* f_color.w;
 
-	float opacity = texcolor.a * anmaterial.opacity;
-
 	float metallic = anmaterial.metalness * metal_roughness_idx.b;
 	float roughness = anmaterial.roughness * metal_roughness_idx.g;
-
-	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
-	vec3 view_dir = normalize(view_pos - f_position.xyz);
 
 	// TODO: get rid of redundant fresnel calculations, also calculated in lighting
 	//       could just pass F to lighting
