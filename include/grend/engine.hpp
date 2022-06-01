@@ -25,15 +25,15 @@
 
 namespace grendx {
 
-renderFlags loadLightingShader(std::string fragmentPath, Shader::parameters& opts);
-renderFlags loadProbeShader(std::string fragmentPath, Shader::parameters& opts);
-Program::ptr loadPostShader(std::string fragmentPath, Shader::parameters& opts);
+renderFlags loadLightingShader(std::string fragmentPath, const Shader::parameters& opts);
+renderFlags loadProbeShader(std::string fragmentPath, const Shader::parameters& opts);
+Program::ptr loadPostShader(std::string fragmentPath, const Shader::parameters& opts);
 renderFlags loadShaderToFlags(std::string fragmentPath,
                               std::string mainVertex,
                               std::string skinnedVertex,
                               std::string instancedVertex,
                               std::string billboardVertex,
-                              Shader::parameters& opts);
+                              const Shader::parameters& opts);
 
 // TODO: should this pass transform or position?
 //       sticking with transform for now

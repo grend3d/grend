@@ -267,12 +267,15 @@ class Shader : public Obj {
 		typedef std::map<std::string, value> parameters;
 
 		Shader(GLuint o);
-		bool load(std::string path, parameters& options);
+		bool load(std::string path, const parameters& options);
 		bool reload(void);
 		std::string filepath = "";
 		parameters compiledOptions;
-
 };
+
+// combines parameter maps together, entries later in the list will override
+// entries earlier in the list (when they overlap)
+Shader::parameters mergeOpts(const std::initializer_list<Shader::parameters>& opts);
 
 class Program : public Obj {
 	GLint linked = false;
@@ -449,7 +452,7 @@ Texture::ptr genTextureDepthStencilMultisample(unsigned width,
 
 Program::ptr loadProgram(std::string vert,
                          std::string frag,
-                         Shader::parameters& opts);
+                         const Shader::parameters& opts);
 
 GLenum surfaceGlFormat(SDL_Surface *surf);
 GLenum surfaceGlFormat(int channels);

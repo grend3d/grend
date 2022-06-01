@@ -11,7 +11,8 @@ namespace grendx {
 
 typedef std::map<std::string, Shader::parameters> shaderOptions;
 
-std::string preprocessShader(std::string& source, Shader::parameters& opts);
+std::string preprocessShader(std::string& source,
+                             const Shader::parameters& opts);
 
 // namespace grendx;
 }

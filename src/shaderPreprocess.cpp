@@ -81,17 +81,36 @@ static std::string preprocess(std::string& sourcestr,
 }
 
 std::string grendx::preprocessShader(std::string& source,
-                                     Shader::parameters& opts)
+                                     const Shader::parameters& opts)
 {
 	std::string version = std::string("#version ") + GLSL_STRING + "\n";
 
 	std::string defines =
-		"#define MAX_LIGHTS " + std::to_string(MAX_LIGHTS) + "\n" +
 		"#define GLSL_VERSION " + std::to_string(GLSL_VERSION) + "\n" +
+		"#define MAX_LIGHTS " + std::to_string(MAX_LIGHTS) + "\n" +
 		"\n";
+
+	std::string optstr = "";
+	for (auto& [key, value] : opts) {
+		std::string def = key;
+
+		std::transform(def.begin(), def.end(), def.begin(), toupper);
+		std::string pref = "#define " + def + " ";
+
+		if (std::holds_alternative<GLint>(value)) {
+			pref += std::to_string(std::get<GLint>(value));
+		}
+
+		else if (std::holds_alternative<GLfloat>(value)) {
+			pref += std::to_string(std::get<GLfloat>(value));
+		}
+
+		pref += "\n";
+		optstr += pref;
+	}
 
 	std::set<std::string> includes;
 	std::string processed = preprocess(source, includes);
 
-	return version + defines + processed;
+	return full;
 }

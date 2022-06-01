@@ -16,7 +16,7 @@ namespace grendx {
 Shader::Shader(GLuint o)
 	: Obj(o, Obj::type::Shader) { }
 
-bool Shader::load(std::string filename, Shader::parameters& options) {
+bool Shader::load(std::string filename, const Shader::parameters& options) {
 	SDL_Log("loading shader: %s", filename.c_str());
 
 	std::string source    = load_file(filename);
@@ -58,6 +58,18 @@ bool Shader::load(std::string filename, Shader::parameters& options) {
 	return compiled;
 }
 
+Shader::parameters mergeOpts(std::initializer_list<Shader::parameters>& opts) {
+	Shader::parameters ret;
+
+	for (auto& optmap : opts) {
+		for (auto& [key, value] : optmap) {
+			ret[key] = value;
+		}
+	}
+
+	return ret;
+}
+
 // TODO: function that passes new options
 bool Shader::reload(void) {
 	if (!filepath.empty()) {
@@ -69,7 +81,7 @@ bool Shader::reload(void) {
 
 Program::ptr loadProgram(std::string vert,
                          std::string frag,
-                         Shader::parameters& opts)
+                         const Shader::parameters& opts)
 {
 	Program::ptr prog = genProgram();
 

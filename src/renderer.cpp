@@ -32,6 +32,10 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	Framebuffer().bind();
 	DO_ERROR_CHECK();
 
+	// TODO: something like this would be ideal
+	//globalShaderOptions["glsl_version"] = GLSL_VERSION;
+	//globalShaderOptions["max_lights"]   = MAX_LIGHTS;
+
 #if GLSL_VERSION >= 140
 	SDL_Log("GOT HERE!!!!!!!!!!!!!!!!!!");
 	SDL_Log("renderContext(): sizeof(lights_std140): %lu", sizeof(lights_std140));
@@ -110,15 +114,15 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
                                       std::string skinnedVertex,
                                       std::string instancedVertex,
                                       std::string billboardVertex,
-                                      Shader::parameters& options)
+                                      const Shader::parameters& options)
 {
 	renderFlags ret;
 
 	SDL_Log("\nLoading shaders for fragment shader %s", fragmentPath.c_str());
-	ret.mainShader = loadProgram(mainVertex, fragmentPath, options);
-	ret.skinnedShader = loadProgram(skinnedVertex, fragmentPath, options);
-	ret.instancedShader = loadProgram(instancedVertex, fragmentPath, options);
-	ret.billboardShader = loadProgram(billboardVertex, fragmentPath, options);
+	ret.mainShader      = loadProgram(mainVertex,       fragmentPath, options);
+	ret.skinnedShader   = loadProgram(skinnedVertex,    fragmentPath, options);
+	ret.instancedShader = loadProgram(instancedVertex,  fragmentPath, options);
+	ret.billboardShader = loadProgram(billboardVertex,  fragmentPath, options);
 
 	for (Program::ptr prog : {ret.mainShader,
 	                          ret.skinnedShader,
@@ -152,7 +156,7 @@ renderFlags grendx::loadShaderToFlags(std::string fragmentPath,
 }
 
 renderFlags grendx::loadLightingShader(std::string fragmentPath,
-                                       Shader::parameters& options)
+                                       const Shader::parameters& options)
 {
 	return loadShaderToFlags(fragmentPath,
 		GR_PREFIX "shaders/baked/pixel-shading.vert",
@@ -163,7 +167,7 @@ renderFlags grendx::loadLightingShader(std::string fragmentPath,
 }
 
 renderFlags grendx::loadProbeShader(std::string fragmentPath,
-                                    Shader::parameters& options)
+                                    const Shader::parameters& options)
 {
 	return loadShaderToFlags(fragmentPath,
 		// TODO: rename
@@ -175,7 +179,7 @@ renderFlags grendx::loadProbeShader(std::string fragmentPath,
 }
 
 Program::ptr grendx::loadPostShader(std::string fragmentPath,
-                                    Shader::parameters& options)
+                                    const Shader::parameters& options)
 {
 	Program::ptr ret = loadProgram(
 		GR_PREFIX "shaders/baked/postprocess.vert",
