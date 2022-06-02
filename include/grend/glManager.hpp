@@ -426,28 +426,85 @@ Shader::ptr      genShader(GLuint type);
 Program::ptr     genProgram(void);
 Framebuffer::ptr genFramebuffer(void);
 
+struct glTexFormat {
+	GLenum internal;
+	GLenum format;
+	GLenum type;
+	GLenum minfilter = 0;
+	GLenum magfilter = 0;
+};
+
 // TODO: defining these as functions to leave open the possibility of
 //       determining this at runtime
 #ifdef NO_FLOATING_FB
-static inline GLenum rgbaf_if_supported(void) { return GL_RGBA; }
-static inline GLenum rgbf_if_supported(void)  { return GL_RGB; }
+static inline glTexFormat rgbaf_if_supported(void) {
+	return {
+		.internal  = GL_RGBA8,
+		.format    = GL_RGBA,
+		.type      = GL_UNSIGNED_BYTE,
+		.minfilter = GL_LINEAR,
+		.magfilter = GL_LINEAR,
+	};
+}
+
+static inline glTexFormat rgbf_if_supported(void)  {
+	return {
+		.internal = GL_RGB8,
+		.format   = GL_RGB,
+		.type     = GL_UNSIGNED_BYTE,
+		.minfilter = GL_LINEAR,
+		.magfilter = GL_LINEAR,
+	};
+}
+
 #else
-static inline GLenum rgbaf_if_supported(void) { return GL_RGBA16F; }
-static inline GLenum rgbf_if_supported(void)  { return GL_RGB16F; }
+static inline glTexFormat rgbaf_if_supported(void) {
+	return {
+		.internal = GL_RGBA16F,
+		.format   = GL_RGBA,
+		.type     = GL_FLOAT,
+		.minfilter = GL_LINEAR,
+		.magfilter = GL_LINEAR,
+	};
+}
+
+static inline glTexFormat rgbf_if_supported(void) {
+	return {
+		.internal = GL_RGB16F,
+		.format   = GL_RGB,
+		.type     = GL_FLOAT,
+		.minfilter = GL_LINEAR,
+		.magfilter = GL_LINEAR,
+	};
+}
 #endif
 
-Texture::ptr genTextureColor(unsigned width, unsigned height,
-							   GLenum format=GL_RGBA);
-Texture::ptr genTextureDepthStencil(unsigned width, unsigned height,
-                                    GLenum format=GL_DEPTH24_STENCIL8);
+static inline glTexFormat depth_stencil_format(void) {
+	return {
+		.internal = GL_DEPTH24_STENCIL8,
+		.format   = GL_DEPTH_STENCIL,
+		.type     = GL_UNSIGNED_INT_24_8,
+		.minfilter = GL_NEAREST,
+		.magfilter = GL_NEAREST,
+	};
+}
+
+static inline glTexFormat index_format(void) {
+	return {
+		.internal = GL_R16,
+		.format   = GL_RED,
+		.type     = GL_UNSIGNED_SHORT,
+	};
+}
+
+Texture::ptr genTextureFormat(unsigned width, unsigned height,
+                              const glTexFormat& format);
 
 #if defined(HAVE_MULTISAMPLE)
-Texture::ptr genTextureColorMultisample(unsigned width, unsigned height,
-                                        unsigned samples, GLenum format=GL_RGBA);
-Texture::ptr genTextureDepthStencilMultisample(unsigned width,
-                                               unsigned height,
-                                               unsigned samples,
-                                               GLenum format=GL_DEPTH24_STENCIL8);
+Texture::ptr genTextureFormatMS(unsigned width,
+                                unsigned height,
+                                unsigned samples,
+                                const glTexFormat& format);
 #endif
 
 Program::ptr loadProgram(std::string vert,

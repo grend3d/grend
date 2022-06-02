@@ -63,7 +63,7 @@ class rStage : public rUninitialized {
 				framebuffer->bind();
 				renderTexture =
 					framebuffer->attach(GL_COLOR_ATTACHMENT0,
-						genTextureColor(fb_x, fb_y, rgbaf_if_supported()));
+						genTextureFormat(fb_x, fb_y, rgbaf_if_supported()));
 
 				width = fb_x;
 				height = fb_y;

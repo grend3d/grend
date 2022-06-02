@@ -495,16 +495,23 @@ Framebuffer::ptr genFramebuffer(void) {
 	return Framebuffer::ptr(new Framebuffer(temp));
 }
 
-Texture::ptr genTextureColor(unsigned width, unsigned height, GLenum format) {
+Texture::ptr genTextureFormat(unsigned width, unsigned height,
+                              const glTexFormat& format)
+{
 	Texture::ptr ret = genTexture();
 
 	glBindTexture(GL_TEXTURE_2D, ret->obj);
-	// TODO: GL_RGBA, should probably adjust this depending on the number of
-	//       channels the requested format has... or simply pass as a parameter
-	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
-	             GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, format.internal, width, height, 0,
+	             format.format, format.type, nullptr);
+
+	if (format.minfilter) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, format.minfilter);
+	}
+
+	if (format.magfilter) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, format.magfilter);
+	}
+
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// assume float16 rgba format, 2 bytes
@@ -514,66 +521,26 @@ Texture::ptr genTextureColor(unsigned width, unsigned height, GLenum format) {
 	return ret;
 }
 
-Texture::ptr
-genTextureDepthStencil(unsigned width, unsigned height, GLenum format) {
-	Texture::ptr ret = genTexture();
-
-	glBindTexture(GL_TEXTURE_2D, ret->obj);
-	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0,
-	             GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-	DO_ERROR_CHECK();
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	size_t texsize = 4*width*height;
-	ret->currentSize = glmanDbgUpdateTextures(ret->currentSize, texsize);
-
-	return ret;
-}
-
 #if defined(HAVE_MULTISAMPLE)
-Texture::ptr genTextureColorMultisample(unsigned width, unsigned height,
-                                        unsigned samples, GLenum format)
+Texture::ptr genTextureFormatMS(unsigned width,
+                                unsigned height,
+                                unsigned samples,
+                                const glTexFormat& format)
 {
+	DO_ERROR_CHECK();
 	Texture::ptr ret = genTexture();
 
-	DO_ERROR_CHECK();
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ret->obj);
-	DO_ERROR_CHECK();
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
-	                        width, height, GL_FALSE);
-	DO_ERROR_CHECK();
-	//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-	DO_ERROR_CHECK();
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+			samples,
+			format.internal,
+			width, height, GL_FALSE);
 
 	// assume float16 rgba format, 2 bytes
 	size_t texsize = 4*2*samples*width*height;
 	ret->currentSize = glmanDbgUpdateTextures(ret->currentSize, texsize);
 
-	return ret;
-}
-
-Texture::ptr
-genTextureDepthStencilMultisample(unsigned width,
-                                  unsigned height,
-                                  unsigned samples,
-                                  GLenum format)
-{
-	Texture::ptr ret = genTexture();
-
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, ret->obj);
-	// NOTE: depth and color MS textures need the same settings for
-	//       fixed sample count, otherwise framebuffer will be incomplete
-	// TODO: what does fixedsamplecount do?
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format,
-	                        width, height, GL_FALSE);
 	DO_ERROR_CHECK();
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-	size_t texsize = 4*samples*width*height;
-	ret->currentSize = glmanDbgUpdateTextures(ret->currentSize, texsize);
-
 	return ret;
 }
 #endif

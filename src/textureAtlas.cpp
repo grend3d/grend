@@ -9,15 +9,14 @@ atlas::atlas(size_t dimension, enum mode m) : tree(dimension) {
 	framebuffer->bind();
 
 	if (m == mode::Color) {
-		color_tex =
-			framebuffer->attach(GL_COLOR_ATTACHMENT0,
-				genTextureColor(dimension, dimension, rgbaf_if_supported()));
+		color_tex = genTextureFormat(dimension, dimension, rgbaf_if_supported());
+		framebuffer->attach(GL_COLOR_ATTACHMENT0, color_tex);
 	}
 
 	DO_ERROR_CHECK();
 
-	depth_tex = framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, 
-	                genTextureDepthStencil(dimension, dimension));
+	depth_tex = genTextureFormat(dimension, dimension, depth_stencil_format());
+	framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, depth_tex);
 }
 
 bool atlas::bind_atlas_fb(quadtree::node_id id) {

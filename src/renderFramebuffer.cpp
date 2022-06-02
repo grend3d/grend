@@ -154,20 +154,23 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 }
 
 void renderFramebuffer::setSize(int Width, int Height) {
+	SDL_Log("Allocating internal buffer with dimensions (%u, %u), MSAA: %u",
+	        Width, Height, multisample);
+
 	auto w = width  = max(1, Width);
 	auto h = height = max(1, Height);
 
 	framebuffer->bind();
 
-	color = genTextureColor(w, h, rgbaf_if_supported());
-	depth = genTextureDepthStencil(w, h);
+	color = genTextureFormat(w, h, rgbaf_if_supported());
+	depth = genTextureFormat(w, h, depth_stencil_format());
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT0,        color);
 	framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, depth);
 
 #if GREND_USE_G_BUFFER
-	normal   = genTextureColor(w, h, rgbf_if_supported());
-	position = genTextureColor(w, h, rgbf_if_supported());
+	normal   = genTextureFormat(w, h, rgbf_if_supported());
+	position = genTextureFormat(w, h, rgbf_if_supported());
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
 	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
@@ -191,11 +194,9 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	if (multisample) {
 		framebufferMultisampled->bind();
 
-		auto gentex = [&](GLenum format) {
+		auto gentex = [&](const glTexFormat& format) {
 			// make big function call less verbose
-			return genTextureColorMultisample(w, h,
-			                                  multisample,
-			                                  format);
+			return genTextureFormatMS(w, h, multisample, format);
 		};
 
 		auto attach = [&](GLenum attachment, Texture::ptr tex) {
@@ -205,7 +206,7 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		};
 
 		colorMultisampled = gentex(rgbaf_if_supported());
-		depthMultisampled = genTextureDepthStencilMultisample(w, h, multisample);
+		depthMultisampled = gentex(depth_stencil_format());
 
 		attach(GL_COLOR_ATTACHMENT0,        colorMultisampled);
 		attach(GL_DEPTH_STENCIL_ATTACHMENT, depthMultisampled);
