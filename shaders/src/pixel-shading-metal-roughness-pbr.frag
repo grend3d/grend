@@ -112,8 +112,9 @@ void main(void) {
 	total_light = vec3(EARLY_TONEMAP(vec4(total_light, 1.0), 1.0, f_texcoord));
 
 #if GREND_USE_G_BUFFER
-	FRAG_NORMAL   = normal_dir;
-	FRAG_POSITION = f_position.xyz;
+	FRAG_NORMAL    = normal_dir;
+	FRAG_POSITION  = f_position.xyz;
+	FRAG_RENDER_ID = renderID;
 #endif
 
 #ifdef DEBUG_CLUSTERS

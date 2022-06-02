@@ -41,6 +41,8 @@ uniform float renderWidth;
 uniform float renderHeight;
 uniform float lightThreshold;
 
+uniform float renderID;
+
 uniform vec3 irradiance_probe[6];
 uniform vec3 radboxMin;
 uniform vec3 radboxMax;

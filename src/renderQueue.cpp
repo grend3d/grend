@@ -572,6 +572,8 @@ static void drawMesh(const renderOptions& flags,
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
 
+	// TODO: get number of index bits from config somewhere
+	program->set("renderID", renderID/float(1<<16));
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
@@ -634,6 +636,8 @@ static void drawMeshInstanced(const renderOptions& flags,
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(outerTrans)));
 
+	// TODO: renderID
+	// program->set("renderID", renderID);
 	program->set("outerTrans", outerTrans);
 	program->set("innerTrans", innerTrans);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
@@ -683,6 +687,8 @@ static void drawBillboards(const renderOptions& flags,
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
 
+	// TODO: renderID
+	// program->set("renderID", renderID);
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 

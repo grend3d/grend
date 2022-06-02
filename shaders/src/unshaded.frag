@@ -13,4 +13,9 @@ void main(void) {
 	vec3 albedo = anmaterial.diffuse.rgb * anmaterial.diffuse.w;
 
 	FRAG_COLOR = vec4(albedo, anmaterial.opacity);
+#if GREND_USE_G_BUFFER
+	FRAG_NORMAL    = TBN[0];
+	FRAG_POSITION  = f_position.xyz;
+	FRAG_RENDER_ID = renderID;
+#endif
 }

@@ -31,18 +31,26 @@ class renderFramebuffer {
 		uint32_t allocID(void);
 
 		Framebuffer::ptr framebuffer;
-		Framebuffer::ptr framebufferMultisampled;
-
 		Texture::ptr color;
 		Texture::ptr depth;
-		Texture::ptr colorMultisampled;
-		Texture::ptr depthMultisampled;
+
+		#if defined(HAVE_MULTISAMPLE)
+			Framebuffer::ptr framebufferMultisampled;
+			Texture::ptr colorMultisampled;
+			Texture::ptr depthMultisampled;
+		#endif
 
 #if GLSL_VERSION >= 300 && GREND_USE_G_BUFFER
 		Texture::ptr normal;
 		Texture::ptr position;
-		Texture::ptr normalMultisampled;
-		Texture::ptr positionMultisampled;
+		Texture::ptr renderID;
+		Framebuffer::ptr indexBuffer;
+
+		#if defined(HAVE_MULTISAMPLE)
+			Texture::ptr normalMultisampled;
+			Texture::ptr positionMultisampled;
+			Texture::ptr renderIDMultisampled;;
+		#endif
 #endif
 
 		// shader to blit multisampled buffer to a normal framebuffer

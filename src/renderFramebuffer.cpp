@@ -11,6 +11,10 @@ renderFramebuffer::renderFramebuffer(int Width, int Height, unsigned Multisample
 {
 	framebuffer = genFramebuffer();
 
+#if GREND_USE_G_BUFFER
+	indexBuffer = genFramebuffer();
+#endif
+
 #if defined(HAVE_MULTISAMPLE)
 	if (multisample) {
 		std::cerr << "Multisample! samples=" << multisample << std::endl;
@@ -49,12 +53,15 @@ void renderFramebuffer::bind(void) {
 	}
 
 	#if GREND_USE_G_BUFFER
+	/*
 		const unsigned bufs[] = {
 			GL_COLOR_ATTACHMENT0,
 			GL_COLOR_ATTACHMENT1,
-			GL_COLOR_ATTACHMENT2
+			GL_COLOR_ATTACHMENT2,
+			GL_COLOR_ATTACHMENT3,
 		};
-		glDrawBuffers(3, bufs);
+		glDrawBuffers(4, bufs);
+		*/
 	#endif
 #else
 	framebuffer->bind();
@@ -94,10 +101,11 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		unsigned bufs[] = {
 			GL_COLOR_ATTACHMENT0,
 			GL_COLOR_ATTACHMENT1,
-			GL_COLOR_ATTACHMENT2
+			GL_COLOR_ATTACHMENT2,
+			GL_COLOR_ATTACHMENT3,
 		};
 
-		glDrawBuffers(3, bufs);
+		glDrawBuffers(4, bufs);
 
 		// custom resolver, for tonemapping in particular
 		// TODO: could this be unified with the postprocessing code
@@ -105,7 +113,7 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		msaaResolver->bind();
 		DO_ERROR_CHECK();
 
-		glDrawBuffers(3, bufs);
+		glDrawBuffers(4, bufs);
 
 		glActiveTexture(TEX_GL_SCRATCH);
 		colorMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
@@ -119,6 +127,13 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		glActiveTexture(TEX_GL_SCRATCHB);
 		positionMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
 		msaaResolver->set("positionMS", TEXU_SCRATCHB);
+
+		DO_ERROR_CHECK();
+		glActiveTexture(TEX_GL_LIGHTMAP);
+		DO_ERROR_CHECK();
+		renderIDMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		DO_ERROR_CHECK();
+		msaaResolver->set("renderIDMS", TEXU_LIGHTMAP);
 #endif
 		DO_ERROR_CHECK();
 
@@ -171,17 +186,26 @@ void renderFramebuffer::setSize(int Width, int Height) {
 #if GREND_USE_G_BUFFER
 	normal   = genTextureFormat(w, h, rgbf_if_supported());
 	position = genTextureFormat(w, h, rgbf_if_supported());
+	renderID = genTextureFormat(w, h, index16_format());
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
 	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
+	framebuffer->attach(GL_COLOR_ATTACHMENT3, renderID);
 
 	const unsigned bufs[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
-		GL_COLOR_ATTACHMENT2
+		GL_COLOR_ATTACHMENT2,
+		GL_COLOR_ATTACHMENT3,
 	};
 
-	glDrawBuffers(3, bufs);
+	glDrawBuffers(4, bufs);
+
+	// TODO: Could split renderIDs into seperate option, probably not though
+	indexBuffer->bind();
+	indexBuffer->attach(GL_COLOR_ATTACHMENT0, renderID);
+
+	framebuffer->bind();
 #endif
 
 	DO_ERROR_CHECK();
@@ -214,11 +238,13 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		#if GREND_USE_G_BUFFER
 			normalMultisampled   = gentex(rgbf_if_supported());
 			positionMultisampled = gentex(rgbf_if_supported());
+			renderIDMultisampled = gentex(index16_format());
 
 			attach(GL_COLOR_ATTACHMENT1, normalMultisampled);
 			attach(GL_COLOR_ATTACHMENT2, positionMultisampled);
+			attach(GL_COLOR_ATTACHMENT3, renderIDMultisampled);
 
-			glDrawBuffers(3, bufs);
+			glDrawBuffers(4, bufs);
 		#endif
 
 
@@ -233,32 +259,25 @@ void renderFramebuffer::setSize(int Width, int Height) {
 }
 
 uint32_t renderFramebuffer::index(float x, float y) {
-#if GLSL_VERSION == 100 || GLSL_VERSION == 300
-	// can't read from the stencil buffer in gles profiles,
-	// could have a fallback picking pass (which could handle more objects anyway)
-	return 0xffffffff;
-#else
-
+#if GREND_USE_G_BUFFER
 	if (x > width || y > height) {
 		return 0xffffffff;
 	}
 
-	// TODO: use these at some point
-	//GLbyte color[4];
-	//GLfloat depth;
-	GLubyte idx;
+	indexBuffer->bind();
 
 	// adjust coordinates for resolution scaling
 	unsigned adx = width * x * scale.x;
 	unsigned ady = (height - height*y - 1) * scale.y;
 
-	framebuffer->bind();
-	//glReadPixels(adx, ady, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, color);
-	//glReadPixels(adx, ady, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-	glReadPixels(adx, ady, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &idx);
+	GLushort idx;
+	glReadPixels(adx, ady, 1, 1, GL_RED, GL_UNSIGNED_SHORT, &idx);
+	SDL_Log("have sample: %u\n", idx);
 	DO_ERROR_CHECK();
 
 	return idx;
+#else
+	return 0xffffffff;
 #endif
 }
 

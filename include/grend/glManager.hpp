@@ -489,9 +489,9 @@ static inline glTexFormat depth_stencil_format(void) {
 	};
 }
 
-static inline glTexFormat index_format(void) {
+static inline glTexFormat index16_format(void) {
 	return {
-		.internal = GL_R16,
+		.internal = GL_R16UI,
 		.format   = GL_RED,
 		.type     = GL_UNSIGNED_SHORT,
 	};
