@@ -45,6 +45,7 @@ void initializeOpengl(void) {
 	int maxTextureSize = 0;
 	int maxUBOBindings = 0;
 	int maxUBOSize = 0;
+	int maxFramebufAttachments = 0;
 
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,          &maxImageUnits);
 	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombined);
@@ -53,6 +54,7 @@ void initializeOpengl(void) {
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE,                 &maxTextureSize);
 
 #if GLSL_VERSION >= 140 /* OpenGL 3.1+ */
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS,            &maxFramebufAttachments);
 	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS,      &maxUBOBindings);
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,           &maxUBOSize);
 #endif
@@ -71,6 +73,7 @@ void initializeOpengl(void) {
 	SDL_Log(" OpenGL max fragment vector uniforms: %d", maxFragmentUniforms);
 	SDL_Log(" OpenGL max uniform block bindings: %d", maxUBOBindings);
 	SDL_Log(" OpenGL max uniform block size: %d", maxUBOSize);
+	SDL_Log(" OpenGL max framebuffer attachments: %u", maxFramebufAttachments);
 
 	if (maxImageUnits < TEXU_MAX) {
 		throw std::logic_error("This GPU doesn't allow enough texture bindings!");

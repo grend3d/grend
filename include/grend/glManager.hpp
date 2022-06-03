@@ -489,11 +489,14 @@ static inline glTexFormat depth_stencil_format(void) {
 	};
 }
 
-static inline glTexFormat index16_format(void) {
+// defining a macro to look this up so code that uses this doesn't need to check
+// the GLSL version...
+#define INDEX_FORMAT_BITS ((GLSL_VERSION == 300)? 8 : 16)
+static inline glTexFormat index_format(void) {
 	return {
-		.internal = GL_R16UI,
+		.internal = (INDEX_FORMAT_BITS == 8)? GL_RED : GL_R16UI,
 		.format   = GL_RED,
-		.type     = GL_UNSIGNED_SHORT,
+		.type     = (INDEX_FORMAT_BITS == 8)? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT,
 	};
 }
 

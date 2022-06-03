@@ -9,6 +9,11 @@ precision mediump sampler2D;
 
 IN vec2 f_texcoord;
 
+#if GLSL_VERSION == 100 || GLSL_VERSION == 300
+void main(void) {
+	// nop
+}
+#else
 uniform int samples;
 uniform sampler2DMS colorMS;
 
@@ -40,3 +45,4 @@ void main(void) {
 		FRAG_RENDER_ID = texelFetch(renderIDMS, uv, 0).r;
 	#endif
 }
+#endif

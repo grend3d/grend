@@ -572,8 +572,7 @@ static void drawMesh(const renderOptions& flags,
 	glm::mat3 m_3x3_inv_transp =
 		glm::transpose(glm::inverse(model_to_world(transform)));
 
-	// TODO: get number of index bits from config somewhere
-	program->set("renderID", renderID/float(1<<16));
+	program->set("renderID", renderID/float(1 << INDEX_FORMAT_BITS));
 	program->set("m", transform);
 	program->set("m_3x3_inv_transp", m_3x3_inv_transp);
 
@@ -732,6 +731,8 @@ static void setFlushUniforms(renderQueue& que,
 	prog->set("p", projection);
 	prog->set("v_inv", v_inv);
 	prog->set("cameraPosition", cam->position());
+	// only used when the lighting shader is set to output a tonemapped result
+	prog->set("exposure", rctx->exposure);
 
 	shaderSync(prog, rctx, que);
 }

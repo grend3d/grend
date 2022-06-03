@@ -186,7 +186,7 @@ void renderFramebuffer::setSize(int Width, int Height) {
 #if GREND_USE_G_BUFFER
 	normal   = genTextureFormat(w, h, rgbf_if_supported());
 	position = genTextureFormat(w, h, rgbf_if_supported());
-	renderID = genTextureFormat(w, h, index16_format());
+	renderID = genTextureFormat(w, h, index_format());
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
 	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
@@ -238,7 +238,7 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		#if GREND_USE_G_BUFFER
 			normalMultisampled   = gentex(rgbf_if_supported());
 			positionMultisampled = gentex(rgbf_if_supported());
-			renderIDMultisampled = gentex(index16_format());
+			renderIDMultisampled = gentex(index_format());
 
 			attach(GL_COLOR_ATTACHMENT1, normalMultisampled);
 			attach(GL_COLOR_ATTACHMENT2, positionMultisampled);
@@ -264,18 +264,30 @@ uint32_t renderFramebuffer::index(float x, float y) {
 		return 0xffffffff;
 	}
 
+	uint32_t idx = 0xffffffff;
 	indexBuffer->bind();
 
 	// adjust coordinates for resolution scaling
 	unsigned adx = width * x * scale.x;
 	unsigned ady = (height - height*y - 1) * scale.y;
 
-	GLushort idx;
-	glReadPixels(adx, ady, 1, 1, GL_RED, GL_UNSIGNED_SHORT, &idx);
-	SDL_Log("have sample: %u\n", idx);
-	DO_ERROR_CHECK();
+	#if INDEX_FORMAT_BITS == 8
+		GLubyte idxbyte;
+		glReadPixels(adx, ady, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &idxbyte);
+		idx = idxbyte;
 
+	#elif INDEX_FORMAT_BITS == 16
+		GLushort idxshort;
+		glReadPixels(adx, ady, 1, 1, GL_RED, GL_UNSIGNED_SHORT, &idxshort);
+		idx = idxshort;
+	#else
+		#warning "Unimplemented indexer for requested index format"
+	#endif
+
+	DO_ERROR_CHECK();
+	SDL_Log("have sample: %u\n", idx);
 	return idx;
+
 #else
 	return 0xffffffff;
 #endif
