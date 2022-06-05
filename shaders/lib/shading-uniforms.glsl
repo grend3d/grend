@@ -40,9 +40,6 @@ uniform vec3  cameraPosition;
 uniform float renderWidth;
 uniform float renderHeight;
 uniform float lightThreshold;
-// TODO: only used when rendering a tonemapped result, should have a config
-//       flag for this
-uniform float exposure;
 
 uniform float renderID;
 
