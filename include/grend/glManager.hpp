@@ -494,7 +494,7 @@ static inline glTexFormat depth_stencil_format(void) {
 #define INDEX_FORMAT_BITS ((GLSL_VERSION == 300)? 8 : 16)
 static inline glTexFormat index_format(void) {
 	return {
-		.internal = (INDEX_FORMAT_BITS == 8)? GL_RED : GL_R16UI,
+		.internal = (INDEX_FORMAT_BITS == 8)? GL_RED : GL_R16,
 		.format   = GL_RED,
 		.type     = (INDEX_FORMAT_BITS == 8)? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT,
 	};

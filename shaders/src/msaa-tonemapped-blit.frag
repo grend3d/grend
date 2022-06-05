@@ -24,6 +24,7 @@ uniform sampler2DMS colorMS;
 	uniform sampler2DMS normalMS;
 	uniform sampler2DMS positionMS;
 	uniform sampler2DMS renderIDMS;
+	uniform sampler2DMS metalRoughnessMS;
 #endif
 
 void main(void) {
@@ -40,9 +41,10 @@ void main(void) {
 	FRAG_COLOR = color / float(samples);
 	#if GREND_USE_G_BUFFER
 		// don't average G-buffer info, pass along first sample
-		FRAG_NORMAL    = texelFetch(normalMS,   uv, 0).rgb;
-		FRAG_POSITION  = texelFetch(positionMS, uv, 0).rgb;
-		FRAG_RENDER_ID = texelFetch(renderIDMS, uv, 0).r;
+		FRAG_NORMAL      = texelFetch(normalMS,         uv, 0).rgb;
+		FRAG_POSITION    = texelFetch(positionMS,       uv, 0).rgb;
+		FRAG_METAL_ROUGH = texelFetch(metalRoughnessMS, uv, 0).rgb;
+		FRAG_RENDER_ID   = texelFetch(renderIDMS,       uv, 0).r;
 	#endif
 }
 #endif

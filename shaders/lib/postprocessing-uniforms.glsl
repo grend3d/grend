@@ -12,6 +12,8 @@ uniform sampler2D render_depth;
 #if GREND_USE_G_BUFFER
 uniform sampler2D normal_fb;
 uniform sampler2D position_fb;
+uniform sampler2D metalroughness_fb;
+uniform sampler2D renderID_fb;
 #endif
 
 uniform float screen_x;

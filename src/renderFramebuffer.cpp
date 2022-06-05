@@ -103,9 +103,8 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 			GL_COLOR_ATTACHMENT1,
 			GL_COLOR_ATTACHMENT2,
 			GL_COLOR_ATTACHMENT3,
+			GL_COLOR_ATTACHMENT4,
 		};
-
-		glDrawBuffers(4, bufs);
 
 		// custom resolver, for tonemapping in particular
 		// TODO: could this be unified with the postprocessing code
@@ -113,7 +112,7 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		msaaResolver->bind();
 		DO_ERROR_CHECK();
 
-		glDrawBuffers(4, bufs);
+		glDrawBuffers(5, bufs);
 
 		glActiveTexture(TEX_GL_SCRATCH);
 		colorMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
@@ -128,11 +127,12 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 		positionMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
 		msaaResolver->set("positionMS", TEXU_SCRATCHB);
 
-		DO_ERROR_CHECK();
+		glActiveTexture(TEX_GL_METALROUGH);
+		metalRoughnessMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
+		msaaResolver->set("metalRoughnessMS", TEXU_METALROUGH);
+
 		glActiveTexture(TEX_GL_LIGHTMAP);
-		DO_ERROR_CHECK();
 		renderIDMultisampled->bind(GL_TEXTURE_2D_MULTISAMPLE);
-		DO_ERROR_CHECK();
 		msaaResolver->set("renderIDMS", TEXU_LIGHTMAP);
 #endif
 		DO_ERROR_CHECK();
@@ -184,22 +184,28 @@ void renderFramebuffer::setSize(int Width, int Height) {
 	framebuffer->attach(GL_DEPTH_STENCIL_ATTACHMENT, depth);
 
 #if GREND_USE_G_BUFFER
-	normal   = genTextureFormat(w, h, rgbf_if_supported());
-	position = genTextureFormat(w, h, rgbf_if_supported());
-	renderID = genTextureFormat(w, h, index_format());
+	normal         = genTextureFormat(w, h, rgbf_if_supported());
+	position       = genTextureFormat(w, h, rgbf_if_supported());
+	metalRoughness = genTextureFormat(w, h, rgbf_if_supported());
+	DO_ERROR_CHECK();
+	renderID       = genTextureFormat(w, h, index_format());
+	DO_ERROR_CHECK();
 
 	framebuffer->attach(GL_COLOR_ATTACHMENT1, normal);
 	framebuffer->attach(GL_COLOR_ATTACHMENT2, position);
-	framebuffer->attach(GL_COLOR_ATTACHMENT3, renderID);
+	framebuffer->attach(GL_COLOR_ATTACHMENT3, metalRoughness);
+	framebuffer->attach(GL_COLOR_ATTACHMENT4, renderID);
+	DO_ERROR_CHECK();
 
 	const unsigned bufs[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3,
+		GL_COLOR_ATTACHMENT4,
 	};
 
-	glDrawBuffers(4, bufs);
+	glDrawBuffers(5, bufs);
 
 	// TODO: Could split renderIDs into seperate option, probably not though
 	indexBuffer->bind();
@@ -236,15 +242,17 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		attach(GL_DEPTH_STENCIL_ATTACHMENT, depthMultisampled);
 
 		#if GREND_USE_G_BUFFER
-			normalMultisampled   = gentex(rgbf_if_supported());
-			positionMultisampled = gentex(rgbf_if_supported());
-			renderIDMultisampled = gentex(index_format());
+			normalMultisampled         = gentex(rgbf_if_supported());
+			positionMultisampled       = gentex(rgbf_if_supported());
+			metalRoughnessMultisampled = gentex(rgbf_if_supported());
+			renderIDMultisampled       = gentex(index_format());
 
 			attach(GL_COLOR_ATTACHMENT1, normalMultisampled);
 			attach(GL_COLOR_ATTACHMENT2, positionMultisampled);
-			attach(GL_COLOR_ATTACHMENT3, renderIDMultisampled);
+			attach(GL_COLOR_ATTACHMENT3, metalRoughnessMultisampled);
+			attach(GL_COLOR_ATTACHMENT4, renderIDMultisampled);
 
-			glDrawBuffers(4, bufs);
+			glDrawBuffers(5, bufs);
 		#endif
 
 

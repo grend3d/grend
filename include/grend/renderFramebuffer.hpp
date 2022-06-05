@@ -42,13 +42,19 @@ class renderFramebuffer {
 
 #if GLSL_VERSION >= 300 && GREND_USE_G_BUFFER
 		Texture::ptr normal;
+		Texture::ptr metalRoughness;
 		Texture::ptr position;
 		Texture::ptr renderID;
 		Framebuffer::ptr indexBuffer;
 
+		// TODO: probably won't ever use multisampling with G-buffers
+		//       in anything serious, just for experimentation/comparison,
+		//       the memory cost of these full-resolution multisampled
+		//       layers is huge
 		#if defined(HAVE_MULTISAMPLE)
 			Texture::ptr normalMultisampled;
 			Texture::ptr positionMultisampled;
+			Texture::ptr metalRoughnessMultisampled;
 			Texture::ptr renderIDMultisampled;;
 		#endif
 #endif

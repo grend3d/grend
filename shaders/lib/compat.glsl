@@ -60,12 +60,14 @@
 		#if GREND_USE_G_BUFFER
 			layout (location = 1) out vec3  FragNormal;
 			layout (location = 2) out vec3  FragPosition;
-			layout (location = 3) out float FragRenderID;
+			layout (location = 3) out vec3  FragMetalRough;
+			layout (location = 4) out float FragRenderID;
 			// TODO: mesh, render ID
 
-			#define FRAG_NORMAL    FragNormal
-			#define FRAG_POSITION  FragPosition
-			#define FRAG_RENDER_ID FragRenderID
+			#define FRAG_NORMAL      FragNormal
+			#define FRAG_POSITION    FragPosition
+			#define FRAG_METAL_ROUGH FragMetalRough
+			#define FRAG_RENDER_ID   FragRenderID
 		#endif
 	#endif
 

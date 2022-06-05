@@ -218,15 +218,24 @@ class renderPostChain {
 			Texture::ptr current = fb->color;
 
 			#if GREND_USE_G_BUFFER
+				// TODO: clearer texture unit defines for these
 				glActiveTexture(TEX_GL_NORMAL);
 				fb->normal->bind();
 				//program->set("normal_fb", TEXU_NORMAL);
 				setUniform("normal_fb", TEXU_NORMAL);
 
-				glActiveTexture(TEX_GL_SKYBOX);
+				glActiveTexture(TEX_GL_DIFFUSE);
 				fb->position->bind();
 				//program->set("position_fb", TEXU_SKYBOX);
-				setUniform("position_fb", TEXU_SKYBOX);
+				setUniform("position_fb", TEXU_DIFFUSE);
+
+				glActiveTexture(TEX_GL_METALROUGH);
+				fb->metalRoughness->bind();
+				setUniform("metalroughness_fb", TEXU_METALROUGH);
+
+				glActiveTexture(TEX_GL_AO);
+				fb->renderID->bind();
+				setUniform("renderID_fb", TEXU_AO);
 			#endif
 
 			glActiveTexture(TEX_GL_SCRATCHB);
