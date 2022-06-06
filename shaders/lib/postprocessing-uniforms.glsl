@@ -24,5 +24,4 @@ uniform float rend_y;
 
 uniform float scale_x;
 uniform float scale_y;
-uniform float exposure;
 uniform float time_ms;

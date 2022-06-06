@@ -23,8 +23,7 @@ precision mediump samplerCube;
 #include <lib/reflectionMipmap.glsl>
 
 #ifdef NO_POSTPROCESSING
-// TODO: need to figure out where to put this, can't go in shading-uniforms.glsl
-uniform float exposure;
+#include <lib/camera-uniforms.glsl>
 #endif
 
 vec3 refFactor(vec3 view_dir, vec3 normal, vec3 albedo, float metalness, float roughness)

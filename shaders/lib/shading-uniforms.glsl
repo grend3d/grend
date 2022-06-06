@@ -36,7 +36,6 @@ uniform bool diffuse_vec;
 uniform bool emissive_vec;
 
 // TODO: could be in the light info UBO
-uniform vec3  cameraPosition;
 uniform float renderWidth;
 uniform float renderHeight;
 uniform float lightThreshold;

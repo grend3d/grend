@@ -8,14 +8,6 @@ precision mediump sampler2D;
 #include <lib/postprocessing-uniforms.glsl>
 #include <lib/compat.glsl>
 
-vec4 fogColor = vec4(vec3(0.4), 1.0);
-
-uniform vec3 cameraPos;
-uniform vec3 cameraForward;
-uniform vec3 cameraUp;
-uniform vec3 cameraRight;
-uniform float cameraFov;
-
 #include <lib/shadows.glsl>
 #include <lib/attenuation.glsl>
 #include <lib/tonemapping.glsl>
