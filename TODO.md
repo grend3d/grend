@@ -29,11 +29,6 @@
 - Automatic tool for placing, baking light volumes
 
 ### Rendering
-- Store render IDs (not mesh IDs) in a framebuffer attachment rather than the
-  stencil buffer
-- Store metalness, roughness in framebuffer attachment (for SSAO, SSR),
-  metal/roughness could be stored in the same buffer, or maybe store all of it
-  in a single buffer w/ packed normals
 - Compute shader to determine average brightness, automatically adjust exposure
 - Specular convolution for reflection probes
 - SSAO
@@ -44,6 +39,9 @@
   a json object + PNG, including positions (not necessarily a grid),
   then the info can be copied to the main irradiance atlas as needed
 - Compress irradiance info, either HL2-style or spherical harmonics
+- BVH for fast probe lookup in shaders, buffer irradiance probes to GPU
+- Implement some way of determining which G-buffer layers shaders depend on,
+  so only what is needed will be stored
 
 ### Experimental
 - Compute shader to bin lights
@@ -52,8 +50,5 @@
   (this would be used to derive velocities, adjust surfel positions in a surfel GI)
 - TSSAA
 - Raytracing surfel GI
-- Add a deferred lighting shader, all the pieces are there
-- (Re)add depth-only pass for forward renderer 
-- Add dithering shader for fake blending
 - Variation of PRT GI used in that one talk, stored similarly to plain
   irradiance volumes, but with the G-buffers in seperate PNGs

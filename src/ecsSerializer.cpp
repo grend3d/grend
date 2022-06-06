@@ -1,5 +1,6 @@
 #include <grend/sceneNode.hpp>
 #include <grend/gameMain.hpp>
+#include <grend/renderUtils.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
 #include <grend/ecs/collision.hpp>

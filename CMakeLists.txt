@@ -99,6 +99,10 @@ add_library(Grend
 	src/renderer.cpp
 	src/renderPostStage.cpp
 	src/rendererProbes.cpp
+	src/renderFramebuffer.cpp
+	src/renderQueue.cpp
+	src/renderUtils.cpp
+	src/multiRenderQueue.cpp
 	src/sdlContext.cpp
 	src/spatialAudioChannel.cpp
 	src/text.cpp
@@ -108,7 +112,6 @@ add_library(Grend
 	src/jobQueue.cpp
 	src/bufferAllocator.cpp
 	src/gameMain.cpp
-	src/renderFramebuffer.cpp
 	src/plane.cpp
 	src/gltfModel.cpp
 	src/objModel.cpp
@@ -121,8 +124,6 @@ add_library(Grend
 	src/gameView.cpp
 	src/ecsSerializer.cpp
 	src/editorEditorSelectWindow.cpp
-	src/renderQueue.cpp
-	src/multiRenderQueue.cpp
 	src/playerView.cpp
 	src/tinygltf.cpp
 	src/scancodes.cpp

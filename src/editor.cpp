@@ -8,6 +8,7 @@
 #include <grend/loadScene.hpp>
 #include <grend/scancodes.hpp>
 #include <grend/interpolation.hpp>
+#include <grend/renderUtils.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/shader.hpp>
