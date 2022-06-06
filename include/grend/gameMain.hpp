@@ -9,6 +9,8 @@
 #include <grend/audioMixer.hpp>
 #include <grend/camera.hpp>
 
+#include <grend/renderPostStage.hpp>
+
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
 
@@ -59,6 +61,7 @@ class gameMain {
 		} metrics;
 };
 
+// TODO: move to seperate header
 // common world-drawing function
 void renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags);
 void renderWorld(gameMain *game, camera::ptr cam,
@@ -72,6 +75,10 @@ void drawMultiQueue(gameMain *game, multiRenderQueue& que,
 //       or could have an overload for that
 // TODO: better place for this
 multiRenderQueue buildDrawableQueue(gameMain *game, camera::ptr cam);
+
+void setPostUniforms(renderPostChain::ptr post,
+                     gameMain *game,
+                     camera::ptr cam);
 
 // namespace grendx
 }

@@ -329,3 +329,38 @@ grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr 
 
 	return que;
 }
+
+void grendx::setPostUniforms(renderPostChain::ptr post,
+                             gameMain *game,
+                             camera::ptr cam)
+{
+	glm::mat4 view       = cam->viewTransform();
+	glm::mat4 projection = cam->projectionTransform();
+	glm::mat4 v_inv      = glm::inverse(view);
+
+	post->setUniform("v", view);
+	post->setUniform("p", projection);
+	post->setUniform("v_inv", v_inv);
+
+	post->setUniform("cameraPosition", cam->position());
+	post->setUniform("cameraForward",  cam->direction());
+	post->setUniform("cameraRight",    cam->right());
+	post->setUniform("cameraUp",       cam->up());
+	post->setUniform("cameraFov",      cam->fovx());
+
+	float tim = SDL_GetTicks() * 1000.f;
+	post->setUniform("exposure", game->rend->exposure);
+	post->setUniform("time_ms",  tim);
+	post->setUniform("lightThreshold", game->rend->lightThreshold);
+
+	// TODO: bind texture
+	post->setUniform("shadowmap_atlas", TEXU_SHADOWS);
+
+	post->setUniformBlock("lights", game->rend->lightBuffer, UBO_LIGHT_INFO);
+	#if !defined(USE_SINGLE_UBO)
+	post->setUniformBlock("point_light_tiles", game->rend->pointTiles,
+						  UBO_POINT_LIGHT_TILES);
+	post->setUniformBlock("spot_light_tiles", game->rend->spotTiles,
+						  UBO_SPOT_LIGHT_TILES);
+	#endif
+}
