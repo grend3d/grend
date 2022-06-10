@@ -6,6 +6,7 @@ precision mediump sampler2D;
 #include <lib/postprocessing-uniforms.glsl>
 #include <lib/compat.glsl>
 #include <lib/tonemapping.glsl>
+#include <lib/camera-uniforms.glsl>
 
 IN vec2 f_texcoord;
 
