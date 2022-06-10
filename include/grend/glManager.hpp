@@ -68,12 +68,16 @@ enum {
 	VAO_QUAD_TEXCOORDS = 1,
 };
 
+// TODO: remove light info buffer
 enum {
-	UBO_LIGHT_INFO          = 2,
-	UBO_POINT_LIGHT_TILES   = 3,
-	UBO_SPOT_LIGHT_TILES    = 4,
-	UBO_JOINTS              = 5,
-	UBO_INSTANCE_TRANSFORMS = 6,
+	UBO_LIGHT_INFO               = 2,
+	UBO_POINT_LIGHT_TILES        = 3,
+	UBO_SPOT_LIGHT_TILES         = 4,
+	UBO_JOINTS                   = 5,
+	UBO_INSTANCE_TRANSFORMS      = 6,
+	UBO_POINT_LIGHT_BUFFER       = 7,
+	UBO_SPOT_LIGHT_BUFFER        = 8,
+	UBO_DIRECTIONAL_LIGHT_BUFFER = 9,
 	UBO_END_BINDINGS,
 };
 

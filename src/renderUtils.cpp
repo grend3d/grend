@@ -187,10 +187,11 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
 	post->setUniform("shadowmap_atlas", TEXU_SHADOWS);
 
 	post->setUniformBlock("lights", game->rend->lightBuffer, UBO_LIGHT_INFO);
-	#if !defined(USE_SINGLE_UBO)
 	post->setUniformBlock("point_light_tiles", game->rend->pointTiles,
 						  UBO_POINT_LIGHT_TILES);
 	post->setUniformBlock("spot_light_tiles", game->rend->spotTiles,
 						  UBO_SPOT_LIGHT_TILES);
-	#endif
+	post->setUniformBlock("point_light_buffer", game->rend->pointBuffer, UBO_POINT_LIGHT_BUFFER);
+	post->setUniformBlock("spot_light_buffer", game->rend->spotBuffer, UBO_SPOT_LIGHT_BUFFER);
+	post->setUniformBlock("directional_light_buffer", game->rend->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
 }

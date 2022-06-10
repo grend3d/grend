@@ -996,6 +996,8 @@ static void syncPlainUniforms(Program::ptr program,
 	                          spotList& spots,
 	                          dirList&  directionals)
 {
+// TODO: remove this, removing gles2 support
+#if 0
 	size_t pactive = min((size_t)MAX_LIGHTS, points.size());
 	size_t sactive = min((size_t)MAX_LIGHTS, spots.size());
 	size_t dactive = min((size_t)MAX_LIGHTS, directionals.size());
@@ -1109,6 +1111,7 @@ static void syncPlainUniforms(Program::ptr program,
 			DO_ERROR_CHECK();
 		}
 	}
+#endif
 }
 
 static inline float rectScale(float R, float d) {
@@ -1141,9 +1144,12 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
                                camera::ptr cam,
                                renderContext::ptr rctx)
 {
-	lights_std140&      lightbuf = rctx->lightBufferCtx;
-	light_tiles_std140& pointbuf = rctx->pointTilesCtx;
-	light_tiles_std140& spotbuf  = rctx->spotTilesCtx;
+	lights_std140&             lightbuf   = rctx->lightBufferCtx;
+	light_tiles_std140&        pointTiles = rctx->pointTilesCtx;
+	light_tiles_std140&        spotTiles  = rctx->spotTilesCtx;
+	point_light_buffer_std140& pointbuf   = rctx->pointLightsCtx;
+	spot_light_buffer_std140&  spotbuf    = rctx->spotLightsCtx;
+	directional_light_buffer_std140& dirbuf = rctx->directionalLightsCtx;
 
 	float rx = glm::radians(cam->fovx());
 	float ry = glm::radians(cam->fovy());
@@ -1153,11 +1159,11 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 	size_t activeDirs = 0;
 
 	// TODO: put arrays in one big struct so that this can be just one memset()
-	memset(&lightbuf.upoint_lights, 0, sizeof(lightbuf.upoint_lights));
-	memset(&lightbuf.uspot_lights, 0, sizeof(lightbuf.uspot_lights));
-	memset(&lightbuf.udirectional_lights, 0, sizeof(lightbuf.udirectional_lights));
-	memset(&pointbuf, 0, sizeof(pointbuf));
-	memset(&spotbuf,  0, sizeof(spotbuf));
+	memset(&pointbuf,   0, sizeof(pointbuf));
+	memset(&spotbuf,    0, sizeof(spotbuf));
+	memset(&dirbuf,     0, sizeof(dirbuf));
+	memset(&pointTiles, 0, sizeof(pointTiles));
+	memset(&spotTiles,  0, sizeof(spotTiles));
 
 	plane planes[16*9*6];
 	glm::vec3 nearpos = cam->position() + cam->direction()*cam->near();
@@ -1215,21 +1221,21 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 				unsigned clusidx = MAX_LIGHTS * cluster;
 
 				if (lit->lightType == sceneLight::lightTypes::Point) {
-					unsigned cur  = pointbuf.indexes[clusidx];
+					unsigned cur  = pointTiles.indexes[clusidx];
 					unsigned next = cur + 1;
 
 					if (next < MAX_LIGHTS) {
-						pointbuf.indexes[clusidx]        = next;
-						pointbuf.indexes[clusidx + next] = idx;
+						pointTiles.indexes[clusidx]        = next;
+						pointTiles.indexes[clusidx + next] = idx;
 					}
 
 				} else if (lit->lightType == sceneLight::lightTypes::Spot) {
-					unsigned cur  = spotbuf.indexes[clusidx];
+					unsigned cur  = spotTiles.indexes[clusidx];
 					unsigned next = cur + 1;
 
 					if (next < MAX_LIGHTS) {
-						spotbuf.indexes[clusidx]        = next;
-						spotbuf.indexes[clusidx + next] = idx;
+						spotTiles.indexes[clusidx]        = next;
+						spotTiles.indexes[clusidx + next] = idx;
 					}
 				}
 			}
@@ -1245,7 +1251,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 				std::static_pointer_cast<sceneLightPoint>(lit.data);
 
 			packLight(plit,
-					  lightbuf.upoint_lights + activePoints,
+					  pointbuf.upoint_lights + activePoints,
 					  rctx, lit.transform);
 			buildTiles(lit.data, lit.transform, activePoints);
 			activePoints++;
@@ -1257,7 +1263,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 				std::static_pointer_cast<sceneLightSpot>(lit.data);
 
 			packLight(slit,
-					  lightbuf.uspot_lights + activeSpots,
+					  spotbuf.uspot_lights + activeSpots,
 					  rctx, lit.transform);
 			buildTiles(lit.data, lit.transform, activeSpots);
 			activeSpots++;
@@ -1269,23 +1275,26 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 				std::static_pointer_cast<sceneLightDirectional>(lit.data);
 
 			packLight(dlit,
-					  lightbuf.udirectional_lights + activeDirs,
+					  dirbuf.udirectional_lights + activeDirs,
 					  rctx, lit.transform);
 			activeDirs++;
 		}
 	}
 
-	lightbuf.uactive_point_lights       = activePoints;
-	lightbuf.uactive_spot_lights        = activeSpots;
-	lightbuf.uactive_directional_lights = activeDirs;
+	pointbuf.uactive_point_lights     = activePoints;
+	spotbuf.uactive_spot_lights       = activeSpots;
+	dirbuf.uactive_directional_lights = activeDirs;
 
 	/*
 	SDL_Log("updating buffers: lights: %u, points: %u, spots: %u",
-	        sizeof(lightbuf), sizeof(pointbuf), sizeof(spotbuf));
+	        sizeof(lightbuf), sizeof(pointTiles), sizeof(spotbuf));
 			*/
-	rctx->lightBuffer->update(&lightbuf, 0, sizeof(lightbuf));
-	rctx->pointTiles->update(&pointbuf,  0, sizeof(pointbuf));
-	rctx->spotTiles->update(&spotbuf,    0, sizeof(spotbuf));
+	rctx->lightBuffer      ->update(&lightbuf,   0, sizeof(lightbuf));
+	rctx->pointTiles       ->update(&pointTiles, 0, sizeof(pointTiles));
+	rctx->spotTiles        ->update(&spotTiles,  0, sizeof(spotTiles));
+	rctx->pointBuffer      ->update(&pointbuf,   0, sizeof(pointbuf));
+	rctx->spotBuffer       ->update(&spotbuf,    0, sizeof(spotbuf));
+	rctx->directionalBuffer->update(&dirbuf,     0, sizeof(dirbuf));
 }
 
 void grendx::updateReflectionProbe(renderContext::ptr rctx,
@@ -1313,16 +1322,20 @@ void grendx::shaderSync(Program::ptr program,
 
 	else if (rctx->lightingMode == renderContext::lightingModes::Tiled) {
 		program->setUniformBlock("lights", rctx->lightBuffer, UBO_LIGHT_INFO);
-#if !defined(USE_SINGLE_UBO)
 		program->setUniformBlock("point_light_tiles", rctx->pointTiles,
 								 UBO_POINT_LIGHT_TILES);
 		program->setUniformBlock("spot_light_tiles", rctx->spotTiles,
 								 UBO_SPOT_LIGHT_TILES);
-#endif
+		program->setUniformBlock("point_light_buffer", rctx->pointBuffer, UBO_POINT_LIGHT_BUFFER);
+		program->setUniformBlock("spot_light_buffer", rctx->spotBuffer, UBO_SPOT_LIGHT_BUFFER);
+		program->setUniformBlock("directional_light_buffer", rctx->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
 		DO_ERROR_CHECK();
 	}
 
 	else if (rctx->lightingMode == renderContext::lightingModes::PlainArray) {
+		// TODO: remove this, remove gles2 stuff, fixing gles2 support
+		//       will be too much work
+#if 0
 		pointList point_lights;
 		spotList  spot_lights;
 		dirList   directional_lights;
@@ -1364,6 +1377,7 @@ void grendx::shaderSync(Program::ptr program,
 
 		//set_reflection_probe(refprobe, program, rctx->atlases);
 		DO_ERROR_CHECK();
+#endif
 	}
 
 	program->set("renderWidth",  (float)rctx->framebuffer->width);

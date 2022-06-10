@@ -97,21 +97,30 @@ struct directional_std140 {
 } __attribute__((packed));
 
 struct lights_std140 {
-	GLuint uactive_point_lights;       // 0
-	GLuint uactive_spot_lights;        // 4
-	GLuint uactive_directional_lights; // 8
-	GLuint padding;                    // 12, end 16
-
+	// TODO: move reflection probes to buffer list
 	GLfloat reflection_probe[30 * 4];
 	GLfloat refboxMin[4];
 	GLfloat refboxMax[4];
 	GLfloat refprobePosition[4];       // end 528 + 16
+} __attribute__((packed));
 
+// TODO: might be useful to have this as a templated type
+struct point_light_buffer_std140 {
+	GLuint uactive_point_lights;       // 0
+	GLuint padding[3];                 // pad to 16
 	point_std140 upoint_lights[MAX_POINT_LIGHT_OBJECTS_TILED];
-	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS_TILED];
-	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED];
+} __attribute__((packed));
 
-	uint8_t lol[128];
+struct spot_light_buffer_std140 {
+	GLuint uactive_spot_lights;       // 0
+	GLuint padding[3];                // pad to 16
+	spot_std140 uspot_lights[MAX_SPOT_LIGHT_OBJECTS_TILED];
+} __attribute__((packed));
+
+struct directional_light_buffer_std140 {
+	GLuint uactive_directional_lights; // 0
+	GLuint padding[3];                 // pad to 16
+	directional_std140 udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED];
 } __attribute__((packed));
 
 // check to make sure everything will fit in the (specifications) minimum required UBO

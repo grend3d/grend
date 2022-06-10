@@ -108,10 +108,16 @@ class renderContext {
 		Buffer::ptr lightBuffer;
 		Buffer::ptr pointTiles;
 		Buffer::ptr spotTiles;
+		Buffer::ptr pointBuffer;
+		Buffer::ptr spotBuffer;
+		Buffer::ptr directionalBuffer;
 
-		lights_std140      lightBufferCtx;
-		light_tiles_std140 pointTilesCtx;
-		light_tiles_std140 spotTilesCtx;
+		lights_std140                   lightBufferCtx;
+		light_tiles_std140              pointTilesCtx;
+		light_tiles_std140              spotTilesCtx;
+		point_light_buffer_std140       pointLightsCtx;
+		spot_light_buffer_std140        spotLightsCtx;
+		directional_light_buffer_std140 directionalLightsCtx;
 
 		float lightThreshold = 0.05;
 		float exposure       = 1.f;

@@ -172,11 +172,6 @@ layout(std430, binding = 1) buffer plights {
 #endif
 
 layout (std140, column_major) uniform lights {
-	uint uactive_point_lights;
-	uint uactive_spot_lights;
-	uint uactive_directional_lights;
-	uint padding;
-
 	// TODO: configurable number of reflection mips
 	// first probe indexes into reflection_atlas, last 4 index into irradiance_atlas
 	// (not using reflection_atlas since you can't both read and write to a bound
@@ -185,9 +180,20 @@ layout (std140, column_major) uniform lights {
 	vec4 refboxMin;
 	vec4 refboxMax;
 	vec4 refprobePosition;
+};
 
-	point_light       upoint_lights[MAX_POINT_LIGHT_OBJECTS];
-	spot_light        uspot_lights[MAX_SPOT_LIGHT_OBJECTS];
+layout (std140) uniform point_light_buffer {
+	uint uactive_point_lights;
+	point_light upoint_lights[MAX_POINT_LIGHT_OBJECTS];
+};
+
+layout (std140) uniform spot_light_buffer {
+	uint uactive_spot_lights;
+	spot_light uspot_lights[MAX_SPOT_LIGHT_OBJECTS];
+};
+
+layout (std140) uniform directional_light_buffer {
+	uint uactive_directional_lights;
 	directional_light udirectional_lights[MAX_DIRECTIONAL_LIGHT_OBJECTS];
 };
 

@@ -53,13 +53,33 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	spotTiles->bind();
 	spotTiles->allocate(sizeof(light_tiles_std140));
 
-	memset(&lightBufferCtx, 0, sizeof(lightBufferCtx));
-	memset(&pointTilesCtx,  0, sizeof(pointTilesCtx));
-	memset(&spotTilesCtx,   0, sizeof(spotTilesCtx));
+	pointBuffer = genBuffer(GL_UNIFORM_BUFFER);
+	pointBuffer->bind();
+	pointBuffer->allocate(sizeof(point_light_buffer_std140));
+
+	spotBuffer = genBuffer(GL_UNIFORM_BUFFER);
+	spotBuffer->bind();
+	spotBuffer->allocate(sizeof(spot_light_buffer_std140));
+
+	directionalBuffer = genBuffer(GL_UNIFORM_BUFFER);
+	directionalBuffer->bind();
+	directionalBuffer->allocate(sizeof(directional_light_buffer_std140));
+
+
+	memset(&lightBufferCtx,       0, sizeof(lightBufferCtx));
+	memset(&pointTilesCtx,        0, sizeof(pointTilesCtx));
+	memset(&spotTilesCtx,         0, sizeof(spotTilesCtx));
+	memset(&pointLightsCtx,       0, sizeof(pointLightsCtx));
+	memset(&spotLightsCtx,        0, sizeof(spotLightsCtx));
+	memset(&directionalLightsCtx, 0, sizeof(directionalLightsCtx));
 
 	lightBuffer->update(&lightBufferCtx, 0, sizeof(lightBufferCtx));
 	pointTiles->update(&pointTilesCtx,   0, sizeof(pointTilesCtx));
 	spotTiles->update(&spotTilesCtx,     0, sizeof(spotTilesCtx));
+
+	pointBuffer      ->update(&pointLightsCtx,       0, sizeof(pointLightsCtx));
+	spotBuffer       ->update(&spotLightsCtx,        0, sizeof(spotLightsCtx));
+	directionalBuffer->update(&directionalLightsCtx, 0, sizeof(directionalLightsCtx));
 #endif
 
 	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
