@@ -8,6 +8,7 @@
 #include <map>
 #include <iostream>
 #include <algorithm>
+#include <array>
 
 using namespace grendx;
 
@@ -40,6 +41,9 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	SDL_Log("GOT HERE!!!!!!!!!!!!!!!!!!");
 	SDL_Log("renderContext(): sizeof(lights_std140): %lu", sizeof(lights_std140));
 	SDL_Log("renderContext(): sizeof(light_tiles_std140): %lu", sizeof(light_tiles_std140));
+	SDL_Log("renderContext(): sizeof(point_light_buffer_std140): %lu", sizeof(point_light_buffer_std140));
+	SDL_Log("renderContext(): sizeof(spot_light_buffer_std140): %lu", sizeof(spot_light_buffer_std140));
+	SDL_Log("renderContext(): sizeof(directional_light_buffer_std140): %lu", sizeof(directional_light_buffer_std140));
 
 	lightBuffer = genBuffer(GL_UNIFORM_BUFFER);
 	lightBuffer->bind();

@@ -495,13 +495,28 @@ static inline glTexFormat depth_stencil_format(void) {
 
 // defining a macro to look this up so code that uses this doesn't need to check
 // the GLSL version...
-#define INDEX_FORMAT_BITS ((GLSL_VERSION == 300)? 8 : 16)
+// emscripten webgl layer doesn't define GL_R16
+#if defined(GL_R16) && (GLSL_VERSION > 300)
+#define INDEX_FORMAT_BITS 16
+#else
+#define INDEX_FORMAT_BITS 8
+#endif
+
 static inline glTexFormat index_format(void) {
+#if INDEX_FORMAT_BITS == 16
 	return {
-		.internal = (INDEX_FORMAT_BITS == 8)? GL_RED : GL_R16,
+		.internal = GL_R16,
 		.format   = GL_RED,
-		.type     = (INDEX_FORMAT_BITS == 8)? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT,
+		.type     = GL_UNSIGNED_SHORT,
 	};
+#else
+	// otherwise assume 8-bit
+	return {
+		.internal = GL_RED,
+		.format   = GL_RED,
+		.type     = GL_UNSIGNED_BYTE,
+	};
+#endif
 }
 
 Texture::ptr genTextureFormat(unsigned width, unsigned height,

@@ -85,7 +85,6 @@ struct directional_light {
 	mat4 shadowproj;
 	float intensity;
 	bool casts_shadows;
-	float pada[2];
 };
 
 // per cluster, tile, whatever, maximum lights that will be evaluated per fragment

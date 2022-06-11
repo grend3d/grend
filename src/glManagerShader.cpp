@@ -294,7 +294,7 @@ GLuint Program::lookupUniformBlock(std::string name) {
 			GLint foo;
 			glGetActiveUniformBlockiv(obj, temp, GL_UNIFORM_BLOCK_DATA_SIZE, &foo);
 
-			SDL_Log("UBO at %u has block data size of %d", temp, foo);
+			SDL_Log("UBO at %u (%s) has block data size of %d", temp, name.c_str(), foo);
 			return temp;
 
 		} else {
