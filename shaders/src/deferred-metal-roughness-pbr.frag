@@ -14,6 +14,8 @@ precision mediump sampler2D;
 #include <lighting/metal-roughness-pbr.glsl>
 #include <lighting/lightingLoop.glsl>
 
+IN vec2 f_texcoord;
+
 void main(void) {
 	uint cluster = SCREEN_TO_CLUSTER(gl_FragCoord.x/screen_x, gl_FragCoord.y/screen_y);
 	// TODO:

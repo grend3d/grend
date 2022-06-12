@@ -2,6 +2,11 @@
 #include <stdexcept>
 #include <iostream>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
 namespace grendx {
 
 void SDL_Die(const char *message) {
@@ -83,11 +88,26 @@ context::context(const char *progname, const renderSettings& settings) {
 		SDL_Die("Couldn't create a window");
 	}
 
-	// apply after creating a window, before creating GL context
-	applySettings(settings);
 
 	glcontext = SDL_GL_CreateContext(window);
 	SDL_Log("have window + gl context");
+
+	// apply settings after creating a GL context
+	applySettings(settings);
+
+	// TODO: would make more sense to have extension initialization stuff
+	//       in initializeOpengl()
+#if defined(__EMSCRIPTEN__)
+	auto webgl = emscripten_webgl_get_current_context();
+
+	bool half = emscripten_webgl_enable_extension(webgl, "EXT_color_buffer_half_float");
+	bool full = emscripten_webgl_enable_extension(webgl, "EXT_color_buffer_float");
+	bool nonsense = emscripten_webgl_enable_extension(webgl, "GL_OES_nonsense");
+
+	SDL_Log("Have context: %d", webgl);
+	SDL_Log("Extensions enabled: half float: %d, float: %d, nonsense: %d",
+	        half, full, nonsense);
+#endif
 
 #if GLSL_VERSION >= 330
 	// only use glew for core profiles
@@ -188,6 +208,7 @@ void context::applySettings(const renderSettings& settings) {
 		SDL_SetWindowSize(window, settings.windowResX, settings.windowResY);
 	}
 
+	SDL_Log("SDL: finished applying settings");
 	/*
 	SDL_ShowCursor(SDL_DISABLE);
 	*/

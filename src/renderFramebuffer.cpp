@@ -280,9 +280,9 @@ uint32_t renderFramebuffer::index(float x, float y) {
 	unsigned ady = (height - height*y - 1) * scale.y;
 
 	#if INDEX_FORMAT_BITS == 8
-		GLubyte idxbyte;
-		glReadPixels(adx, ady, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &idxbyte);
-		idx = idxbyte;
+		GLubyte colors[4];
+		glReadPixels(adx, ady, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &colors);
+		idx = colors[0];
 
 	#elif INDEX_FORMAT_BITS == 16
 		GLushort idxshort;

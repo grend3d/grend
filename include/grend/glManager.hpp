@@ -438,50 +438,42 @@ struct glTexFormat {
 	GLenum magfilter = 0;
 };
 
-// TODO: defining these as functions to leave open the possibility of
-//       determining this at runtime
-#ifdef NO_FLOATING_FB
+bool haveFloatBuffers(void);
+
 static inline glTexFormat rgbaf_if_supported(void) {
-	return {
-		.internal  = GL_RGBA8,
-		.format    = GL_RGBA,
-		.type      = GL_UNSIGNED_BYTE,
-		.minfilter = GL_LINEAR,
-		.magfilter = GL_LINEAR,
-	};
+	return haveFloatBuffers()
+		? glTexFormat {
+			.internal = GL_RGBA16F,
+			.format   = GL_RGBA,
+			.type     = GL_FLOAT,
+			.minfilter = GL_LINEAR,
+			.magfilter = GL_LINEAR, }
+
+		: glTexFormat {
+			.internal  = GL_RGBA8,
+			.format    = GL_RGBA,
+			.type      = GL_UNSIGNED_BYTE,
+			.minfilter = GL_LINEAR,
+			.magfilter = GL_LINEAR,
+		};
 }
 
 static inline glTexFormat rgbf_if_supported(void)  {
-	return {
-		.internal = GL_RGB8,
-		.format   = GL_RGB,
-		.type     = GL_UNSIGNED_BYTE,
-		.minfilter = GL_LINEAR,
-		.magfilter = GL_LINEAR,
-	};
-}
+	return haveFloatBuffers()
+		? glTexFormat {
+			.internal = GL_RGBA16F,
+			.format   = GL_RGBA,
+			.type     = GL_FLOAT,
+			.minfilter = GL_LINEAR,
+			.magfilter = GL_LINEAR, }
 
-#else
-static inline glTexFormat rgbaf_if_supported(void) {
-	return {
-		.internal = GL_RGBA16F,
-		.format   = GL_RGBA,
-		.type     = GL_FLOAT,
-		.minfilter = GL_LINEAR,
-		.magfilter = GL_LINEAR,
-	};
+		: glTexFormat {
+			.internal  = GL_RGB8,
+			.format    = GL_RGB,
+			.type      = GL_UNSIGNED_BYTE,
+			.minfilter = GL_LINEAR,
+			.magfilter = GL_LINEAR, };
 }
-
-static inline glTexFormat rgbf_if_supported(void) {
-	return {
-		.internal = GL_RGB16F,
-		.format   = GL_RGB,
-		.type     = GL_FLOAT,
-		.minfilter = GL_LINEAR,
-		.magfilter = GL_LINEAR,
-	};
-}
-#endif
 
 static inline glTexFormat depth_stencil_format(void) {
 	return {
@@ -493,8 +485,6 @@ static inline glTexFormat depth_stencil_format(void) {
 	};
 }
 
-// defining a macro to look this up so code that uses this doesn't need to check
-// the GLSL version...
 // emscripten webgl layer doesn't define GL_R16
 #if defined(GL_R16) && (GLSL_VERSION > 300)
 #define INDEX_FORMAT_BITS 16
@@ -510,9 +500,8 @@ static inline glTexFormat index_format(void) {
 		.type     = GL_UNSIGNED_SHORT,
 	};
 #else
-	// otherwise assume 8-bit
 	return {
-		.internal = GL_RED,
+		.internal = GL_R8,
 		.format   = GL_RED,
 		.type     = GL_UNSIGNED_BYTE,
 	};

@@ -6,6 +6,7 @@ precision mediump sampler2D;
 precision mediump samplerCube;
 
 #include <lib/compat.glsl>
+#include <lib/shading-varying.glsl>
 #include <lib/shading-uniforms.glsl>
 #include <lib/davehash.glsl>
 

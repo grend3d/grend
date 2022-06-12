@@ -1,6 +1,7 @@
 #include <grend/glManager.hpp>
 #include <grend/sceneModel.hpp>
 #include <SDL.h>
+#include <string.h>
 
 #include <string>
 #include <vector>
@@ -37,6 +38,17 @@ compiledModel::~compiledModel() {
 	//SDL_Log("Freeing a compiledModel");
 }
 
+static bool enabled_float_buffers = false;
+static bool enabled_halffloat_buffers = false;
+
+bool haveFloatBuffers(void) {
+#if defined(CORE_FLOATING_POINT_BUFFERS)
+	return true;
+#else
+	return enabled_float_buffers;
+#endif
+}
+
 void initializeOpengl(void) {
 	int maxImageUnits = 0;
 	int maxCombined = 0;
@@ -46,12 +58,14 @@ void initializeOpengl(void) {
 	int maxUBOBindings = 0;
 	int maxUBOSize = 0;
 	int maxFramebufAttachments = 0;
+	int numExtensions = 0;
 
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,          &maxImageUnits);
 	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxCombined);
 	glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS,       &maxVertexUniforms);
 	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS,     &maxFragmentUniforms);
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE,                 &maxTextureSize);
+	glGetIntegerv(GL_NUM_EXTENSIONS,                   &numExtensions);
 
 #if GLSL_VERSION >= 140 /* OpenGL 3.1+ */
 	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS,            &maxFramebufAttachments);
@@ -74,6 +88,17 @@ void initializeOpengl(void) {
 	SDL_Log(" OpenGL max uniform block bindings: %d", maxUBOBindings);
 	SDL_Log(" OpenGL max uniform block size: %d", maxUBOSize);
 	SDL_Log(" OpenGL max framebuffer attachments: %u", maxFramebufAttachments);
+
+	for (int i = 0; i < numExtensions; i++) {
+		const char *str = (const char *)glGetStringi(GL_EXTENSIONS, i);
+		SDL_Log("Extension %d: %s", i, str);
+
+		if (strcmp(str, "EXT_color_buffer_float") == 0)
+			enabled_float_buffers = true;
+
+		if (strcmp(str, "EXT_color_buffer_half_float") == 0)
+			enabled_halffloat_buffers = true;
+	}
 
 	if (maxImageUnits < TEXU_MAX) {
 		throw std::logic_error("This GPU doesn't allow enough texture bindings!");
