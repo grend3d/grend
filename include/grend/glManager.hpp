@@ -2,7 +2,6 @@
 
 #include <grend-config.h>
 #include <grend/glVersion.hpp>
-#include <grend/material.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
@@ -27,10 +26,6 @@
 
 namespace grendx {
 
-// defined in sceneModel.hpp, included at end
-class sceneMesh;
-class sceneModel;
-
 void check_errors(int line, const char *filename, const char *func);
 
 #if GREND_ERROR_CHECK
@@ -50,6 +45,21 @@ inline bool checkGLerrors = true;
 #define ENABLE_GL_ERROR_CHECK(STATE) /* blarg */
 #define GL_ERROR_CHECK_ENABLED() (0)
 #endif
+
+// utility macros for setting entries in VAOs
+#define STRUCT_OFFSET(TYPE, MEMBER) \
+	((void *)&(((TYPE*)NULL)->MEMBER))
+
+// constexpr, should never be evaluated at runtime
+#define GLM_VEC_ENTRIES(TYPE, MEMBER) \
+	((((TYPE*)NULL)->MEMBER).length())
+
+#define SET_VAO_ENTRY(BINDING, TYPE, MEMBER) \
+	do { \
+	glVertexAttribPointer(BINDING, GLM_VEC_ENTRIES(TYPE, MEMBER), \
+	                      GL_FLOAT, GL_FALSE, sizeof(TYPE),       \
+	                      STRUCT_OFFSET(TYPE, MEMBER));           \
+	} while(0);
 
 enum {
 	// VAO locations, used to link shaders to proper vao entries
@@ -352,66 +362,10 @@ class Framebuffer : public Obj {
 		std::map<GLenum, Texture::ptr> attachments;
 };
 
-class compiledMaterial {
-	public:
-		typedef std::shared_ptr<compiledMaterial> ptr;
-		typedef std::weak_ptr<compiledMaterial> weakptr;
-
-		~compiledMaterial();
-
-		material::materialFactors factors;
-		struct loadedTextures {
-			Texture::ptr diffuse;
-			Texture::ptr metalRoughness;
-			Texture::ptr normal;
-			Texture::ptr ambientOcclusion;
-			Texture::ptr emissive;
-			Texture::ptr lightmap;
-		} textures;
-};
-
-// TODO: camelCase
-class compiledMesh {
-	public:
-		typedef std::shared_ptr<compiledMesh> ptr;
-		typedef std::weak_ptr<compiledMesh> weakptr;
-
-		~compiledMesh();
-
-		Vao::ptr vao;
-		Buffer::ptr elements;
-		compiledMaterial::ptr mat;
-		material::blend_mode blend;
-};
-
-// TODO: camelCase
-class compiledModel {
-	public:
-		typedef std::shared_ptr<compiledModel> ptr;
-		typedef std::weak_ptr<compiledModel> weakptr;
-
-		~compiledModel();
-
-		Vao::ptr vao;
-		std::map<std::string, compiledMesh::ptr> meshes;
-		Buffer::ptr vertices;
-
-		bool haveJoints = false;
-		Buffer::ptr joints;
-};
-
 Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
-compiledMaterial::ptr matcache(material::ptr mat);
 
 void initializeOpengl(void);
-//void compileMeshes(std::string objname, std::map<std::string, std::shared_ptr<sceneMesh>>& meshies);
-compiledMesh::ptr compileMesh(std::shared_ptr<sceneMesh>& mesh);
-compiledModel::ptr compileModel(std::string name, std::shared_ptr<sceneModel> mod);
-void compileModels(const std::map<std::string, std::shared_ptr<sceneModel>>& models);
-Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh);
-Vao::ptr preloadModelVao(compiledModel::ptr obj);
-void bindModel(std::shared_ptr<sceneModel> model);
-void bindCookedMeshes(void);
+
 Vao::ptr getCurrentVao(void);
 Vao::ptr getScreenquadVao(void);
 Vao::ptr bindVao(Vao::ptr vao);
@@ -529,5 +483,3 @@ GLenum surfaceGlFormat(const materialTexture& tex);
 
 // namespace grendx
 }
-
-#include <grend/sceneModel.hpp>

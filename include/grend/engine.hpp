@@ -10,6 +10,7 @@
 
 #include <grend/sceneNode.hpp>
 #include <grend/glManager.hpp>
+#include <grend/compiledModel.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/sceneModel.hpp>

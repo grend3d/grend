@@ -77,6 +77,7 @@ add_library(Grend
 	src/utility.cpp
 	src/audioMixer.cpp
 	src/camera.cpp
+	src/compiledModel.cpp
 	src/editorInput.cpp
 	src/editorMap.cpp
 	src/editorMapWindow.cpp
