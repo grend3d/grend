@@ -7,6 +7,7 @@
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/bufferAllocator.hpp>
+#include <grend/materialTexture.hpp>
 
 #include <vector>
 #include <map>
