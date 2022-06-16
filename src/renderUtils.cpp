@@ -116,8 +116,10 @@ void grendx::drawMultiQueue(gameMain *game,
 			  game->rend->lightThreshold);
 	sortQueue(hax, cam);
 
+	game->rend->framebuffer->setOutputEnabled(false);
 	// don't count prepass as drawn meshes
 	flush(hax, cam, fb, game->rend, flags, depthOpts);
+	game->rend->framebuffer->setOutputEnabled(true);
 #else
 	renderOptions regOpts;
 	regOpts.depthFunc = renderOptions::Less;

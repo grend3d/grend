@@ -301,6 +301,36 @@ uint32_t renderFramebuffer::index(float x, float y) {
 #endif
 }
 
+// XXX: slight hax, need a way to determine what outputs to enable in the
+//      framebuffer
+//      Could be as simple as looking for Frag* outputs in the shader,
+//      but again it seems like a better idea to have this be a proper
+//      concept in the engine, really should just spend some time writing
+//      a shading language already
+void renderFramebuffer::setOutputEnabled(bool enabled) {
+	static const unsigned nobufs[] = { GL_NONE };
+
+	this->bind();
+
+	if (enabled) {
+		#if GREND_USE_G_BUFFER
+			static const unsigned fullbufs[] = {
+				GL_COLOR_ATTACHMENT0,
+				GL_COLOR_ATTACHMENT1,
+				GL_COLOR_ATTACHMENT2,
+				GL_COLOR_ATTACHMENT3,
+				GL_COLOR_ATTACHMENT4,
+			};
+			glDrawBuffers(5, fullbufs);
+		#else
+			static const unsigned colorbuf[] = { GL_COLOR_ATTACHMENT0, };
+			glDrawBuffers(1, colorbuf);
+		#endif
+	} else {
+		glDrawBuffers(0, nobufs);
+	}
+}
+
 uint32_t renderFramebuffer::allocID(void) {
 	return ++allocatedIDs;
 }

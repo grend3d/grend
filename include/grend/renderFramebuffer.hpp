@@ -29,6 +29,7 @@ class renderFramebuffer {
 		void setSize(int Width, int Height);
 		uint32_t index(float x, float y);
 		uint32_t allocID(void);
+		void setOutputEnabled(bool enabled);
 
 		Framebuffer::ptr framebuffer;
 		Texture::ptr color;
