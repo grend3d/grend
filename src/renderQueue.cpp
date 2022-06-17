@@ -32,34 +32,7 @@ void renderQueue::add(sceneNode::ptr obj,
 
 	if (obj->type == sceneNode::objType::Mesh) {
 		// TODO: addMesh()
-		sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
-
-		if (mesh->comped_mesh) {
-			glm::vec3 center = applyTransform(adjTrans);
-
-			queueEnt<sceneMesh::ptr> entry = {
-				adjTrans,
-				center,
-				inverted,
-				mesh,
-				renderID
-			};
-
-			switch (mesh->comped_mesh->blend) {
-				case material::blend_mode::Blend:
-					meshesBlend.push_back(entry);
-					break;
-
-				case material::blend_mode::Mask:
-					meshesMasked.push_back(entry);
-					break;
-
-				case material::blend_mode::Opaque:
-				default:
-					meshes.push_back(entry);
-					break;
-			}
-		}
+		addMesh(obj, renderID, adjTrans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Light) {
 		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
@@ -120,15 +93,52 @@ void renderQueue::add(renderQueue& other) {
 #undef QUEAPPEND
 }
 
+void renderQueue::addMesh(sceneNode::ptr obj,
+                          uint32_t renderID,
+                          const glm::mat4& trans,
+                          bool inverted)
+{
+	sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
+
+	if (mesh->comped_mesh) {
+		glm::vec3 center = applyTransform(trans);
+
+		queueEnt<sceneMesh::ptr> entry = {
+			trans,
+			center,
+			inverted,
+			mesh,
+			renderID
+		};
+
+		switch (mesh->comped_mesh->blend) {
+			case material::blend_mode::Blend:
+				meshesBlend.push_back(entry);
+				break;
+
+			case material::blend_mode::Mask:
+				meshesMasked.push_back(entry);
+				break;
+
+			case material::blend_mode::Opaque:
+			default:
+				meshes.push_back(entry);
+				break;
+		}
+	}
+}
+
 void renderQueue::addSkinned(sceneNode::ptr obj,
                              sceneSkin::ptr skin,
                              uint32_t renderID,
-                             glm::mat4 trans,
+                             const glm::mat4& trans,
                              bool inverted)
 {
-	if (obj == nullptr || !obj->visible) {
+	if (!obj || !obj->visible)
 		return;
-	}
+
+	if (!skin || !skin->visible)
+		return;
 
 	if (obj->type == sceneNode::objType::Mesh) {
 		auto m = std::static_pointer_cast<sceneMesh>(obj);
@@ -141,11 +151,12 @@ void renderQueue::addSkinned(sceneNode::ptr obj,
 	}
 }
 
+// TODO: don't need to pass both particles and obj argument
 void renderQueue::addInstanced(sceneNode::ptr obj,
                                sceneParticles::ptr particles,
                                uint32_t renderID,
-                               glm::mat4 outerTrans,
-                               glm::mat4 innerTrans,
+                               const glm::mat4& outerTrans,
+                               const glm::mat4& innerTrans,
                                bool inverted)
 {
 	if (obj == nullptr || !obj->visible) {
@@ -174,7 +185,7 @@ void renderQueue::addInstanced(sceneNode::ptr obj,
 void renderQueue::addBillboards(sceneNode::ptr obj,
                                 sceneBillboardParticles::ptr particles,
                                 uint32_t renderID,
-                                glm::mat4 trans,
+                                const glm::mat4& trans,
                                 bool inverted)
 {
 	if (obj == nullptr || !obj->visible) {

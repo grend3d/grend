@@ -36,21 +36,26 @@ class renderQueue {
 
 		void add(renderQueue& other);
 
+		void addMesh(sceneNode::ptr obj,
+		             uint32_t renderID = 0,
+		             const glm::mat4& trans = glm::mat4(1),
+		             bool inverted = false);
+
 		void addSkinned(sceneNode::ptr obj,
 		                sceneSkin::ptr skin,
 		                uint32_t renderID = 0,
-		                glm::mat4 trans = glm::mat4(1),
+		                const glm::mat4& trans = glm::mat4(1),
 		                bool inverted = false);
 		void addInstanced(sceneNode::ptr obj,
 		                  sceneParticles::ptr particles,
 		                  uint32_t renderID = 0,
-		                  glm::mat4 outerTrans = glm::mat4(1),
-		                  glm::mat4 innerTrans = glm::mat4(1),
+		                  const glm::mat4& outerTrans = glm::mat4(1),
+		                  const glm::mat4& innerTrans = glm::mat4(1),
 		                  bool inverted = false);
 		void addBillboards(sceneNode::ptr obj,
 		                   sceneBillboardParticles::ptr particles,
 		                   uint32_t renderID = 0,
-		                   glm::mat4 trans = glm::mat4(1),
+		                   const glm::mat4& trans = glm::mat4(1),
 		                   bool inverted = false);
 
 		void clear(void);
