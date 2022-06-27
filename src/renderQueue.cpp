@@ -211,7 +211,7 @@ void renderQueue::addBillboards(sceneNode::ptr obj,
 	}
 }
 
-void grendx::updateLights(renderContext::ptr rctx,
+void grendx::updateLights(renderContext *rctx,
                           renderQueue& que)
 {
 	// TODO: should probably apply the transform to light position
@@ -254,7 +254,7 @@ void grendx::updateLights(renderContext::ptr rctx,
 	}
 }
 
-void grendx::updateReflections(renderContext::ptr rctx, renderQueue& que) {
+void grendx::updateReflections(renderContext *rctx, renderQueue& que) {
 	auto& reftree = rctx->atlases.reflections->tree;
 	auto& radtree = rctx->atlases.irradiance->tree;
 
@@ -730,7 +730,7 @@ static void drawBillboards(const renderOptions& flags,
 }
 
 static void setFlushUniforms(renderQueue& que,
-                             renderContext::ptr rctx,
+                             renderContext *rctx,
                              Program::ptr prog,
                              camera::ptr cam)
 {
@@ -749,7 +749,7 @@ static void setFlushUniforms(renderQueue& que,
 }
 
 static void setFlushUniformsFlags(renderQueue& que,
-                                  renderContext::ptr rctx,
+                                  renderContext *rctx,
                                   const renderFlags& flags,
                                   camera::ptr cam)
 {
@@ -761,7 +761,7 @@ static void setFlushUniformsFlags(renderQueue& que,
 	}
 }
 
-static void setFlushOptions(renderContext::ptr rctx,
+static void setFlushOptions(renderContext *rctx,
                             const renderOptions& options)
 {
 	disable(GL_BLEND);
@@ -795,7 +795,7 @@ static void setFlushOptions(renderContext::ptr rctx,
 }
 
 static void trySetIrradProbe(renderQueue& que,
-                             renderContext::ptr rctx,
+                             renderContext *rctx,
                              const renderOptions& options,
                              Program::ptr prog,
                              glm::vec3 center)
@@ -812,7 +812,7 @@ unsigned grendx::flush(renderQueue& que,
                        camera::ptr cam,
                        unsigned width,
                        unsigned height,
-                       renderContext::ptr rctx,
+                       renderContext *rctx,
                        const renderFlags& flags,
                        const renderOptions& options)
 {
@@ -861,7 +861,7 @@ unsigned grendx::flush(renderQueue& que,
 unsigned grendx::flush(renderQueue& que,
                        camera::ptr cam,
                        renderFramebuffer::ptr fb,
-                       renderContext::ptr rctx,
+                       renderContext *rctx,
                        const renderFlags& flags,
                        const renderOptions& options)
 {
@@ -1002,7 +1002,7 @@ typedef std::vector<std::pair<glm::mat4&, sceneLightDirectional::ptr>> dirList;
 typedef std::tuple<pointList, spotList, dirList> lightLists;
 
 static void syncPlainUniforms(Program::ptr program,
-	                          renderContext::ptr rctx,
+	                          renderContext *rctx,
 	                          pointList& points,
 	                          spotList& spots,
 	                          dirList&  directionals)
@@ -1131,7 +1131,7 @@ static inline float rectScale(float R, float d) {
 
 void grendx::buildTilemap(renderQueue::LightQ& queue,
                           camera::ptr cam,
-                          renderContext::ptr rctx)
+                          renderContext *rctx)
 {
 	switch (rctx->lightingMode) {
 		case renderContext::lightingModes::Clustered:
@@ -1153,7 +1153,7 @@ void grendx::buildTilemap(renderQueue::LightQ& queue,
 #include <grend/plane.hpp>
 void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
                                camera::ptr cam,
-                               renderContext::ptr rctx)
+                               renderContext *rctx)
 {
 	lights_std140&             lightbuf   = rctx->lightBufferCtx;
 	light_tiles_std140&        pointTiles = rctx->pointTilesCtx;
@@ -1308,7 +1308,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 	rctx->directionalBuffer->update(&dirbuf,     0, sizeof(dirbuf));
 }
 
-void grendx::updateReflectionProbe(renderContext::ptr rctx,
+void grendx::updateReflectionProbe(renderContext *rctx,
                                    renderQueue& que,
                                    camera::ptr cam)
 {
@@ -1322,7 +1322,7 @@ void grendx::updateReflectionProbe(renderContext::ptr rctx,
 }
 
 void grendx::shaderSync(Program::ptr program,
-                        renderContext::ptr rctx,
+                        renderContext *rctx,
                         renderQueue& que)
 {
 	if (rctx->lightingMode == renderContext::lightingModes::Clustered) {

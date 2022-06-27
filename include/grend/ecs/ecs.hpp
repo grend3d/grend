@@ -4,6 +4,7 @@
 
 #include <grend/sceneNode.hpp>
 #include <grend/physics.hpp>
+#include <grend/IoC.hpp>
 
 #include <iostream>
 #include <map>
@@ -107,7 +108,7 @@ struct [[nodiscard]] regArgs {
 	regArgs& operator=(regArgs&&) = default;
 };
 
-class entityManager {
+class entityManager : public IoC::Service {
 	public:
 		typedef std::shared_ptr<entityManager> ptr;
 		typedef std::weak_ptr<entityManager>   weakptr;

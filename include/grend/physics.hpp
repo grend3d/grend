@@ -4,6 +4,7 @@
 #include <grend/glmIncludes.hpp>
 #include <grend/TRS.hpp>
 #include <grend/boundingBox.hpp>
+#include <grend/IoC.hpp>
 
 #include <unordered_map>
 #include <unistd.h>
@@ -57,7 +58,7 @@ class physicsObject {
 		std::shared_ptr<std::vector<collision>> collisionQueue = nullptr;
 };
 
-class physics {
+class physics : public IoC::Service {
 	public:
 		typedef std::shared_ptr<physics> ptr;
 		typedef std::weak_ptr<physics>   weakptr;

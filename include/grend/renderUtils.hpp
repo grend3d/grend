@@ -2,6 +2,9 @@
 #include <grend/renderPostStage.hpp>
 #include <grend/camera.hpp>
 
+#include <grend/camera.hpp>
+#include <grend/renderQueue.hpp>
+
 namespace grendx {
 
 // TODO: move to seperate header

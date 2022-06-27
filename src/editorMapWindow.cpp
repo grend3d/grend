@@ -158,7 +158,8 @@ void gameEditor::mapWindow(gameMain *game) {
 		selectedNode = nullptr;
 	}
 
-	addnodes("Objects",  game->state->rootnode, selectedPath);
+	auto state = game->services.resolve<gameState>();
+	addnodes("Objects",  state->rootnode, selectedPath);
 	addnodes("Selected", selectedNode, selectedPath);
 	addnodes("Clipboard", clipboard, selectedPath);
 

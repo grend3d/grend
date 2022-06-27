@@ -1,9 +1,11 @@
 #include <grend/gameEditor.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/fileDialog.hpp>
+#include <grend/ecs/serializer.hpp>
 
 // TODO: debugging, remove
 #include <iostream>
+#include <fstream>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -22,13 +24,17 @@ static fileDialog import_map_dialog("Import Map");
 static fileDialog load_entity_dialog("Load Entity");
 
 static void handle_prompts(gameEditor *editor, gameMain *game) {
+	auto state     = game->services.resolve<gameState>();
+	auto factories = game->services.resolve<ecs::serializer>();
+	auto entities  = game->services.resolve<ecs::entityManager>();
+
 	if (open_dialog.promptFilename()) {
 		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
 		open_dialog.clear();
 
 		if (auto node = loadMapCompiled(open_dialog.selection)) {
 			editor->clear(game);
-			editor->selectedNode = game->state->rootnode = *node;
+			editor->selectedNode = state->rootnode = *node;
 		} else printError(node);
 	}
 
@@ -37,7 +43,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 
 		// TODO: some way to save a subnode as it's own map
 		//saveMap(game, editor->selectedNode, save_as_dialog.selection);
-		saveMap(game, game->state->rootnode, save_as_dialog.selection);
+		saveMap(game, state->rootnode, save_as_dialog.selection);
 		save_as_dialog.clear();
 	}
 
@@ -88,8 +94,8 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 			nlohmann::json j;
 			in >> j;
 
-			ecs::entity *ent = game->factories->build(game->entities.get(), j);
-			game->entities->add(ent);
+			ecs::entity *ent = factories->build(entities, j);
+			entities->add(ent);
 
 			load_entity_dialog.clear();
 
@@ -103,12 +109,16 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 void gameEditor::menubar(gameMain *game) {
 	static bool demo_window = false;
 
+	auto state    = game->services.resolve<gameState>();
+	auto rend     = game->services.resolve<renderContext>();
+	auto phys     = game->services.resolve<physics>();
+	auto entities = game->services.resolve<ecs::entityManager>();
+
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
-				selectedNode = game->state->rootnode
-					= std::make_shared<sceneNode>();
+				selectedNode = state->rootnode = std::make_shared<sceneNode>();
 			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}
@@ -156,9 +166,9 @@ void gameEditor::menubar(gameMain *game) {
 			                  0.5f, 50.f, "%.1f");
 			ImGui::SliderFloat("Movement speed", &movementSpeed,
 			                  1.f, 100.f, "%.1f");
-			ImGui::SliderFloat("Exposure (tonemapping)", &game->rend->exposure,
+			ImGui::SliderFloat("Exposure (tonemapping)", &rend->exposure,
 			                   0.1, 10.f);
-			ImGui::SliderFloat("Light threshold", &game->rend->lightThreshold,
+			ImGui::SliderFloat("Light threshold", &rend->lightThreshold,
 			                   0.001, 1.f);
 
 			ImGui::Combo("Projection", &proj, "Perspective\0Orthographic\0");
@@ -254,8 +264,8 @@ void gameEditor::menubar(gameMain *game) {
 			}
 
 			if (ImGui::MenuItem("Re-render all light maps", "CTRL+P")) {
-				if (game->state->rootnode) {
-					invalidateLightMaps(game->state->rootnode);
+				if (state->rootnode) {
+					invalidateLightMaps(state->rootnode);
 				}
 			}
 
@@ -263,10 +273,10 @@ void gameEditor::menubar(gameMain *game) {
 
 			static int lightMode = -1;
 			int i = 0;
-			for (auto& [key, _] : game->rend->lightingShaders) {
+			for (auto& [key, _] : rend->lightingShaders) {
 				ImGui::RadioButton(key.c_str(), &lightMode, i);
 				if (lightMode == i) {
-					game->rend->setDefaultLightModel(key);
+					rend->setDefaultLightModel(key);
 				}
 
 				i++;
@@ -308,7 +318,7 @@ void gameEditor::menubar(gameMain *game) {
 
 				// TODO: rename 'phys' should be 'physics', think that involves
 				//       renaming the 'physics' class...
-				game->phys->setDebugMode(mode);
+				phys->setDebugMode(mode);
 				ImGui::EndMenu();
 			}
 

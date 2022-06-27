@@ -1,4 +1,6 @@
 #pragma once
+
+#include <grend/IoC.hpp>
 #include <grend/renderData.hpp>
 #include <grend/renderSettings.hpp>
 #include <grend/renderFramebuffer.hpp>
@@ -47,7 +49,7 @@ class renderAtlases {
 		atlas::ptr irradianceCoefficients;
 };
 
-class renderContext {
+class renderContext : public IoC::Service {
 	public:
 		typedef std::shared_ptr<renderContext> ptr;
 		typedef std::weak_ptr<renderContext> weakptr;
@@ -146,3 +148,5 @@ class renderContext {
 
 // namespace grendx
 }
+
+#include <grend/renderFlags.hpp>

@@ -2,6 +2,7 @@
 
 #include <grend/physics.hpp>
 #include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
 
 namespace grendx::ecs {
 
@@ -123,7 +124,8 @@ class rigidBodySphere : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			phys = manager->engine->phys->addSphere(ent, position, mass, radius);
+			auto physicsServ = manager->engine->services.resolve<physics>();
+			phys = physicsServ->addSphere(ent, position, mass, radius);
 		}
 
 		virtual void setRadius(float r) {
@@ -180,7 +182,8 @@ class rigidBodyBox : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			phys = manager->engine->phys->addBox(ent, position, mass, extent);
+			auto physicsServ = manager->engine->services.resolve<physics>();
+			phys = physicsServ->addBox(ent, position, mass, extent);
 		}
 
 		AABBExtent extent = {
@@ -211,7 +214,8 @@ class rigidBodyCylinder : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			phys = manager->engine->phys->addCylinder(ent, position, mass, extent);
+			auto physicsServ = manager->engine->services.resolve<physics>();
+			phys = physicsServ->addCylinder(ent, position, mass, extent);
 		}
 
 		AABBExtent extent = {
@@ -245,7 +249,8 @@ class rigidBodyCapsule : public rigidBody {
 		// for class activatable
 		// activation here means adding and deleting the physics object
 		virtual void initBody(entityManager *manager, entity *ent) {
-			phys = manager->engine->phys->addCapsule(ent, position, mass, radius, height);
+			auto physicsServ = manager->engine->services.resolve<physics>();
+			phys = physicsServ->addCapsule(ent, position, mass, radius, height);
 		}
 
 		// position, mass in rigidBody

@@ -15,6 +15,8 @@
 #include <grend/modalSDLInput.hpp>
 #include <grend/TRS.hpp>
 
+#include <grend/ecs/ecs.hpp>
+
 namespace grendx {
 
 class gameEditor : public gameView {

@@ -2,6 +2,7 @@
 
 #include <grend/sceneNode.hpp>
 #include <grend/ecs/ecs.hpp>
+#include <grend/IoC.hpp>
 
 #include <iostream>
 #include <map>
@@ -60,7 +61,7 @@ T tryGet(nlohmann::json& value, const std::string& name, T defaultVal) {
 	return value.contains(name)? value[name].get<T>() : defaultVal;
 }
 
-class serializer {
+class serializer : public IoC::Service {
 	public:
 		typedef std::shared_ptr<serializer> ptr;
 		typedef std::weak_ptr<serializer>   weakptr;

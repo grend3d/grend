@@ -535,7 +535,7 @@ glm::mat4 grendx::model_to_world(glm::mat4 model) {
 
 void grendx::packLight(sceneLightPoint::ptr light,
                        point_std140 *p,
-                       renderContext::ptr rctx,
+                       renderContext *rctx,
                        glm::mat4& trans)
 {
 	glm::vec3 rpos = applyTransform(trans);
@@ -556,7 +556,7 @@ void grendx::packLight(sceneLightPoint::ptr light,
 
 void grendx::packLight(sceneLightSpot::ptr light,
                        spot_std140 *p,
-                       renderContext::ptr rctx,
+                       renderContext *rctx,
                        glm::mat4& trans)
 {
 	glm::vec3 rpos = applyTransform(trans);
@@ -580,7 +580,7 @@ void grendx::packLight(sceneLightSpot::ptr light,
 
 void grendx::packLight(sceneLightDirectional::ptr light,
                        directional_std140 *p,
-                       renderContext::ptr rctx,
+                       renderContext *rctx,
                        glm::mat4& trans)
 {
 	glm::vec3 rpos = applyTransform(trans);
@@ -603,7 +603,7 @@ void grendx::packLight(sceneLightDirectional::ptr light,
 
 void grendx::packRefprobe(sceneReflectionProbe::ptr probe,
                           lights_std140 *p,
-                          renderContext::ptr rctx,
+                          renderContext *rctx,
                           glm::mat4& trans)
 {
 	if (probe == nullptr) {

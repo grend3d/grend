@@ -34,7 +34,7 @@ static const glm::vec3 cube_up[] = {
 void grendx::drawShadowCubeMap(renderQueue& queue,
                                sceneLightPoint::ptr light,
                                glm::mat4& transform,
-                               renderContext::ptr rctx)
+                               renderContext *rctx)
 {
 	if (!light->casts_shadows) {
 		return;
@@ -107,7 +107,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 void grendx::drawSpotlightShadow(renderQueue& queue,
                                  sceneLightSpot::ptr light,
                                  glm::mat4& transform,
-                                 renderContext::ptr rctx)
+                                 renderContext *rctx)
 {
 	if (!light->casts_shadows) {
 		return;
@@ -184,7 +184,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 }
 
 static void convoluteReflectionProbeMips(sceneReflectionProbe::ptr probe,
-                                         renderContext::ptr rctx,
+                                         renderContext *rctx,
                                          unsigned level)
 {
 	Program::ptr convolve = rctx->postShaders["specular-convolve"];
@@ -243,7 +243,7 @@ static void convoluteReflectionProbeMips(sceneReflectionProbe::ptr probe,
 void grendx::drawReflectionProbe(renderQueue& queue,
                                  sceneReflectionProbe::ptr probe,
                                  glm::mat4& transform,
-                                 renderContext::ptr rctx)
+                                 renderContext *rctx)
 {
 	// refresh top level reflection probe to keep/reallocate it
 	for (unsigned i = 0; i < 6; i++) {
@@ -320,7 +320,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 void grendx::drawIrradianceProbe(renderQueue& queue,
                                  sceneIrradianceProbe::ptr probe,
                                  glm::mat4& transform,
-                                 renderContext::ptr rctx)
+                                 renderContext *rctx)
 {
 	// XXX
 	probe->source->setTransform(probe->getTransformTRS());

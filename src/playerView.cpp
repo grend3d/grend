@@ -73,7 +73,8 @@ playerView::playerView(gameMain *game) : gameView() {
 static glm::vec3 lastvel = glm::vec3(0);
 
 void playerView::logic(gameMain *game, float delta) {
-	game->phys->stepSimulation(1.f/game->frame_timer.last());
+	auto phys = game->services.resolve<physics>();
+	phys->stepSimulation(1.f/game->frame_timer.last());
 	cam->updatePosition(delta);
 }
 

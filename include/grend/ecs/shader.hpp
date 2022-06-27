@@ -3,6 +3,7 @@
 #include <grend/sceneNode.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/ecs/ecs.hpp>
+#include <grend/renderFlags.hpp>
 
 namespace grendx::ecs {
 

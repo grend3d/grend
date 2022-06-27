@@ -1,4 +1,5 @@
 #include <grend/renderUtils.hpp>
+#include <grend/engine.hpp>
 
 using namespace grendx;
 
@@ -85,6 +86,8 @@ void grendx::drawMultiQueue(gameMain *game,
                             renderFramebuffer::ptr fb,
                             camera::ptr cam)
 {
+	auto rend = game->services.resolve<renderContext>();
+
 	// XXX: less than ideal
 	// TODO: need a better way to update global lighting state,
 	//       without (or minimizing) allocations, this could add a lot
@@ -94,10 +97,10 @@ void grendx::drawMultiQueue(gameMain *game,
 		hax.add(que);
 	}
 
-	updateLights(game->rend, hax);
-	updateReflections(game->rend, hax);
-	buildTilemap(hax.lights, cam, game->rend);
-	updateReflectionProbe(game->rend, hax, cam);
+	updateLights(rend, hax);
+	updateReflections(rend, hax);
+	buildTilemap(hax.lights, cam, rend);
+	updateReflectionProbe(rend, hax, cam);
 
 	// TODO: better config
 #define DEPTH_PASS 1
@@ -109,17 +112,17 @@ void grendx::drawMultiQueue(gameMain *game,
 	regOpts.features &= ~(renderOptions::DepthMask);
 
 	// depth pass
-	renderFlags flags = game->rend->probeShaders["shadow"];
+	renderFlags flags = rend->probeShaders["shadow"];
 	cullQueue(hax, cam,
-			  game->rend->framebuffer->width,
-			  game->rend->framebuffer->height,
-			  game->rend->lightThreshold);
+			  rend->framebuffer->width,
+			  rend->framebuffer->height,
+			  rend->lightThreshold);
 	sortQueue(hax, cam);
 
-	game->rend->framebuffer->setOutputEnabled(false);
+	rend->framebuffer->setOutputEnabled(false);
 	// don't count prepass as drawn meshes
-	flush(hax, cam, fb, game->rend, flags, depthOpts);
-	game->rend->framebuffer->setOutputEnabled(true);
+	flush(hax, cam, fb, rend, flags, depthOpts);
+	rend->framebuffer->setOutputEnabled(true);
 #else
 	renderOptions regOpts;
 	regOpts.depthFunc = renderOptions::Less;
@@ -127,11 +130,11 @@ void grendx::drawMultiQueue(gameMain *game,
 
 	// lighting pass
 	cullQueue(que, cam,
-			  game->rend->framebuffer->width,
-			  game->rend->framebuffer->height,
-			  game->rend->lightThreshold);
+			  rend->framebuffer->width,
+			  rend->framebuffer->height,
+			  rend->lightThreshold);
 	sortQueue(que, cam);
-	game->metrics.drawnMeshes += flush(que, cam, fb, game->rend, regOpts);
+	game->metrics.drawnMeshes += flush(que, cam, fb, rend, regOpts);
 }
 
 #include <grend/ecs/shader.hpp>
@@ -139,8 +142,9 @@ void grendx::drawMultiQueue(gameMain *game,
 
 grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr cam) {
 	using namespace ecs;
-	//auto drawable = searchEntities(game->entities.get(), {getTypeName<abstractShader>()});
-	auto drawable = game->entities->search<abstractShader>();
+
+	auto entities = game->services.resolve<entityManager>();
+	auto drawable = entities->search<abstractShader>();
 
 	multiRenderQueue que;
 
@@ -166,6 +170,8 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
                              gameMain *game,
                              camera::ptr cam)
 {
+	auto rend = game->services.resolve<renderContext>();
+
 	glm::mat4 view       = cam->viewTransform();
 	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv      = glm::inverse(view);
@@ -181,19 +187,19 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
 	post->setUniform("cameraFov",      cam->fovx());
 
 	float tim = SDL_GetTicks() * 1000.f;
-	post->setUniform("exposure", game->rend->exposure);
+	post->setUniform("exposure", rend->exposure);
 	post->setUniform("time_ms",  tim);
-	post->setUniform("lightThreshold", game->rend->lightThreshold);
+	post->setUniform("lightThreshold", rend->lightThreshold);
 
 	// TODO: bind texture
 	post->setUniform("shadowmap_atlas", TEXU_SHADOWS);
 
-	post->setUniformBlock("lights", game->rend->lightBuffer, UBO_LIGHT_INFO);
-	post->setUniformBlock("point_light_tiles", game->rend->pointTiles,
+	post->setUniformBlock("lights", rend->lightBuffer, UBO_LIGHT_INFO);
+	post->setUniformBlock("point_light_tiles", rend->pointTiles,
 						  UBO_POINT_LIGHT_TILES);
-	post->setUniformBlock("spot_light_tiles", game->rend->spotTiles,
+	post->setUniformBlock("spot_light_tiles", rend->spotTiles,
 						  UBO_SPOT_LIGHT_TILES);
-	post->setUniformBlock("point_light_buffer", game->rend->pointBuffer, UBO_POINT_LIGHT_BUFFER);
-	post->setUniformBlock("spot_light_buffer", game->rend->spotBuffer, UBO_SPOT_LIGHT_BUFFER);
-	post->setUniformBlock("directional_light_buffer", game->rend->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
+	post->setUniformBlock("point_light_buffer", rend->pointBuffer, UBO_POINT_LIGHT_BUFFER);
+	post->setUniformBlock("spot_light_buffer", rend->spotBuffer, UBO_SPOT_LIGHT_BUFFER);
+	post->setUniformBlock("directional_light_buffer", rend->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
 }

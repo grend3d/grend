@@ -9,6 +9,7 @@
 #include <grend/scancodes.hpp>
 #include <grend/interpolation.hpp>
 #include <grend/renderUtils.hpp>
+#include <grend/jobQueue.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/shader.hpp>
@@ -25,6 +26,8 @@ static sceneModel::ptr  physmodel;
 gameEditor::gameEditor(gameMain *game)
 	: gameView()
 {
+	auto rend = game->services.resolve<renderContext>();
+
 	objects = sceneNode::ptr(new sceneNode());
 	cam->setFar(1000.0);
 
@@ -33,19 +36,19 @@ gameEditor::gameEditor(gameMain *game)
 #ifdef NO_FLOATING_FB
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
-		                game->rend->globalShaderOptions)},
+		                rend->globalShaderOptions)},
 		game->settings.targetResX, game->settings.targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/baked/dither.frag",
-		                game->rend->globalShaderOptions)},
+		                rend->globalShaderOptions)},
 		game->settings.targetResX, game->settings.targetResY));
 #endif
 
 	loading_thing = makePostprocessor<rOutput>(
 		loadProgram(GR_PREFIX "shaders/baked/postprocess.vert",
 		            GR_PREFIX "shaders/baked/texpresent.frag",
-		            game->rend->globalShaderOptions),
+		            rend->globalShaderOptions),
 		game->settings.targetResX, game->settings.targetResY
 	);
 
@@ -139,8 +142,9 @@ buildClickableQueue(gameMain *game,
 {
 	using namespace grendx;
 	using namespace ecs;
-	//auto drawable = searchEntities(game->entities.get(), {getTypeName<abstractShader>()});
-	auto drawable = game->entities->search<abstractShader>();
+
+	auto entities = game->services.resolve<ecs::entityManager>();
+	auto drawable = entities->search<abstractShader>();
 
 	multiRenderQueue que;
 	uint32_t renderID = 10;
@@ -167,15 +171,18 @@ buildClickableQueue(gameMain *game,
 }
 
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
+	auto rend  = game->services.resolve<renderContext>();
+	auto state = game->services.resolve<gameState>();
+
 	renderQueue que;
-	renderFlags flags = game->rend->getLightingFlags();
+	renderFlags flags = rend->getLightingFlags();
 	//flags.features |= renderFlags::Features::StencilTest;
 
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
 	clickState.clear();
 	auto world = buildClickableQueue(game, cam, clickState);
-	world.add(flags, game->state->rootnode);
+	world.add(flags, state->rootnode);
 	drawMultiQueue(game, world, fb, cam);
 	renderWorldObjects(game);
 
@@ -196,8 +203,8 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	que.add(cursor, 0, m);
 	que.add(bbox,   0, m);
 
-	renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
-	renderFlags constantFlags = game->rend->getLightingFlags("constant-color");
+	renderFlags unshadedFlags = rend->getLightingFlags("unshaded");
+	renderFlags constantFlags = rend->getLightingFlags("constant-color");
 
 	renderOptions frontOpts, backOpts;
 	frontOpts.features |=  renderOptions::Features::DepthTest;
@@ -219,20 +226,20 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 		}
 	}
 
-	flush(por, cam, game->rend->framebuffer, game->rend, constantFlags, backOpts);
+	flush(por, cam, rend->framebuffer, rend, constantFlags, backOpts);
 
 	por = que;
-	flush(por, cam, game->rend->framebuffer, game->rend, unshadedFlags, frontOpts);
+	flush(por, cam, rend->framebuffer, rend, unshadedFlags, frontOpts);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
 	// TODO: move this to input (on resize event)
 	//post->setSize(winsize_x, winsize_y);
-	post->setUniform("exposure", game->rend->exposure);
+	post->setUniform("exposure", rend->exposure);
 	// TODO: need to do this in player views too
 	post->setUniform("time_ms", SDL_GetTicks() * 1.f);
-	post->draw(game->rend->framebuffer);
+	post->draw(rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
 //             the postprocessing shader doesn't see anything from the
@@ -249,6 +256,9 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 }
 
 void gameEditor::renderWorldObjects(gameMain *game) {
+	auto rend  = game->services.resolve<renderContext>();
+	auto state = game->services.resolve<gameState>();
+
 	DO_ERROR_CHECK();
 
 	// XXX: wasteful, a bit wrong
@@ -257,12 +267,12 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 	renderQueue tempque;
 	renderQueue que;
-	tempque.add(game->state->rootnode);
+	tempque.add(state->rootnode);
 
 	if (showProbes) {
 		renderFlags probeFlags;
-		auto refShader = game->rend->internalShaders["refprobe_debug"];
-		auto irradShader = game->rend->internalShaders["irradprobe_debug"];
+		auto refShader = rend->internalShaders["refprobe_debug"];
+		auto irradShader = rend->internalShaders["irradprobe_debug"];
 
 		// TODO: function in renderFlags that sets every shader
 		for (auto& v : probeFlags.variants) {
@@ -282,15 +292,14 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
-					game->rend->atlases.reflections->tex_vector(entry.data->faces[0][i]);
+					rend->atlases.reflections->tex_vector(entry.data->faces[0][i]);
 				refShader->set(loc, facevec);
 				DO_ERROR_CHECK();
 			}
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			flush(que, cam, game->rend->framebuffer,
-			      game->rend, probeFlags, renderOptions());
+			flush(que, cam, rend->framebuffer, rend, probeFlags, renderOptions());
 		}
 
 		for (auto& v : probeFlags.variants) {
@@ -310,19 +319,18 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 			for (unsigned i = 0; i < 6; i++) {
 				std::string loc = "cubeface["+std::to_string(i)+"]";
 				glm::vec3 facevec =
-					game->rend->atlases.irradiance->tex_vector(entry.data->faces[i]);
+					rend->atlases.irradiance->tex_vector(entry.data->faces[i]);
 				irradShader->set(loc, facevec);
 			}
 
 			que.add(probeObj);
 			DO_ERROR_CHECK();
-			flush(que, cam, game->rend->framebuffer,
-			      game->rend, probeFlags, renderOptions());
+			flush(que, cam, rend->framebuffer, rend, probeFlags, renderOptions());
 		}
 	}
 
 	if (showLights) {
-		renderFlags unshadedFlags = game->rend->getLightingFlags("unshaded");
+		renderFlags unshadedFlags = rend->getLightingFlags("unshaded");
 
 		for (auto& entry : tempque.lights) {
 			glm::vec3 pos = entry.center;
@@ -334,8 +342,8 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 				});
 
 				que.add(probeObj);
-				flush(que, cam, game->rend->framebuffer,
-				      game->rend, unshadedFlags, renderOptions());
+				flush(que, cam, rend->framebuffer,
+				      rend, unshadedFlags, renderOptions());
 			}
 		}
 	}
@@ -435,8 +443,9 @@ result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 std::pair<sceneImport::ptr, std::future<bool>>
 grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 	auto ret = std::make_shared<sceneImport>(path);
+	auto jobs = game->services.resolve<jobQueue>();
 
-	auto fut = game->jobs->addAsync([=] () {
+	auto fut = jobs->addAsync([=] () {
 		if (auto res = loadSceneData(path)) {
 			auto [obj, models] = *res;
 
@@ -454,7 +463,7 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 			//
 			//       this means it would be possible to get to the rendering step with a valid
 			//       model that just hasn't been compiled yet... hmmmmmmmmmmmmmmm
-			game->jobs->addDeferred([=] () {
+			jobs->addDeferred([=] () {
 				compileModels(modelptr);
 				//setNode("asyncLoaded", ret, std::make_shared<sceneNode>());
 				return true;
@@ -522,6 +531,8 @@ void gameEditor::handleCursorUpdate(gameMain *game) {
 }
 
 void gameEditor::update(gameMain *game, float delta) {
+	auto state = game->services.resolve<gameState>();
+
 	static glm::vec3 target = glm::vec3(0);
 	glm::mat3 m = {cam->right(), cam->up(), cam->direction()};
 	glm::vec3 vpos = m*(cam->velocity());
@@ -536,7 +547,7 @@ void gameEditor::update(gameMain *game, float delta) {
 	orientation->visible =
 		   selectedNode != nullptr
 		&& !selectedNode->parent.expired()
-		&& selectedNode != game->state->rootnode;
+		&& selectedNode != state->rootnode;
 
 	cursor->visible =
 		   mode == mode::AddObject
@@ -631,13 +642,15 @@ sceneNode::ptr gameEditor::getNonModel(sceneNode::ptr obj) {
 }
 
 void gameEditor::clear(gameMain *game) {
+	auto state = game->services.resolve<gameState>();
+
 	showLoadingScreen(game);
 
 	cam->setPosition({0, 0, 0});
 	models.clear();
 
 	// TODO: clear() for state
-	selectedNode = game->state->rootnode = sceneNode::ptr(new sceneNode());
+	selectedNode = state->rootnode = sceneNode::ptr(new sceneNode());
 }
 
 // TODO: rename 'renderer' to 'rend' or something

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <grend/IoC.hpp>
+
 #include <thread>
 #include <future>
 #include <vector>
@@ -10,13 +12,13 @@
 
 namespace grendx {
 
-class jobQueue {
+class jobQueue : public IoC::Service {
 	public:
 		typedef std::shared_ptr<jobQueue> ptr;
 		typedef std::weak_ptr<jobQueue>   weakptr;
 
 		jobQueue(unsigned concurrency = 2*std::thread::hardware_concurrency());
-		~jobQueue();
+		virtual ~jobQueue();
 
 		std::future<bool> addAsync(std::function<bool()> job);
 		std::future<bool> addDeferred(std::function<bool()> job);

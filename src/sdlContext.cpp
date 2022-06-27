@@ -142,6 +142,7 @@ context::context(const char *progname, const renderSettings& settings) {
 }
 
 context::~context() {
+	SDL_Log("SDL done, cleaning up...");
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
 	SDL_CloseAudioDevice(audioOut);

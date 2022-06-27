@@ -3,6 +3,7 @@
 #include <map>
 #include <grend/loadScene.hpp>
 #include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
 
 namespace grendx::ecs {
 

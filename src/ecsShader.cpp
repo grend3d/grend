@@ -1,4 +1,5 @@
 #include <grend/ecs/shader.hpp>
+#include <grend/renderContext.hpp>
 
 namespace grendx::ecs {
 
@@ -21,12 +22,13 @@ renderFlags& staticShader::getShader() {
 PBRShader::PBRShader(regArgs t)
 	// TODO: reference PBR shader somehow, don't load internally inside the engine
 	: staticShader(doRegister(this, t),
-	               t.manager->engine->rend->getLightingFlags()) {}
+	               // hmmmm... little bit gross
+	               t.manager->engine->services.resolve<renderContext>()->getLightingFlags()) {}
 
 UnlitShader::UnlitShader(regArgs t)
 	// TODO: reference unshaded shader somehow, don't load internally inside the engine
 	: staticShader(doRegister(this, t),
-	               t.manager->engine->rend->getLightingFlags("unshaded")) {}
+	               t.manager->engine->services.resolve<renderContext>()->getLightingFlags("unshaded")) {}
 
 // namespace grendx::ecs
 }

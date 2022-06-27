@@ -1,4 +1,5 @@
 #include <grend/controllers.hpp>
+#include <grend/renderContext.hpp>
 
 using namespace grendx;
 
@@ -279,13 +280,15 @@ bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
 		if (ev.type == SDL_WINDOWEVENT
 		    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
 		{
+			auto rend = game->services.resolve<renderContext>();
+
 			auto width = ev.window.data1;
 			auto height = ev.window.data2;
 
-			float scaleX = game->rend->settings.scaleX;
-			float scaleY = game->rend->settings.scaleY;
+			float scaleX = rend->settings.scaleX;
+			float scaleY = rend->settings.scaleY;
 
-			game->rend->framebuffer->setSize(width*scaleX, height*scaleY);
+			rend->framebuffer->setSize(width*scaleX, height*scaleY);
 
 			if (post != nullptr) {
 				post->setSize(width, height);

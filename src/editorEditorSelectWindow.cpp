@@ -2,10 +2,14 @@
 #include <grend/utility.hpp>
 #include <grend/fileDialog.hpp>
 
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
+
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#include <fstream>
 #include <string.h>
 
 using namespace grendx;
@@ -246,6 +250,9 @@ void gameEditor::addEntityWindow(gameMain *game) {
 
 static void handle_prompts(gameEditor *editor, gameMain *game) {
 	if (export_entity_dialog.promptFilename()) {
+		auto factories = game->services.resolve<ecs::serializer>();
+		auto entities  = game->services.resolve<ecs::entityManager>();
+
 		const std::string& name = export_entity_dialog.selection;
 
 		if (!editor->selectedEntity) {
@@ -257,7 +264,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		std::cerr << "Exporting entity to " << name << std::endl;
 
 		std::ofstream out(name);
-		auto curjson = game->factories->serialize(game->entities.get(), editor->selectedEntity);
+		auto curjson = factories->serialize(entities, editor->selectedEntity);
 
 		out << curjson.dump();
 
@@ -266,6 +273,9 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 }
 
 void gameEditor::entitySelectWindow(gameMain *game) {
+	auto entities  = game->services.resolve<ecs::entityManager>();
+	auto factories = game->services.resolve<ecs::serializer>();
+
 	ImGui::Begin("Entities", &showEntitySelectWindow);
 	if (ImGui::Button("Clear")) {
 		*searchBuffer = '\0';
@@ -289,7 +299,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	}
 
 	if (ImGui::BeginPopup("new_entity_popup")) {
-		for (const auto& [name, _] : game->entities->components) {
+		for (const auto& [name, _] : entities->components) {
 			if (ImGui::Selectable(demangle(name).c_str())) {
 				nlohmann::json j = {
 					{"entity-type", demangle(name)},
@@ -301,8 +311,8 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 					{"components", {}},
 				};
 
-				ecs::entity *ent = game->factories->build(game->entities.get(), j);
-				game->entities->add(ent);
+				ecs::entity *ent = factories->build(entities, j);
+				entities->add(ent);
 			}
 			//drawSelectableLabel(demangle(name).c_str());
 		}
@@ -318,7 +328,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	ImGui::Separator();
 
 	ImGui::BeginChild("componentList");
-	for (const auto& [name, _] : game->entities->components) {
+	for (const auto& [name, _] : entities->components) {
 		drawSelectableLabel(demangle(name).c_str());
 	}
 
@@ -331,8 +341,8 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	ImGui::Separator();
 
 	ImGui::BeginChild("entityList", ImVec2(0, 0), false, 0);
-	for (auto& ent : game->entities->entities) {
-		if (*searchBuffer && !game->entities->hasComponents(ent, tagchars)) {
+	for (auto& ent : entities->entities) {
+		if (*searchBuffer && !entities->hasComponents(ent, tagchars)) {
 			// entity doesn't have the searched tags, filtered out
 			// TODO: wait, why am I not using the search interface here?
 			continue;
@@ -342,7 +352,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 		std::string contextstr = entstr + ":context";
 		std::string popupstr = entstr + ":popup";
 
-		if (game->entities->condemned.count(ent)) {
+		if (entities->condemned.count(ent)) {
 			entstr = "[deleted] " + entstr;
 		}
 
@@ -356,7 +366,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 			ImGui::Separator();
 
 			if (ImGui::Selectable("Delete")) {
-				game->entities->remove(selectedEntity);
+				entities->remove(selectedEntity);
 				selectedEntity = nullptr;
 			}
 
@@ -364,7 +374,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 			ImGui::EndPopup();
 		}
 
-		auto& components = game->entities->getEntityComponents(ent);
+		auto& components = entities->getEntityComponents(ent);
 		std::set<std::string> seen;
 		ImGui::Separator();
 		ImGui::Indent(16.f);
@@ -404,11 +414,11 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 		}
 
 		if (ImGui::BeginPopup(popupstr.c_str())) {
-			for (const auto& [name, _] : game->entities->components) {
+			for (const auto& [name, _] : entities->components) {
 				if (ImGui::Selectable(demangle(name).c_str())) {
 					nlohmann::json j = {demangle(name), {}};
 
-					game->factories->build(game->entities.get(), ent, j);
+					factories->build(entities, ent, j);
 				}
 			}
 			ImGui::EndPopup();
@@ -432,17 +442,19 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 	static ecs::entity* curcomp = nullptr;
 
 	if (selectedEntity != curcomp && selectedEntity) {
-		curjson = game->factories->serialize(game->entities.get(), selectedEntity);
+		curjson = factories->serialize(entities, selectedEntity);
 		curcomp = selectedEntity;
 	}
 
 	drawJson(curjson);
 
 	if (ImGui::Button("Apply")) {
-		ecs::entity *ent = game->factories->build(game->entities.get(), curjson);
-		game->entities->remove(selectedEntity);
-		game->entities->clearFreedEntities();
-		game->entities->add(ent);
+		ecs::entity *ent = factories->build(entities, curjson);
+
+		entities->remove(selectedEntity);
+		entities->clearFreedEntities();
+		entities->add(ent);
+
 		selectedEntity = ent;
 	}
 

@@ -106,30 +106,30 @@ struct multiRenderQueue {
 		void clear(void);
 };
 
-void updateLights(renderContext::ptr rctx, renderQueue& lights);
-void updateReflections(renderContext::ptr rctx, renderQueue& refs);
-void updateReflectionProbe(renderContext::ptr rctx, renderQueue& que, camera::ptr cam);
+void updateLights(renderContext *rctx, renderQueue& lights);
+void updateReflections(renderContext *rctx, renderQueue& refs);
+void updateReflectionProbe(renderContext *rctx, renderQueue& que, camera::ptr cam);
 void sortQueue(renderQueue& queue, camera::ptr cam);
 void cullQueue(renderQueue& queue, camera::ptr cam, unsigned width, unsigned height, float lightext);
 void sortQueue(multiRenderQueue& queue, camera::ptr cam);
 void cullQueue(multiRenderQueue& queue, camera::ptr cam, unsigned width, unsigned height, float lightext);
 void batchQueue(renderQueue& queue);
 
-void shaderSync(Program::ptr program, renderContext::ptr rctx, renderQueue& que);
+void shaderSync(Program::ptr program, renderContext *rctx, renderQueue& que);
 
 // TODO: rename flushQueue
 // TODO: renderFlags -> renderShader, renderOptions -> renderFlags
 unsigned flush(renderQueue& que,
                camera::ptr cam,
                renderFramebuffer::ptr fb,
-               renderContext::ptr rctx,
+               renderContext *rctx,
                const renderFlags& flags,
                const renderOptions& options);
 
 unsigned flush(multiRenderQueue& que,
                camera::ptr cam,
                renderFramebuffer::ptr fb,
-               renderContext::ptr rctx,
+               renderContext *rctx,
                const renderOptions& options);
 
 // TODO: this for multiRenderQueue
@@ -137,7 +137,7 @@ unsigned flush(renderQueue& que,
                camera::ptr cam,
                unsigned width,
                unsigned height,
-               renderContext::ptr rctx,
+               renderContext *rctx,
                const renderFlags& flags,
                const renderOptions& options);
 

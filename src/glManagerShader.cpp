@@ -119,7 +119,7 @@ std::string Program::log(void) {
 	glGetProgramInfoLog(obj, max_length, &max_length, prog_log);
 
 	std::string err = std::string(prog_log);
-	delete prog_log;
+	delete[] prog_log;
 
 	return err;
 }

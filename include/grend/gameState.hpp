@@ -1,26 +1,16 @@
 #pragma once
 
+#include <grend/IoC.hpp>
 #include <grend/sceneNode.hpp>
 #include <grend/sceneModel.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
-#include <grend/text.hpp>
+//#include <grend/text.hpp>
 #include <grend/physics.hpp>
 #include <grend/camera.hpp>
 
-#include <tuple>
-#include <vector>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <iterator>
-#include <string>
-#include <exception>
 #include <memory>
-#include <utility>
-#include <map>
-#include <list>
 
 namespace grendx {
 
@@ -47,7 +37,7 @@ class resolutionScale {
 };
 
 // TODO: rename to gameState
-class gameState {
+class gameState : public IoC::Service {
 	public:
 		typedef std::shared_ptr<gameState> ptr;
 		typedef std::weak_ptr<gameState> weakptr;

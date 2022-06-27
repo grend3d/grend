@@ -10,6 +10,9 @@ void gameEditor::settingsWindow(gameMain *game) {
 	static renderSettings settings;
 	static bool showSteps = true;
 
+	auto rend  = game->services.resolve<renderContext>();
+	auto state = game->services.resolve<gameState>();
+
 	ImGui::Begin("Render settings", &showSettingsWindow);
 	ImGui::Checkbox("Shadows enabled", &settings.shadowsEnabled);
 	ImGui::InputScalar("Shadow size", ImGuiDataType_U32, &settings.shadowSize, &showSteps);
@@ -31,8 +34,8 @@ void gameEditor::settingsWindow(gameMain *game) {
 	ImGui::InputScalar("Anisotropic filtering samples", ImGuiDataType_U32, &settings.anisotropicFilterLevel, &showSteps);
 
 	if (ImGui::Button("Apply")) {
-		game->rend->applySettings(settings);
-		invalidateLightMaps(game->state->rootnode);
+		rend->applySettings(settings);
+		invalidateLightMaps(state->rootnode);
 	}
 
 	ImGui::End();

@@ -1,4 +1,6 @@
 #pragma once
+
+#include <grend/IoC.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/camera.hpp>
@@ -82,7 +84,7 @@ class spatialAudioChannel : public audioChannel {
 		monoBuffer buf;
 };
 
-class audioMixer {
+class audioMixer : public IoC::Service {
 	public:
 		typedef std::shared_ptr<audioMixer> ptr;
 		typedef std::weak_ptr<audioMixer> weakptr;

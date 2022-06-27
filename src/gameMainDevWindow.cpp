@@ -1,6 +1,8 @@
 #include <grend-config.h>
 
 #include <grend/gameMainDevWindow.hpp>
+#include <grend/jobQueue.hpp>
+#include <grend/audioMixer.hpp>
 
 #ifdef PHYSICS_BULLET
 #include <grend/bulletPhysics.hpp>
@@ -17,6 +19,9 @@ gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
 	//editor = gameView::ptr(new gameEditor(this));
 	editor = std::make_shared<gameEditor>(this);
 	view   = editor;
+
+	auto jobs  = services.resolve<jobQueue>();
+	auto audio = services.resolve<audioMixer>();
 
 	jobs->addAsync([](){
 		std::cout << "job queue seems to be working!" << std::endl;
@@ -100,8 +105,9 @@ void gameMainDevWindow::setView(std::shared_ptr<gameView> nview) {
 }
 
 void gameMainDevWindow::handleInput(void) {
-	SDL_Event ev;
+	auto audio = services.resolve<audioMixer>();
 
+	SDL_Event ev;
 	while (SDL_PollEvent(&ev)) {
 		if (ev.type == SDL_QUIT) {
 			running = false;

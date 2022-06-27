@@ -40,7 +40,7 @@ void grendx::sortQueue(multiRenderQueue& renque, camera::ptr cam) {
 unsigned grendx::flush(multiRenderQueue&      que,
                        camera::ptr            cam,
                        renderFramebuffer::ptr fb,
-                       renderContext::ptr     rctx,
+                       renderContext          *rctx,
                        const renderOptions&   options)
 {
 	unsigned sum = 0;

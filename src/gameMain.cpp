@@ -4,6 +4,16 @@
 #include <grend/timers.hpp>
 #include <grend/scancodes.hpp>
 
+#include <grend/gameState.hpp>
+#include <grend/engine.hpp>    // TODO: rename to renderer.h
+#include <grend/glManager.hpp>
+#include <grend/gameView.hpp>
+#include <grend/jobQueue.hpp>
+#include <grend/audioMixer.hpp>
+
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
+
 #include <string.h> // memset
 
 #ifdef __EMSCRIPTEN__
@@ -29,13 +39,16 @@ gameMain::gameMain(const std::string& name, const renderSettings& _settings)
 	initializeOpengl();
 
 #if defined(PHYSICS_BULLET)
-	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
+	services.bind<physics, bulletPhysics>();
+	//phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
 #elif defined(PHYSICS_IMP)
-	phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
+	services.bind<physics, impPhysics>();
+	//phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
 #else
 #error "No physics implementation defined!"
 #endif
 
+	/*
 	state  = std::make_shared<gameState>();
 	rend   = std::make_shared<renderContext>(ctx, _settings);
 	audio  = std::make_shared<audioMixer>(ctx);
@@ -43,6 +56,16 @@ gameMain::gameMain(const std::string& name, const renderSettings& _settings)
 
 	entities  = std::make_shared<ecs::entityManager>(this);
 	factories = std::make_shared<ecs::serializer>();
+	*/
+
+	services.bind<renderContext,      renderContext>(ctx, _settings);
+	services.bind<gameState,          gameState>();
+	services.bind<audioMixer,         audioMixer>(ctx);
+	services.bind<jobQueue,           jobQueue>();
+	services.bind<ecs::entityManager, ecs::entityManager>(this);
+	services.bind<ecs::serializer,    ecs::serializer>();
+
+	SDL_Log("gameMain() finished");
 }
 
 void gameMain::applySettings(const renderSettings& newSettings) {
@@ -60,6 +83,10 @@ int gameMain::step(void) {
 	clearMetrics();
 	profile::newFrame();
 	handleInput();
+
+	auto jobs = services.resolve<jobQueue>();
+	auto rend = services.resolve<renderContext>();
+	auto phys = services.resolve<physics>();
 
 	if (running) {
 		// XXX: remove
@@ -84,7 +111,8 @@ int gameMain::step(void) {
 		profile::endGroup();
 
 		profile::startGroup("Syncronous jobs");
-		if (jobs != nullptr) {
+
+		{
 			// spread long-running syncronous job batches across multiple frames
 			// TODO: more fine-grained than SDL_GetTicks()
 			//       could use std::chrono high res clock
@@ -150,6 +178,7 @@ int gameMain::run(void) {
 }
 
 void gameMain::setView(std::shared_ptr<gameView> nview) {
+	auto audio = services.resolve<audioMixer>();
 	view = nview;
 
 	if (audio != nullptr && view != nullptr && view->cam != nullptr) {

@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <optional>
+#include <future>
 
 namespace grendx {
 

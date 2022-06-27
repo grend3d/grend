@@ -1,6 +1,7 @@
 #include <grend/gameEditor.hpp>
 #include <grend/controllers.hpp>
 #include <grend/loadScene.hpp>
+#include <grend/renderContext.hpp>
 
 // XXX: for updateEntityTransforms()
 #include <grend/ecs/rigidBody.hpp>
@@ -19,7 +20,9 @@ void gameEditor::handleSelectObject(gameMain *game) {
 	float fx = x/(1.f*win_x);
 	float fy = y/(1.f*win_y);
 
-	uint32_t clickidx = game->rend->framebuffer->index(fx, fy);
+	auto rend = game->services.resolve<renderContext>();
+
+	uint32_t clickidx = rend->framebuffer->index(fx, fy);
 	std::cerr << "clicked object: " << clickidx << std::endl;
 	std::cerr << "ent object: " << clickidx-10 << std::endl;
 	std::cerr << "clickables: " << clickState.size() << std::endl;
@@ -190,18 +193,20 @@ void gameEditor::loadInputBindings(gameMain *game) {
 	inputBinds.bind(mode::View,
 		[&, game] (const SDL_Event& ev, unsigned flags) {
 			if (ev.type == SDL_KEYDOWN) {
+				auto state = game->services.resolve<gameState>();
+
 				switch (ev.key.keysym.sym) {
 					case SDLK_i:
 						if (auto node = loadMapCompiled()) {
 							clear(game);
-							selectedNode = game->state->rootnode = *node;
+							selectedNode = state->rootnode = *node;
 							runCallbacks(selectedNode, editAction::NewScene);
 
 						} else printError(node);
 
 						break;
 
-					case SDLK_o: saveMap(game, game->state->rootnode); break;
+					case SDLK_o: saveMap(game, state->rootnode); break;
 					case SDLK_DELETE: selectedNode = unlink(selectedNode); break;
 				}
 			}
@@ -273,11 +278,13 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			if (ev.type == SDL_MOUSEBUTTONDOWN
 			    && ev.button.button == SDL_BUTTON_LEFT)
 			{
+				auto state = game->services.resolve<gameState>();
+
 				if (flags & bindFlags::Control) {
 					// TODO: need like a keymapping system
 					// TODO: need more abstracted object/entity/we
 					//       selection/delection
-					selectedNode   = game->state->rootnode;
+					selectedNode   = state->rootnode;
 					selectedEntity = nullptr;
 
 				} else {

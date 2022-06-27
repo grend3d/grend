@@ -10,6 +10,11 @@ namespace grendx {
 class context {
 	public:
 		context(const char *progname, const renderSettings& settings);
+		// XXX: context normally shouldn't be copied or moved after initialization,
+		//      helps detect some bugs
+		context(const context& other) = delete;
+		context(const context&& other) = delete;
+
 		~context();
 		void setAudioCallback(void *data, SDL_AudioCallback callback);
 		void applySettings(const renderSettings& settings);

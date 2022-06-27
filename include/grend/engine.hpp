@@ -41,32 +41,32 @@ renderFlags loadShaderToFlags(std::string fragmentPath,
 void drawShadowCubeMap(renderQueue& queue,
                        sceneLightPoint::ptr light,
                        glm::mat4& transform,
-					   renderContext::ptr rctx);
+					   renderContext *rctx);
 void drawSpotlightShadow(renderQueue& queue,
                          sceneLightSpot::ptr light,
                          glm::mat4& transform,
-					     renderContext::ptr rctx);
+					     renderContext *rctx);
 void drawReflectionProbe(renderQueue& queue,
                          sceneReflectionProbe::ptr probe,
                          glm::mat4& transform,
-                         renderContext::ptr rctx);
+                         renderContext *rctx);
 void drawIrradianceProbe(renderQueue& queue,
                          sceneIrradianceProbe::ptr probe,
                          glm::mat4& transform,
-                         renderContext::ptr rctx);
+                         renderContext *rctx);
 
-void buildTilemap(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
-void buildTilemapTiled(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
-void buildTilemapClustered(renderQueue::LightQ& queue, camera::ptr cam, renderContext::ptr rctx);
+void buildTilemap(renderQueue::LightQ& queue, camera::ptr cam, renderContext *rctx);
+void buildTilemapTiled(renderQueue::LightQ& queue, camera::ptr cam, renderContext *rctx);
+void buildTilemapClustered(renderQueue::LightQ& queue, camera::ptr cam, renderContext *rctx);
 
 void packLight(sceneLightPoint::ptr light, point_std140 *p,
-               renderContext::ptr rctx, glm::mat4& trans);
+               renderContext *rctx, glm::mat4& trans);
 void packLight(sceneLightSpot::ptr light, spot_std140 *p,
-               renderContext::ptr rctx, glm::mat4& trans);
+               renderContext *rctx, glm::mat4& trans);
 void packLight(sceneLightDirectional::ptr light, directional_std140 *p,
-               renderContext::ptr rctx, glm::mat4& trans);
+               renderContext *rctx, glm::mat4& trans);
 void packRefprobe(sceneReflectionProbe::ptr probe, lights_std140 *p,
-                  renderContext::ptr rctx, glm::mat4& trans);
+                  renderContext *rctx, glm::mat4& trans);
 
 float light_extent(struct point_light *p, float threshold=0.03);
 float light_extent(struct spot_light *s, float threshold=0.03);
