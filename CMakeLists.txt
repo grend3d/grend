@@ -9,6 +9,8 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
+add_subdirectory(libs/parserlib)
+
 # for building grend as a library, including bullet as part of it
 if (NOT BULLET_PHYSICS_SOURCE_DIR AND EXISTS ${PROJECT_SOURCE_DIR}/bullet)
 	message(STATUS "Found bullet subdirectory, using that as library")
@@ -52,6 +54,9 @@ set(GR_PREFIX)
 ## used in the grend.pc file, so things can know which GL library to link
 set(GREND_PKG)
 set(GREND_GL_PKG)
+
+# add parser combinator lib as a dependency
+list(APPEND GREND_LINK_LIBS ParserLib)
 
 if (PORTABLE_BUILD)
 	set(GR_PREFIX "./share/grend/")
