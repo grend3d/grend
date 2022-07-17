@@ -2,6 +2,7 @@
 #include <grend/glmIncludes.hpp>
 #include <grend/shaderPreprocess.hpp>
 #include <grend/utility.hpp>
+#include <grend/glslParser.hpp>
 
 #include <string>
 #include <vector>
@@ -28,6 +29,20 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 	if (source.empty()) {
 		SDL_Log("%s: Source file is empty, couldn't load!", filename.c_str());
 		return false;
+	}
+
+	try {
+		auto t = parseGlsl(source);
+		//dump_tokens_tree(t);
+
+		if (!t.empty()) {
+			SDL_Log("Parsed shader successfully");
+		} else {
+			SDL_Log("Couldn't parse shader.");
+		}
+
+	} catch (std::exception& e) {
+		SDL_Log("Exception, couldn't parse shader!");
 	}
 
 	glShaderSource(obj, 1, (const GLchar**)&temp, 0);

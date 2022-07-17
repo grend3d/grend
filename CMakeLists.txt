@@ -134,6 +134,7 @@ add_library(Grend
 	src/playerView.cpp
 	src/tinygltf.cpp
 	src/scancodes.cpp
+	src/glslParser.cpp
 
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp
