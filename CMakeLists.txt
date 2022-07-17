@@ -135,6 +135,7 @@ add_library(Grend
 	src/tinygltf.cpp
 	src/scancodes.cpp
 	src/glslParser.cpp
+	src/glslObject.cpp
 
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp

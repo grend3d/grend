@@ -3,6 +3,7 @@
 #include <grend/shaderPreprocess.hpp>
 #include <grend/utility.hpp>
 #include <grend/glslParser.hpp>
+#include <grend/glslObject.hpp>
 
 #include <string>
 #include <vector>
@@ -32,17 +33,20 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 	}
 
 	try {
-		auto t = parseGlsl(source);
+		auto t = glslObject(source);
+		//auto t = parseGlsl(source);
 		//dump_tokens_tree(t);
 
+		/*
 		if (!t.empty()) {
 			SDL_Log("Parsed shader successfully");
 		} else {
 			SDL_Log("Couldn't parse shader.");
 		}
+		*/
 
 	} catch (std::exception& e) {
-		SDL_Log("Exception, couldn't parse shader!");
+		SDL_Log("Exception, couldn't parse shader: %s", e.what());
 	}
 
 	glShaderSource(obj, 1, (const GLchar**)&temp, 0);

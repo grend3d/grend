@@ -316,14 +316,34 @@ constant_expression :=
     conditional_expression
     ;
 
-declaration :=
-      (function_prototype SEMICOLON)
-    | (init_declarator_list SEMICOLON)
-    | (PRECISION precision_qualifier type_specifier_no_prec SEMICOLON)
-    | (type_qualifier IDENTIFIER LEFT_BRACE struct_declaration_list RIGHT_BRACE
+declaration_func_prototype :=
+    (function_prototype SEMICOLON)
+    ;
+
+declaration_init_decl_list :=
+    (init_declarator_list SEMICOLON)
+    ;
+
+declaration_precision_spec :=
+    (PRECISION precision_qualifier type_specifier_no_prec SEMICOLON)
+    ;
+
+declaration_struct_decl_list :=
+    (type_qualifier IDENTIFIER LEFT_BRACE struct_declaration_list RIGHT_BRACE
           [IDENTIFIER [LEFT_BRACKET constant_expression RIGHT_BRACKET]]
-       SEMICOLON)
-    | (type_qualifier SEMICOLON)
+     SEMICOLON)
+    ;
+
+declaration_type_qualifier :=
+    (type_qualifier SEMICOLON)
+    ;
+
+declaration :=
+      declaration_func_prototype
+    | declaration_init_decl_list
+    | declaration_precision_spec
+    | declaration_struct_decl_list
+    | declaration_type_qualifier
     ;
 
 function_prototype :=
@@ -625,7 +645,7 @@ function_definition :=
     function_prototype compound_statement_no_new_scope
     ;
 
-main := translation_unit EOF;
+main = translation_unit EOF;
 )PARSER";
 
 cparser grendx::loadGlslParser(void) {

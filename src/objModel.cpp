@@ -257,6 +257,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 			unsigned illumination_model = std::stoi(statement[1]);
 
 			switch (illumination_model) {
+				/*
 				case 4:
 				case 6:
 				case 7:
@@ -264,6 +265,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 					ret[current_material]->factors.blend
 						= material::blend_mode::Blend;
 					break;
+					*/
 
 				default:
 					ret[current_material]->factors.blend
