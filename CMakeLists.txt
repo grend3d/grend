@@ -83,15 +83,19 @@ add_library(Grend
 	src/audioMixer.cpp
 	src/camera.cpp
 	src/compiledModel.cpp
-	src/editorInput.cpp
-	src/editorMap.cpp
-	src/editorMapWindow.cpp
-	src/editorMenubar.cpp
-	src/editorMetricsWindow.cpp
-	src/editorObjectEditorWindow.cpp
-	src/editorObjectSelectWindow.cpp
-	src/editorProfiler.cpp
-	src/editorSettings.cpp
+
+	src/editor/editor.cpp
+	src/editor/input.cpp
+	src/editor/map.cpp
+	src/editor/mapWindow.cpp
+	src/editor/menubar.cpp
+	src/editor/metricsWindow.cpp
+	src/editor/objectEditorWindow.cpp
+	src/editor/objectSelectWindow.cpp
+	src/editor/profiler.cpp
+	src/editor/settings.cpp
+	src/editor/entitySelectWindow.cpp
+
 	src/fileDialog.cpp
 	src/geometryGeneration.cpp
 	src/glManager.cpp
@@ -122,7 +126,6 @@ add_library(Grend
 	src/plane.cpp
 	src/gltfModel.cpp
 	src/objModel.cpp
-	src/editor.cpp
 	src/skybox.cpp
 	src/ecsEntityManager.cpp
 	src/ecsCollision.cpp
@@ -130,7 +133,6 @@ add_library(Grend
 	src/ecsShader.cpp
 	src/gameView.cpp
 	src/ecsSerializer.cpp
-	src/editorEditorSelectWindow.cpp
 	src/playerView.cpp
 	src/tinygltf.cpp
 	src/scancodes.cpp
