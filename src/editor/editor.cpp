@@ -40,7 +40,7 @@ gameEditor::gameEditor(gameMain *game)
 		game->settings.targetResX, game->settings.targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
-		{loadPostShader(GR_PREFIX "shaders/baked/dither.frag",
+		{loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
 		                rend->globalShaderOptions)},
 		game->settings.targetResX, game->settings.targetResY));
 #endif
@@ -668,12 +668,17 @@ void gameEditor::renderImgui(gameMain *game) {
 	}
 }
 
-#if 0
+#if 1
 // messing around with an IDE-style layout, will set this up properly eventually
 #include <imgui/imgui_internal.h>
-static void initDocking(void) {
+static void initDocking(gameMain *game) {
 	ImGuiIO& io = ImGui::GetIO();
-	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+	//ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+	ImGuiDockNodeFlags dockspace_flags
+		= ImGuiDockNodeFlags_PassthruCentralNode
+		| ImGuiDockNodeFlags_NoDockingInCentralNode
+		;
+
 	ImGuiWindowFlags window_flags
 		= ImGuiWindowFlags_NoTitleBar
 		| ImGuiWindowFlags_NoCollapse
@@ -685,12 +690,21 @@ static void initDocking(void) {
 		;
 
 	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+		const ImGuiViewport *viewport = ImGui::GetMainViewport();
+
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::Begin("dockspace", nullptr, window_flags);
 		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 
-		ImGuiID dockspace_id = ImGui::GetID("dockspace");
-		ImGui::DockSpace(dockspace_id, ImVec2(1280, 720), dockspace_flags);
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.f, 0.f), dockspace_flags);
 
 		static bool initialized = false;
 		if (!initialized) {
@@ -698,7 +712,7 @@ static void initDocking(void) {
 
 			ImGui::DockBuilderRemoveNode(dockspace_id);
 			ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
-			ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1280, 720));
+			ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 1080));
 
 			auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2, nullptr, &dockspace_id);
 			auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.2, nullptr, &dockspace_id);
@@ -706,6 +720,12 @@ static void initDocking(void) {
 			ImGui::DockBuilderDockWindow("Down", dock_id_down);
 			ImGui::DockBuilderDockWindow("Left", dock_id_left);
 			ImGui::DockBuilderFinish(dockspace_id);
+
+			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+			ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+
+			ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
+
 		}
 
 		ImGui::Begin("Left");
@@ -715,6 +735,15 @@ static void initDocking(void) {
 		ImGui::Begin("Down");
 		ImGui::Text("down");
 		ImGui::End();
+
+		auto rend = game->services.resolve<renderContext>();
+		auto dock_main = ImGui::DockBuilderGetCentralNode(dockspace_id);
+		auto& pos  = dock_main->Pos;
+		auto& size = dock_main->Size;
+		ImVec2 end = {pos.x + size.x, pos.y + size.y};
+		ImGui::GetForegroundDrawList()->AddRect(pos, end, IM_COL32(255, 255, 0, 255));
+
+		rend->setViewport({pos.x, pos.y}, {size.x, size.y});
 
 		ImGui::End();
 	}
@@ -726,7 +755,7 @@ void gameEditor::renderEditor(gameMain *game) {
 	ImGui_ImplSDL2_NewFrame(game->ctx.window);
 	ImGui::NewFrame();
 
-	// initDocking();
+	initDocking(game);
 	menubar(game);
 
 	// TODO: this could probably be reduced to like a map of

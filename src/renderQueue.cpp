@@ -870,12 +870,17 @@ unsigned grendx::flush(renderQueue& que,
 
 	fb->bind();
 	disable(GL_SCISSOR_TEST);
-	glViewport(0, 0, fb->width, fb->height);
-	glScissor(0, 0, fb->width, fb->height);
+	//glViewport(0, 0, fb->width, fb->height);
+	//glScissor(0, 0, fb->width, fb->height);
+	auto vportPos  = rctx->getDrawOffset();
+	auto vportSize = rctx->getDrawSize();
+	glViewport(vportPos.x, fb->height - (vportPos.y + vportSize.y), vportSize.x, vportSize.y);
 
 	setFlushOptions(rctx, options);
-	cam->setViewport(fb->width /rctx->settings.scaleX,
-	                 fb->height/rctx->settings.scaleY);
+	//cam->setViewport(fb->width /rctx->settings.scaleX,
+	//                 fb->height/rctx->settings.scaleY);
+	cam->setViewport(vportSize.x / rctx->settings.scaleX,
+	                 vportSize.y / rctx->settings.scaleY);
 	setFlushUniformsFlags(que, rctx, flags, cam);
 
 	using R = renderFlags;

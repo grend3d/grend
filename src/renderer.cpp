@@ -86,7 +86,7 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	directionalBuffer->update(&directionalLightsCtx, 0, sizeof(directionalLightsCtx));
 #endif
 
-	SDL_GetWindowSize(ctx.window, &screen_x, &screen_y);
+	SDL_GetWindowSize(ctx.window, &screenX, &screenY);
 	/*
 #ifdef __EMSCRIPTEN__
 	screen_x = 1280;

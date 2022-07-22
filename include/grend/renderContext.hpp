@@ -90,7 +90,34 @@ class renderContext : public IoC::Service {
 		//renderFramebuffer last_frame;
 
 		// (actual) screen size
-		int screen_x, screen_y;
+		int screenX, screenY;
+
+		glm::ivec2 viewportPosition;
+		glm::ivec2 viewportSize;
+
+		glm::ivec2 getDrawSize() {
+			return (viewportSize.x && viewportSize.y)
+				? viewportSize
+				: glm::ivec2 {screenX, screenY}
+				;
+		}
+
+		glm::ivec2 getDrawOffset() {
+			return (viewportSize.x && viewportSize.y)
+				? glm::ivec2 {viewportPosition.x, viewportPosition.y}
+				: glm::ivec2 {0, 0}
+				;
+		}
+
+		void setViewport(glm::ivec2 position, glm::ivec2 size) {
+			viewportPosition = position;
+			viewportSize = size;
+		}
+
+		void clearViewport(void) {
+			viewportPosition = {0, 0};
+			viewportSize = {0, 0};
+		}
 
 		// sky box
 		skybox defaultSkybox;
