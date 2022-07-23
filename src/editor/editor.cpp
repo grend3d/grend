@@ -219,10 +219,10 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	//       to the underlying shaders...
 	renderQueue por = que;
 
-	for (auto& var : flags.variants) {
+	for (auto& var : constantFlags.variants) {
 		for (auto& shader : var.shaders) {
 			shader->bind();
-			shader->set("outputColor", glm::vec4(0.2, 0.05, 0.0, 0.5));
+			shader->set("outputColor", glm::vec4(0.1, 0.1, 0.1, 1.0));
 		}
 	}
 
@@ -304,7 +304,7 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 
 		for (auto& v : probeFlags.variants) {
 			for (auto& p : v.shaders) {
-				p = refShader;
+				p = irradShader;
 			}
 		}
 

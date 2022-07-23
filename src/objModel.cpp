@@ -121,6 +121,7 @@ sceneModel::ptr load_object(std::string filename) {
 				ret->vertices.push_back((sceneModel::vertex) {
 					.position = position,
 					.normal   = normal,
+					.color    = glm::vec3(1, 1, 1),
 					.uv       = texcoord,
 				});
 
