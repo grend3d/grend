@@ -1,8 +1,9 @@
-### An OpenGL game framework/engine
+# Grend
+An OpenGL game framework/engine
 
 ![Demo Screenshot](http://lisp.us.to/data/post7-data/scifi-helmet.png)
 
-### Building
+## Build instruction
 
 #### Required system libraries:
 - SDL2
@@ -10,8 +11,10 @@
 - GLM
 - Glew (for core OpenGL profiles)
 
-After aquiring these fine softwares, you can build the engine as a normal
-CMake-based library. On linux:
+After acquiring these fine softwares, you can build the engine as a normal
+CMake-based library. 
+
+On linux:
 
     git clone --recurse-submodules "https://github.com/grend3d/grend"
 	mkdir build && cd build
@@ -19,10 +22,13 @@ CMake-based library. On linux:
 	make && make install
 
 Which you can then link against, see
-![the landscape demo](https://github.com/grend3d/landscape-demo)
+[the landscape demo](https://github.com/grend3d/landscape-demo)
 for an example of how to build against it.
 
-### Features
+## Supported OS
+Linux, Windows, WebGL, and Android
+
+## Features
 - Forward renderer with tiled light clustering (basically forward+ without Z prepass)
 - glTF and .obj model import, including animations and lights
 - Metal-roughness PBR, along with gouraud and (blinn-)phong shading models
@@ -37,5 +43,4 @@ for an example of how to build against it.
 - Dynamic mesh generation with physics integration
 - Asyncronous job queue
 - Built-in map editor
-- Support for OpenGL es 2, es 3, core 3.3 and core 4.3
-- Linux, Windows, WebGL and Android support
+- Support OpenGL es 2, es 3, core 3.3 and core 4.3
