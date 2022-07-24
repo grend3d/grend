@@ -136,8 +136,8 @@ class gameEditor : public gameView {
 		void mapWindow(gameMain *game);
 		void objectEditorWindow(gameMain *game);
 		void objectSelectWindow(gameMain *game);
+		void entityListWindow(gameMain *game);
 		void entityEditorWindow(gameMain *game);
-		void entitySelectWindow(gameMain *game);
 		void addEntityWindow(gameMain *game);
 		void metricsWindow(gameMain *game);
 		void profilerWindow(gameMain *game);
@@ -170,7 +170,7 @@ class gameEditor : public gameView {
 		bool showObjectEditorWindow = false;
 		bool showObjectSelectWindow = false;
 		bool showEntityEditorWindow = false;
-		bool showEntitySelectWindow = false;
+		bool showEntityListWindow = false;
 		bool showAddEntityWindow = false;
 		bool showProfilerWindow = false;
 		bool showMetricsWindow = true;

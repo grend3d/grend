@@ -767,10 +767,12 @@ void gameEditor::renderEditor(gameMain *game) {
 		//ImGui::ShowMetricsWindow();
 	if (showMapWindow)          mapWindow(game);
 	if (showObjectSelectWindow) objectSelectWindow(game);
-	if (showEntitySelectWindow) entitySelectWindow(game);
 	if (showAddEntityWindow)    addEntityWindow(game);
 	if (showProfilerWindow)     profilerWindow(game);
 	if (showSettingsWindow)     settingsWindow(game);
+
+	if (showEntityEditorWindow) entityEditorWindow(game);
+	if (showEntityListWindow)   entityListWindow(game);
 
 	if (selectedNode && showObjectEditorWindow)
 		objectEditorWindow(game);

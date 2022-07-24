@@ -233,8 +233,8 @@ void gameEditor::menubar(gameMain *game) {
 			if (ImGui::MenuItem("Entity editor"))
 				showEntityEditorWindow = true;
 
-			if (ImGui::MenuItem("Entity selection"))
-				showEntitySelectWindow = true;
+			if (ImGui::MenuItem("Entity list"))
+				showEntityListWindow = true;
 
 			ImGui::Separator();
 

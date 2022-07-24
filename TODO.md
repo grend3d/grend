@@ -20,6 +20,8 @@
 - handle window resizing (again)
 
 ### UI
+- Automatically scroll to selected entity in the list when a new entity
+  is selected in the editor
 - make a prototype of UI layout on top of imgui/nuklear
 - completely phase out modalSDLInput, need a better way of abstracting
   away input events, polling input rather than passing around events,
