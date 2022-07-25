@@ -232,6 +232,10 @@ grendx::loadMapData(std::string name) noexcept {
 		ret->setTransform(temp->getTransformTRS());
 		ret->nodes = temp->nodes;
 
+		for (auto& [_, ptr] : ret->nodes) {
+			ptr->parent = ret;
+		}
+
 		for (auto& [name, ptr] : cache.sources) {
 			retmodels.insert(ptr.begin(), ptr.end());
 		}

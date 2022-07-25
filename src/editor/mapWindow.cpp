@@ -108,9 +108,27 @@ void gameEditor::addnodes(std::string name,
 	addnodesRec(name, obj, selectedPath);
 }
 
+// TODO: could be a useful utility function
+static sceneNode::ptr findRoot(sceneNode::ptr p) {
+	while (p) {
+		auto next = p->parent.lock();
+
+		if (!next) {
+			return p;
+
+		} else {
+			p = next;
+		}
+
+	}
+
+	return nullptr;
+}
+
 void gameEditor::mapWindow(gameMain *game) {
 	static sceneNode::ptr clipboard = nullptr;
 	static std::string     clipboardName;
+	sceneNode::ptr root = findRoot(selectedNode);
 
 	std::set<sceneNode::ptr> selectedPath;
 	for (sceneNode::ptr p = selectedNode; p; p = p->parent.lock()) {
@@ -159,8 +177,7 @@ void gameEditor::mapWindow(gameMain *game) {
 	}
 
 	auto state = game->services.resolve<gameState>();
-	addnodes("Objects",  state->rootnode, selectedPath);
-	addnodes("Selected", selectedNode, selectedPath);
+	addnodes("Objects", root, selectedPath);
 	addnodes("Clipboard", clipboard, selectedPath);
 
 	ImGui::End();
