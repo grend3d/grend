@@ -171,6 +171,11 @@ buildClickableQueue(gameMain *game,
 }
 
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
+#if !defined(__ANDROID__) && GLSL_VERSION > 100
+	renderEditor(game);
+	ImGui::Render();
+#endif
+
 	auto rend  = game->services.resolve<renderContext>();
 	auto state = game->services.resolve<gameState>();
 
@@ -250,8 +255,7 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 //             the phone I'm testing on has a driver bug triggered
 //             by one of the imgui draw calls, but only on es3... boy oh boy
 #if !defined(__ANDROID__) && GLSL_VERSION > 100
-	renderEditor(game);
-	renderImgui(game);
+	renderImguiData(game);
 #endif
 }
 
@@ -654,11 +658,10 @@ void gameEditor::clear(gameMain *game) {
 }
 
 // TODO: rename 'renderer' to 'rend' or something
-void gameEditor::renderImgui(gameMain *game) {
-	ImGui::Render();
+void gameEditor::renderImguiData(gameMain *game) {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 	ImGuiIO& io = ImGui::GetIO();
+
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
 		SDL_Window *w = SDL_GL_GetCurrentWindow();
 		SDL_GLContext g = SDL_GL_GetCurrentContext();

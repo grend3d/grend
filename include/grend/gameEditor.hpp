@@ -103,7 +103,7 @@ class gameEditor : public gameView {
 		void reloadShaders(gameMain *game);
 		void setMode(enum mode newmode);
 		// TODO: rename 'engine' to 'renderer' or something
-		void renderImgui(gameMain *game);
+		void renderImguiData(gameMain *game);
 		void renderEditor(gameMain *game);
 		void renderMapModels(gameMain *game);
 
