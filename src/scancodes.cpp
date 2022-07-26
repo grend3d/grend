@@ -22,8 +22,8 @@ void updateKeyStates(float delta) {
 	const uint8_t *keystates = SDL_GetKeyboardState(NULL);
 
 	for (unsigned n = 0; n < SDL_NUM_SCANCODES; n++) {
-		bool last = keyboardLastPressed[n] = keyboardCurPressed[n];
-		bool cur  = keyboardCurPressed[n]  = keystates[n];
+		bool last = (keyboardLastPressed[n] = keyboardCurPressed[n]);
+		bool cur  = (keyboardCurPressed[n]  = keystates[n]);
 
 		keyboardHoldTimes[n] = (last && cur)
 			? keyboardHoldTimes[n] + delta
@@ -114,7 +114,7 @@ float keyHoldTime(unsigned keysym) {
 			// TODO: controllers
 
 		default:
-			break;
+			return 0.f;
 	}
 }
 
@@ -130,7 +130,7 @@ float keyReleaseTime(uint32_t keysym) {
 			// TODO: controllers
 
 		default:
-			break;
+			return 0.f;
 	}
 }
 

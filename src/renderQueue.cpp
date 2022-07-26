@@ -335,7 +335,6 @@ void grendx::sortQueue(renderQueue& queue, camera::ptr cam) {
 	transparent.reserve(queue.meshes.size());
 	opaque.reserve(queue.meshes.size());
 
-	using Ent = renderQueue::queueEnt<sceneMesh::ptr>;
 	std::vector<float> distances;
 	distances.resize(queue.meshes.size());
 
@@ -1006,14 +1005,14 @@ typedef std::vector<std::pair<glm::mat4&, sceneLightSpot::ptr>>        spotList;
 typedef std::vector<std::pair<glm::mat4&, sceneLightDirectional::ptr>> dirList;
 typedef std::tuple<pointList, spotList, dirList> lightLists;
 
+// TODO: remove this, removing gles2 support
+#if 0
 static void syncPlainUniforms(Program::ptr program,
 	                          renderContext *rctx,
 	                          pointList& points,
 	                          spotList& spots,
 	                          dirList&  directionals)
 {
-// TODO: remove this, removing gles2 support
-#if 0
 	size_t pactive = min((size_t)MAX_LIGHTS, points.size());
 	size_t sactive = min((size_t)MAX_LIGHTS, spots.size());
 	size_t dactive = min((size_t)MAX_LIGHTS, directionals.size());
@@ -1127,8 +1126,8 @@ static void syncPlainUniforms(Program::ptr program,
 			DO_ERROR_CHECK();
 		}
 	}
-#endif
 }
+#endif
 
 static inline float rectScale(float R, float d) {
 	return 1.f / cos(d/R);

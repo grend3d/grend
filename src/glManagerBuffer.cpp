@@ -22,8 +22,10 @@ void Buffer::unbind(void) {
 }
 
 void *Buffer::map(GLenum access) {
+	// TODO: remove this
 	//return glMapBuffer(type, access);
 	DO_ERROR_CHECK();
+	return nullptr;
 }
 
 GLenum Buffer::unmap(void) {
@@ -32,7 +34,7 @@ GLenum Buffer::unmap(void) {
 }
 
 void Buffer::allocate(size_t n) {
-	SDL_Log("Allocating buffer of %u bytes", n);
+	SDL_Log("Allocating buffer of %lu bytes", n);
 	bind();
 	glBufferData(type, n, NULL, use);
 	DO_ERROR_CHECK();

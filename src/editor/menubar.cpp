@@ -112,7 +112,6 @@ void gameEditor::menubar(gameMain *game) {
 	auto state    = game->services.resolve<gameState>();
 	auto rend     = game->services.resolve<renderContext>();
 	auto phys     = game->services.resolve<physics>();
-	auto entities = game->services.resolve<ecs::entityManager>();
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {

@@ -54,7 +54,7 @@ static std::string preprocess(std::string& sourcestr,
 	while (std::getline(source, line)) {
 		size_t inc = line.find("#include");
 		size_t prag = line.find("#pragma");
-		size_t directive = line.find("#");
+		//size_t directive = line.find("#");
 
 		if (inc != std::string::npos) {
 			auto path = extractInclude(line);

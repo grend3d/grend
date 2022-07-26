@@ -30,9 +30,9 @@ class gameMain {
 
 		bool running = false;
 		IoC::Container services;
-		renderSettings settings;
 		// TODO: maybe make SDL context a "window" service that gets bound
 		context ctx;
+		renderSettings settings;
 
 		std::shared_ptr<gameView> view  = nullptr;
 

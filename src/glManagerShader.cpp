@@ -33,7 +33,7 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 	}
 
 	try {
-		auto t = glslObject(source);
+		//auto t = glslObject(source);
 		//auto t = parseGlsl(source);
 		//dump_tokens_tree(t);
 
@@ -281,10 +281,12 @@ bool Program::setUniformBlock(std::string name, Buffer::ptr buf, GLuint binding)
 }
 
 bool Program::setStorageBlock(std::string name, Buffer::ptr buf, GLuint binding) {
+	// TODO:
+	/*
 	GLuint loc = lookupStorageBlock(name);
 	DO_ERROR_CHECK();
-	// TODO:
-	//glUniformBlockBinding(obj, loc, buf->obj);
+	glUniformBlockBinding(obj, loc, buf->obj);
+	*/
 	return false;
 }
 

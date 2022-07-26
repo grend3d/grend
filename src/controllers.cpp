@@ -144,9 +144,6 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angl
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
 
-		float center_x = (float)win_x / 2;
-		float rel_x = ((float)x - center_x) / center_x;
-
 		cam->setDirection(glm::vec3(0, sin(angle), -cos(angle)));
 
 		return MODAL_NO_CHANGE;
@@ -176,7 +173,6 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 
 	return [=] (const SDL_Event& ev, unsigned flags) {
 		int x, y; (void)x; (void)y;
-		Uint32 buttons = SDL_GetMouseState(&x, &y);
 
 		bool isMouse = ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP || ev.type == SDL_MOUSEMOTION;
 		bool isController = ev.type == SDL_CONTROLLERBUTTONDOWN || ev.type == SDL_CONTROLLERBUTTONUP;

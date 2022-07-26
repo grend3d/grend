@@ -32,7 +32,7 @@ bool fileDialog::promptFilename(void) {
 		listdir();
 	}
 
-	for (int i = 0; i < dirContents.size(); i++) {
+	for (int i = 0; i < (int)dirContents.size(); i++) {
 		auto& ent = dirContents[i];
 
 		ImGui::Separator();

@@ -35,74 +35,16 @@ rigidBody::rigidBody(regArgs t, float _mass)
 }
 
 rigidBodySphere::rigidBodySphere(regArgs t)
-	: rigidBody(doRegister(this, t))
-{
-	glm::vec3 position = t.ent->node->getTransformTRS().position;
-	// incomplete initialization, needs properties set
-	// TODO: warn somehow if the body is used before initialization
-
-	/*
-	phys = manager->engine->phys->addSphere(ent, position, 1.f, properties["radius"]);
-	registerCollisionQueue(manager->collisions);
-	*/
-}
+	: rigidBody(doRegister(this, t)) { }
 
 rigidBodyBox::rigidBodyBox(regArgs t)
-	: rigidBody(doRegister(this, t))
-{
-	nlohmann::json foo;
-
-	// TODO: position is a common attribute, also duplicated between
-	//       the entity transform, why not in the base rigidBody class,
-	//       if here at all?
-	glm::vec3 position = t.ent->node->getTransformTRS().position;
-	// incomplete initialization, needs properties set
-
-	/*
-	auto center = properties["center"];
-	auto extent = properties["extent"];
-
-	AABBExtent box = {
-		.center = glm::vec3(center[0], center[1], center[2]),
-		.extent = glm::vec3(extent[0], extent[1], extent[2]),
-	};
-
-	phys = manager->engine->phys->addBox(ent, position, 1.f, box);
-	registerCollisionQueue(manager->collisions);
-	*/
-}
+	: rigidBody(doRegister(this, t)) { }
 
 rigidBodyCylinder::rigidBodyCylinder(regArgs t)
-	: rigidBody(doRegister(this, t))
-{
-	glm::vec3 position = t.ent->node->getTransformTRS().position;
-	// incomplete initialization, needs properties set
-	/*
-	auto center = properties["center"];
-	auto extent = properties["extent"];
-
-	AABBExtent box = {
-		.center = glm::vec3(center[0], center[1], center[2]),
-		.extent = glm::vec3(extent[0], extent[1], extent[2]),
-	};
-
-	phys = manager->engine->phys->addCylinder(ent, position, 1.f, box);
-	registerCollisionQueue(manager->collisions);
-	*/
-}
+	: rigidBody(doRegister(this, t)) { }
 
 rigidBodyCapsule::rigidBodyCapsule(regArgs t)
-	: rigidBody(doRegister(this, t))
-{
-	glm::vec3 position = t.ent->node->getTransformTRS().position;
-	/*
-	float radius = properties["radius"];
-	float height = properties["height"];
-
-	phys = manager->engine->phys->addCapsule(ent, position, 1.f, radius, height);
-	registerCollisionQueue(manager->collisions);
-	*/
-}
+	: rigidBody(doRegister(this, t)) { }
 
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;

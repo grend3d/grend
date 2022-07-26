@@ -121,7 +121,6 @@ void sceneModel::genAABBs(void) {
 
 void sceneModel::genTangents(void) {
 	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
-	unsigned mod = 3;
 
 	// generate tangents for each triangle
 	for (auto& [name, ptr] : nodes) {

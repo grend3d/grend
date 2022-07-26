@@ -151,12 +151,8 @@ class rigidBodySphere : public rigidBody {
 
 		static void deserializer(component *comp, nlohmann::json j) {
 			rigidBodySphere *body = static_cast<rigidBodySphere*>(comp);
-			entity *ent = comp->manager->getEntity(comp);
 
-			//body->position = ent->node->getTransformTRS().position;
-			//body->radius = j.contains("radius")? j["radius"].get<float>() : 1.f;
 			body->radius = tryGet(j, "radius", 1.f);
-			//body->radius = j.contains("radius")? j["radius"].get<float>() : 1.f;
 			body->activate(comp->manager, comp->manager->getEntity(comp));
 		}
 };

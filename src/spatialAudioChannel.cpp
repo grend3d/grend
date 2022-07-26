@@ -94,8 +94,6 @@ int16_t sma_rindex_interpolate(audioBuffer& buf, size_t pos,
 	return ((a * (1 - mix)) + (b * mix));
 }
 
-static uint32_t samples = 0;
-
 static const double sound_speed = 34027;
 static const double inch_to_cm  = 2.54;
 #define INCHES 2.54
@@ -213,7 +211,7 @@ spatialAudioChannel::getSample(camera::ptr cam) {
 		}
 	}
 
-	size_t p = audioPosition++;
+	audioPosition++;
 	float r = glm::distance(cam->position(), worldPosition);
 
 	// TODO: fine-tuned attenuation (can just do constant/linear/quad), volume

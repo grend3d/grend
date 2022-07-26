@@ -17,17 +17,6 @@ using namespace grendx;
 static char searchBuffer[0x1000] = "";
 static fileDialog export_entity_dialog("Export entity");
 
-static void drawSelectableLabel(const char *txt) {
-	if (ImGui::Selectable(txt)) {
-		if (*searchBuffer) {
-			// add a space if the search buffer already has contents
-			strncat(searchBuffer, " ", sizeof(searchBuffer) - 1);
-		}
-
-		strncat(searchBuffer, txt, sizeof(searchBuffer) - 1);
-	}
-}
-
 static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	static ImGuiTreeNodeFlags flags
 		= ImGuiTreeNodeFlags_DefaultOpen;
@@ -305,6 +294,17 @@ void gameEditor::entityListWindow(gameMain *game) {
 
 // leaving these here, since I'll probably need to reuse some bits of them
 #if 0
+static void drawSelectableLabel(const char *txt) {
+	if (ImGui::Selectable(txt)) {
+		if (*searchBuffer) {
+			// add a space if the search buffer already has contents
+			strncat(searchBuffer, " ", sizeof(searchBuffer) - 1);
+		}
+
+		strncat(searchBuffer, txt, sizeof(searchBuffer) - 1);
+	}
+}
+
 void gameEditor::entitySelectWindow(gameMain *game) {
 	auto entities  = game->services.resolve<ecs::entityManager>();
 	auto factories = game->services.resolve<ecs::serializer>();

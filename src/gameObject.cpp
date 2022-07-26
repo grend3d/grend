@@ -138,7 +138,7 @@ static animationCollection::ptr copyCollection(animationCollection::ptr anims) {
 
 template <typename T>
 static int indexOf(const std::vector<T>& vec, const T& value) {
-	for (int i = 0; i < vec.size(); i++) {
+	for (size_t i = 0; i < vec.size(); i++) {
 		if (vec[i] == value) {
 			return i;
 		}
@@ -315,7 +315,7 @@ static glm::mat4 lookup(std::map<sceneNode*, glm::mat4>& cache,
 }
 
 void sceneSkin::sync(Program::ptr program) { 
-	size_t numjoints = min(inverseBind.size(), 256);
+	size_t numjoints = min(inverseBind.size(), 256ul);
 
 	if (transforms.size() != inverseBind.size()) {
 		transforms.resize(inverseBind.size());

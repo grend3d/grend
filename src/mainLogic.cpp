@@ -1,3 +1,6 @@
+// TODO: this file is oooooold, only function it still serves is providing
+//       constructors/destructors for gameState, gameState itself is probably
+//       not worth keeping around
 #include <grend/gameState.hpp>
 #include <grend/geometryGeneration.hpp>
 
@@ -55,12 +58,6 @@ static std::pair<std::string, std::string> obj_models[] = {
 	{"Y-Axis-Rotation-Spinner", "assets/obj/UI/Y-Axis-Rotation-Spinner.obj"},
 	{"Z-Axis-Rotation-Spinner", "assets/obj/UI/Z-Axis-Rotation-Spinner.obj"},
 };
-
-static modelMap gen_internal_models(void) {
-	return {
-		{"unit_cube",        generate_cuboid(1, 1, 1)},
-	};
-}
 
 // TODO: should start thinking about splitting initialization into smaller functions
 gameState::gameState() {

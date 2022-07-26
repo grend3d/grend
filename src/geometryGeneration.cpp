@@ -20,8 +20,6 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 
 	unsigned xverts = width / unitsPerVert + 1;
 	unsigned yverts = height / unitsPerVert + 1;
-	float xinc = unitsPerVert / width;
-	float yinc = unitsPerVert / height;
 
 	for (unsigned k = 0; k < xverts; k++) {
 		for (unsigned j = 0; j < yverts; j++) {

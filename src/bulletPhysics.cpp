@@ -55,7 +55,8 @@ void bulletObject::setTransform(const TRS& transform) {
 
 	const auto& t = transform.position;
 	const auto& r = transform.rotation;
-	const auto& s = transform.scale;
+	// TODO: set scale
+	//const auto& s = transform.scale;
 
 	trans.setOrigin(btVector3(t.x, t.y, t.z));
 	trans.setRotation(btQuaternion(r.x, r.y, r.z, r.w));

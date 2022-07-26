@@ -59,7 +59,6 @@ static void mixCallback(void *userdata, uint8_t *stream, int len) {
 		return;
 	}
 
-	float div = 1.0 / 44100.0;
 	int16_t *s16strm = reinterpret_cast<int16_t*>(stream);
 
 	for (int i = 0; i < len/2; i += 2) {

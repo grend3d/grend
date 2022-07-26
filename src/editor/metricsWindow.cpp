@@ -9,7 +9,7 @@ using namespace grendx;
 void gameEditor::metricsWindow(gameMain *game) {
 	ImGui::Begin("Engine metrics", &showMetricsWindow);
 
-	std::pair<float, float> minmax = {0, 0}; // TODO: implementation
+	//std::pair<float, float> minmax = {0, 0}; // TODO: implementation
 	float fps = game->frame_timer.average();
 	std::string fpsStr =
 		std::to_string(fps) + " FPS "

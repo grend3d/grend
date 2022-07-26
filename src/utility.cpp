@@ -52,7 +52,8 @@ const std::string& demangle(const char *type) {
 		//return ret;
 	}
 
-	return "<invalid name>";
+	static std::string invalid_name = "<invalid name>";
+	return invalid_name;
 }
 
 const char *remangle(const std::string& demang) {

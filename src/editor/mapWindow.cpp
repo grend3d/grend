@@ -6,36 +6,6 @@
 
 using namespace grendx;
 
-// TODO: remove draw_indicator(), indicator drawing is in gameEditor now
-static void draw_indicator(gameMain *rend, glm::mat4 trans,
-                           glm::vec3 pos, glm::quat rot)
-{
-	static std::string ind[] = {
-		"X-Axis-Pointer",
-		"Y-Axis-Pointer",
-		"Z-Axis-Pointer",
-		"X-Axis-Rotation-Spinner",
-		"Y-Axis-Rotation-Spinner",
-		"Z-Axis-Rotation-Spinner",
-	};
-
-	glm::vec4 temp = trans * glm::vec4(1);
-	glm::vec3 tpos = glm::vec3(temp) / temp.z;
-
-	for (unsigned i = 0; i < 6; i++) {
-		/*
-		rend->draw_model((struct draw_attributes) {
-			.name = ind[i],
-			.transform =
-				glm::translate(pos)
-				* glm::mat4_cast(rot)
-				* glm::scale(glm::vec3(0.5)),
-			.dclass = {DRAWATTR_CLASS_UI, i},
-		});
-		*/
-	}
-}
-
 static const ImGuiTreeNodeFlags base_flags
 	= ImGuiTreeNodeFlags_OpenOnArrow
 	| ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -176,7 +146,6 @@ void gameEditor::mapWindow(gameMain *game) {
 		selectedNode = nullptr;
 	}
 
-	auto state = game->services.resolve<gameState>();
 	addnodes("Objects", root, selectedPath);
 	addnodes("Clipboard", clipboard, selectedPath);
 
