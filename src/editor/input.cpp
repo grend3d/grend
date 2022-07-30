@@ -2,6 +2,7 @@
 #include <grend/controllers.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/renderContext.hpp>
+#include <grend/scancodes.hpp>
 
 // XXX: for updateEntityTransforms()
 #include <grend/ecs/rigidBody.hpp>
@@ -238,7 +239,10 @@ void gameEditor::loadInputBindings(gameMain *game) {
 			int x, y;
 			Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
 
-			if (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) {
+			bool alt    = keyIsPressed(keyButton(SDL_SCANCODE_LALT));
+			bool middle = keyIsPressed(mouseButton(SDL_BUTTON_MIDDLE));
+
+			if (alt || middle) {
 				int win_x, win_y;
 				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
 
