@@ -42,8 +42,14 @@ gameEditor::gameEditor(gameMain *game)
 		game->settings.targetResX, game->settings.targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
-		{loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
-		                rend->globalShaderOptions)},
+		{
+#if 0
+		loadPostShader(GR_PREFIX "shaders/baked/deferred-metal-roughness-pbr.frag",
+		                rend->globalShaderOptions),
+#endif
+		loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
+		                rend->globalShaderOptions)
+		},
 		game->settings.targetResX, game->settings.targetResY));
 #endif
 
@@ -241,11 +247,8 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	// TODO: function to do this
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
-	// TODO: move this to input (on resize event)
-	//post->setSize(winsize_x, winsize_y);
-	post->setUniform("exposure", rend->exposure);
-	// TODO: need to do this in player views too
-	post->setUniform("time_ms", SDL_GetTicks() * 1.f);
+
+	setPostUniforms(post, game, cam);
 	post->draw(rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
