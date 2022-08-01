@@ -1,10 +1,13 @@
 #include <grend/sceneNode.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/renderUtils.hpp>
+#include <grend/logger.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/rigidBody.hpp>
 #include <grend/ecs/collision.hpp>
 #include <grend/ecs/serializer.hpp>
+
+#include <fmt/core.h>
 
 using namespace grendx;
 using namespace grendx::ecs;
@@ -14,7 +17,7 @@ abstractFactory::~abstractFactory() {};
 
 nlohmann::json serializer::serialize(entityManager *manager, entity *ent) {
 	for (auto [name, _] : factories) {
-		std::cout << "got a " << name << std::endl;
+		LogFmt("got a {}", name);
 	}
 	using namespace nlohmann;
 
@@ -49,7 +52,7 @@ nlohmann::json serializer::serialize(entityManager *manager, entity *ent) {
 		const std::string& demangled = demangle(subtype);
 
 		if (has(demangled)) {
-			std::cout << "got here, serializing a " << demangled << std::endl;
+			LogFmt("got here, serializing a {}", demangled);
 			json temp = serializers[demangled](ent);
 
 			if (!temp.empty()) {
@@ -87,7 +90,7 @@ entity *serializer::build(entityManager *manager, json serialized)
 
 	// TODO: exception handling
 	std::string typestr = enttype->get<std::string>();
-	SDL_Log("Build entity: %s", typestr.c_str());
+	LogFmt("Build entity: {}", typestr);
 
 	entity *ret = nullptr;
 
@@ -129,14 +132,13 @@ component *serializer::build(entityManager *manager,
 
 	// unmangled name stored in serialized form
 	std::string type = serialized[0].get<std::string>();
-	SDL_Log("Attempting to add component %s to entity %p...",
-	        type.c_str(), ent);
+	LogFmt("Attempting to add component {} to entity {}...", type, (void*)ent);
 
 	if (!has(type)) {
 		return nullptr;
 	}
 
-	SDL_Log("Found component type %s", type.c_str());
+	LogFmt("Found component type {}", type);
 
 	component *ret = factories[type]->allocate(manager, ent);
 	/*

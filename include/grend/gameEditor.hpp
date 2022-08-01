@@ -14,6 +14,7 @@
 #include <grend/gameView.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/TRS.hpp>
+#include <grend/logger.hpp>
 
 #include <grend/ecs/ecs.hpp>
 
@@ -142,6 +143,7 @@ class gameEditor : public gameView {
 		void metricsWindow(gameMain *game);
 		void profilerWindow(gameMain *game);
 		void settingsWindow(gameMain *game);
+		void logWindow(gameMain *game);
 
 		// populates map object tree
 		void addnodes(std::string name,
@@ -162,6 +164,9 @@ class gameEditor : public gameView {
 		// TODO: utility function, should be move somewhere else
 		sceneNode::ptr getNonModel(sceneNode::ptr obj);
 
+		// list of log messages
+		std::list<std::string> logEntries;
+
 		std::vector<editCallback> callbacks;
 		std::vector<std::pair<uint32_t, ecs::entity*>> clickState;
 
@@ -175,6 +180,8 @@ class gameEditor : public gameView {
 		bool showProfilerWindow = false;
 		bool showMetricsWindow = true;
 		bool showSettingsWindow = false;
+		bool showLogWindow = true;
+
 		bool showProbes = true;
 		bool showLights = true;
 

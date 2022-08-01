@@ -13,3 +13,6 @@
 [submodule "libs/parserlib"]
 	path = libs/parserlib
 	url = https://github.com/mushrom/cpp-parser-combinators.git
+[submodule "libs/fmt"]
+	path = libs/fmt
+	url = https://github.com/fmtlib/fmt

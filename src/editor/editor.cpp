@@ -30,6 +30,10 @@ gameEditor::gameEditor(gameMain *game)
 {
 	auto rend = game->services.resolve<renderContext>();
 
+	LogCallback([this] (LogType type, const std::string& msg) {
+		this->logEntries.push_back(msg);
+	});
+
 	objects = sceneNode::ptr(new sceneNode());
 	cam->setFar(1000.0);
 
@@ -782,6 +786,7 @@ void gameEditor::renderEditor(gameMain *game) {
 
 	if (showEntityEditorWindow) entityEditorWindow(game);
 	if (showEntityListWindow)   entityListWindow(game);
+	if (showLogWindow)          logWindow(game);
 
 	if (selectedNode && showObjectEditorWindow)
 		objectEditorWindow(game);
