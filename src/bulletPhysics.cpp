@@ -3,6 +3,7 @@
 #ifdef PHYSICS_BULLET
 #include <grend/physics.hpp>
 #include <grend/bulletPhysics.hpp>
+#include <grend/logger.hpp>
 //#include "btBulletDynamicsCommon.h"
 
 using namespace grendx;
@@ -43,7 +44,7 @@ void bulletObject::removeSelf(void) {
 		runtime->remove(this);
 
 	} else {
-		SDL_Log("NOTE: have bullet physics object with no associated runtime, probably a bug");
+		LogInfo("NOTE: have bullet physics object with no associated runtime, probably a bug");
 	}
 }
 
@@ -337,8 +338,8 @@ bulletPhysics::addStaticMesh(void *data,
 	std::lock_guard<std::mutex> lock(bulletMutex);
 
 	if (mesh->faces.size() / 3 == 0) {
-		std::cerr << "WARNING: bulletPhysics::addStaticMesh(): "
-			<< "can't add mesh with no elements" << std::endl;
+		LogError("WARNING: bulletPhysics::addStaticMesh(): "
+		         "can't add mesh with no elements");
 		return nullptr;
 	}
 
@@ -392,10 +393,10 @@ void bulletPhysics::remove(physicsObject::ptr obj) {
 	std::lock_guard<std::mutex> lock(bulletMutex);
 
 	bulletObject::ptr bobj = std::dynamic_pointer_cast<bulletObject>(obj);
-	std::cerr << "remove(): got here, removing an object" << std::endl;
+	LogInfo("remove(): got here, removing an object");
 
 	if (bobj) {
-		std::cerr << "remove(): really removing" << std::endl;
+		LogInfo("remove(): really removing");
 		remove(bobj.get());
 	}
 }

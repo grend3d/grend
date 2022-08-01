@@ -69,12 +69,9 @@ void renderQueue::add(sceneNode::ptr obj,
 
 	} else {
 		for (auto& [name, ptr] : obj->nodes) {
-			//std::cerr << "add(): subnode " << name << std::endl;
 			add(ptr, renderID, adjTrans, inverted);
 		}
 	}
-
-	//std::cerr << "add(): pop" << std::endl;
 }
 
 void renderQueue::add(renderQueue& other) {
@@ -711,7 +708,6 @@ static void drawBillboards(const renderOptions& flags,
 	bindVao(mesh->comped_mesh->vao);
 
 #if GLSL_VERSION >= 140
-	//SDL_Log("Drawing billboard mesh... %u instances", particles->activeInstances);
 	particles->syncBuffer();
 	program->setUniformBlock("billboardPositions", particles->ubuffer,
 	                         UBO_INSTANCE_TRANSFORMS);
@@ -1332,7 +1328,7 @@ void grendx::shaderSync(Program::ptr program,
 	if (rctx->lightingMode == renderContext::lightingModes::Clustered) {
 		// TODO: implement
 		// TODO: function to set mode
-		SDL_Log("TODO: clustered light array");
+		//LogInfo("TODO: clustered light array");
 	}
 
 	else if (rctx->lightingMode == renderContext::lightingModes::Tiled) {

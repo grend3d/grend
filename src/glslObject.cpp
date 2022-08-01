@@ -3,6 +3,7 @@
 
 #include <grend/glslObject.hpp>
 #include <grend/sdlContext.hpp>
+#include <grend/logger.hpp>
 
 using namespace grendx;
 using namespace p_comb;
@@ -44,7 +45,7 @@ void collectInitDeclContinued(glslObject& obj, container& token);
 void collectSingleDeclaration(glslObject& obj, container& token);
 
 void collectExternDecl(glslObject& obj, container& tokens) {
-	SDL_Log("collectExternDecl(): got here");
+	LogInfo("collectExternDecl(): got here");
 	for (auto tok : tokens) {
 		if (tok.tag == "declaration") {
 			collectDecl(obj, tok.subtokens);
@@ -56,7 +57,7 @@ void collectExternDecl(glslObject& obj, container& tokens) {
 }
 
 void collectDecl(glslObject& obj, container& tokens) {
-	SDL_Log("collectDecl(): got here");
+	LogInfo("collectDecl(): got here");
 
 	for (auto tok : tokens) {
 		if (tok.tag == "declaration_init_decl_list") {
@@ -66,7 +67,7 @@ void collectDecl(glslObject& obj, container& tokens) {
 }
 
 void collectDeclInitList(glslObject& obj, container& tokens) {
-	SDL_Log("collectDeclInitList(): got here");
+	LogInfo("collectDeclInitList(): got here");
 
 	if (tokens.empty()) {
 		throw std::logic_error("empty list");
@@ -85,7 +86,7 @@ void collectDeclInitList(glslObject& obj, container& tokens) {
 	auto& firstdec = sub[0].subtokens;
 	auto& typespec = firstdec[0].subtokens;
 
-	SDL_Log("have type specifier: ");
+	LogInfo("have type specifier: ");
 	dump_tokens_tree(typespec);
 
 	for (auto tok : sub) {
@@ -102,9 +103,9 @@ void collectDeclInitList(glslObject& obj, container& tokens) {
 }
 
 void collectSingleDeclaration(glslObject& obj, container& tokens) {
-	SDL_Log("collectSingleDeclaration(): got here");
+	LogInfo("collectSingleDeclaration(): got here");
 	if (tokens.size() < 2) {
-		SDL_Log("Have declaration with no name? ignoring");
+		LogInfo("Have declaration with no name? ignoring");
 		return;
 	}
 
@@ -112,11 +113,11 @@ void collectSingleDeclaration(glslObject& obj, container& tokens) {
 	auto& identifier = tokens[1];
 
 	std::string name = collectStrs(identifier.subtokens);
-	SDL_Log("Have declaration with name: '%s'", name.c_str());
+	LogFmt("Have declaration with name: '{}'", name);
 }
 
 void collectInitDeclContinued(glslObject& obj, container& tokens) {
-	SDL_Log("collectInitDeclContinued(): got here");
+	LogInfo("collectInitDeclContinued(): got here");
 
 	if (tokens.size() < 2) {
 		// TODO: rename
@@ -125,11 +126,11 @@ void collectInitDeclContinued(glslObject& obj, container& tokens) {
 
 	auto& identifier = tokens[1];
 	std::string name = collectStrs(identifier.subtokens);
-	SDL_Log("Have another declaration with name: '%s'", name.c_str());
+	LogFmt("Have another declaration with name: '{}'", name);
 }
 
 void collectFuncDef(glslObject& obj, container& tokens) {
-	SDL_Log("collectFuncDef(): got here");
+	LogInfo("collectFuncDef(): got here");
 
 	if (tokens.size() < 2) {
 		throw std::logic_error("function definition is too small!");
@@ -142,9 +143,10 @@ void collectFuncDef(glslObject& obj, container& tokens) {
 }
 
 void collectTranslationUnit(glslObject& obj, container& tokens) {
-	SDL_Log("collectTranslationUnit(): got here");
+	LogInfo("collectTranslationUnit(): got here");
 	for (auto tok : tokens) {
-		std::cout << tok.tag << std::endl;
+		LogInfo(tok.tag);
+
 		if (tok.tag == "external_declaration") {
 			collectExternDecl(obj, tok.subtokens);
 		}
@@ -152,7 +154,7 @@ void collectTranslationUnit(glslObject& obj, container& tokens) {
 }
 
 void collectTokens(glslObject& obj, container& tokens) {
-	SDL_Log("collectTokens(): got here");
+	LogInfo("collectTokens(): got here");
 	for (auto tok : tokens) {
 		if (tok.tag == "translation_unit") {
 			collectTranslationUnit(obj, tok.subtokens);

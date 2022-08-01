@@ -4,6 +4,7 @@
 #include <grend/utility.hpp>
 #include <grend/glslParser.hpp>
 #include <grend/glslObject.hpp>
+#include <grend/logger.hpp>
 
 #include <string>
 #include <vector>
@@ -19,7 +20,7 @@ Shader::Shader(GLuint o)
 	: Obj(o, Obj::type::Shader) { }
 
 bool Shader::load(std::string filename, const Shader::parameters& options) {
-	SDL_Log("loading shader: %s", filename.c_str());
+	LogFmt("loading shader: {}", filename);
 
 	std::string source    = load_file(filename);
 	std::string processed = preprocessShader(source, options);
@@ -28,7 +29,7 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 	int compiled;
 
 	if (source.empty()) {
-		SDL_Log("%s: Source file is empty, couldn't load!", filename.c_str());
+		LogFmt("{}: Source file is empty, couldn't load!", filename);
 		return false;
 	}
 
@@ -39,14 +40,14 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 
 		/*
 		if (!t.empty()) {
-			SDL_Log("Parsed shader successfully");
+			LogInfo("Parsed shader successfully");
 		} else {
-			SDL_Log("Couldn't parse shader.");
+			LogInfo("Couldn't parse shader.");
 		}
 		*/
 
 	} catch (std::exception& e) {
-		SDL_Log("Exception, couldn't parse shader: %s", e.what());
+		LogErrorFmt("Exception, couldn't parse shader: {}", e.what());
 	}
 
 	glShaderSource(obj, 1, (const GLchar**)&temp, 0);
@@ -62,11 +63,11 @@ bool Shader::load(std::string filename, const Shader::parameters& options) {
 		shader_log = new char[max_length];
 		glGetShaderInfoLog(obj, max_length, &max_length, shader_log);
 
-		SDL_Log("BIGERROR: compiliing the processed shader: ");
-		SDL_Log("@ %s", filename.c_str());
-		SDL_Log("%s", shader_log);
-		SDL_Log("SOURCE: ----------------------------------");
-		SDL_Log("%s", processed.c_str());
+		LogErrorFmt("BIGERROR: compiliing the processed shader: ");
+		LogErrorFmt("@ {}", filename);
+		LogErrorFmt("{}", shader_log);
+		LogErrorFmt("SOURCE: ----------------------------------");
+		LogErrorFmt("{}", processed);
 
 	} else {
 		// only store this if the shader is in a good state
@@ -123,7 +124,7 @@ bool Program::link(void) {
 
 	if (!linked) {
 		std::string err = (std::string)"error linking program: " + log();
-		SDL_Log("%s", err.c_str());
+		LogErrorFmt("{}", err);
 	}
 
 	return linked;
@@ -220,37 +221,30 @@ bool Program::set(std::string uniform, Shader::value val) {
 	DO_ERROR_CHECK();
 
 	if (std::holds_alternative<GLint>(val)) {
-		//SDL_Log("Setting %s to int: %d", uniform.c_str(), std::get<GLint>(val));
 		glUniform1i(u, std::get<GLint>(val));
 	}
 
 	else if (std::holds_alternative<GLfloat>(val)) {
-		//SDL_Log("Setting %s to float: %g", uniform.c_str(), std::get<GLfloat>(val));
 		glUniform1f(u, std::get<GLfloat>(val));
 	}
 
 	else if (std::holds_alternative<glm::vec2>(val)) {
-		//SDL_Log("Setting %s to vec2", uniform.c_str());
 		glUniform2fv(u, 1, glm::value_ptr(std::get<glm::vec2>(val)));
 	}
 
 	else if (std::holds_alternative<glm::vec3>(val)) {
-		//SDL_Log("Setting %s to vec3", uniform.c_str());
 		glUniform3fv(u, 1, glm::value_ptr(std::get<glm::vec3>(val)));
 	}
 
 	else if (std::holds_alternative<glm::vec4>(val)) {
-		//SDL_Log("Setting %s to vec4", uniform.c_str());
 		glUniform4fv(u, 1, glm::value_ptr(std::get<glm::vec4>(val)));
 	}
 
 	else if (std::holds_alternative<glm::mat3>(val)) {
-		//SDL_Log("Setting %s to mat3", uniform.c_str());
 		glUniformMatrix3fv(u, 1, GL_FALSE, glm::value_ptr(std::get<glm::mat3>(val)));
 	}
 
 	else if (std::holds_alternative<glm::mat4>(val)) {
-		//SDL_Log("Setting %s to mat4", uniform.c_str());
 		glUniformMatrix4fv(u, 1, GL_FALSE, glm::value_ptr(std::get<glm::mat4>(val)));
 	}
 
@@ -315,11 +309,11 @@ GLuint Program::lookupUniformBlock(std::string name) {
 			GLint foo;
 			glGetActiveUniformBlockiv(obj, temp, GL_UNIFORM_BLOCK_DATA_SIZE, &foo);
 
-			SDL_Log("UBO at %u (%s) has block data size of %d", temp, name.c_str(), foo);
+			LogFmt("UBO at {} ({}) has block data size of {}", temp, name, foo);
 			return temp;
 
 		} else {
-			SDL_Log("Could not find uniform block index for %s", name.c_str());
+			LogFmt("Could not find uniform block index for {}", name);
 			return temp;
 		}
 	}

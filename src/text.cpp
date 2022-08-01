@@ -66,7 +66,6 @@ void text_renderer::render(glm::vec3 pos,
 
 	if (surf == nullptr) {
 		// TODO: signal error somehow
-		std::cerr << __func__ << "couldn't render text" << std::endl;
 		return;
 	}
 

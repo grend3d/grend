@@ -3,6 +3,7 @@
 #include <grend/utility.hpp>
 #include <grend/textureAtlas.hpp>
 #include <grend/timers.hpp>
+#include <grend/logger.hpp>
 
 using namespace grendx;
 
@@ -73,9 +74,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	//       still a problem after culling by radius
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap[i])) {
-			std::cerr
-				<< "drawShadowCubeMap(): couldn't bind shadow framebuffer"
-				<< std::endl;
+			LogError("drawShadowCubeMap(): couldn't bind shadow framebuffer");
 			continue;
 		}
 
@@ -143,9 +142,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 	opts.features |= renderOptions::Shadowmap;
 
 	if (!rctx->atlases.shadows->bind_atlas_fb(light->shadowmap)) {
-		std::cerr
-			<< "drawSpotlightShadow(): couldn't bind shadow framebuffer"
-			<< std::endl;
+		LogError("drawSpotlightShadow(): couldn't bind shadow framebuffer");
 		return;
 	}
 	profile::endGroup();
@@ -190,7 +187,7 @@ static void convoluteReflectionProbeMips(sceneReflectionProbe::ptr probe,
 	Program::ptr convolve = rctx->postShaders["specular-convolve"];
 	convolve->bind();
 
-	std::cout << "convolve level " << level << std::endl;
+	LogFmt("convolve level ", level);
 
 	glActiveTexture(TEX_GL_REFLECTIONS);
 	rctx->atlases.reflections->color_tex->bind();
@@ -216,9 +213,7 @@ static void convoluteReflectionProbeMips(sceneReflectionProbe::ptr probe,
 			rctx->atlases.reflections->tree.info(probe->faces[0][i]);
 
 		if (!rctx->atlases.irradiance->bind_atlas_fb(probe->faces[level][i])) {
-			std::cerr
-				<< "convoluteReflectionProbeMips(): couldn't bind probe framebuffer"
-				<< std::endl;
+			LogError("convoluteReflectionProbeMips(): couldn't bind probe framebuffer");
 			continue;
 		}
 
@@ -286,9 +281,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 
 	for (unsigned i = 0; i < 6; i++) {
 		if (!rctx->atlases.reflections->bind_atlas_fb(probe->faces[0][i])) {
-			std::cerr
-				<< "drawReflectionProbe(): couldn't bind probe framebuffer"
-				<< std::endl;
+			LogError("drawReflectionProbe(): couldn't bind probe framebuffer");
 			continue;
 		}
 
@@ -362,9 +355,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
 			rctx->atlases.reflections->tree.info(probe->source->faces[0][i]);
 
 		if (!rctx->atlases.irradiance->bind_atlas_fb(probe->faces[i])) {
-			std::cerr
-				<< "drawIrradianceProbe(): couldn't bind probe framebuffer"
-				<< std::endl;
+			LogError("drawIrradianceProbe(): couldn't bind probe framebuffer");
 			continue;
 		}
 

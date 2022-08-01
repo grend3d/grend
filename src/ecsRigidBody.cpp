@@ -6,7 +6,6 @@ namespace grendx::ecs {
 transformUpdatable::~transformUpdatable() {};
 // key functions for rtti
 rigidBody::~rigidBody() {
-	//std::cerr << "got to ~rigidBody()" << std::endl;
 	//phys = nullptr;
 	phys.reset();
 };
@@ -125,7 +124,6 @@ void updateEntityTransforms(entityManager *manager,
 		transformUpdatable *updater = dynamic_cast<transformUpdatable*>(comp);
 
 		if (updater) {
-			std::cerr << "got here, updated transform" << std::endl;
 			updater->setTransform(transform);
 		}
 	}

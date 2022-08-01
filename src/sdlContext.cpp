@@ -1,4 +1,6 @@
 #include <grend/sdlContext.hpp>
+#include <grend/logger.hpp>
+
 #include <stdexcept>
 #include <iostream>
 
@@ -10,7 +12,7 @@
 namespace grendx {
 
 void SDL_Die(const char *message) {
-	SDL_Log("SDL_Die(): %s", message);
+	LogErrorFmt("SDL_Die(): {}", message);
 	SDL_Quit();
 	throw std::logic_error(message);
 }
@@ -30,7 +32,7 @@ static void callbackStub(void *userdata, uint8_t *stream, int len) {
 }
 
 context::context(const char *progname, const renderSettings& settings) {
-	SDL_Log("got to context::context()");
+	LogInfo("got to context::context()");
 	int flags
 		= SDL_INIT_VIDEO
 		| SDL_INIT_AUDIO
@@ -90,7 +92,7 @@ context::context(const char *progname, const renderSettings& settings) {
 
 
 	glcontext = SDL_GL_CreateContext(window);
-	SDL_Log("have window + gl context");
+	LogInfo("have window + gl context");
 
 	// apply settings after creating a GL context
 	applySettings(settings);
@@ -104,8 +106,8 @@ context::context(const char *progname, const renderSettings& settings) {
 	bool full = emscripten_webgl_enable_extension(webgl, "EXT_color_buffer_float");
 	bool nonsense = emscripten_webgl_enable_extension(webgl, "GL_OES_nonsense");
 
-	SDL_Log("Have context: %d", webgl);
-	SDL_Log("Extensions enabled: half float: %d, float: %d, nonsense: %d",
+	LogFmt("Have context: {}", webgl);
+	LogFmt("Extensions enabled: half float: {}, float: {}, nonsense: {}",
 	        half, full, nonsense);
 #endif
 
@@ -117,7 +119,7 @@ context::context(const char *progname, const renderSettings& settings) {
 		//       if not supported
 	}
 
-	SDL_Log("initialized glew");
+	LogInfo("initialized glew");
 #endif
 
 	SDL_AudioSpec want;
@@ -138,11 +140,11 @@ context::context(const char *progname, const renderSettings& settings) {
 		SDL_PauseAudioDevice(audioOut, 0);
 	}
 
-	SDL_Log("Finished initializing SDL");
+	LogInfo("Finished initializing SDL");
 }
 
 context::~context() {
-	SDL_Log("SDL done, cleaning up...");
+	LogInfo("SDL done, cleaning up...");
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
 	SDL_CloseAudioDevice(audioOut);
@@ -164,7 +166,7 @@ void context::applySettings(const renderSettings& settings) {
 			//       or let the user select the desktop
 			int count = SDL_GetNumDisplayModes(0);
 			if (count < 0) {
-				SDL_Log("SDL_GetNumDisplayModes() failed...");
+				LogInfo("SDL_GetNumDisplayModes() failed...");
 				return;
 			}
 
@@ -176,15 +178,15 @@ void context::applySettings(const renderSettings& settings) {
 
 			for (int i = 0; i < count; i++) {
 				if (SDL_GetDisplayMode(0, i, &mode) != 0) {
-					SDL_Log("SDL_GetDisplayMode() failed...");
+					LogInfo("SDL_GetDisplayMode() failed...");
 					return;
 				}
 
 				uint32_t f = mode.format;
 
-				SDL_Log("Mode %d\tbpp: %d\t%s\t%dx%d",
-						i, SDL_BITSPERPIXEL(f), SDL_GetPixelFormatName(f),
-						mode.w, mode.h);
+				LogFmt("Mode {}\tbpp: {}\t{}\t{}x{}",
+				       i, SDL_BITSPERPIXEL(f), SDL_GetPixelFormatName(f),
+				       mode.w, mode.h);
 
 				if (mode.w > best.w && SDL_BITSPERPIXEL(f) >= bestbpp) {
 					best = mode;
@@ -200,7 +202,7 @@ void context::applySettings(const renderSettings& settings) {
 				SDL_SetWindowSize(window, mode.w, mode.h);
 
 			} else {
-				SDL_Log("SDL_GetDesktopDisplayMode() failed, defaulting to 1080p");
+				LogInfo("SDL_GetDesktopDisplayMode() failed, defaulting to 1080p");
 				SDL_SetWindowSize(window, 1920, 1080);
 			}
 		}
@@ -209,7 +211,7 @@ void context::applySettings(const renderSettings& settings) {
 		SDL_SetWindowSize(window, settings.windowResX, settings.windowResY);
 	}
 
-	SDL_Log("SDL: finished applying settings");
+	LogInfo("SDL: finished applying settings");
 	/*
 	SDL_ShowCursor(SDL_DISABLE);
 	*/

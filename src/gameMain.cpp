@@ -3,6 +3,7 @@
 #include <grend/gameMain.hpp>
 #include <grend/timers.hpp>
 #include <grend/scancodes.hpp>
+#include <grend/logger.hpp>
 
 #include <grend/gameState.hpp>
 #include <grend/engine.hpp>    // TODO: rename to renderer.h
@@ -65,7 +66,7 @@ gameMain::gameMain(const std::string& name, const renderSettings& _settings)
 	services.bind<ecs::entityManager, ecs::entityManager>(this);
 	services.bind<ecs::serializer,    ecs::serializer>();
 
-	SDL_Log("gameMain() finished");
+	LogInfo("gameMain() finished");
 }
 
 void gameMain::applySettings(const renderSettings& newSettings) {
@@ -98,7 +99,7 @@ int gameMain::step(void) {
 		updateKeyStates(fticks);
 
 		if (view == nullptr) {
-			SDL_Log(
+			LogError(
 				"ERROR: no view defined, you must set a view controller "
 				"with gameMain::setView()"
 			);
@@ -129,7 +130,7 @@ int gameMain::step(void) {
 			}
 
 			if (ticks - start >= maxTime) {
-				SDL_Log("Exceeded time limit for deferred job!");
+				LogError("Exceeded time limit for deferred job!");
 			}
 
 			// left here for debugging, just in case

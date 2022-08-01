@@ -1,6 +1,7 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/search.hpp>
 #include <grend/ecs/sceneComponent.hpp>
+#include <grend/logger.hpp>
 
 namespace grendx::ecs {
 
@@ -78,7 +79,7 @@ void entityManager::update(float delta) {
 			u->update(this, delta);
 
 		} else {
-			SDL_Log("(%s) Invalid updater!", e->typeString());
+			LogFmt("({}) Invalid updater!", e->typeString());
 		}
 	}
 
@@ -122,7 +123,7 @@ void entityManager::add(entity *ent) {
 	}
 
 	// TODO: toggleable messages
-	//SDL_Log("Adding entity %s", ent->typeString());
+	//LogFmt("Adding entity {}", ent->typeString());
 	//setNode("entity["+std::to_string((uintptr_t)ent)+"]", root, ent->getNode());
 	entities.insert(ent);
 	added.insert(ent);
@@ -149,7 +150,7 @@ void entityManager::activate(entity *ent) {
 		if (act) {
 			act->activate(this, ent);
 		} else {
-			SDL_Log("(%s) Invalid activator!", ent->typeString());
+			LogFmt("({}) Invalid activator!", ent->typeString());
 		}
 	}
 }
@@ -168,7 +169,7 @@ void entityManager::deactivate(entity *ent) {
 			act->deactivate(this, ent);
 
 		} else {
-			SDL_Log("(%s) Invalid activator", ent->typeString());
+			LogFmt("({}) Invalid activator", ent->typeString());
 		}
 	}
 }
@@ -211,7 +212,7 @@ void entityManager::freeEntity(entity *ent) {
 			// entities get a self-referential entity and base component,
 			// need to check for that
 			if (sub != ent) {
-				SDL_Log("entity has subentity, deleting that too");
+				LogFmt("entity has subentity, deleting that too");
 				remove(sub);
 			}
 		}
@@ -336,7 +337,7 @@ regArgs entityManager::registerComponent(const char *name,
                                          const regArgs& t)
 {
 	// TODO: toggleable messages
-	//SDL_Log("registering component '%s' for %p", demangle(name).c_str(), ptr);
+	//LogFmt("registering component '{}' for {}", demangle(name), (void*)ptr);
 
 	entity *ent = t.ent;
 
@@ -360,8 +361,8 @@ void entityManager::registerInterface(entity *ent,
 
 #if 0 && GREND_BUILD_DEBUG
 	if ((root = dynamic_cast<component*>(ptr)) == nullptr) {
-		SDL_Log("Invalid interface, should be a base of a derived component!");
-		SDL_Log("(as in, define a component that inherits from the interface)");
+		LogFmt("Invalid interface, should be a base of a derived component!");
+		LogFmt("(as in, define a component that inherits from the interface)");
 		return;
 	}
 #else
@@ -507,8 +508,6 @@ nlohmann::json entity::serializer(component *comp) {
 
 void entity::deserializer(component *comp, nlohmann::json j) {
 	entity *ent = static_cast<entity*>(comp);
-
-	std::cout << "Got here! setting transform" << std::endl;
 
 	auto& t = j["position"];
 	auto& r = j["rotation"];

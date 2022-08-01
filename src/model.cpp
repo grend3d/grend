@@ -1,5 +1,6 @@
 #include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
@@ -22,8 +23,6 @@ sceneMesh::~sceneMesh() {};
 sceneModel::~sceneModel() {};
 
 void sceneModel::genNormals(void) {
-	std::cerr << " > generating new normals... " << vertices.size() << std::endl;
-
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
@@ -42,7 +41,7 @@ void sceneModel::genNormals(void) {
 			 || elms[1] >= vertices.size()
 			 || elms[2] >= vertices.size())
 			{
-				std::cerr << " > invalid face index! (genNormals())" << std::endl;
+				LogError(" > invalid face index! (genNormals())");
 				break;
 			}
 
@@ -59,8 +58,6 @@ void sceneModel::genNormals(void) {
 }
 
 void sceneModel::genTexcoords(void) {
-	std::cerr << " > generating new texcoords... " << vertices.size() << std::endl;
-
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
@@ -72,7 +69,7 @@ void sceneModel::genTexcoords(void) {
 			GLuint elm = mesh->faces[i];
 
 			if (elm >= vertices.size()) {
-				std::cerr << " > invalid face index! (genTexcoords())" << std::endl;
+				LogError(" > invalid face index! (genTexcoords())");
 				continue;
 			}
 
@@ -83,8 +80,6 @@ void sceneModel::genTexcoords(void) {
 }
 
 void sceneModel::genAABBs(void) {
-	std::cerr << " > generating axis-aligned bounding boxes..." << std::endl;
-
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
@@ -92,7 +87,7 @@ void sceneModel::genAABBs(void) {
 		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		if (mesh->faces.size() == 0) {
-			std::cerr << " > have face with no vertices...?" << std::endl;
+			LogError(" > have face with no vertices...?");
 			continue;
 		}
 
@@ -106,7 +101,7 @@ void sceneModel::genAABBs(void) {
 			GLuint elm = mesh->faces[i];
 
 			if (elm >= vertices.size()) {
-				std::cerr << " > invalid face index! (genAABBs())" << std::endl;
+				LogError(" > invalid face index! (genAABBs())");
 				continue;
 			}
 
@@ -120,8 +115,6 @@ void sceneModel::genAABBs(void) {
 }
 
 void sceneModel::genTangents(void) {
-	std::cerr << " > generating tangents... " << vertices.size() << std::endl;
-
 	// generate tangents for each triangle
 	for (auto& [name, ptr] : nodes) {
 		if (ptr->type != sceneNode::objType::Mesh) {
@@ -137,7 +130,7 @@ void sceneModel::genTangents(void) {
 			 || elms[1] >= vertices.size()
 			 || elms[2] >= vertices.size())
 			{
-				std::cerr << " > invalid face index! (genTangents())" << std::endl;
+				LogError(" > invalid face index! (genTangents())");
 				break;
 			}
 

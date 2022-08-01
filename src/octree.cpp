@@ -1,4 +1,6 @@
 #include <grend/octree.hpp>
+#include <grend/logger.hpp>
+
 #include <math.h>
 #include <algorithm>
 #include <utility>
@@ -157,8 +159,7 @@ void octree::add_model(sceneModel::ptr mod, glm::mat4 transform) {
 			 || mesh->faces[i+1] > verts.size()
 			 || mesh->faces[i+2] > verts.size())
 			{
-				std::cerr << " > Invalid face index! (octree::add_model)"
-					<< std::endl;
+				LogError(" > Invalid face index! (octree::add_model)");
 				break;
 			}
 

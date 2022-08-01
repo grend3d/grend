@@ -1,5 +1,6 @@
 #include <grend/modalSDLInput.hpp>
 #include <grend/sdlContext.hpp>
+#include <grend/logger.hpp>
 #include <iostream>
 
 using namespace grendx;
@@ -36,8 +37,7 @@ void modalSDLInput::popMode(void) {
 
 bool modalSDLInput::sanityCheck(void) {
 	if (bindings.find(mode) == bindings.end()) {
-		std::cerr << "modalSDLInput::sanityCheck(): mode '"
-			+ std::to_string(mode) + "' doesn't have any bindings!" << std::endl;
+		LogWarnFmt("modalSDLInput: mode '{}' doesn't have any bindings", mode);
 		return false;
 	}
 

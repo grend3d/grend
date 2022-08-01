@@ -29,7 +29,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	auto entities  = game->services.resolve<ecs::entityManager>();
 
 	if (open_dialog.promptFilename()) {
-		std::cout << "Opening a file here! at " << open_dialog.selection <<  std::endl;
+		LogFmt("Opening a file here! at {}", open_dialog.selection);
 		open_dialog.clear();
 
 		if (auto node = loadMapCompiled(open_dialog.selection)) {
@@ -39,7 +39,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 
 	if (save_as_dialog.promptFilename()) {
-		std::cout << "Saving as a file! at " << save_as_dialog.selection << std::endl;
+		LogFmt("Saving as a file! at {}", save_as_dialog.selection);
 
 		// TODO: some way to save a subnode as it's own map
 		//saveMap(game, editor->selectedNode, save_as_dialog.selection);
@@ -48,8 +48,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 
 	if (import_model_dialog.promptFilename()) {
-		std::cout << "Importing a thing! at "
-		          << import_model_dialog.selection << std::endl;
+		LogFmt("Importing a thing! at {}", import_model_dialog.selection);
 		import_model_dialog.clear();
 
 		if (auto res = loadModel(import_model_dialog.selection)) {
@@ -61,8 +60,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 
 	if (import_scene_dialog.promptFilename()) {
-		std::cout << "Importing a scene! at "
-		          << import_scene_dialog.selection << std::endl;
+		LogFmt("Importing a scene! at {}", import_scene_dialog.selection);
 		import_scene_dialog.clear();
 
 		if (auto res = loadSceneCompiled(import_scene_dialog.selection)) {
@@ -73,8 +71,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 
 	if (import_map_dialog.promptFilename()) {
-		std::cout << "Importing a map! at "
-		          << import_map_dialog.selection << std::endl;
+		LogFmt("Importing a map! at {}", import_map_dialog.selection);
 		import_map_dialog.clear();
 
 		if (auto res = loadMapCompiled(import_map_dialog.selection)) {
@@ -86,7 +83,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 
 	if (load_entity_dialog.promptFilename()) {
 		const auto& name = load_entity_dialog.selection;
-		std::cerr << "Importing an entity! at " << name << std::endl;
+		LogFmt("Importing an entity! at {}", name);
 
 		std::ifstream in(name);
 
@@ -101,7 +98,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 
 		} else {
 			// TODO: errors need to be message boxes
-			std::cerr << "Invalid filename." << std::endl;
+			LogErrorFmt("Invalid filename. ({})", name);
 		}
 	}
 }

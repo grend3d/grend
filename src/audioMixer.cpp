@@ -1,6 +1,7 @@
 #include <grend/audioMixer.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 #include <stdint.h>
 
 using namespace grendx;
@@ -132,7 +133,7 @@ channelBuffers_ptr grendx::openAudio(std::string filename) {
 	int16_t *ibuf;
 	int len = stb_vorbis_decode_filename(filename.c_str(), &channels, &rate, &ibuf);
 
-	SDL_Log("%s: loading audio: %d, %d, %d\n", filename.c_str(), len, channels, rate);
+	LogFmt("{}: loading audio: {}, {}, {}\n", filename.c_str(), len, channels, rate);
 
 	if (len > 0 && channels > 0) {
 		auto ret = std::make_shared<channelBuffers>();

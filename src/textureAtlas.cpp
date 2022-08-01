@@ -1,4 +1,6 @@
 #include <grend/textureAtlas.hpp>
+#include <grend/logger.hpp>
+
 #include <stdio.h>
 #include <iostream>
 
@@ -23,7 +25,7 @@ bool atlas::bind_atlas_fb(quadtree::node_id id) {
 	auto info = tree.info(id);
 
 	if (!info.valid) {
-		std::cerr << "????" << std::endl;
+		LogFmt("quadtree node isn't valid????");
 		return false;
 	}
 

@@ -1,4 +1,5 @@
 #include <grend/compiledModel.hpp>
+#include <grend/logger.hpp>
 
 namespace grendx {
 
@@ -6,15 +7,15 @@ namespace grendx {
 static std::map<material*, compiledMaterial::weakptr> materialCache;
 
 compiledMaterial::~compiledMaterial() {
-	//SDL_Log("Freeing a compiledMaterial");
+	//LogInfo("Freeing a compiledMaterial");
 }
 
 compiledMesh::~compiledMesh() {
-	//SDL_Log("Freeing a compiledMesh");
+	//LogInfo("Freeing a compiledMesh");
 }
 
 compiledModel::~compiledModel() {
-	//SDL_Log("Freeing a compiledModel");
+	//LogInfo("Freeing a compiledModel");
 }
 
 
@@ -77,7 +78,7 @@ compiledMesh::ptr compileMesh(sceneMesh::ptr& mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
 	if (mesh->faces.size() == 0) {
-		SDL_Log("Mesh has no indices!\n");
+		LogInfo("Mesh has no indices!");
 		return foo;
 	}
 
@@ -133,7 +134,7 @@ void compileModels(const modelMap& models) {
 
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh) {
 	if (mesh == nullptr || !mesh->elements) {
-		SDL_Log("/!\\ Have broken mesh...");
+		LogWarn("Have broken mesh...");
 		return getCurrentVao();
 	}
 
@@ -189,7 +190,7 @@ Vao::ptr preloadModelVao(compiledModel::ptr obj) {
 
 void bindModel(sceneModel::ptr model) {
 	if (model->comped_model == nullptr) {
-		SDL_Log(" # ERROR: trying to bind an uncompiled model");
+		LogError("Trying to bind an uncompiled model");
 	}
 
 	model->comped_model->vao = preloadModelVao(model->comped_model);

@@ -3,6 +3,7 @@
 #include <grend/loadScene.hpp>
 #include <grend/renderContext.hpp>
 #include <grend/scancodes.hpp>
+#include <grend/logger.hpp>
 
 // XXX: for updateEntityTransforms()
 #include <grend/ecs/rigidBody.hpp>
@@ -24,18 +25,16 @@ void gameEditor::handleSelectObject(gameMain *game) {
 	auto rend = game->services.resolve<renderContext>();
 
 	uint32_t clickidx = rend->framebuffer->index(fx, fy);
-	std::cerr << "clicked object: " << clickidx << std::endl;
-	std::cerr << "ent object: " << clickidx-10 << std::endl;
-	std::cerr << "clickables: " << clickState.size() << std::endl;
+	LogErrorFmt("clicked object: ", clickidx);
+	LogErrorFmt("ent object: ", clickidx-10);
+	LogErrorFmt("clickables: ", clickState.size());
 
 	if (clickidx - 10 < clickState.size()) {
 		auto& [_, ent] = clickState[clickidx - 10];
 		selectedNode = ent->node;
 		selectedEntity = ent;
 
-		std::cerr << "selected entity: " << clickidx-10
-			<< "@" << (void*)ent
-			<< std::endl;
+		LogErrorFmt("selected entity: {}@{}", clickidx-10, (void*)ent);
 
 	} else if (clickidx && selectedNode) {
 		clickedX = (x*1.f / win_x);
@@ -43,7 +42,7 @@ void gameEditor::handleSelectObject(gameMain *game) {
 
 		if (clickidx > 0 && clickidx <= 6) {
 			transformBuf = selectedNode->getTransformTRS();
-			std::cerr << "It's a UI model" << std::endl;
+			LogInfo("It's a UI model");
 
 		} else {
 			// TODO: store, look up entity IDs as render IDs
@@ -507,7 +506,7 @@ void gameEditor::updateSelected(const TRS& updated) {
 	selectedNode->setTransform(updated);
 
 	if (selectedEntity) {
-		std::cerr << "got here, updating entity" << std::endl;
+		LogInfo("got here, updating entity");
 		updateEntityTransforms(selectedEntity->manager, selectedEntity, updated);
 	}
 

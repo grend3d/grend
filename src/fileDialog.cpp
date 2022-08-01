@@ -1,4 +1,5 @@
 #include <grend/fileDialog.hpp>
+#include <grend/logger.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -87,7 +88,6 @@ void fileDialog::listdir(void) {
 //      so leave the old posix code in for that... aaaaa
 #if defined(_WIN32)
 	if (fs::exists(currentDir) && fs::is_directory(currentDir)) {
-		std::cerr << "Testing this" << std::endl;
 		dirContents.clear();
 		cursorPos = -1;
 
@@ -109,7 +109,7 @@ void fileDialog::listdir(void) {
 					: a.name < b.name;
 			});
 	} else {
-		std::cerr << "Invalid directory " << currentDir << std::endl;
+		LogErrorFmt("Invalid directory ", currentDir);
 	}
 
 #else

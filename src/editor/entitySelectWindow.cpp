@@ -92,12 +92,11 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 		const std::string& name = export_entity_dialog.selection;
 
 		if (!editor->selectedEntity) {
-			std::cerr << "No entity selected, can't export to "
-				<< name << std::endl;
+			LogErrorFmt("No entity selected, can't export to ", name);
 			return;
 		}
 
-		std::cerr << "Exporting entity to " << name << std::endl;
+		LogFmt("Exporting entity to ", name);
 
 		std::ofstream out(name);
 		auto curjson = factories->serialize(entities, editor->selectedEntity);

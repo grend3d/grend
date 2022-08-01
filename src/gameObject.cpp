@@ -1,14 +1,12 @@
 #include <grend/sceneNode.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 #include <math.h>
 
 using namespace grendx;
 
-sceneNode::~sceneNode() {
-	// TODO: toggleable debug log, or profile events, etc
-	//std::cerr << "Freeing a " << idString() << std::endl;
-}
+sceneNode::~sceneNode() {}
 
 // XXX: "key functions", needed to do dynamic_cast across .so boundries
 //      Requires that the function be a "non-inline, non-pure virtual function"
@@ -347,9 +345,8 @@ void sceneSkin::sync(Program::ptr program) {
 	for (unsigned i = 0; i < transforms.size(); i++) {
 		std::string sloc = "joints["+std::to_string(i)+"]";
 		if (!prog->set(sloc, transforms[i])) {
-			std::cerr <<
-				"NOTE: couldn't set joint matrix " << i
-				<< ", too many joints/wrong shader?" << std::endl;
+			LogWarnFmt("NOTE: couldn't set joint matrix "
+			           ", too many joints/wrong shader?", i);
 			break;
 		}
 	}

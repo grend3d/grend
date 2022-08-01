@@ -1,5 +1,6 @@
 #include <grend/glManager.hpp>
 #include <grend/glmIncludes.hpp>
+#include <grend/logger.hpp>
 
 #include <string>
 #include <vector>
@@ -34,7 +35,7 @@ GLenum Buffer::unmap(void) {
 }
 
 void Buffer::allocate(size_t n) {
-	SDL_Log("Allocating buffer of %lu bytes", n);
+	LogFmt("Allocating buffer of {} bytes", n);
 	bind();
 	glBufferData(type, n, NULL, use);
 	DO_ERROR_CHECK();

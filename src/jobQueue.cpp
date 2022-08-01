@@ -1,4 +1,5 @@
 #include <grend/jobQueue.hpp>
+#include <grend/logger.hpp>
 
 using namespace grendx;
 
@@ -97,13 +98,13 @@ std::packaged_task<bool()> jobQueue::getAsync(void) {
 
 	if (asyncJobs.empty()) {
 		// TODO: debug statements hurt performance
-		SDL_Log("[job queue] got here, thread %lu waiting for job",
-			std::hash<std::thread::id>{}(std::this_thread::get_id()));
+		LogFmt("[job queue] got here, thread {} waiting for job",
+		       std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
 		waiters.wait(slock, [this]{ return !asyncJobs.empty(); });
 	}
 
-	SDL_Log("[job queue] (empty: %d) got here, thread %lu",
+	LogFmt("[job queue] (empty: {}) got here, thread {}",
 		asyncJobs.empty(),
 		std::hash<std::thread::id>{}(std::this_thread::get_id()));
 

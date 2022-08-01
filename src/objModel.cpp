@@ -1,5 +1,6 @@
 #include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
@@ -28,7 +29,7 @@ static std::string base_dir(std::string filename) {
 }
 
 sceneModel::ptr load_object(std::string filename) {
-	std::cerr << " > loading " << filename << std::endl;
+	LogFmt(" > loading ", filename);
 	std::ifstream input(filename);
 	std::string line;
 	std::string mesh_name = "default";
@@ -43,7 +44,7 @@ sceneModel::ptr load_object(std::string filename) {
 
 	if (!input.good()) {
 		// TODO: exception
-		std::cerr << " ! couldn't load object from " << filename << std::endl;
+		LogErrorFmt(" ! couldn't load object from ", filename);
 		return nullptr;
 	}
 
@@ -58,7 +59,8 @@ sceneModel::ptr load_object(std::string filename) {
 			continue;
 
 		if (statement[0] == "o") {
-			std::cerr << " > have submesh " << statement[1] << std::endl;
+			LogFmt(" > have submesh {}", statement[1]);
+
 			// TODO: should current_mesh just be defined at the top
 			//       of this loop?
 			mesh_name = statement[1];
@@ -69,13 +71,13 @@ sceneModel::ptr load_object(std::string filename) {
 
 		else if (statement[0] == "mtllib") {
 			std::string temp = base_dir(filename) + statement[1];
-			std::cerr << " > using material " << temp << std::endl;
+			LogFmt(" > using material {}", temp);
 			auto mats = load_materials(ret, temp);
 			materials.insert(mats.begin(), mats.end());
 		}
 
 		else if (statement[0] == "usemtl") {
-			std::cerr << " > using material " << statement[1] << std::endl;
+			LogFmt(" > using material {}", statement[1]);
 			current_mesh = sceneMesh::ptr(new sceneMesh());
 			//current_mesh->material = statement[1];
 			// TODO: check that material exists
@@ -154,7 +156,7 @@ sceneModel::ptr load_object(std::string filename) {
 	}
 
 	for (const auto& [name, ptr] : ret->nodes) {
-		std::cerr << " > > have mesh node " << name << std::endl; 
+		LogFmt(" > > have mesh node {}", name);
 	}
 
 	// TODO: check that normals size == vertices size and fill in the difference
@@ -177,7 +179,7 @@ materialTexture::materialTexture(std::string filename) {
 }
 
 void materialTexture::load_texture(std::string filename) {
-	std::cerr << "loading " << filename << std::endl;
+	LogFmt("loading {}", filename);
 	uint8_t *datas = stbi_load(filename.c_str(), &width,
 	                           &height, &channels, 0);
 
@@ -203,8 +205,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 
 	if (!input.good()) {
 		// TODO: exception
-		std::cerr << "Warning: couldn't load material library from "
-			<< filename << std::endl;
+		LogWarnFmt("Warning: couldn't load material library from {}", filename);
 		return ret;
 	}
 
@@ -218,7 +219,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 		}
 
 		if (statement[0] == "newmtl") {
-			std::cerr << "   - new material: " << statement[1] << std::endl;
+			LogFmt("   - new material: ", statement[1]);
 			current_material = statement[1];
 			ret[current_material] = std::make_shared<material>();
 		}

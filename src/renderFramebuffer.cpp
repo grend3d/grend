@@ -1,5 +1,6 @@
 #include <grend/renderFramebuffer.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 // for loadPostShader, etc
 // those functions could be put into glManager...
 #include <grend/engine.hpp>
@@ -17,7 +18,7 @@ renderFramebuffer::renderFramebuffer(int Width, int Height, unsigned Multisample
 
 #if defined(HAVE_MULTISAMPLE)
 	if (multisample) {
-		std::cerr << "Multisample! samples=" << multisample << std::endl;
+		LogFmt("Multisample! samples={}", multisample);
 		framebufferMultisampled = genFramebuffer();
 	}
 
@@ -169,7 +170,7 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 }
 
 void renderFramebuffer::setSize(int Width, int Height) {
-	SDL_Log("Allocating internal buffer with dimensions (%u, %u), MSAA: %u",
+	LogFmt("Allocating internal buffer with dimensions ({}, {}), MSAA: {}",
 	        Width, Height, multisample);
 
 	auto w = width  = max(1, Width);
@@ -259,7 +260,7 @@ void renderFramebuffer::setSize(int Width, int Height) {
 		DO_ERROR_CHECK();
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			SDL_Log("Current multisample: %u", multisample);
+			LogFmt("Current multisample: {}", multisample);
 			SDL_Die("incomplete! (multisampled)");
 		}
 	}
@@ -293,7 +294,7 @@ uint32_t renderFramebuffer::index(float x, float y) {
 	#endif
 
 	DO_ERROR_CHECK();
-	SDL_Log("have sample: %u\n", idx);
+	LogFmt("have sample: {}", idx);
 	return idx;
 
 #else

@@ -1,6 +1,7 @@
 #include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/animation.hpp>
+#include <grend/logger.hpp>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
@@ -72,7 +73,7 @@ template <typename T>
 static inline bool check_index(const std::vector<T>& container, size_t idx) {
 	if (idx >= container.size()) {
 		// TODO: toggle exceptions somehow
-		SDL_Log("EXCEPTION: check_index()");
+		LogFmt("EXCEPTION: check_index()");
 		throw std::out_of_range("check_index()");
 		return false;
 	}
@@ -82,7 +83,7 @@ static inline bool check_index(const std::vector<T>& container, size_t idx) {
 
 static inline bool assert_type(int type, int expected) {
 	if (type != expected) {
-		SDL_Log("EXCEPTION: assert_type()");
+		LogFmt("EXCEPTION: assert_type()");
 		throw std::invalid_argument(
 			"assert_type(): have " + std::to_string(type)
 			+ ", expected " + std::to_string(expected));
@@ -94,7 +95,7 @@ static inline bool assert_type(int type, int expected) {
 
 static inline bool assert_nonzero(size_t x) {
 	if (x == 0) {
-		SDL_Log("EXCEPTION: assert_nonzero()");
+		LogFmt("EXCEPTION: assert_nonzero()");
 		throw std::logic_error("assert_nonzero()");
 		return false;
 	}
@@ -291,8 +292,7 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 	}
 
 	if (!px) {
-		SDL_Log("Couldn't load texture: uri: %s, location: %s\n",
-				uri.c_str(), texname.c_str());
+		LogFmt("Couldn't load texture: uri: {}, location: {}", uri, texname);
 		return;
 	}
 
@@ -300,8 +300,8 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 	tex->pixels.insert(tex->pixels.end(), px, px + size);
 	tex->size = size;
 
-	SDL_Log("Loaded external texture: uri: %s, size: %lu, location: %s\n",
-	        uri.c_str(), size, texname.c_str());
+	LogFmt("Loaded external texture: uri: {}, size: {}, location: {}\n",
+	        uri, size, texname);
 
 	stbi_image_free(px);
 }
@@ -316,12 +316,12 @@ static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 	gltf.texcache[tex_idx] = ret = std::make_shared<materialTexture>();
 
 	auto& tex = gltf_texture(gltf, tex_idx);
-	//std::cerr << "        + texture source: " << tex.source << std::endl;
 
 	if (tex.source >= 0) {
 		auto& img = gltf_image(gltf, tex.source);
-		std::cerr << "        + texture image source: " << img.uri << ", "
-			<< img.width << "x" << img.height << ":" << img.component << std::endl;
+
+		LogFmt("        + texture image source: {}, {}x{}: {}",
+		       img.uri, img.width, img.height, img.component);
 
 		if (img.component < 0 || img.height < 0 || img.width < 0) {
 			// external image, do checks for compressed formats, etc
@@ -446,11 +446,8 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 materialTexture::ptr load_gltf_lightmap(gltfModel& gltf) {
 	for (auto& img : gltf.data.images) {
 		if (img.name.find("grendLightmap") != std::string::npos) {
-			std::cerr << " GLTF > have lightmap: "
-				" name: " << img.name << ", "
-				" uri: " << img.uri
-				<< " (" << img.mimeType << ")"
-				<< std::endl;
+			LogFmt("have lightmap: name: {}, uri: {} ({})",
+					img.name, img.uri, img.mimeType);
 
 			materialTexture::ptr ret = std::make_shared<materialTexture>();
 			ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
@@ -476,8 +473,8 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 		ret[mesh.name] = curModel;
 
 		/*
-		std::cerr << " GLTF > have mesh " << mesh.name << std::endl;
-		std::cerr << "      > primitives: " << std::endl;
+		todo << " GLTF > have mesh " << mesh.name << std::endl;
+		todo << "      > primitives: " << std::endl;
 		*/
 
 		for (size_t i = 0; i < mesh.primitives.size(); i++) {
@@ -487,10 +484,10 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 				+ ":" + std::to_string(prim.material);
 
 			/*
-			std::cerr << "        primitive: " << temp_name << std::endl;
-			std::cerr << "        material: " << prim.material << std::endl;
-			std::cerr << "        indices: " << prim.indices << std::endl;
-			std::cerr << "        mode: " << prim.mode << std::endl;
+			todo << "        primitive: " << temp_name << std::endl;
+			todo << "        material: " << prim.material << std::endl;
+			todo << "        indices: " << prim.indices << std::endl;
+			todo << "        mode: " << prim.mode << std::endl;
 			*/
 
 			grendx::sceneMesh::ptr modmesh = grendx::sceneMesh::ptr(new grendx::sceneMesh());
@@ -556,7 +553,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			}
 
 			if (position < 0) {
-				SDL_Log("EXCEPTION: load_gltf_models() can't load a mesh primitive without position information");
+				LogFmt("EXCEPTION: load_gltf_models() can't load a mesh primitive without position information");
 				throw std::logic_error(
 					"load_gltf_models(): can't load a mesh primitive "
 					"without position information");
@@ -587,7 +584,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 			} else {
 				// identity-mapped indices
-				// std::cerr << "        generating indices..." << std::endl;
+				// todo << "        generating indices..." << std::endl;
 				auto& acc = gltf.data.accessors[position];
 				auto& submesh = modmesh->faces;
 				size_t vsize = curModel->vertices.size();
@@ -618,7 +615,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 			if (tangents >= 0) {
 				check_index(gltf.data.accessors, tangents);
-				// std::cerr << "        have tangents... " << tangents << std::endl;
+				// todo << "        have tangents... " << tangents << std::endl;
 
 				auto& acc = gltf.data.accessors[tangents];
 				assert_type(acc.type, TINYGLTF_TYPE_VEC4);
@@ -632,7 +629,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 			if (colors >= 0) {
 				check_index(gltf.data.accessors, colors);
-				// std::cerr << "        have colors... " << colors << std::endl;
+				// todo << "        have colors... " << colors << std::endl;
 
 				auto& acc = gltf.data.accessors[colors];
 				// TODO: also vec3
@@ -740,7 +737,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 				weightIt = gltf_buffer_iterator<glm::vec4>(gltf, weights);
 				curModel->haveJoints = true;
-				// std::cerr << "        have joints: " << joints << std::endl;
+				// todo << "        have joints: " << joints << std::endl;
 			}
 
 			for (; !weightIt.atEnd(); weightIt++) {
@@ -894,7 +891,7 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 		for (auto& i : node.children) {
 			//assert(jointidxs.find(i) != jointidxs.end());
 			if (jointidxs.find(i) == jointidxs.end()) {
-				SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "WARNING: %s: missing joint index %d!", gltf.filename.c_str(), i);
+				LogWarnFmt("WARNING: {}: missing joint index {}!", gltf.filename, i);
 				continue;
 			}
 
@@ -932,28 +929,28 @@ static void load_gltf_node_light(gltfModel& gltf,
 {
 	auto it = node.extensions.find("KHR_lights_punctual");
 	if (it != node.extensions.end()) {
-		std::cerr << " GLTF > have punctual light!" << std::endl;
+		LogInfo(" GLTF > have punctual light!");
 
 		if (!it->second.IsObject() || !it->second.Has("light")) {
-			std::cerr << " GLTF > don't have light object" << std::endl;
+			LogInfo(" GLTF > don't have light object");
 			return;
 		}
 
 		auto val = it->second.Get("light");
 		if (!val.IsInt()) {
-			std::cerr << " GLTF > invalid light object index type" << std::endl;
+			LogInfo(" GLTF > invalid light object index type");
 			return;
 		}
 
 		int idx = val.GetNumberAsInt();
 
 		if ((unsigned)idx >= gltf.data.lights.size()) {
-			std::cerr << " GLTF > invalid light object index" << std::endl;
+			LogInfo(" GLTF > invalid light object index");
 			return;
 		}
 
 		auto& light = gltf.data.lights[idx];
-		std::cerr << " GLTF > node light! " << light.name << ": " << light.type << std::endl;
+		LogFmt(" GLTF > node light! {}: {}", light.name, light.type);
 
 		if (light.type == "point") {
 			sceneLightPoint::ptr point = std::make_shared<sceneLightPoint>();
@@ -982,8 +979,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 			setNode(light.name, obj, spot);
 
 		} else {
-			std::cerr << " GLTF > don't know how to handle node light of type "
-				<< light.type << std::endl;
+			LogFmt(" GLTF > don't know how to handle node light of type {}", light.type);
 		}
 	}
 }
@@ -1007,8 +1003,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 			setNode("mesh", ret, models[mesh.name]);
 
 		} else {
-			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-			            "Invalid model name '%s'!", mesh.name.c_str());
+			LogWarnFmt("Invalid model name '{}'!", mesh.name);
 		}
 	}
 
@@ -1035,8 +1030,7 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
 			names[node.name] = ret;
 
 		} else {
-			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-			            "Repeated name '%s', ignoring...", node.name.c_str());
+			LogWarnFmt("Repeated name '{}', ignoring...", node.name);
 		}
 	}
 
@@ -1066,7 +1060,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 	animation::ptr chananim;
 
 	if (chan.target_path == "translation") {
-		// std::cerr << "GLTF: loading translation animation" << std::endl;
+		// todo << "GLTF: loading translation animation" << std::endl;
 		animationTranslation::ptr objanim =
 			std::make_shared<animationTranslation>();
 		chananim = objanim;
@@ -1078,7 +1072,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		gltf_unpack_buffer(gltf, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "rotation") {
-		// std::cerr << "GLTF: loading rotation animation" << std::endl;
+		// todo << "GLTF: loading rotation animation" << std::endl;
 		animationRotation::ptr objanim =
 			std::make_shared<animationRotation>();
 		chananim = objanim;
@@ -1090,7 +1084,7 @@ load_gltf_animation_channels(animationChannel::ptr cookedchan,
 		gltf_unpack_buffer(gltf, sampler.input,  objanim->frametimes);
 
 	} else if (chan.target_path == "scale") {
-		// std::cerr << "GLTF: loading scale animation" << std::endl;
+		// todo << "GLTF: loading scale animation" << std::endl;
 		animationScale::ptr objanim =
 			std::make_shared<animationScale>();
 		chananim = objanim;
@@ -1192,16 +1186,16 @@ static std::optional<gltfModel> open_gltf_model(std::string filename) {
 	}
 
 	if (!loaded) {
-		SDL_Log("EXCEPTION: %s", err.c_str());
+		LogWarnFmt("EXCEPTION: {}", err);
 		return {};
 	}
 
 	if (!err.empty()) {
-		std::cerr << "/!\\ ERROR: " << err << std::endl;
+		LogErrorFmt("/!\\ ERROR: {}", err);
 	}
 
 	if (!warn.empty()) {
-		std::cerr << "/!\\ WARNING: " << warn << std::endl;
+		LogWarnFmt("/!\\ WARNING: {}", err);
 	}
 
 	return gltfModel(gltf, filename);
@@ -1216,7 +1210,8 @@ static void updateModelSources(grendx::modelMap& models, std::string filename) {
 grendx::modelMap grendx::load_gltf_models(std::string filename) {
 	if (auto gltf = open_gltf_model(filename)) {
 		auto models = load_gltf_models(*gltf);
-		std::cerr << " GLTF > loaded a thing successfully" << std::endl;
+		LogInfo("GLTF > loaded a thing successfully");
+		// todo << " GLTF > loaded a thing successfully" << std::endl;
 
 		updateModelSources(models, filename);
 		return models;
@@ -1229,17 +1224,17 @@ grendx::modelMap grendx::load_gltf_models(std::string filename) {
 // TODO: return optional
 std::pair<grendx::sceneImport::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
-	SDL_Log("Opening gltf scene %s...", filename.c_str());
+	LogFmt("Opening gltf scene {}...", filename);
 
 	if (auto gltf = open_gltf_model(filename)) {
-		SDL_Log("Loading gltf scene %s...", filename.c_str());
+		LogFmt("Loading gltf scene {}...", filename);
 		grendx::modelMap models = load_gltf_models(*gltf);
-		SDL_Log("Loading gltf scene nodes %s...", filename.c_str());
+		LogFmt("Loading gltf scene nodes {}...", filename);
 		sceneImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
 
-		SDL_Log("updating sources %s...", filename.c_str());
+		LogFmt("updating sources {}...", filename);
 		updateModelSources(models, filename);
-		SDL_Log("done loading %s", filename.c_str());
+		LogFmt("done loading {}", filename);
 		return {ret, models};
 
 	} else {

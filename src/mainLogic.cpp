@@ -24,7 +24,6 @@ modelMap load_library(std::string dir) {
 	DIR *dirp;
 
 	if (!(dirp = opendir(dir.c_str()))) {
-		std::cerr << "Warning: couldn't load models from " << dir << std::endl;
 		return ret;
 	}
 
@@ -38,7 +37,6 @@ modelMap load_library(std::string dir) {
 		}
 
 		if (fname.substr(pos) == ".obj") {
-			std::cerr << "   - " << fname << std::endl;;
 			//ret[fname] = model(dir + "/" + fname);
 			ret[fname] = load_object(dir + "/" + fname);
 		}

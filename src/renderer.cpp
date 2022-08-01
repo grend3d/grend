@@ -3,6 +3,7 @@
 #include <grend/engine.hpp>
 #include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 
 #include <vector>
 #include <map>
@@ -38,12 +39,12 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	//globalShaderOptions["max_lights"]   = MAX_LIGHTS;
 
 #if GLSL_VERSION >= 140
-	SDL_Log("GOT HERE!!!!!!!!!!!!!!!!!!");
-	SDL_Log("renderContext(): sizeof(lights_std140): %lu", sizeof(lights_std140));
-	SDL_Log("renderContext(): sizeof(light_tiles_std140): %lu", sizeof(light_tiles_std140));
-	SDL_Log("renderContext(): sizeof(point_light_buffer_std140): %lu", sizeof(point_light_buffer_std140));
-	SDL_Log("renderContext(): sizeof(spot_light_buffer_std140): %lu", sizeof(spot_light_buffer_std140));
-	SDL_Log("renderContext(): sizeof(directional_light_buffer_std140): %lu", sizeof(directional_light_buffer_std140));
+	LogFmt("GOT HERE!!!!!!!!!!!!!!!!!!");
+	LogFmt("renderContext(): sizeof(lights_std140): {}", sizeof(lights_std140));
+	LogFmt("renderContext(): sizeof(light_tiles_std140): {}", sizeof(light_tiles_std140));
+	LogFmt("renderContext(): sizeof(point_light_buffer_std140): {}", sizeof(point_light_buffer_std140));
+	LogFmt("renderContext(): sizeof(spot_light_buffer_std140): {}", sizeof(spot_light_buffer_std140));
+	LogFmt("renderContext(): sizeof(directional_light_buffer_std140): {}", sizeof(directional_light_buffer_std140));
 
 	lightBuffer = genBuffer(GL_UNIFORM_BUFFER);
 	lightBuffer->bind();
@@ -98,7 +99,6 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
-	//std::cerr << "loaded cubemap" << std::endl;
 	//
 	default_material = std::make_shared<material>();
 	default_material->factors.diffuse = {1, 1, 1, 1},
@@ -130,7 +130,7 @@ renderContext::renderContext(context& ctx, const renderSettings& _settings) {
 	default_compiledMat = matcache(default_material);
 
 	loadShaders();
-	SDL_Log("Initialized render context");
+	LogInfo("Initialized render context");
 }
 
 renderFlags grendx::loadShaderToFlags(std::string fragPath,
@@ -142,7 +142,7 @@ renderFlags grendx::loadShaderToFlags(std::string fragPath,
 {
 	renderFlags ret;
 
-	SDL_Log("\nLoading shaders for fragment shader %s", fragPath.c_str());
+	LogFmt("Loading shaders for fragment shader {}", fragPath);
 
 	using R = renderFlags;
 
@@ -236,7 +236,7 @@ Program::ptr grendx::loadPostShader(std::string fragmentPath,
 }
 
 void renderContext::loadShaders(void) {
-	SDL_Log("Loading shaders");
+	LogInfo("Loading shaders");
 
 	lightingShaders["pixel-metalroughness"] =
 		loadLightingShader(

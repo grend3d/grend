@@ -1,6 +1,7 @@
 #include <grend/gameEditor.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -102,8 +103,7 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 			recurse = false;
 
 			if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
-				std::cerr << "loadMap(): Unknown model "
-					<< jay["sourceFile"] << std::endl;
+				LogErrorFmt("loadMap(): Unknown model {}", jay["sourceFile"]);
 				ret = std::make_shared<sceneNode>();
 			}
 
@@ -118,7 +118,7 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		recurse = false;
 
 		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
-			std::cerr << "loadMap(): Unknown model " << name << std::endl;
+			LogErrorFmt("loadMap(): Unknown model {}", name);
 			ret = std::make_shared<sceneNode>();
 		}
 
@@ -190,8 +190,6 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 	auto& scale = jay["scale"];
 	auto& rot   = jay["rotation"];
 
-	//std::cerr << jay.dump(3) << std::endl;
-
 	TRS newtrans = ret->getTransformTRS();
 	newtrans.position = glm::vec3(pos[0], pos[1], pos[2]);
 	newtrans.scale    = glm::vec3(scale[0], scale[1], scale[2]);
@@ -212,7 +210,7 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 result<importPair>
 grendx::loadMapData(std::string name) noexcept {
 	std::ifstream foo(name);
-	std::cerr << "loading map " << name << std::endl;
+	LogFmt("loading map {}", name);
 
 	if (!foo.good()) {
 		std::string asdf = "couldn't open map file: " + name;
@@ -243,9 +241,7 @@ grendx::loadMapData(std::string name) noexcept {
 		return importPair {ret, retmodels};
 
 	} catch (std::exception& e) {
-		std::cerr << "loadMap(): couldn't parse " << name
-			<< ": " << e.what() << std::endl;
-
+		LogErrorFmt("loadMap(): couldn't parse {}: {}", name, e.what());
 		return invalidResult(e.what());
 	}
 }
@@ -382,10 +378,10 @@ void grendx::saveMap(gameMain *game,
                      std::string name) noexcept
 {
 	std::ofstream foo(name);
-	std::cerr << "saving map " << name << std::endl;
+	LogFmt("saving map {}", name);
 
 	if (!foo.good()) {
-		std::cerr << "couldn't open save file" << name << std::endl;
+		LogErrorFmt("couldn't open save file {}", name);
 		return;
 	}
 

@@ -4,6 +4,8 @@
 #include <grend/glManager.hpp>
 #include <grend/engine.hpp>
 #include <grend/utility.hpp>
+#include <grend/logger.hpp>
+
 #include <sstream>
 #include <exception>
 
@@ -15,8 +17,7 @@ static std::string extractInclude(std::string pathspec) {
 	size_t end   = pathspec.find('>');
 
 	if (begin == std::string::npos || end == std::string::npos || end < begin) {
-		std::cerr << "Error: Invalid include specification! "
-			<< pathspec << std::endl;
+		LogErrorFmt("Error: Invalid include specification! ", pathspec);
 		return "/* Invalid include specification! */\n";
 	}
 
@@ -113,6 +114,5 @@ std::string grendx::preprocessShader(std::string& source,
 	std::string processed = preprocess(source, includes);
 
 	std::string full = version + defines + optstr + processed;
-	//std::cerr << full << std::endl;
 	return full;
 }

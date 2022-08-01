@@ -1,5 +1,7 @@
 #include <grend/glManager.hpp>
 #include <grend/sceneModel.hpp>
+#include <grend/logger.hpp>
+
 #include <SDL.h>
 #include <string.h>
 
@@ -61,24 +63,24 @@ void initializeOpengl(void) {
 #endif
 	DO_ERROR_CHECK();
 
-	SDL_Log(" OpenGL initializing... ");
-	SDL_Log(" OpenGL %s", glGetString(GL_VERSION));
-	SDL_Log(" OpenGL vendor: %s", glGetString(GL_VENDOR));
-	SDL_Log(" OpenGL renderer: %s", glGetString(GL_RENDERER));
+	LogFmt(" OpenGL initializing... ");
+	LogFmt(" OpenGL {}", (const char*)glGetString(GL_VERSION));
+	LogFmt(" OpenGL vendor: {}", (const char *)glGetString(GL_VENDOR));
+	LogFmt(" OpenGL renderer: {}", (const char *)glGetString(GL_RENDERER));
 
-	SDL_Log(" OpenGL GLSL target: %d", GLSL_VERSION);
-	SDL_Log(" OpenGL max fragment textures: %d", maxImageUnits);
-	SDL_Log(" OpenGL max total textures: %d", maxCombined);
-	SDL_Log(" OpenGL max texture size: %d", maxTextureSize);
-	SDL_Log(" OpenGL max vertex vector uniforms: %d", maxVertexUniforms);
-	SDL_Log(" OpenGL max fragment vector uniforms: %d", maxFragmentUniforms);
-	SDL_Log(" OpenGL max uniform block bindings: %d", maxUBOBindings);
-	SDL_Log(" OpenGL max uniform block size: %d", maxUBOSize);
-	SDL_Log(" OpenGL max framebuffer attachments: %u", maxFramebufAttachments);
+	LogFmt(" OpenGL GLSL target: {}", GLSL_VERSION);
+	LogFmt(" OpenGL max fragment textures: {}", maxImageUnits);
+	LogFmt(" OpenGL max total textures: {}", maxCombined);
+	LogFmt(" OpenGL max texture size: {}", maxTextureSize);
+	LogFmt(" OpenGL max vertex vector uniforms: {}", maxVertexUniforms);
+	LogFmt(" OpenGL max fragment vector uniforms: {}", maxFragmentUniforms);
+	LogFmt(" OpenGL max uniform block bindings: {}", maxUBOBindings);
+	LogFmt(" OpenGL max uniform block size: {}", maxUBOSize);
+	LogFmt(" OpenGL max framebuffer attachments: {}", maxFramebufAttachments);
 
 	for (int i = 0; i < numExtensions; i++) {
 		const char *str = (const char *)glGetStringi(GL_EXTENSIONS, i);
-		SDL_Log("Extension %d: %s", i, str);
+		LogFmt("Extension {}: {}", i, str);
 
 		if (strcmp(str, "EXT_color_buffer_float") == 0)
 			enabled_float_buffers = true;
@@ -178,7 +180,7 @@ Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
 	if (it != textureCache.end()) {
 		if (auto observe = it->second.lock()) {
 			//static const unsigned sizes[4] = {256, 512, 2048, 4096};
-			//SDL_Log("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
+			//logfmt("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
 			return observe;
 		}
 	}
@@ -256,9 +258,10 @@ void check_errors(int line, const char *filename, const char *func) {
 				errstr = "some kind of error code"; break;
 		}
 
-		SDL_Log("/!\\ OPENGL ERROR: %s:%d: %s(): %s (errno. %d)",
-			filename, line, func, errstr, err);
+		LogErrorFmt("/!\\ OPENGL ERROR: {}:{}: {}(): {} (errno. {})",
+		            filename, line, func, errstr, err);
 
+		// TODO: better abort
 		*(int*)NULL = 1234;
 	}
 }
