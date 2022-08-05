@@ -156,28 +156,23 @@ buildClickableQueue(gameMain *game,
 	using namespace ecs;
 
 	auto entities = game->services.resolve<ecs::entityManager>();
-	auto drawable = entities->search<abstractShader>();
 
 	multiRenderQueue que;
 	uint32_t renderID = 10;
 
-	for (entity *ent : drawable) {
-		auto flags = ent->get<abstractShader>();
-		auto trans = ent->node->getTransformMatrix();
-		auto scenes = ent->getAll<sceneComponent>();
-
-		renderFlags foo = flags->getShader();
-
-		que.add(foo, ent->node, renderID);
+	entities->search<abstractShader>().forEach([&] (entity *ent, auto flags) {
+		renderFlags shader = flags->getShader();
 		clicks.push_back({renderID, ent});
 
-		for (auto it = scenes.first; it != scenes.second; it++) {
-			sceneComponent *comp = static_cast<sceneComponent*>(it->second);
-			que.add(foo, comp->getNode(), renderID, trans);
-		}
+		ent->getAll<sceneComponent>().forEach([&] (auto scene) {
+			que.add(shader,
+			        scene->getNode(),
+			        renderID,
+			        ent->node->getTransformMatrix());
+		});
 
 		renderID++;
-	}
+	});
 
 	return que;
 }

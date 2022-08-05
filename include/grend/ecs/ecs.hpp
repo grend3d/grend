@@ -78,6 +78,12 @@ struct searchResults;
 template <typename... T>
 searchResults<T...> searchEntities(entityManager *manager);
 
+template <typename T>
+struct iteratorPair;
+
+template <typename T>
+struct componentIteratorPair;
+
 // empty value returned to enforce calls to registerComponent
 struct [[nodiscard]] regArgs {
 	// constant arguments for each constructor
@@ -270,12 +276,10 @@ class entity : public component {
 		}
 
 		template <typename T>
-		std::pair<std::multimap<const char *, component*>::iterator,
-				  std::multimap<const char *, component*>::iterator>
-		getAll()
-		{
+		componentIteratorPair<T> getAll() {
 			auto& compmap = manager->getEntityComponents(this);
-			return compmap.equal_range(getTypeName<T>());
+			auto comps = compmap.equal_range(getTypeName<T>());
+			return { comps.first, comps.second };
 		}
 
 		template <typename T>
@@ -508,12 +512,55 @@ struct searchResults {
 	std::set<component*>::iterator it;
 	std::set<component*>::iterator endit;
 
+	// TODO: Hmm, maybe these iterators should return tuples when dereferenced,
+	//       caller is pretty much always going to want to use the components they're
+	//       searching for, returning just the entity adds unnecessary boilerplate
 	searchIterator<T...> begin() {
 		return searchIterator<T...>(it, endit);
 	}
 
 	searchIterator<T...> end() {
 		return searchIterator<T...>(endit, endit);
+	}
+
+	void forEach(std::function<void(entity *, T*...)> func) {
+		for (auto fit = begin(); fit != end(); ++fit) {
+			entity *ent = *fit;
+			func(ent, ent->get<T>()...);
+		}
+	}
+};
+
+template <typename T>
+struct iteratorPair {
+	iteratorPair(T& a, T& b)
+		: first(a), second(b) {};
+
+	T first;
+	T second;
+
+	T begin() { return first; };
+	T end()   { return second; };
+};
+
+template <typename T>
+struct componentIteratorPair
+	: public iteratorPair<std::multimap<const char *, component*>::iterator>
+{
+	using iterType = std::multimap<const char *, component*>::iterator;
+
+	componentIteratorPair(iterType& a, iterType& b)
+		: iteratorPair(a, b) { }
+
+	// TODO: should have iterator overload here that returns component type T
+	//       when dereferenced
+
+	void forEach(std::function<void(T*)> func) {
+		for (auto it = first; it != second; it++) {
+			auto [_, comp] = *it;
+			T *ptr = static_cast<T*>(comp);
+			func(ptr);
+		}
 	}
 };
 
