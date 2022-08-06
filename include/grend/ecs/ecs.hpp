@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <memory>
+#include <tuple>
 #include <initializer_list>
 
 #include <nlohmann/json.hpp>
@@ -489,13 +490,15 @@ struct searchIterator {
 		return *this;
 	}
 
-	entity *operator*(void) const {
+	std::tuple<entity*, T*...> operator*(void) const {
 		if (it == end) {
-			return nullptr;
+			return {};
 		}
 
 		component *comp = *it;
-		return comp->manager->getEntity(comp);
+		entity *ent = comp->manager->getEntity(comp);
+
+		return { ent, ent->get<T>()... };
 	}
 
 	bool operator==(const searchIterator& other) const {
@@ -512,9 +515,6 @@ struct searchResults {
 	std::set<component*>::iterator it;
 	std::set<component*>::iterator endit;
 
-	// TODO: Hmm, maybe these iterators should return tuples when dereferenced,
-	//       caller is pretty much always going to want to use the components they're
-	//       searching for, returning just the entity adds unnecessary boilerplate
 	searchIterator<T...> begin() {
 		return searchIterator<T...>(it, endit);
 	}
@@ -524,12 +524,12 @@ struct searchResults {
 	}
 
 	void forEach(std::function<void(entity *, T*...)> func) {
-		for (auto fit = begin(); fit != end(); ++fit) {
-			entity *ent = *fit;
-			func(ent, ent->get<T>()...);
+		for (auto res = begin(); res != end(); ++res) {
+			std::apply(func, *res);
 		}
 	}
 };
+
 
 template <typename T>
 struct iteratorPair {
@@ -545,21 +545,52 @@ struct iteratorPair {
 
 template <typename T>
 struct componentIteratorPair
-	: public iteratorPair<std::multimap<const char *, component*>::iterator>
 {
 	using iterType = std::multimap<const char *, component*>::iterator;
 
 	componentIteratorPair(iterType& a, iterType& b)
-		: iteratorPair(a, b) { }
+		: first(a), second(b) { }
 
-	// TODO: should have iterator overload here that returns component type T
-	//       when dereferenced
+	iterType first;
+	iterType second;
+
+	struct castIterator {
+		iterType it;
+
+		castIterator(iterType iter)
+			: it(iter) {}
+
+		const castIterator& operator++(void) { it++; return *this; };
+		T* operator*(void) const {
+			auto [_, comp] = *it;
+
+			return static_cast<T*>(comp);
+		}
+
+		bool operator==(const castIterator& other) const {
+			return it == other.it;
+		}
+
+		bool operator!=(const castIterator& other) const {
+			return it != other.it;
+		}
+	};
+
+	castIterator begin() {
+		return castIterator(first);
+	}
+
+	castIterator end() {
+		return castIterator(second);
+	}
+
+	iteratorPair<iterType> raw() {
+		return {first, second};
+	}
 
 	void forEach(std::function<void(T*)> func) {
-		for (auto it = first; it != second; it++) {
-			auto [_, comp] = *it;
-			T *ptr = static_cast<T*>(comp);
-			func(ptr);
+		for (auto it = begin(); it != end(); ++it) {
+			func(*it);
 		}
 	}
 };

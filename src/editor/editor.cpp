@@ -160,19 +160,19 @@ buildClickableQueue(gameMain *game,
 	multiRenderQueue que;
 	uint32_t renderID = 10;
 
-	entities->search<abstractShader>().forEach([&] (entity *ent, auto flags) {
+	for (auto [ent, flags] : entities->search<abstractShader>()) {
 		renderFlags shader = flags->getShader();
 		clicks.push_back({renderID, ent});
 
-		ent->getAll<sceneComponent>().forEach([&] (auto scene) {
+		for (auto scene : ent->getAll<sceneComponent>()) {
 			que.add(shader,
 			        scene->getNode(),
 			        renderID,
 			        ent->node->getTransformMatrix());
-		});
+		}
 
 		renderID++;
-	});
+	};
 
 	return que;
 }

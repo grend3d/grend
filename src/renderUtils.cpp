@@ -148,10 +148,9 @@ grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr 
 
 	multiRenderQueue que;
 
-	for (entity *ent : drawable) {
-		auto flags = ent->get<abstractShader>();
+	for (auto [ent, flags] : drawable) {
 		auto trans = ent->node->getTransformMatrix();
-		auto scenes = ent->getAll<sceneComponent>();
+		auto scenes = ent->getAll<sceneComponent>().raw();
 		// TODO: do clicky things
 		uint32_t renderID = 0;
 
