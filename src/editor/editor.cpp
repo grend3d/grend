@@ -145,38 +145,6 @@ void gameEditor::loadUIModels(void) {
 	compileModels(UIModels);
 }
 
-using entClicks = std::vector<std::pair<uint32_t, grendx::ecs::entity*>>;
-
-grendx::multiRenderQueue
-buildClickableQueue(gameMain *game,
-                    camera::ptr cam,
-                    entClicks& clicks)
-{
-	using namespace grendx;
-	using namespace ecs;
-
-	auto entities = game->services.resolve<ecs::entityManager>();
-
-	multiRenderQueue que;
-	uint32_t renderID = 10;
-
-	for (auto [ent, flags] : entities->search<abstractShader>()) {
-		renderFlags shader = flags->getShader();
-		clicks.push_back({renderID, ent});
-
-		for (auto scene : ent->getAll<sceneComponent>()) {
-			que.add(shader,
-			        scene->getNode(),
-			        renderID,
-			        ent->node->getTransformMatrix());
-		}
-
-		renderID++;
-	};
-
-	return que;
-}
-
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 #if !defined(__ANDROID__) && GLSL_VERSION > 100
 	renderEditor(game);
@@ -193,7 +161,7 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
 	clickState.clear();
-	auto world = buildClickableQueue(game, cam, clickState);
+	auto world = buildClickableQueue(game, clickState);
 	world.add(flags, state->rootnode);
 	drawMultiQueue(game, world, fb, cam);
 	renderWorldObjects(game);

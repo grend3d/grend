@@ -140,30 +140,53 @@ void grendx::drawMultiQueue(gameMain *game,
 #include <grend/ecs/shader.hpp>
 #include <grend/ecs/sceneComponent.hpp>
 
-grendx::multiRenderQueue grendx::buildDrawableQueue(gameMain *game, camera::ptr cam) {
+grendx::multiRenderQueue
+grendx::buildDrawableQueue(gameMain *game, uint32_t renderID) {
 	using namespace ecs;
-
 	auto entities = game->services.resolve<entityManager>();
-	auto drawable = entities->search<abstractShader>();
 
 	multiRenderQueue que;
 
-	for (auto [ent, flags] : drawable) {
-		auto trans = ent->node->getTransformMatrix();
-		auto scenes = ent->getAll<sceneComponent>().raw();
-		// TODO: do clicky things
-		uint32_t renderID = 0;
-
-		que.add(flags->getShader(), ent->node, renderID);
-
-		for (auto it = scenes.first; it != scenes.second; it++) {
-			sceneComponent *comp = static_cast<sceneComponent*>(it->second);
-			que.add(flags->getShader(), comp->getNode(), renderID, trans);
+	for (auto [ent, flags] : entities->search<abstractShader>()) {
+		for (auto scene : ent->getAll<sceneComponent>()) {
+			que.add(flags->getShader(),
+			        scene->getNode(),
+			        renderID,
+			        ent->node->getTransformMatrix());
 		}
 	}
 
 	return que;
 }
+
+// TODO: should return the last allocated render ID too, or take a counter pointer
+grendx::multiRenderQueue
+grendx::buildClickableQueue(gameMain *game, entClicks& clicks, uint32_t startID) {
+	using namespace grendx;
+	using namespace ecs;
+
+	auto entities = game->services.resolve<ecs::entityManager>();
+
+	multiRenderQueue que;
+	uint32_t renderID = startID;
+
+	for (auto [ent, flags] : entities->search<abstractShader>()) {
+		renderFlags shader = flags->getShader();
+		clicks.push_back({renderID, ent});
+
+		for (auto scene : ent->getAll<sceneComponent>()) {
+			que.add(shader,
+			        scene->getNode(),
+			        renderID,
+			        ent->node->getTransformMatrix());
+		}
+
+		renderID++;
+	};
+
+	return que;
+}
+
 
 void grendx::setPostUniforms(renderPostChain::ptr post,
                              gameMain *game,
