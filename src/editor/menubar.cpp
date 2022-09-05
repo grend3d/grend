@@ -153,7 +153,7 @@ void gameEditor::menubar(gameMain *game) {
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Options")) {
+		if (ImGui::BeginMenu("View")) {
 			int proj = (int)cam->project();
 			float scale = cam->scale();
 			bool checkGL = GL_ERROR_CHECK_ENABLED();
@@ -177,6 +177,21 @@ void gameEditor::menubar(gameMain *game) {
 			ImGui::Separator();
 			if (ImGui::MenuItem("Render settings")) {
 				showSettingsWindow = true;
+			}
+
+			if (ImGui::BeginMenu("Dockable windows")) {
+				ImGui::MenuItem("File pane",         nullptr, &showFilePane);
+				// TODO: rename map window -> scene editor
+				ImGui::MenuItem("Scene editor",      nullptr, &showMapWindow);
+				ImGui::MenuItem("Scene node editor", nullptr, &showMapWindow);
+
+				ImGui::MenuItem("Entity list",       nullptr, &showEntityListWindow);
+				ImGui::MenuItem("Entity editor",     nullptr, &showEntityEditorWindow);
+				ImGui::MenuItem("Profiler",          nullptr, &showProfilerWindow);
+				ImGui::MenuItem("Metrics",           nullptr, &showProfilerWindow);
+				ImGui::MenuItem("Settings",          nullptr, &showSettingsWindow);
+				ImGui::MenuItem("Console log",       nullptr, &showLogWindow);
+				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 

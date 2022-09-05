@@ -44,8 +44,7 @@ void filePane::renderNodes(gameMain *game, paneNode& node) {
 	ImGuiTreeNodeFlags flags
 		= base_flags
 		| ((&node == selected)?                  ImGuiTreeNodeFlags_Selected : 0)
-		//| (((node.type != paneTypes::Directory)? ImGuiTreeNodeFlags_Leaf     : 0));
-		| (((node.type == paneTypes::File)? ImGuiTreeNodeFlags_Leaf     : 0));
+		| (((node.type != paneTypes::Directory)? ImGuiTreeNodeFlags_Leaf     : 0));
 
 	if (img::TreeNodeEx(node.name.c_str(), flags)) {
 		node.expand();
@@ -57,12 +56,11 @@ void filePane::renderNodes(gameMain *game, paneNode& node) {
 		if (node.type == paneTypes::File) {
 			if (img::BeginDragDropSource(ImGuiDragDropFlags_None)) {
 				std::string temp = node.fullpath;
-				LogFmt("Setting filename payload: {}", temp);
-
 				// TODO: might be a good idea to encode extensions in
 				//       the payload type, so extensions can only be dropped
 				//       in places expecting them
 				img::SetDragDropPayload("DRAG_FILENAME", temp.c_str(), temp.size() + 1);
+				img::Text("File: %s", temp.c_str());
 				img::EndDragDropSource();
 			}
 		}
