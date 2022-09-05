@@ -17,6 +17,7 @@
 #include <grend/logger.hpp>
 
 #include <grend/ecs/ecs.hpp>
+#include <grend/filePane.hpp>
 
 namespace grendx {
 
@@ -170,6 +171,9 @@ class gameEditor : public gameView {
 		std::vector<editCallback> callbacks;
 		std::vector<std::pair<uint32_t, ecs::entity*>> clickState;
 
+		// file pane state
+		filePane filepane;
+
 		modalSDLInput inputBinds;
 		bool showMapWindow = false;
 		bool showObjectEditorWindow = false;
@@ -181,6 +185,7 @@ class gameEditor : public gameView {
 		bool showMetricsWindow = true;
 		bool showSettingsWindow = false;
 		bool showLogWindow = true;
+		bool showFilePane = true;
 
 		bool showProbes = true;
 		bool showLights = true;

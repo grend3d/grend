@@ -97,6 +97,7 @@ add_library(Grend
 	src/editor/settings.cpp
 	src/editor/entitySelectWindow.cpp
 	src/editor/logWindow.cpp
+	src/editor/filePane.cpp
 
 	src/logger.cpp
 	src/fileDialog.cpp

@@ -750,6 +750,7 @@ void gameEditor::renderEditor(gameMain *game) {
 	if (showEntityEditorWindow) entityEditorWindow(game);
 	if (showEntityListWindow)   entityListWindow(game);
 	if (showLogWindow)          logWindow(game);
+	if (showFilePane)           filepane.render(game);
 
 	if (selectedNode && showObjectEditorWindow)
 		objectEditorWindow(game);

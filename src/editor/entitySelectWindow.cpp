@@ -197,6 +197,36 @@ void gameEditor::entityListWindow(gameMain *game) {
 	ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Matching entities");
 	ImGui::Separator();
 
+	ImGui::Button("Testing");
+
+	if (ImGui::BeginDragDropTarget()) {
+		if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DRAG_FILENAME")) {
+			LogFmt("Accepting payload");
+			try {
+				const char *fname = (const char*)payload->Data;
+				LogFmt("Have payload: {}", fname);
+				std::ifstream in(fname);
+
+				if (in.good()) {
+					nlohmann::json j;
+					in >> j;
+
+					ecs::entity *ent = factories->build(entities, j);
+					entities->add(ent);
+
+					selectedEntity = ent;
+					selectedNode   = ent->node;
+				} else {
+					LogFmt("Invalid file name: {}", fname);
+				}
+
+			} catch (std::exception& e) {
+				LogFmt("Exception while loading entity: {}", e.what());
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
 	ImGui::BeginChild("entityList", ImVec2(0, 0), false, 0);
 	for (auto& ent : entities->entities) {
 		if (*searchBuffer && !entities->hasComponents(ent, tagchars)) {
