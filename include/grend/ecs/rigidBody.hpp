@@ -3,6 +3,7 @@
 #include <grend/physics.hpp>
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
+#include <grend/ecs/sceneComponent.hpp>
 
 namespace grendx::ecs {
 
@@ -153,6 +154,100 @@ class rigidBodySphere : public rigidBody {
 			rigidBodySphere *body = static_cast<rigidBodySphere*>(comp);
 
 			body->radius = tryGet(j, "radius", 1.f);
+			body->activate(comp->manager, comp->manager->getEntity(comp));
+		}
+};
+
+class rigidBodyStaticMesh : public rigidBody,
+	                        public updatable
+{
+	// TODO: need a way to specify property filters,
+	//       eg. for meshes with "collidable" extra properties
+	public:
+		rigidBodyStaticMesh(regArgs t, const glm::vec3& _position)
+			: rigidBody(doRegister(this, t), 0.f)
+		{
+			manager->registerInterface<updatable>(t.ent, this);
+
+			t.ent->messages.subscribe<sceneComponentAdded>(this->mbox);
+			activate(t.manager, t.ent);
+		}
+
+		rigidBodyStaticMesh(regArgs t);
+
+		virtual ~rigidBodyStaticMesh();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
+
+		virtual void initBody(entityManager *manager, entity *ent) {
+			auto physicsServ = manager->engine->services.resolve<physics>();
+
+			for (auto scene : ent->getAll<sceneComponent>()) {
+				physicsServ->addStaticModels(ent, scene->getNode(),
+				                             ent->node->getTransformTRS(),
+				                             meshObjects);
+			}
+		}
+
+		virtual void setTransform(const TRS& transform) {
+			for (auto& p : meshObjects) {
+				p->setTransform(transform);
+			}
+		}
+
+		virtual void update(entityManager *manager, float delta) {
+			bool needsReset = false;
+
+			while (mbox->haveMessage()) {
+				sceneComponentAdded buffer;
+
+				if (mbox->accept(buffer)) {
+					LogFmt("Recieved a message!");
+					needsReset = true;
+				} else {
+					mbox->drop();
+				}
+			}
+
+			if (needsReset) {
+				auto ent = manager->getEntity(this);
+
+				deactivate(manager, ent);
+				activate(manager, ent);
+			}
+		}
+
+		virtual void activate(entityManager *manager, entity *ent) {
+			if (meshObjects.empty()) {
+				initBody(manager, ent);
+
+				for (auto& p : meshObjects) {
+					p->collisionQueue = cachedQueue;
+				}
+			}
+		}
+
+		virtual void deactivate(entityManager *manager, entity *ent) {
+			if (!meshObjects.empty()) {
+				meshObjects.clear();
+			}
+		}
+
+		messages::mailbox::ptr mbox = std::make_shared<messages::mailbox>();
+		std::vector<physicsObject::ptr> meshObjects;
+		float radius = 1.f;
+
+		static nlohmann::json serializer(component *comp) {
+			// TODO: 
+			//rigidBodyStaticMesh *body = static_cast<rigidBodyStaticMesh*>(comp);
+
+			return {
+				{"TODO", 0},
+			};
+		}
+
+		static void deserializer(component *comp, nlohmann::json j) {
+			rigidBodyStaticMesh *body = static_cast<rigidBodyStaticMesh*>(comp);
+
 			body->activate(comp->manager, comp->manager->getEntity(comp));
 		}
 };

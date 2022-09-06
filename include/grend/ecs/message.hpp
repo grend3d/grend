@@ -1,33 +1,17 @@
 #pragma once
 
-#include <grend/ecs/ecs.hpp>
+#include <grend/typenames.hpp>
+#include <grend/logger.hpp>
 
 #include <memory>
 #include <vector>
 #include <list>
+#include <unordered_map>
 
-namespace grendx::ecs::messaging {
+namespace grendx::messages {
 
-struct message;
 class mailbox;
-class endpoint;
-
-struct message {
-	std::string type = "undefined";
-
-	entity    *ent  = nullptr;
-	component *comp = nullptr;
-
-	// TODO: will this be needed?
-	//       could be useful for attaching arbitrary data to be
-	//       dynamic_casted<>, but could be a pain with lifetime
-	//       management...
-	void *data = nullptr;
-
-	// for general info, eg. level... for more storage I guess you'd
-	// use the data pointer above, lackluster as it may be
-	int tag = 0;
-};
+class router;
 
 // should be far beyond what's needed in practice
 static const unsigned maxMessages = 1024;
@@ -36,45 +20,88 @@ class mailbox {
 		typedef std::shared_ptr<mailbox> ptr;
 		typedef std::weak_ptr<mailbox>   weakptr;
 
-		bool haveMessage(void) { return !messages.empty(); };
+		bool haveMessage(void) const {
+			return !messages.empty();
+		};
 
-		message get(void) {
-			if (messages.empty()) { return {}; };
+		// TODO: might be better to return a hash, that way the caller can do
+		//       a switch statement with static string hashes...
+		const char *frontType() const {
+			if (!haveMessage())
+				return nullptr;
 
-			message ret = messages.front();
-			messages.pop_front();
-			return ret;
+			return messages.front().first;
 		}
 
-		void add(const message& m) {
+		template <typename T>
+		bool accept(T& storage) {
+			LogErrorFmt("Trying to accept type {}", getTypeName<T>());
+			if (!haveMessage())
+				return false;
+
+			auto& [name, value] = messages.front();
+			// TODO: is it right to assume that the name pointers returned from getTypeName()
+			//       will always be the same for the same types?
+			//       seems to be the case, but considering my entire ECS system is built
+			//       on that it would be good to verify that
+			if (getTypeName<T>() == name) {
+				void *ptr = value.get();
+				T *temp = static_cast<T*>(ptr);
+				storage = *temp;
+				drop();
+				return true;
+			}
+
+			return false;
+		}
+
+		bool drop() {
+			if (haveMessage()) {
+				messages.pop_front();
+				return true;
+			}
+
+			return false;
+		}
+
+		template <typename T>
+		void add(std::shared_ptr<T> ptr) {
+			const char *type = getTypeName<T>();
+			LogFmt("queueing message of type {}", type);
+
 			if (messages.size() >= maxMessages) {
-				// TODO: warning
-				//       (what happened to the TODO about implementing
-				//        a proper logger? Need todo that)
+				LogErrorFmt("Message dropped, of type {}", type);
 				return;
 			}
 
-			messages.push_back(m);
+			auto temp = static_pointer_cast<void>(ptr);
+			messages.push_back({type, temp});
 		}
 
-		std::list<message> messages;
+		std::list<std::pair<const char *, std::shared_ptr<void>>> messages;
 };
 
 #include <grend/sdlContext.hpp>
-class endpoint {
+class router {
 	public:
-		typedef std::shared_ptr<endpoint> ptr;
-		typedef std::weak_ptr<endpoint>   weakptr;
+		typedef std::shared_ptr<router> ptr;
+		typedef std::weak_ptr<router>   weakptr;
 
-		void subscribe(mailbox::ptr mbox, std::string type) {
+		template <typename T>
+		void subscribe(mailbox::ptr mbox) {
+			const char *type = getTypeName<T>();
+
 			subscribers[type].push_back(mbox);
 
 			if (debug) {
-				SDL_Log("[SUB] %s", type.c_str());
+				LogFmt("[SUB] {}", type);
 			}
 		}
 
-		void unsubscribe(const mailbox *mbox, std::string type) {
+		template <typename T>
+		void unsubscribe(const mailbox *mbox) {
+			const char *type = getTypeName<T>();
+
 			if (subscribers.find(type) == subscribers.end()) {
 				return;
 			}
@@ -91,52 +118,56 @@ class endpoint {
 			}
 		}
 
-		void unsubscribe(mailbox::ptr mbox, std::string type) {
-			unsubscribe(mbox.get(), type);
+		template <typename T>
+		void unsubscribe(mailbox::ptr mbox) {
+			unsubscribe<T>(mbox.get());
 		}
 
+		// TODO: unsubcribe from all
+		/*
 		void unsubscribe(mailbox::ptr mbox) {
 			// TODO
 		}
+		*/
 
-		void publish(const message& message) {
-			if (debug) {
-				SDL_Log("[PUB] (%s:%s) %s",
-						message.ent?  message.ent->typeString()  : "_",
-						message.comp? message.comp->typeString() : "_",
-						message.type.c_str());
-			}
+		// TODO: not a huuuge fan of shared_ptr here, necessarily requiring heap allocation...
+		//       might need to redo this, or add some type of object pooling or something
+		//       like that, there could potentially be a lot of messages
+		//       but, as always, for now it's an alright solution
+		template <typename T>
+		void publish(std::shared_ptr<T> message) {
+			const char *type = getTypeName<T>();
 
-			if (subscribers.find(message.type) == subscribers.end()) {
+			if (subscribers.find(type) == subscribers.end()) {
 				// no mailboxes waiting for this message type,
 				// nothing to do
-				if (debug) {
-					SDL_Log("      (No subscribers, dropped)");
-				}
+				if (debug) LogFmt("      (No subscribers, dropped {})", type);
 				return;
 			}
 
-			for (auto& mbox : subscribers[message.type]) {
+			for (auto& mbox : subscribers[type]) {
 				if (auto ptr = mbox.lock()) {
-				//auto ptr = mbox;
 					ptr->add(message);
-					if (debug) {
-						SDL_Log("      -> sent to subscriber");
-					}
+					if (debug) LogFmt("      -> sent to subscriber");
 
 				} else {
-					if (debug) {
-						SDL_Log("      -> couldn't lock subscriber");
-					}
+					if (debug) LogFmt("      -> couldn't lock subscriber");
 					// TODO: remove subscriber from list
 				}
 			}
 		}
 
+		template <typename T>
+		void publish(const T& message) {
+			auto ptr = std::make_shared<T>();
+			*ptr = message;
+			publish<T>(ptr);
+		}
+
 		// TODO: toggleable debug levels
-		bool debug = false;
-		std::map<std::string, std::list<mailbox::weakptr>> subscribers;
-		std::map<const mailbox*, std::set<std::string>> subscribedTypes;
+		bool debug = true;
+		std::unordered_map<const char *, std::vector<mailbox::weakptr>> subscribers;
+		std::unordered_map<const mailbox*, std::set<std::string>> subscribedTypes;
 };
 
 // namespace grend::ecs::messaging

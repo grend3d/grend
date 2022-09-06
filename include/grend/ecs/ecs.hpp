@@ -5,6 +5,8 @@
 #include <grend/sceneNode.hpp>
 #include <grend/physics.hpp>
 #include <grend/IoC.hpp>
+#include <grend/typenames.hpp>
+#include <grend/ecs/message.hpp>
 
 #include <iostream>
 #include <map>
@@ -29,26 +31,6 @@ class entity;
 class entityManager;
 class entitySystem;
 class entityEventSystem;
-
-template <typename T>
-const char *getTypeName() {
-	return typeid(T).name();
-}
-
-template <typename T>
-const char *getTypeName(T& thing) {
-	return typeid(T).name();
-}
-
-template <typename T, typename... Us>
-const char *getFirstTypeName() {
-	return getTypeName<T>();
-}
-
-template <typename... T>
-std::array<const char *, sizeof...(T)> getTypeNames() {
-	return { getTypeName<T>()... };
-}
 
 // TODO: should define map types as part of entityManager
 using CompMap = std::multimap<const char *, component*>;
@@ -296,6 +278,14 @@ class entity : public component {
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
 		bool active = true;
+
+		// Entity-wide message router, intended to be used for inter-component
+		// communication, but you can also subscribe to messages from other
+		// entities, very flexible
+		//
+		// To use this, components should create a mailbox and subscribe to
+		// message types they want to recieve
+		messages::router messages;
 };
 
 /**

@@ -299,13 +299,14 @@ void gameEditor::entityListWindow(gameMain *game) {
 		}
 
 		if (ImGui::BeginPopup(popupstr.c_str())) {
-			for (const auto& [name, _] : entities->components) {
-				if (ImGui::Selectable(demangle(name).c_str())) {
-					nlohmann::json j = {demangle(name), {}};
+			for (const auto& [name, _] : factories->factories) {
+				if (ImGui::Selectable(name.c_str())) {
+					nlohmann::json j = {name, {}};
 
 					factories->build(entities, ent, j);
 				}
 			}
+
 			ImGui::EndPopup();
 		}
 		ImGui::TreePop();

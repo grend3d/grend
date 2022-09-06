@@ -13,6 +13,8 @@ rigidBodySphere::~rigidBodySphere() {};
 rigidBodyBox::~rigidBodyBox() {};
 rigidBodyCylinder::~rigidBodyCylinder() {};
 rigidBodyCapsule::~rigidBodyCapsule() {};
+rigidBodyStaticMesh::~rigidBodyStaticMesh() {};
+
 syncRigidBody::~syncRigidBody() {};
 syncRigidBodyTransform::~syncRigidBodyTransform() {};
 syncRigidBodyPosition::~syncRigidBodyPosition() {};
@@ -44,6 +46,14 @@ rigidBodyCylinder::rigidBodyCylinder(regArgs t)
 
 rigidBodyCapsule::rigidBodyCapsule(regArgs t)
 	: rigidBody(doRegister(this, t)) { }
+
+rigidBodyStaticMesh::rigidBodyStaticMesh(regArgs t)
+	: rigidBody(doRegister(this, t))
+{
+	t.manager->registerInterface<updatable>(t.ent, this);
+	t.ent->messages.subscribe<sceneComponentAdded>(this->mbox);
+	activate(t.manager, t.ent);
+}
 
 void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 	rigidBody *body;

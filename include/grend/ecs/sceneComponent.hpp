@@ -7,6 +7,11 @@
 
 namespace grendx::ecs {
 
+struct sceneComponentAdded {
+	entity *ent;
+	sceneNode::ptr node;
+};
+
 // TODO: proper cache for this, need to have a more universal cache
 //       (something to also work with the model loading code)
 inline std::map<std::string, sceneImport::weakptr> sceneCache;
@@ -21,11 +26,20 @@ class sceneComponent : public component {
 			Copy,
 		};
 
+		void emitMessage(entity *ent) {
+			sceneComponentAdded msg = {
+				.ent = ent,
+				.node = this->node,
+			};
+
+			LogFmt("Also got here, sending sceneComponentAdded message");
+			ent->messages.publish(msg);
+		}
+
 		// TODO: constructors for single empty node, maybe copying other nodes
 		sceneComponent(regArgs t)
 			: component(doRegister(this, t))
 		{
-			//manager->registerComponent(ent, this);
 		};
 
 		sceneComponent(regArgs t, const std::string& path)
@@ -67,6 +81,7 @@ class sceneComponent : public component {
 
 			curPath = path;
 			node = (usage == Copy)? duplicate(res) : res;
+			emitMessage(manager->getEntity(this));
 		}
 
 		sceneNode::ptr getNode() {
