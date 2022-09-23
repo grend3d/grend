@@ -690,11 +690,26 @@ static void initDocking(gameMain *game) {
 			ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
 			ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 1080));
 
-			auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2, nullptr, &dockspace_id);
-			auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.2, nullptr, &dockspace_id);
+			auto dock_id_left      = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2, nullptr, &dockspace_id);
+			auto dock_id_right     = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25, nullptr, &dockspace_id);
+			auto dock_id_down      = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.3, nullptr, &dockspace_id);
+			auto dock_id_leftbota  = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Down, 0.5, nullptr, &dock_id_left);
+			auto dock_id_leftbotb  = ImGui::DockBuilderSplitNode(dock_id_leftbota, ImGuiDir_Down, 0.5, nullptr, &dock_id_leftbota);
 
-			ImGui::DockBuilderDockWindow("Down", dock_id_down);
-			ImGui::DockBuilderDockWindow("Left", dock_id_left);
+			ImGui::DockBuilderDockWindow("Down",  dock_id_down);
+			ImGui::DockBuilderDockWindow("Left",  dock_id_left);
+			ImGui::DockBuilderDockWindow("Right", dock_id_right);
+
+			ImGui::DockBuilderDockWindow("Files",         dock_id_left);
+			ImGui::DockBuilderDockWindow("Objects",       dock_id_left);
+			ImGui::DockBuilderDockWindow("Entities",      dock_id_right);
+			ImGui::DockBuilderDockWindow("Entity Editor", dock_id_right);
+			ImGui::DockBuilderDockWindow("Engine log",    dock_id_down);
+
+			ImGui::DockBuilderDockWindow("Object editor",  dock_id_leftbota);
+			ImGui::DockBuilderDockWindow("Engine metrics", dock_id_leftbotb);
+
+
 			ImGui::DockBuilderFinish(dockspace_id);
 
 			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
@@ -704,6 +719,7 @@ static void initDocking(gameMain *game) {
 
 		}
 
+		/*
 		ImGui::Begin("Left");
 		ImGui::Text("left");
 		ImGui::End();
@@ -711,6 +727,7 @@ static void initDocking(gameMain *game) {
 		ImGui::Begin("Down");
 		ImGui::Text("down");
 		ImGui::End();
+		*/
 
 		auto rend = game->services.resolve<renderContext>();
 		auto dock_main = ImGui::DockBuilderGetCentralNode(dockspace_id);
