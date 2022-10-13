@@ -45,7 +45,6 @@ static bool is_vector(nlohmann::json& value) {
 
 static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	if (is_name_pair(value)) {
-		//auto& [name, obj] = value;
 		std::string name    = value[0];
 		nlohmann::json& obj = value[1];
 
@@ -58,29 +57,27 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	}
 
 	else if (is_vector(value)) {
-		ImGui::Indent();
-
-		ImGui::Columns(value.size());
+		float ptrs[4];
 
 		for (int i = 0; i < value.size(); i++) {
-			ImGui::PushID(i);
-
-			auto& v = value[i];
-			auto ptr = v.get_ptr<nlohmann::json::number_float_t*>();
-			float p = *ptr;
-
-			ImGui::SliderFloat("", &p, 0.f, 10.f);
-			*ptr = p;
-			ImGui::NextColumn();
-			ImGui::PopID();
+			ptrs[i] = value[i];
 		}
 
-		ImGui::Columns(1);
-		ImGui::Unindent();
+		ImGui::SameLine();
+		switch (value.size()) {
+			case 1: ImGui::InputFloat ("", ptrs); break;
+			case 2: ImGui::InputFloat2("", ptrs); break;
+			case 3: ImGui::InputFloat3("", ptrs); break;
+			case 4: ImGui::InputFloat4("", ptrs); break;
+			default: break;
+		}
+
+		for (int i = 0; i < value.size(); i++) {
+			value[i] = ptrs[i];
+		}
 	}
 
 	else if (value.is_array()) {
-		//ImGui::Separator();
 		ImGui::Indent();
 
 		for (unsigned i = 0; i < value.size(); i++) {
@@ -98,7 +95,6 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	}
 
 	else if (value.is_object()) {
-		ImGui::Separator();
 		ImGui::Indent();
 
 		unsigned i = 0;
@@ -106,8 +102,6 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 			ImGui::PushID(i++);
 			std::string temp = path + ":" + name;
 			ImGui::Text("%s", name.c_str());
-
-			//ImGui::SameLine();
 			drawJson(em, path + ":" + name);
 
 			ImGui::PopID();
@@ -120,7 +114,7 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 		auto ptr = value.get_ptr<nlohmann::json::number_float_t*>();
 		float p = *ptr;
 
-		//ImGui::SameLine();
+		ImGui::SameLine();
 		ImGui::SliderFloat("float", &p, 0.f, 10.f);
 
 		*ptr = p;
@@ -144,24 +138,20 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 		auto& arrbuf = foo[localpath];
 		char *data = arrbuf.data();
 
-		ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+		ImGui::SameLine();
 		ImGui::InputText("##edit", data, num);
 
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DRAG_FILENAME")) {
 				const char *fname = (const char*)payload->Data;
-				value = fname;
 				strncpy(data, fname, num - 1);
 			}
 		}
 
-		if (ImGui::Button("OK")) {
-			value = data;
-		}
+		value = data;
 	}
 
 	else if (value.is_null()) {
-		//ImGui::SameLine();
 		ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "<null>");
 	}
 }
