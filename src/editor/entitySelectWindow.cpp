@@ -17,69 +17,151 @@ using namespace grendx;
 static char searchBuffer[0x1000] = "";
 static fileDialog export_entity_dialog("Export entity");
 
-static void drawJson(nlohmann::json& value, const std::string& path = ".") {
-	static ImGuiTreeNodeFlags flags
-		= ImGuiTreeNodeFlags_DefaultOpen;
-		/*
-		= ImGuiTreeNodeFlags_Bullet
-		| ImGuiTreeNodeFlags_DefaultOpen
-		*/
-		/*
-		| ImGuiTreeNodeFlags_OpenOnArrow
-		| ImGuiTreeNodeFlags_OpenOnDoubleClick
-		| ImGuiTreeNodeFlags_SpanAvailWidth
-		*/
-		;
+static bool is_name_pair(nlohmann::json& value) {
+	return value.is_array()
+		&& value.size() == 2
+		&& value[0].is_string()
+		&& value[1].is_object();
+}
 
-	if (value.is_array()) {
-		for (unsigned i = 0; i < value.size(); i++) {
-			std::string name = "[" + std::to_string(i) + "]";
+static bool is_vector(nlohmann::json& value) {
+	if (!value.is_array())
+		return false;
 
-			if (ImGui::TreeNodeEx(name.c_str(), flags)) {
-				drawJson(value[i], path + name);
-				ImGui::TreePop();
-			}
+	if (value.empty())
+		return false;
+
+	if (value.size() > 4)
+		return false;
+
+	for (auto& v : value) {
+		if (!v.is_number_float()) {
+			return false;
 		}
 	}
 
-	else if (value.is_object()) {
-		for (auto& [name, em] : value.items()) {
-			std::string temp = path + ":" + name;
-			if (ImGui::TreeNodeEx(temp.c_str(), flags)) {
-				drawJson(em, path + ":" + name);
-				ImGui::TreePop();
-			}
+	return true;
+}
+
+static void drawJson(nlohmann::json& value, const std::string& path = ".") {
+	if (is_name_pair(value)) {
+		//auto& [name, obj] = value;
+		std::string name    = value[0];
+		nlohmann::json& obj = value[1];
+
+		ImGui::PushID(1234);
+		ImGui::Text("%s", name.c_str());
+		ImGui::Indent();
+		drawJson(obj, path + ":" + name);
+		ImGui::Unindent();
+		ImGui::PopID();
+	}
+
+	else if (is_vector(value)) {
+		ImGui::Indent();
+
+		ImGui::Columns(value.size());
+
+		for (int i = 0; i < value.size(); i++) {
+			ImGui::PushID(i);
+
+			auto& v = value[i];
+			auto ptr = v.get_ptr<nlohmann::json::number_float_t*>();
+			float p = *ptr;
+
+			ImGui::SliderFloat("", &p, 0.f, 10.f);
+			*ptr = p;
+			ImGui::NextColumn();
+			ImGui::PopID();
 		}
+
+		ImGui::Columns(1);
+		ImGui::Unindent();
+	}
+
+	else if (value.is_array()) {
+		//ImGui::Separator();
+		ImGui::Indent();
+
+		for (unsigned i = 0; i < value.size(); i++) {
+			ImGui::PushID(i);
+			std::string name = "[" + std::to_string(i) + "]";
+
+			// TODO: if entries are all numbers and has <=4 entries,
+			//       draw all on the same line
+			drawJson(value[i], path + name);
+
+			ImGui::PopID();
+		}
+
+		ImGui::Unindent();
+	}
+
+	else if (value.is_object()) {
+		ImGui::Separator();
+		ImGui::Indent();
+
+		unsigned i = 0;
+		for (auto& [name, em] : value.items()) {
+			ImGui::PushID(i++);
+			std::string temp = path + ":" + name;
+			ImGui::Text("%s", name.c_str());
+
+			//ImGui::SameLine();
+			drawJson(em, path + ":" + name);
+
+			ImGui::PopID();
+		}
+
+		ImGui::Unindent();
 	}
 
 	else if (value.is_number_float()) {
 		auto ptr = value.get_ptr<nlohmann::json::number_float_t*>();
 		float p = *ptr;
 
-		ImGui::SameLine();
+		//ImGui::SameLine();
 		ImGui::SliderFloat("float", &p, 0.f, 10.f);
 
 		*ptr = p;
 	}
 
 	else if (value.is_string()) {
-		if (ImGui::TreeNodeEx(path.c_str(), flags)) {
-			ImGui::SameLine();
-			ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+		#define num 128
 
-			static char namebuf[128];
-			ImGui::InputText("##edit", namebuf, sizeof(namebuf));
+		static std::map<std::string, std::array<char, num>> foo;
 
-			ImGui::SameLine();
-			if (ImGui::Button("OK")) {
-				value = namebuf;
+		const char *asdf = value.get_ptr<std::string*>()->c_str();
+		std::string localpath = path + ":" + asdf;
+
+		if (!foo.contains(localpath)) {
+			auto& arrbuf = foo[localpath];
+			char *data = arrbuf.data();
+
+			strncpy(data, asdf, num);
+		}
+
+		auto& arrbuf = foo[localpath];
+		char *data = arrbuf.data();
+
+		ImGui::Text("%s", value.get_ptr<std::string*>()->c_str());
+		ImGui::InputText("##edit", data, num);
+
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DRAG_FILENAME")) {
+				const char *fname = (const char*)payload->Data;
+				value = fname;
+				strncpy(data, fname, num - 1);
 			}
-			ImGui::TreePop();
+		}
+
+		if (ImGui::Button("OK")) {
+			value = data;
 		}
 	}
 
 	else if (value.is_null()) {
-		ImGui::SameLine();
+		//ImGui::SameLine();
 		ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "<null>");
 	}
 }
