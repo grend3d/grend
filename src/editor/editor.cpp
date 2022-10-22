@@ -400,6 +400,19 @@ result<importPair> grendx::loadSceneData(std::string path) noexcept {
 		// TODO: need to detect and avoid recursive map loads,
 		//       otherwise this will loop and consume all memory
 		return loadMapData(path);
+
+	} else if (ext == ".obj") {
+		LogInfo("load_scene(): loading object");
+		sceneModel::ptr m = load_object(path);
+
+		// add the model at 0,0
+		auto obj = sceneImport::ptr(new sceneImport(path));
+		// make up a name for .obj models
+		auto fname = basenameStr(path) + ":model";
+
+		setNode(fname, obj, m);
+		modelMap models = {{ fname, m }};
+		return importPair {obj, models};
 	}
 
 	return {resultError, "loadSceneData: unknown file extension: " + ext};

@@ -41,6 +41,7 @@ sceneModel::ptr load_object(std::string filename) {
 	std::vector<glm::vec3> normbuf = {};
 	std::vector<glm::vec2> texbuf = {};
 	std::map<std::string, material::ptr> materials;
+	std::map<std::string, unsigned> matMeshCount;
 
 	if (!input.good()) {
 		// TODO: exception
@@ -66,7 +67,7 @@ sceneModel::ptr load_object(std::string filename) {
 			mesh_name = statement[1];
 			current_mesh_name = mesh_name + ":(null)";
 			current_mesh = sceneMesh::ptr(new sceneMesh());
-			setNode(current_mesh_name, ret, current_mesh);
+			//setNode(current_mesh_name, ret, current_mesh);
 		}
 
 		else if (statement[0] == "mtllib") {
@@ -83,6 +84,7 @@ sceneModel::ptr load_object(std::string filename) {
 			// TODO: check that material exists
 			current_mesh->meshMaterial = materials[statement[1]];
 			current_mesh_name = mesh_name + ":" + statement[1];
+			current_mesh_name += ":" + std::to_string(matMeshCount[statement[1]]++);
 
 			setNode(current_mesh_name, ret, current_mesh);
 		}
@@ -219,7 +221,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 		}
 
 		if (statement[0] == "newmtl") {
-			LogFmt("   - new material: ", statement[1]);
+			LogFmt("   - new material: {}", statement[1]);
 			current_material = statement[1];
 			ret[current_material] = std::make_shared<material>();
 		}
