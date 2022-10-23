@@ -1,4 +1,6 @@
 #include <grend/gameEditor.hpp>
+#include <grend/loadScene.hpp>
+#include <grend/utility.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -44,6 +46,28 @@ void gameEditor::addnodesRec(const std::string& name,
 				}
 
 				ImGui::EndPopup();
+			}
+
+			if (ImGui::BeginDragDropTarget()) {
+				if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DRAG_FILENAME")) {
+					const char *fname = (const char*)payload->Data;
+
+					if (auto res = loadSceneCompiled(fname)) {
+						auto& newobj = *res;
+						std::string basename = basenameStr(fname) + ":";
+
+						for (unsigned count = obj->nodes.size();; count++) {
+							auto temp = basename + std::to_string(count);
+
+							if (!obj->hasNode(temp)) {
+								basename = temp;
+								break;
+							}
+						}
+
+						setNode(basename, obj, newobj);
+					}
+				}
 			}
 		};
 
