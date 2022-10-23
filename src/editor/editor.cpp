@@ -520,6 +520,19 @@ void gameEditor::handleCursorUpdate(gameMain *game) {
 		align(cam->direction().z*editDistance + cam->position().z));
 }
 
+static glm::mat4 fullTranslation(sceneNode::ptr node) {
+	if (node) {
+		if (auto p = node->parent.lock()) {
+			return fullTranslation(p) * node->getTransformMatrix();
+
+		} else {
+			return node->getTransformMatrix();
+		}
+	}
+
+	return glm::mat4();
+}
+
 void gameEditor::update(gameMain *game, float delta) {
 	auto state = game->services.resolve<gameState>();
 
@@ -555,6 +568,9 @@ void gameEditor::update(gameMain *game, float delta) {
 			auto ptr = orientation->getNode(str);
 
 			TRS newtrans = selectedNode->getTransformTRS();
+			glm::mat4 localToWorld = fullTranslation(selectedNode);
+			newtrans.position = applyTransform(localToWorld);
+
 			// project position relative to camera onto camera direction vector
 			// to get depth, then scale with depth to keep size constant on screen
 			glm::vec3 u = newtrans.position - cam->position();
