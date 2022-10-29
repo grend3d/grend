@@ -512,25 +512,8 @@ void gameEditor::setMode(enum mode newmode) {
 }
 
 void gameEditor::handleCursorUpdate(gameMain *game) {
-	// TODO: reuse this for cursor code
-	auto align = [&] (float x) { return floor(x * fidelity)/fidelity; };
-	cursorBuf.position = glm::vec3(
-		align(cam->direction().x*editDistance + cam->position().x),
-		align(cam->direction().y*editDistance + cam->position().y),
-		align(cam->direction().z*editDistance + cam->position().z));
-}
-
-static glm::mat4 fullTranslation(sceneNode::ptr node) {
-	if (node) {
-		if (auto p = node->parent.lock()) {
-			return fullTranslation(p) * node->getTransformMatrix();
-
-		} else {
-			return node->getTransformMatrix();
-		}
-	}
-
-	return glm::mat4();
+	cursorBuf.position = cam->direction()*editDistance + cam->position();
+	align(cursorBuf.position, snapAmount * snapEnabled);
 }
 
 void gameEditor::update(gameMain *game, float delta) {

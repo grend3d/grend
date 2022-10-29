@@ -552,6 +552,8 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+
+			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
 			//selectedNode->setTransform(selectedTransform);
 			//runCallbacks(selectedNode, editAction::Moved);
@@ -568,6 +570,8 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+
+			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
 			//selectedNode->setTransform(selectedTransform);
 			//runCallbacks(selectedNode, editAction::Moved);
@@ -584,6 +588,8 @@ void gameEditor::handleMoveRotate(gameMain *game) {
 				+ dir*clickDepth*amount_x*reversed_x
 				+ dir*clickDepth*amount_y*reversed_y
 				;
+
+			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
 			//selectedNode->setTransform(selectedTransform);
 			//runCallbacks(selectedNode, editAction::Moved);

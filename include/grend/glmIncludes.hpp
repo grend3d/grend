@@ -17,5 +17,11 @@ static inline glm::vec3 applyTransform(const glm::mat4& m, glm::vec3 v={0, 0, 0}
 	return glm::vec3(apos) / apos.w;
 }
 
+template <typename T>
+T& align(T& value, float snapAmount) {
+	value = (snapAmount > 0.0)? glm::floor(value / snapAmount)*snapAmount : value;
+	return value;
+}
+
 // namespace grendx;
 }

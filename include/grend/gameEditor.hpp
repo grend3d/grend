@@ -119,10 +119,11 @@ class gameEditor : public gameView {
 		ecs::entity *selectedEntity = nullptr;
 
 		float movementSpeed = 10.f;
-		float fidelity = 10.f;
+		float snapAmount = 1.f;
 		float exposure = 1.f;
 		float lightThreshold = 0.03;
 		float editDistance = 5;
+		bool snapEnabled = false;
 
 		TRS cursorBuf;
 		TRS transformBuf;

@@ -122,6 +122,19 @@ void setNodeXXX(std::string name, sceneNode::ptr obj, sceneNode::ptr sub) {
 	obj->nodes[name] = sub;
 }
 
+static inline
+glm::mat4 fullTranslation(sceneNode::ptr node) {
+	if (node) {
+		if (auto p = node->parent.lock()) {
+			return fullTranslation(p) * node->getTransformMatrix();
+
+		} else {
+			return node->getTransformMatrix();
+		}
+	}
+
+	return glm::mat4();
+}
 
 // TODO: just realized these overload syscalls, should that be avoided?
 //       in principle it's fine, might be confusing in code though

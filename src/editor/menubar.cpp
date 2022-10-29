@@ -158,8 +158,12 @@ void gameEditor::menubar(gameMain *game) {
 			float scale = cam->scale();
 			bool checkGL = GL_ERROR_CHECK_ENABLED();
 
-			ImGui::SliderFloat("Snap increment", &fidelity,
-			                  0.5f, 50.f, "%.1f");
+			ImGui::Checkbox("Snap to grid", &snapEnabled);
+			if (snapEnabled) {
+				ImGui::InputFloat("Snap increment", &snapAmount,
+								  0.1f, 10.f, "%.1f");
+			}
+
 			ImGui::SliderFloat("Movement speed", &movementSpeed,
 			                  1.f, 100.f, "%.1f");
 			ImGui::SliderFloat("Exposure (tonemapping)", &rend->exposure,
