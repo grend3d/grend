@@ -10,6 +10,7 @@
 #include <grend/interpolation.hpp>
 #include <grend/renderUtils.hpp>
 #include <grend/jobQueue.hpp>
+#include <grend/gridDraw.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/shader.hpp>
@@ -146,13 +147,21 @@ void gameEditor::loadUIModels(void) {
 }
 
 void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
+	auto rend  = game->services.resolve<renderContext>();
+	auto state = game->services.resolve<gameState>();
+
+	auto vportPos  = rend->getDrawOffset();
+	auto vportSize = rend->getDrawSize();
+	glViewport(vportPos.x, fb->height - (vportPos.y + vportSize.y), vportSize.x, vportSize.y);
+
+	static gridDrawer grid;
+	grid.buildGrid(cam->position());
+	grid.flushLines(cam->viewProjTransform());
+
 #if !defined(__ANDROID__) && GLSL_VERSION > 100
 	renderEditor(game);
 	ImGui::Render();
 #endif
-
-	auto rend  = game->services.resolve<renderContext>();
-	auto state = game->services.resolve<gameState>();
 
 	renderQueue que;
 	renderFlags flags = rend->getLightingFlags();

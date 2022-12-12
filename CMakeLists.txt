@@ -99,6 +99,9 @@ add_library(Grend
 	src/editor/logWindow.cpp
 	src/editor/filePane.cpp
 
+	# TODO: maybe just part of the editor
+	src/gridDraw.cpp
+
 	src/logger.cpp
 	src/fileDialog.cpp
 	src/geometryGeneration.cpp
