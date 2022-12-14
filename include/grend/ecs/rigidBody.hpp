@@ -182,6 +182,9 @@ class rigidBodyStaticMesh : public rigidBody,
 			auto physicsServ = manager->engine->services.resolve<physics>();
 
 			for (auto scene : ent->getAll<sceneComponent>()) {
+				if (!scene->getNode())
+					continue;
+
 				physicsServ->addStaticModels(ent, scene->getNode(),
 				                             ent->node->getTransformTRS(),
 				                             meshObjects);
