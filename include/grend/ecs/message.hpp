@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <set>
+#include <string>
 #include <unordered_map>
 
 namespace grendx::messages {
@@ -81,7 +83,6 @@ class mailbox {
 		std::list<std::pair<const char *, std::shared_ptr<void>>> messages;
 };
 
-#include <grend/sdlContext.hpp>
 class router {
 	public:
 		typedef std::shared_ptr<router> ptr;

@@ -2,8 +2,7 @@
 // TODO: more doxygen, copyright, etc
 #pragma once
 
-#include <grend/sceneNode.hpp>
-#include <grend/physics.hpp>
+#include <grend/TRS.hpp>
 #include <grend/IoC.hpp>
 #include <grend/typenames.hpp>
 #include <grend/ecs/message.hpp>
@@ -241,7 +240,6 @@ class entity : public component {
 
 		virtual ~entity();
 		virtual const char* typeString(void) const { return getTypeName(*this); };
-		virtual sceneNode::ptr getNode(void) { return node; };
 
 		template <typename T, typename... Args>
 		T* attach(Args... args) {
@@ -268,10 +266,10 @@ class entity : public component {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
-		sceneNode::ptr node = std::make_shared<sceneNode>();
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
+		TRS transform;
 		bool active = true;
 
 		// Entity-wide message router, intended to be used for inter-component
@@ -280,6 +278,7 @@ class entity : public component {
 		//
 		// To use this, components should create a mailbox and subscribe to
 		// message types they want to recieve
+		// TODO: maybe it'd be better to have callbacks?
 		messages::router messages;
 };
 

@@ -140,7 +140,7 @@ bool entityManager::valid(entity *ent) {
 void entityManager::activate(entity *ent) {
 	if (!valid(ent)) return;
 
-	ent->active = ent->node->visible = true;
+	ent->active = true;
 
 	// run activators, if any
 	auto activators = ent->getAll<activatable>();
@@ -158,7 +158,7 @@ void entityManager::activate(entity *ent) {
 void entityManager::deactivate(entity *ent) {
 	if (!valid(ent)) return;
 
-	ent->active = ent->node->visible = false;
+	ent->active = false;
 
 	// run deactivators, if any
 	auto activators = ent->getAll<activatable>();
@@ -279,8 +279,9 @@ entity *findNearest(entityManager *manager,
 
 	auto ents = searchEntities(manager, tags);
 	for (auto& ent : ents) {
-		sceneNode::ptr node = ent->getNode();
-		float dist = glm::distance(position, node->getTransformTRS().position);
+		//sceneNode::ptr node = ent->getNode();
+		float dist = glm::distance(position, ent->transform.position);
+		//float dist = glm::distance(position, node->getTransformTRS().position);
 
 		if (ent->active && dist < curmin) {
 			curmin = dist;
@@ -493,7 +494,7 @@ bool intersects(std::multimap<const char *, component*>& entdata,
 
 nlohmann::json entity::serializer(component *comp) {
 	entity *ent = static_cast<entity*>(comp);
-	const TRS& trs = ent->node->getTransformTRS();
+	const TRS& trs = ent->transform;
 
 	auto& t = trs.position;
 	auto& r = trs.rotation;
@@ -513,11 +514,11 @@ void entity::deserializer(component *comp, nlohmann::json j) {
 	auto& r = j["rotation"];
 	auto& s = j["scale"];
 
-	ent->node->setTransform((TRS) {
+	ent->transform = (TRS) {
 		.position = {t[0], t[1], t[2]},
 		.rotation = {r[0], r[1], r[2], r[3]},
 		.scale    = {s[0], s[1], s[2]},
-	});
+	};
 }
 
 // namespace grendx::ecs

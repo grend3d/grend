@@ -33,7 +33,6 @@ void gameEditor::handleSelectObject() {
 
 	if (clickidx - 10 < clickState.size()) {
 		auto& [_, ent] = clickState[clickidx - 10];
-		selectedNode = ent->node;
 		selectedEntity = ent;
 
 		LogErrorFmt("selected entity: {}@{}", clickidx-10, (void*)ent);

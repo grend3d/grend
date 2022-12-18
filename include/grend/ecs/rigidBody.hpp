@@ -187,7 +187,7 @@ class rigidBodyStaticMesh : public rigidBody,
 					continue;
 
 				physicsServ->addStaticModels(ent, scene->getNode(),
-				                             ent->node->getTransformTRS(),
+				                             ent->transform,
 				                             meshObjects);
 			}
 		}

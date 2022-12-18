@@ -64,7 +64,7 @@ void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
 		return;
 	}
 
-	ent->node->setTransform(body->phys->getTransform());
+	ent->transform = body->phys->getTransform();
 }
 
 void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
@@ -76,9 +76,13 @@ void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
 		return;
 	}
 
+	ent->transform.position = body->phys->getTransform().position;
+
+	/*
 	TRS transform = ent->node->getTransformTRS();
 	transform.position = body->phys->getTransform().position;
 	ent->node->setTransform(transform);
+	*/
 }
 
 void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
@@ -96,10 +100,15 @@ void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
 	glm::vec3 vel = body->phys->getVelocity();
 	glm::quat rot = glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
 
+	ent->transform.position = physTransform.position;
+	ent->transform.rotation = rot;
+
+	/*
 	TRS transform = ent->node->getTransformTRS();
 	transform.position = physTransform.position;
 	transform.rotation = rot;
 	ent->node->setTransform(transform);
+	*/
 }
 
 void syncRigidBodySystem::update(entityManager *manager, float delta) {

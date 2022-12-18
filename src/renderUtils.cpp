@@ -154,7 +154,7 @@ grendx::buildDrawableQueue(uint32_t renderID) {
 			que.add(flags->getShader(),
 			        scene->getNode(),
 			        renderID,
-			        ent->node->getTransformMatrix());
+			        ent->transform.getTransform());
 		}
 	}
 
@@ -180,7 +180,7 @@ grendx::buildClickableQueue(entClicks& clicks, uint32_t startID) {
 			que.add(shader,
 			        scene->getNode(),
 			        renderID,
-			        ent->node->getTransformMatrix());
+			        ent->transform.getTransform());
 		}
 
 		renderID++;

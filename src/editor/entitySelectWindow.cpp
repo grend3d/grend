@@ -288,7 +288,6 @@ void gameEditor::entityListWindow() {
 					entities->add(ent);
 
 					selectedEntity = ent;
-					selectedNode   = ent->node;
 				} else {
 					LogFmt("Invalid file name: {}", fname);
 				}
@@ -317,7 +316,6 @@ void gameEditor::entityListWindow() {
 		}
 
 		if (ImGui::Selectable(entstr.c_str(), ent == selectedEntity)) {
-			selectedNode      = ent->node;
 			selectedEntity    = ent;
 		}
 
