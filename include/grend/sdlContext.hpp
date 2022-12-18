@@ -4,23 +4,26 @@
 //#include <SDL_ttf.h>
 #include <grend/openglIncludes.hpp>
 #include <grend/renderSettings.hpp>
+#include <grend/IoC.hpp>
 
 namespace grendx {
 
-class context {
+class SDLContext : public IoC::Service {
 	public:
-		context(const char *progname, const renderSettings& settings);
+		SDLContext(const char *progname, const renderSettings& settings);
 		// XXX: context normally shouldn't be copied or moved after initialization,
 		//      helps detect some bugs
-		context(const context& other) = delete;
-		context(const context&& other) = delete;
+		SDLContext(const SDLContext& other) = delete;
+		SDLContext(const SDLContext&& other) = delete;
 
-		~context();
+		virtual ~SDLContext();
 		void setAudioCallback(void *data, SDL_AudioCallback callback);
 		void applySettings(const renderSettings& settings);
+		const renderSettings& getSettings();
 
 		SDL_Window *window;
 		SDL_GLContext glcontext;
+		renderSettings currentSettings;
 
 		SDL_AudioDeviceID audioOut;
 		SDL_AudioSpec     audioHave;

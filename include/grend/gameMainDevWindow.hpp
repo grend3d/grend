@@ -13,8 +13,15 @@
 #include <memory>
 #include <functional>
 
-namespace grendx {
+namespace grendx::engine::dev {
 
+void initialize(const std::string& name, const renderSettings& settings);
+void step(void);
+void run(void);
+void setView(gameView::ptr nview);
+gameView::ptr getView(void);
+
+/*
 // development instance with editor, a production instance would only
 // need a player view
 class gameMainDevWindow : public gameMain {
@@ -35,6 +42,7 @@ class gameMainDevWindow : public gameMain {
 		gameView::ptr   player = nullptr;
 		gameEditor::ptr editor = nullptr;
 };
+*/
 
 // namespace grendx
 }

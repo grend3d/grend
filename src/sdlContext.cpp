@@ -21,7 +21,7 @@ void SDL_Die(const char *message) {
 //      engine audio stuff has been initialized, so this will fill the buffer
 //      with zeros until another callback is set up
 static void callbackStub(void *userdata, uint8_t *stream, int len) {
-	context *ctx = reinterpret_cast<context*>(userdata);
+	SDLContext *ctx = reinterpret_cast<SDLContext*>(userdata);
 
 	if (ctx && ctx->audioCallback) {
 		ctx->audioCallback(ctx->callbackData, stream, len);
@@ -31,8 +31,8 @@ static void callbackStub(void *userdata, uint8_t *stream, int len) {
 	}
 }
 
-context::context(const char *progname, const renderSettings& settings) {
-	LogInfo("got to context::context()");
+SDLContext::SDLContext(const char *progname, const renderSettings& settings) {
+	LogInfo("got to SDLContext::SDLContext()");
 	int flags
 		= SDL_INIT_VIDEO
 		| SDL_INIT_AUDIO
@@ -143,7 +143,7 @@ context::context(const char *progname, const renderSettings& settings) {
 	LogInfo("Finished initializing SDL");
 }
 
-context::~context() {
+SDLContext::~SDLContext() {
 	LogInfo("SDL done, cleaning up...");
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
@@ -151,7 +151,8 @@ context::~context() {
 	SDL_Quit();
 }
 
-void context::applySettings(const renderSettings& settings) {
+void SDLContext::applySettings(const renderSettings& settings) {
+	currentSettings = settings;
 	SDL_GL_SetSwapInterval(settings.vsync);
 
 	if (settings.windowResX == 0 || settings.windowResY == 0) {
@@ -217,7 +218,11 @@ void context::applySettings(const renderSettings& settings) {
 	*/
 }
 
-void context::setAudioCallback(void *data, SDL_AudioCallback callback) {
+const renderSettings& SDLContext::getSettings(void) {
+	return currentSettings;
+}
+
+void SDLContext::setAudioCallback(void *data, SDL_AudioCallback callback) {
 	// Hmm, is locking needed here?
 	callbackData = data;
 	audioCallback = callback;

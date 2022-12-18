@@ -8,6 +8,9 @@
 #include <grend/typenames.hpp>
 #include <grend/ecs/message.hpp>
 
+// TODO: Not gameMain, maybe utility? common? something like that
+#include <grend/gameMain.hpp>
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -18,11 +21,6 @@
 #include <initializer_list>
 
 #include <nlohmann/json.hpp>
-
-// XXX: forward declaration for gameMain.hpp (at end)
-//      entityManager keeps a gameMain pointer, avoids pointlessly having to
-//      pass it as a function parameter all the time
-namespace grendx { class gameMain; }
 
 namespace grendx::ecs {
 
@@ -102,7 +100,7 @@ class entityManager : public IoC::Service {
 		typedef std::shared_ptr<entityManager> ptr;
 		typedef std::weak_ptr<entityManager>   weakptr;
 
-		entityManager(gameMain *_engine) : engine(_engine) {};
+		entityManager() {};
 		~entityManager();
 
 		// TODO: might be a good idea for state to be private
@@ -207,9 +205,6 @@ class entityManager : public IoC::Service {
 		//       onCollision components?
 		std::shared_ptr<std::vector<collision>> collisions
 			= std::make_shared<std::vector<collision>>();
-
-		// XXX
-		gameMain *engine;
 
 	private:
 		regArgs registerComponent(const char *name,
@@ -614,5 +609,3 @@ searchResults<T...> searchEntities(entityManager *manager) {
 
 // namespace grendx::ecs
 };
-
-#include <grend/gameMain.hpp>

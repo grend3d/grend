@@ -1,7 +1,9 @@
+#include <grend/gameMain.hpp>
 #include <grend/controllers.hpp>
 #include <grend/renderContext.hpp>
 
 using namespace grendx;
+using namespace grendx::engine;
 
 bindFunc grendx::controller::camMovement(camera::ptr cam, float accel) {
 	// TODO: same as movement2D below, need to keep track of velocities per-event
@@ -80,12 +82,14 @@ bindFunc grendx::controller::camMovement2D(camera::ptr cam, float accel) {
 	};
 }
 
-bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
+bindFunc grendx::controller::camFPS(camera::ptr cam) {
 	return [=] (const SDL_Event& ev, unsigned flags) {
+		auto ctx = Resolve<SDLContext>();
+
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
-		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+		SDL_GetWindowSize(ctx->window, &win_x, &win_y);
 
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
@@ -109,12 +113,14 @@ bindFunc grendx::controller::camFPS(camera::ptr cam, gameMain *game) {
 // TODO: probably not going to use this anymore now that camAngled2DRotatable()
 //       is here, could replace this with camAngled2DRotatable()
 bindFunc
-grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
+grendx::controller::camAngled2D(camera::ptr cam, float angle) {
 	return [=] (const SDL_Event& ev, unsigned flags) {
+		auto ctx = Resolve<SDLContext>();
+
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
-		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+		SDL_GetWindowSize(ctx->window, &win_x, &win_y);
 
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
@@ -134,12 +140,14 @@ grendx::controller::camAngled2D(camera::ptr cam, gameMain *game, float angle) {
 
 // TODO: pitch and yaw ("angle" doesn't mean anything)
 bindFunc
-grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angle) {
+grendx::controller::camAngled2DFixed(camera::ptr cam, float angle) {
 	return [=] (const SDL_Event& ev, unsigned flags) {
+		auto ctx = Resolve<SDLContext>();
+
 		int x, y;
 		int win_x, win_y;
 		Uint32 buttons = SDL_GetMouseState(&x, &y); (void)buttons;
-		SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+		SDL_GetWindowSize(ctx->window, &win_x, &win_y);
 
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
@@ -153,7 +161,6 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, gameMain *game, float angl
 // TODO: pitch and yaw ("angle" doesn't mean anything)
 bindFunc
 grendx::controller::camAngled2DRotatable(camera::ptr cam,
-                                         gameMain *game,
                                          float angle,
                                          float minY,
                                          float maxY)
@@ -172,6 +179,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 	state->angle = angle;
 
 	return [=] (const SDL_Event& ev, unsigned flags) {
+		auto ctx = Resolve<SDLContext>();
 		int x, y; (void)x; (void)y;
 
 		bool isMouse = ev.type == SDL_MOUSEBUTTONDOWN || ev.type == SDL_MOUSEBUTTONUP || ev.type == SDL_MOUSEMOTION;
@@ -200,7 +208,7 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 
 			} else if (state->clicked && ev.type == SDL_MOUSEMOTION) {
 				int win_x, win_y;
-				SDL_GetWindowSize(game->ctx.window, &win_x, &win_y);
+				SDL_GetWindowSize(ctx->window, &win_x, &win_y);
 
 				state->distMoved += glm::vec2 {
 					ev.motion.xrel / float(win_x),
@@ -271,12 +279,12 @@ bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float s
 //      resizing the framebuffer on window resize, etc.
 // TODO: dedicated file for generic close, minimize, copy/paste, drag and drop, etc
 //       handlers... windowControllers.cpp?
-bindFunc grendx::resizeInputHandler(gameMain *game, renderPostChain::ptr post) {
+bindFunc grendx::resizeInputHandler(renderPostChain::ptr post) {
 	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_WINDOWEVENT
 		    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
 		{
-			auto rend = game->services.resolve<renderContext>();
+			auto rend = Resolve<renderContext>();
 
 			auto width = ev.window.data1;
 			auto height = ev.window.data2;

@@ -2,14 +2,32 @@
 
 #include <grend/IoC.hpp>
 #include <grend/renderSettings.hpp>
-#include <grend/sdlContext.hpp>
 #include <grend/timers.hpp>
+
+// TODO: not this
+#include <grend/gameView.hpp>
 
 #include <memory>
 #include <stdint.h>
 
-namespace grendx {
+namespace grendx::engine {
 
+void initialize(const std::string& name, const renderSettings& settings);
+void step(void);
+void run(void);
+void setView(gameView::ptr nview);
+gameView::ptr getView(void);
+void applySettings(const renderSettings& settings);
+
+IoC::Container& Services();
+
+template <typename T>
+T* Resolve(void) {
+	return Services().resolve<T>();
+}
+
+
+/*
 class gameView;
 
 // abstract class, should be derived from
@@ -44,9 +62,7 @@ class gameMain {
 			unsigned drawnMeshes = 0;
 		} metrics;
 };
+*/
 
 // namespace grendx
 }
-
-// TODO: maybe not part of gameMain
-#include <grend/gameView.hpp>

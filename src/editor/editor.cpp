@@ -21,15 +21,18 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 using namespace grendx;
+using namespace grendx::engine;
 
+// XXX: TODO: what was this for?
 static sceneModel::ptr  physmodel;
 
 void StyleColorsGrendDark(ImGuiStyle* dst = nullptr);
 
-gameEditor::gameEditor(gameMain *game)
+gameEditor::gameEditor()
 	: gameView()
 {
-	auto rend = game->services.resolve<renderContext>();
+	auto rend = Resolve<renderContext>();
+	auto ctx  = Resolve<SDLContext>();
 
 	LogCallback([this] (LogType type, const std::string& msg) {
 		this->logEntries.push_back(msg);
@@ -44,7 +47,7 @@ gameEditor::gameEditor(gameMain *game)
 	post = renderPostChain::ptr(new renderPostChain(
 		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
 		                rend->globalShaderOptions)},
-		game->settings.targetResX, game->settings.targetResY));
+		ctx->getSettings().targetResX, ctx->getSettings().targetResY));
 #else
 	post = renderPostChain::ptr(new renderPostChain(
 		{
@@ -55,22 +58,22 @@ gameEditor::gameEditor(gameMain *game)
 		loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
 		                rend->globalShaderOptions)
 		},
-		game->settings.targetResX, game->settings.targetResY));
+		ctx->getSettings().targetResX, ctx->getSettings().targetResY));
 #endif
 
 	loading_thing = makePostprocessor<rOutput>(
 		loadProgram(GR_PREFIX "shaders/baked/postprocess.vert",
 		            GR_PREFIX "shaders/baked/texpresent.frag",
 		            rend->globalShaderOptions),
-		game->settings.targetResX, game->settings.targetResY
+		ctx->getSettings().targetResX, ctx->getSettings().targetResY
 	);
 
 	// XXX: constructing a full shared pointer for this is a bit wasteful...
 	loading_img = genTexture();
 	loading_img->buffer(std::make_shared<materialTexture>(GR_PREFIX "assets/tex/loading-splash.png"));
 
-	clear(game);
-	initImgui(game);
+	clear();
+	initImgui();
 	loadUIModels();
 
 	auto moda = std::make_shared<sceneNode>();
@@ -78,7 +81,7 @@ gameEditor::gameEditor(gameMain *game)
 	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
 	compileModel("testphys", physmodel);
 
-	loadInputBindings(game);
+	loadInputBindings();
 	setMode(mode::View);
 
 	// XXX
@@ -146,9 +149,10 @@ void gameEditor::loadUIModels(void) {
 	compileModels(UIModels);
 }
 
-void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
-	auto rend  = game->services.resolve<renderContext>();
-	auto state = game->services.resolve<gameState>();
+void gameEditor::render(renderFramebuffer::ptr fb) {
+	auto rend  = Resolve<renderContext>();
+	auto state = Resolve<gameState>();
+	auto ctx   = Resolve<SDLContext>();
 
 	auto vportPos  = rend->getDrawOffset();
 	auto vportSize = rend->getDrawSize();
@@ -159,7 +163,7 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	grid.flushLines(cam->viewProjTransform());
 
 #if !defined(__ANDROID__) && GLSL_VERSION > 100
-	renderEditor(game);
+	renderEditor();
 	ImGui::Render();
 #endif
 
@@ -170,10 +174,10 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
 	clickState.clear();
-	auto world = buildClickableQueue(game, clickState);
+	auto world = buildClickableQueue(clickState);
 	world.add(flags, state->rootnode);
-	drawMultiQueue(game, world, fb, cam);
-	renderWorldObjects(game);
+	drawMultiQueue(world, fb, cam);
+	renderWorldObjects();
 
 	auto p = UIObjects->getNode("Orientation-Indicator");
 	auto m = p->getTransformMatrix();
@@ -222,9 +226,9 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
-	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);
+	SDL_GetWindowSize(ctx->window, &winsize_x, &winsize_y);
 
-	setPostUniforms(post, game, cam);
+	setPostUniforms(post, cam);
 	post->draw(rend->framebuffer);
 
 // XXX: FIXME: imgui on es2 results in a blank screen, for whatever reason
@@ -236,13 +240,13 @@ void gameEditor::render(gameMain *game, renderFramebuffer::ptr fb) {
 //             the phone I'm testing on has a driver bug triggered
 //             by one of the imgui draw calls, but only on es3... boy oh boy
 #if !defined(__ANDROID__) && GLSL_VERSION > 100
-	renderImguiData(game);
+	renderImguiData();
 #endif
 }
 
-void gameEditor::renderWorldObjects(gameMain *game) {
-	auto rend  = game->services.resolve<renderContext>();
-	auto state = game->services.resolve<gameState>();
+void gameEditor::renderWorldObjects() {
+	auto rend  = Resolve<renderContext>();
+	auto state = Resolve<gameState>();
 
 	DO_ERROR_CHECK();
 
@@ -334,7 +338,9 @@ void gameEditor::renderWorldObjects(gameMain *game) {
 	}
 }
 
-void gameEditor::initImgui(gameMain *game) {
+void gameEditor::initImgui() {
+	auto ctx  = Resolve<SDLContext>();
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -344,13 +350,13 @@ void gameEditor::initImgui(gameMain *game) {
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	io.Fonts->AddFontFromFileTTF(GR_PREFIX "assets/fonts/Roboto-Regular.ttf",
-	                             12*game->settings.UIScale);
+	                             12*ctx->getSettings().UIScale);
 
 	StyleColorsGrendDark();
 	//ImGui::StyleColorsDark();
 	//ImGui::StyleColorsClassic();
 	//ImGui::StyleColorsLight();
-	ImGui_ImplSDL2_InitForOpenGL(game->ctx.window, game->ctx.glcontext);
+	ImGui_ImplSDL2_InitForOpenGL(ctx->window, ctx->glcontext);
 	ImGui_ImplOpenGL3_Init("#version " GLSL_STRING);
 }
 
@@ -440,9 +446,9 @@ result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 
 // TODO: return result type here somehow
 std::pair<sceneImport::ptr, std::future<bool>>
-grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
+grendx::loadSceneAsyncCompiled(std::string path) {
 	auto ret = std::make_shared<sceneImport>(path);
-	auto jobs = game->services.resolve<jobQueue>();
+	auto jobs = Resolve<jobQueue>();
 
 	auto fut = jobs->addAsync([=] () {
 		if (auto res = loadSceneData(path)) {
@@ -478,7 +484,7 @@ grendx::loadSceneAsyncCompiled(gameMain *game, std::string path) {
 	return {ret, std::move(fut)};
 }
 
-void gameEditor::reloadShaders(gameMain *game) {
+void gameEditor::reloadShaders() {
 	// TODO: redo this (again (sigh))
 #if 0
 	// push everything into one vector for simplicity, this will be
@@ -520,13 +526,13 @@ void gameEditor::setMode(enum mode newmode) {
 	inputBinds.setMode(mode);
 }
 
-void gameEditor::handleCursorUpdate(gameMain *game) {
+void gameEditor::handleCursorUpdate() {
 	cursorBuf.position = cam->direction()*editDistance + cam->position();
 	align(cursorBuf.position, snapAmount * snapEnabled);
 }
 
-void gameEditor::update(gameMain *game, float delta) {
-	auto state = game->services.resolve<gameState>();
+void gameEditor::update(float delta) {
+	auto state = Resolve<gameState>();
 
 	static glm::vec3 target = glm::vec3(0);
 	glm::mat3 m = {cam->right(), cam->up(), cam->direction()};
@@ -596,7 +602,7 @@ void gameEditor::update(gameMain *game, float delta) {
 			bbox->visible = false;
 		}
 
-		handleMoveRotate(game);
+		handleMoveRotate();
 	}
 
 
@@ -604,17 +610,19 @@ void gameEditor::update(gameMain *game, float delta) {
 		auto ptr = UIObjects->getNode("Cursor-Placement");
 
 		if (ptr) {
-			handleCursorUpdate(game);
+			handleCursorUpdate();
 			ptr->setTransform((TRS) { .position = cursorBuf.position, });
 		}
 	}
 }
 
 
-void gameEditor::showLoadingScreen(gameMain *game) {
+void gameEditor::showLoadingScreen() {
+	auto ctx  = Resolve<SDLContext>();
+
 	// TODO: maybe not this
 	loading_thing->draw(loading_img, nullptr);
-	SDL_GL_SwapWindow(game->ctx.window);
+	SDL_GL_SwapWindow(ctx->window);
 }
 
 bool gameEditor::isUIObject(sceneNode::ptr obj) {
@@ -639,10 +647,10 @@ sceneNode::ptr gameEditor::getNonModel(sceneNode::ptr obj) {
 	return nullptr;
 }
 
-void gameEditor::clear(gameMain *game) {
-	auto state = game->services.resolve<gameState>();
+void gameEditor::clear() {
+	auto state = Resolve<gameState>();
 
-	showLoadingScreen(game);
+	showLoadingScreen();
 
 	cam->setPosition({0, 0, 0});
 	models.clear();
@@ -652,7 +660,7 @@ void gameEditor::clear(gameMain *game) {
 }
 
 // TODO: rename 'renderer' to 'rend' or something
-void gameEditor::renderImguiData(gameMain *game) {
+void gameEditor::renderImguiData() {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -668,7 +676,7 @@ void gameEditor::renderImguiData(gameMain *game) {
 #if 1
 // messing around with an IDE-style layout, will set this up properly eventually
 #include <imgui/imgui_internal.h>
-static void initDocking(gameMain *game) {
+static void initDocking() {
 	ImGuiIO& io = ImGui::GetIO();
 	//ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 	ImGuiDockNodeFlags dockspace_flags
@@ -750,7 +758,8 @@ static void initDocking(gameMain *game) {
 		ImGui::End();
 		*/
 
-		auto rend = game->services.resolve<renderContext>();
+		auto rend = Resolve<renderContext>();
+
 		auto dock_main = ImGui::DockBuilderGetCentralNode(dockspace_id);
 		auto& pos  = dock_main->Pos;
 		auto& size = dock_main->Size;
@@ -764,34 +773,36 @@ static void initDocking(gameMain *game) {
 }
 #endif
 
-void gameEditor::renderEditor(gameMain *game) {
+void gameEditor::renderEditor() {
+	auto ctx  = Resolve<SDLContext>();
+
 	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame(game->ctx.window);
+	ImGui_ImplSDL2_NewFrame(ctx->window);
 	ImGui::NewFrame();
 
-	initDocking(game);
-	menubar(game);
+	initDocking();
+	menubar();
 
 	// TODO: this could probably be reduced to like a map of
 	//       window names to states...
 	//       as simple as name -> opened?
 	//       or name -> pair<opened, draw()>, something like that
 	//       or even name -> draw(), and being in the map implies it's opened...
-	if (showMetricsWindow)      metricsWindow(game);
+	if (showMetricsWindow)      metricsWindow();
 		//ImGui::ShowMetricsWindow();
-	if (showMapWindow)          mapWindow(game);
-	if (showObjectSelectWindow) objectSelectWindow(game);
-	if (showAddEntityWindow)    addEntityWindow(game);
-	if (showProfilerWindow)     profilerWindow(game);
-	if (showSettingsWindow)     settingsWindow(game);
+	if (showMapWindow)          mapWindow();
+	if (showObjectSelectWindow) objectSelectWindow();
+	if (showAddEntityWindow)    addEntityWindow();
+	if (showProfilerWindow)     profilerWindow();
+	if (showSettingsWindow)     settingsWindow();
 
-	if (showEntityEditorWindow) entityEditorWindow(game);
-	if (showEntityListWindow)   entityListWindow(game);
-	if (showLogWindow)          logWindow(game);
-	if (showFilePane)           filepane.render(game);
+	if (showEntityEditorWindow) entityEditorWindow();
+	if (showEntityListWindow)   entityListWindow();
+	if (showLogWindow)          logWindow();
+	if (showFilePane)           filepane.render();
 
 	if (selectedNode && showObjectEditorWindow)
-		objectEditorWindow(game);
+		objectEditorWindow();
 
 	/* TODO:
 	if (showEntityEditorWindow) {

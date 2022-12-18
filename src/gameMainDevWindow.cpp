@@ -13,6 +13,46 @@
 
 using namespace grendx;
 
+static bool inEditor = false;
+static gameView::ptr   player = nullptr;
+static gameEditor::ptr editor = nullptr;
+
+enum modes {
+	Editor,
+	Player,
+};
+int mode = modes::Editor;
+
+void grendx::engine::dev::initialize(const std::string& name, const renderSettings& settings) {
+	grendx::engine::initialize(name, settings);
+
+	editor = std::make_shared<gameEditor>();
+
+	auto audio = Resolve<audioMixer>();
+	audio->setCamera(editor->cam);
+
+	grendx::engine::setView(editor);
+}
+
+void grendx::engine::dev::step(void) {
+	grendx::engine::step();
+}
+
+void grendx::engine::dev::run(void) {
+	auto state = Resolve<gameState>();
+	editor->selectedNode = state->rootnode;
+	grendx::engine::run();
+}
+
+void grendx::engine::dev::setView(gameView::ptr nview) {
+	grendx::engine::setView(nview);
+}
+
+gameView::ptr grendx::engine::dev::getView(void) {
+	return grendx::engine::getView();
+}
+
+#if 0
 gameMainDevWindow::gameMainDevWindow(const renderSettings& settings)
 	: gameMain("grend editor", settings)
 {
@@ -71,3 +111,4 @@ void gameMainDevWindow::addEditorCallback(gameEditor::editCallback func) {
 	gameEditor *p = editor.get();
 	p->addEditorCallback(func);
 }
+#endif

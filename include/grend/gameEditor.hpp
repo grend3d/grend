@@ -37,19 +37,19 @@ class gameEditor : public gameView {
 
 		typedef std::function<void(sceneNode::ptr, editAction action)> editCallback;
 
-		gameEditor(gameMain *game);
+		gameEditor();
 		renderPostChain::ptr post;
 		renderPostStage<rOutput>::ptr loading_thing;
 		Texture::ptr loading_img;
 
-		virtual void handleEvent(gameMain *game, const SDL_Event& ev);
-		virtual void render(gameMain *game, renderFramebuffer::ptr fb);
-		virtual void update(gameMain *game, float delta);
+		virtual void handleEvent(const SDL_Event& ev);
+		virtual void render(renderFramebuffer::ptr fb);
+		virtual void update(float delta);
 
-		void initImgui(gameMain *game);
+		void initImgui();
 		void addEditorCallback(editCallback func);
 		void runCallbacks(sceneNode::ptr node, editAction action);
-		void clear(gameMain *game);
+		void clear();
 
 		enum mode {
 			Inactive,
@@ -101,13 +101,13 @@ class gameEditor : public gameView {
 			//       this model, although that might be better off in the model class itself...
 		};
 
-		void updateModels(gameMain *game);
-		void reloadShaders(gameMain *game);
+		void updateModels();
+		void reloadShaders();
 		void setMode(enum mode newmode);
 		// TODO: rename 'engine' to 'renderer' or something
-		void renderImguiData(gameMain *game);
-		void renderEditor(gameMain *game);
-		void renderMapModels(gameMain *game);
+		void renderImguiData();
+		void renderEditor();
+		void renderMapModels();
 
 		modelMap::const_iterator edit_model;
 		sceneNode::ptr objects;
@@ -134,18 +134,18 @@ class gameEditor : public gameView {
 
 	private:
 		void updateSelected(const TRS& updated);
-		void renderWorldObjects(gameMain *game);
-		void menubar(gameMain *game);
-		void mapWindow(gameMain *game);
-		void objectEditorWindow(gameMain *game);
-		void objectSelectWindow(gameMain *game);
-		void entityListWindow(gameMain *game);
-		void entityEditorWindow(gameMain *game);
-		void addEntityWindow(gameMain *game);
-		void metricsWindow(gameMain *game);
-		void profilerWindow(gameMain *game);
-		void settingsWindow(gameMain *game);
-		void logWindow(gameMain *game);
+		void renderWorldObjects();
+		void menubar();
+		void mapWindow();
+		void objectEditorWindow();
+		void objectSelectWindow();
+		void entityListWindow();
+		void entityEditorWindow();
+		void addEntityWindow();
+		void metricsWindow();
+		void profilerWindow();
+		void settingsWindow();
+		void logWindow();
 
 		// populates map object tree
 		void addnodes(std::string name,
@@ -155,12 +155,12 @@ class gameEditor : public gameView {
 		                  sceneNode::ptr obj,
 		                  std::set<sceneNode::ptr>& selectedPath);
 
-		void handleMoveRotate(gameMain *game);
-		void handleSelectObject(gameMain *game);
-		void handleCursorUpdate(gameMain *game);
+		void handleMoveRotate();
+		void handleSelectObject();
+		void handleCursorUpdate();
 		void loadUIModels(void);
-		void loadInputBindings(gameMain *game);
-		void showLoadingScreen(gameMain *game);
+		void loadInputBindings();
+		void showLoadingScreen();
 		bool isUIObject(sceneNode::ptr obj);
 
 		// TODO: utility function, should be move somewhere else

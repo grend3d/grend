@@ -2,14 +2,14 @@
 #include <grend/engine.hpp>
 
 using namespace grendx;
+using namespace grendx::engine;
 
-void grendx::renderWorld(gameMain *game, camera::ptr cam, renderFlags& flags) {
+void grendx::renderWorld(camera::ptr cam, renderFlags& flags) {
 	renderQueue que;
-	renderWorld(game, cam, que, flags);
+	renderWorld(cam, que, flags);
 }
 
-void grendx::renderWorld(gameMain *game,
-                         camera::ptr cam,
+void grendx::renderWorld(camera::ptr cam,
                          renderQueue& base,
                          renderFlags& flags)
 {
@@ -81,12 +81,11 @@ void grendx::renderWorld(gameMain *game,
 }
 
 // TODO: Maybe replaces drawWorld?
-void grendx::drawMultiQueue(gameMain *game,
-                            multiRenderQueue& que,
+void grendx::drawMultiQueue(multiRenderQueue& que,
                             renderFramebuffer::ptr fb,
                             camera::ptr cam)
 {
-	auto rend = game->services.resolve<renderContext>();
+	auto rend = Resolve<renderContext>();
 
 	// XXX: less than ideal
 	// TODO: need a better way to update global lighting state,
@@ -134,16 +133,19 @@ void grendx::drawMultiQueue(gameMain *game,
 			  rend->framebuffer->height,
 			  rend->lightThreshold);
 	sortQueue(que, cam);
-	game->metrics.drawnMeshes += flush(que, cam, fb, rend, regOpts);
+
+	// TODO: profile: reimplement this
+	//game->metrics.drawnMeshes += flush(que, cam, fb, rend, regOpts);
+	flush(que, cam, fb, rend, regOpts);
 }
 
 #include <grend/ecs/shader.hpp>
 #include <grend/ecs/sceneComponent.hpp>
 
 grendx::multiRenderQueue
-grendx::buildDrawableQueue(gameMain *game, uint32_t renderID) {
+grendx::buildDrawableQueue(uint32_t renderID) {
 	using namespace ecs;
-	auto entities = game->services.resolve<entityManager>();
+	auto entities = Resolve<entityManager>();
 
 	multiRenderQueue que;
 
@@ -161,11 +163,11 @@ grendx::buildDrawableQueue(gameMain *game, uint32_t renderID) {
 
 // TODO: should return the last allocated render ID too, or take a counter pointer
 grendx::multiRenderQueue
-grendx::buildClickableQueue(gameMain *game, entClicks& clicks, uint32_t startID) {
+grendx::buildClickableQueue(entClicks& clicks, uint32_t startID) {
 	using namespace grendx;
 	using namespace ecs;
 
-	auto entities = game->services.resolve<ecs::entityManager>();
+	auto entities = Resolve<ecs::entityManager>();
 
 	multiRenderQueue que;
 	uint32_t renderID = startID;
@@ -189,10 +191,9 @@ grendx::buildClickableQueue(gameMain *game, entClicks& clicks, uint32_t startID)
 
 
 void grendx::setPostUniforms(renderPostChain::ptr post,
-                             gameMain *game,
                              camera::ptr cam)
 {
-	auto rend = game->services.resolve<renderContext>();
+	auto rend = Resolve<renderContext>();
 
 	glm::mat4 view       = cam->viewTransform();
 	glm::mat4 projection = cam->projectionTransform();

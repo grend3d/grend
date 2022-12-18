@@ -70,8 +70,8 @@ static void mixCallback(void *userdata, uint8_t *stream, int len) {
 	}
 }
 
-audioMixer::audioMixer(context& ctx) {
-	ctx.setAudioCallback(this, mixCallback);
+audioMixer::audioMixer(SDLContext *ctx) {
+	ctx->setAudioCallback(this, mixCallback);
 }
 
 void audioMixer::setCamera(camera::ptr cam) {

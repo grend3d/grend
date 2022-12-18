@@ -373,8 +373,7 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 	return ret;
 }
 
-void grendx::saveMap(gameMain *game,
-                     sceneNode::ptr root,
+void grendx::saveMap(sceneNode::ptr root,
                      std::string name) noexcept
 {
 	std::ofstream foo(name);

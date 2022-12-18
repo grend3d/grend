@@ -4,6 +4,7 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
 #include <grend/ecs/sceneComponent.hpp>
+#include <grend/gameMain.hpp>
 
 namespace grendx::ecs {
 
@@ -125,7 +126,7 @@ class rigidBodySphere : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			auto physicsServ = manager->engine->services.resolve<physics>();
+			auto physicsServ = grendx::engine::Resolve<physics>();
 			phys = physicsServ->addSphere(ent, position, mass, radius);
 		}
 
@@ -179,7 +180,7 @@ class rigidBodyStaticMesh : public rigidBody,
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			auto physicsServ = manager->engine->services.resolve<physics>();
+			auto physicsServ = grendx::engine::Resolve<physics>();
 
 			for (auto scene : ent->getAll<sceneComponent>()) {
 				if (!scene->getNode())
@@ -276,7 +277,7 @@ class rigidBodyBox : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			auto physicsServ = manager->engine->services.resolve<physics>();
+			auto physicsServ = grendx::engine::Resolve<physics>();
 			phys = physicsServ->addBox(ent, position, mass, extent);
 		}
 
@@ -308,7 +309,7 @@ class rigidBodyCylinder : public rigidBody {
 		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
-			auto physicsServ = manager->engine->services.resolve<physics>();
+			auto physicsServ = grendx::engine::Resolve<physics>();
 			phys = physicsServ->addCylinder(ent, position, mass, extent);
 		}
 
@@ -343,7 +344,7 @@ class rigidBodyCapsule : public rigidBody {
 		// for class activatable
 		// activation here means adding and deleting the physics object
 		virtual void initBody(entityManager *manager, entity *ent) {
-			auto physicsServ = manager->engine->services.resolve<physics>();
+			auto physicsServ = grendx::engine::Resolve<physics>();
 			phys = physicsServ->addCapsule(ent, position, mass, radius, height);
 		}
 

@@ -5,8 +5,9 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 using namespace grendx;
+using namespace grendx::engine;
 
-static void editPointLight(gameMain *game, sceneLightPoint::ptr light) {
+static void editPointLight(sceneLightPoint::ptr light) {
 	ImGui::Text("%s", "Point light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -14,7 +15,7 @@ static void editPointLight(gameMain *game, sceneLightPoint::ptr light) {
 	ImGui::Unindent(16.f);
 }
 
-static void editSpotLight(gameMain *game, sceneLightSpot::ptr light) {
+static void editSpotLight(sceneLightSpot::ptr light) {
 	ImGui::Text("%s", "Spot light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -23,7 +24,7 @@ static void editSpotLight(gameMain *game, sceneLightSpot::ptr light) {
 	ImGui::Unindent(16.f);
 }
 
-static void editDirectionalLight(gameMain *game, sceneLightDirectional::ptr light) {
+static void editDirectionalLight(sceneLightDirectional::ptr light) {
 	ImGui::Text("%s", "Directional light properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -31,7 +32,7 @@ static void editDirectionalLight(gameMain *game, sceneLightDirectional::ptr ligh
 	ImGui::Unindent(16.f);
 }
 
-static void editLight(gameMain *game, sceneLight::ptr light) {
+static void editLight(sceneLight::ptr light) {
 	ImGui::Text("%s", "Light properties");
 	ImGui::Indent(16.f);
 	ImGui::Separator();
@@ -44,15 +45,15 @@ static void editLight(gameMain *game, sceneLight::ptr light) {
 
 	switch (light->lightType) {
 		case sceneLight::lightTypes::Point:
-			editPointLight(game, std::dynamic_pointer_cast<sceneLightPoint>(light));
+			editPointLight(std::dynamic_pointer_cast<sceneLightPoint>(light));
 			break;
 
 		case sceneLight::lightTypes::Spot:
-			editSpotLight(game, std::dynamic_pointer_cast<sceneLightSpot>(light));
+			editSpotLight(std::dynamic_pointer_cast<sceneLightSpot>(light));
 			break;
 
 		case sceneLight::lightTypes::Directional:
-			editDirectionalLight(game, std::dynamic_pointer_cast<sceneLightDirectional>(light));
+			editDirectionalLight(std::dynamic_pointer_cast<sceneLightDirectional>(light));
 			break;
 
 		default:
@@ -61,7 +62,7 @@ static void editLight(gameMain *game, sceneLight::ptr light) {
 }
 
 template <class T>
-static void editRefProbe(gameMain *game, T probe) {
+static void editRefProbe(T probe) {
 	ImGui::Text("%s", "Reflection probe properties");
 	ImGui::Separator();
 	ImGui::Indent(16.f);
@@ -72,7 +73,7 @@ static void editRefProbe(gameMain *game, T probe) {
 	ImGui::Unindent(16.f);
 }
 
-static void editModel(gameMain *game, sceneModel::ptr model) {
+static void editModel(sceneModel::ptr model) {
 	if (model->comped_model) {
 		// TODO: reimplement material editing stuff, will be able to do much
 		//       more after refactoring stuff here
@@ -96,7 +97,7 @@ static void editModel(gameMain *game, sceneModel::ptr model) {
 	}
 }
 
-void gameEditor::objectEditorWindow(gameMain *game) {
+void gameEditor::objectEditorWindow() {
 	if (!selectedNode) {
 		// should check before calling this, but just in case...
 		return;
@@ -122,18 +123,16 @@ void gameEditor::objectEditorWindow(gameMain *game) {
 	ImGui::Unindent(16.f);
 
 	if (selectedNode->type == sceneNode::objType::Light) {
-		editLight(game, std::dynamic_pointer_cast<sceneLight>(selectedNode));
+		editLight(std::dynamic_pointer_cast<sceneLight>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::ReflectionProbe) {
-		editRefProbe(game,
-			std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode));
+		editRefProbe(std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::IrradianceProbe) {
-		editRefProbe(game,
-			std::dynamic_pointer_cast<sceneIrradianceProbe>(selectedNode));
+		editRefProbe(std::dynamic_pointer_cast<sceneIrradianceProbe>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::Model) {
-		editModel(game, std::dynamic_pointer_cast<sceneModel>(selectedNode));
+		editModel(std::dynamic_pointer_cast<sceneModel>(selectedNode));
 	}
 
 	ImGui::Separator();

@@ -119,7 +119,7 @@ static sceneNode::ptr findRoot(sceneNode::ptr p) {
 	return nullptr;
 }
 
-void gameEditor::mapWindow(gameMain *game) {
+void gameEditor::mapWindow() {
 	static sceneNode::ptr clipboard = nullptr;
 	static std::string     clipboardName;
 	sceneNode::ptr root = findRoot(selectedNode);

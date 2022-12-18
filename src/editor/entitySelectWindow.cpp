@@ -13,6 +13,7 @@
 #include <string.h>
 
 using namespace grendx;
+using namespace grendx::engine;
 
 static char searchBuffer[0x1000] = "";
 static fileDialog export_entity_dialog("Export entity");
@@ -156,10 +157,10 @@ static void drawJson(nlohmann::json& value, const std::string& path = ".") {
 	}
 }
 
-static void handle_prompts(gameEditor *editor, gameMain *game) {
+static void handle_prompts(gameEditor *editor) {
 	if (export_entity_dialog.promptFilename()) {
-		auto factories = game->services.resolve<ecs::serializer>();
-		auto entities  = game->services.resolve<ecs::entityManager>();
+		auto factories = Resolve<ecs::serializer>();
+		auto entities  = Resolve<ecs::entityManager>();
 
 		const std::string& name = export_entity_dialog.selection;
 
@@ -179,9 +180,9 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 }
 
-void gameEditor::entityEditorWindow(gameMain *game) {
-	auto entities  = game->services.resolve<ecs::entityManager>();
-	auto factories = game->services.resolve<ecs::serializer>();
+void gameEditor::entityEditorWindow() {
+	auto entities  = Resolve<ecs::entityManager>();
+	auto factories = Resolve<ecs::serializer>();
 
 	ImGui::Begin("Entity Editor", &showEntityEditorWindow);
 
@@ -216,9 +217,9 @@ void gameEditor::entityEditorWindow(gameMain *game) {
 	ImGui::End();
 }
 
-void gameEditor::entityListWindow(gameMain *game) {
-	auto entities  = game->services.resolve<ecs::entityManager>();
-	auto factories = game->services.resolve<ecs::serializer>();
+void gameEditor::entityListWindow() {
+	auto entities  = Resolve<ecs::entityManager>();
+	auto factories = Resolve<ecs::serializer>();
 
 	ImGui::Begin("Entities", &showEntityListWindow);
 	if (ImGui::Button("Clear")) {
@@ -391,7 +392,7 @@ void gameEditor::entityListWindow(gameMain *game) {
 	ImGui::EndChild();
 	ImGui::End();
 
-	handle_prompts(this, game);
+	handle_prompts(this);
 }
 
 // leaving these here, since I'll probably need to reuse some bits of them
@@ -603,7 +604,7 @@ void gameEditor::entitySelectWindow(gameMain *game) {
 }
 #endif
 
-void gameEditor::addEntityWindow(gameMain *game) {
+void gameEditor::addEntityWindow() {
 #if 0
 	static char comboBuf[0x1000];
 	static const size_t bufsize = sizeof(comboBuf) - 1;

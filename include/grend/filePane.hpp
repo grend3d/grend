@@ -1,7 +1,5 @@
 #pragma once
 
-#include <grend/gameMain.hpp>
-
 #include <vector>
 #include <string>
 #include <stdint.h>
@@ -45,8 +43,8 @@ struct filePane {
 	filePane(fs::path rootpath = ".")
 		: root(rootpath, paneTypes::Directory) { }
 
-	void render(gameMain *game);
-	void renderNodes(gameMain *game, paneNode& node);
+	void render();
+	void renderNodes(paneNode& node);
 	void reset(void);
 	void chdir(std::string_view newroot);
 	void setSelected(std::string_view path);

@@ -1,6 +1,6 @@
 #pragma once
 #include <grend/sceneNode.hpp>
-#include <grend/gameMain.hpp>
+#include <grend/sceneModel.hpp>
 
 #include <string>
 #include <thread>
@@ -80,10 +80,9 @@ result<sceneImport::ptr> loadSceneCompiled(std::string path) noexcept;
  *         with no subnodes. (Should probably return an error of some sort...)
  */
 std::pair<sceneImport::ptr, std::future<bool>>
-loadSceneAsyncCompiled(gameMain *game, std::string path);
+loadSceneAsyncCompiled(std::string path);
 
-void saveMap(gameMain *game,
-			 sceneNode::ptr root,
+void saveMap(sceneNode::ptr root,
 			 std::string name="save.map") noexcept;
 
 result<importPair>
@@ -93,7 +92,7 @@ result<sceneImport::ptr>
 loadMapCompiled(std::string name="save.map") noexcept;
 
 result<sceneImport::ptr>
-loadMapAsyncCompiled(gameMain *game, std::string name="save.map") noexcept;
+loadMapAsyncCompiled(std::string name="save.map") noexcept;
 
 // namespace grendx
 };

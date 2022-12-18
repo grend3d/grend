@@ -12,6 +12,7 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 using namespace grendx;
+using namespace grendx::engine;
 
 static fileDialog open_dialog("Open File");
 static fileDialog save_as_dialog("Save As...");
@@ -23,17 +24,17 @@ static fileDialog import_map_dialog("Import Map");
 // TODO: move this to entity file
 static fileDialog load_entity_dialog("Load Entity");
 
-static void handle_prompts(gameEditor *editor, gameMain *game) {
-	auto state     = game->services.resolve<gameState>();
-	auto factories = game->services.resolve<ecs::serializer>();
-	auto entities  = game->services.resolve<ecs::entityManager>();
+static void handle_prompts(gameEditor *editor) {
+	auto state     = Resolve<gameState>();
+	auto factories = Resolve<ecs::serializer>();
+	auto entities  = Resolve<ecs::entityManager>();
 
 	if (open_dialog.promptFilename()) {
 		LogFmt("Opening a file here! at {}", open_dialog.selection);
 		open_dialog.clear();
 
 		if (auto node = loadMapCompiled(open_dialog.selection)) {
-			editor->clear(game);
+			editor->clear();
 			editor->selectedNode = state->rootnode = *node;
 		} else printError(node);
 	}
@@ -43,7 +44,7 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 
 		// TODO: some way to save a subnode as it's own map
 		//saveMap(game, editor->selectedNode, save_as_dialog.selection);
-		saveMap(game, state->rootnode, save_as_dialog.selection);
+		saveMap(state->rootnode, save_as_dialog.selection);
 		save_as_dialog.clear();
 	}
 
@@ -103,12 +104,12 @@ static void handle_prompts(gameEditor *editor, gameMain *game) {
 	}
 }
 
-void gameEditor::menubar(gameMain *game) {
+void gameEditor::menubar() {
 	static bool demo_window = false;
 
-	auto state    = game->services.resolve<gameState>();
-	auto rend     = game->services.resolve<renderContext>();
-	auto phys     = game->services.resolve<physics>();
+	auto state = Resolve<gameState>();
+	auto rend  = Resolve<renderContext>();
+	auto phys  = Resolve<physics>();
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
@@ -132,7 +133,7 @@ void gameEditor::menubar(gameMain *game) {
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reloadShaders(game); }
+			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reloadShaders(); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
@@ -381,5 +382,5 @@ void gameEditor::menubar(gameMain *game) {
 		ImGui::ShowDemoWindow(&demo_window);
 	}
 
-	handle_prompts(this, game);
+	handle_prompts(this);
 }

@@ -13,8 +13,7 @@ static const ImGuiTreeNodeFlags base_flags
 	| ImGuiTreeNodeFlags_OpenOnDoubleClick
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
-static void drawProfilerGroups(gameMain *game,
-                               profile::group *root,
+static void drawProfilerGroups(profile::group *root,
                                profile::group *cur = nullptr,
                                std::string name = "frame")
 {
@@ -34,7 +33,7 @@ static void drawProfilerGroups(gameMain *game,
 
 	if (ImGui::TreeNodeEx(txt.c_str(), flags)) {
 		for (auto& [subname, subgroup] : cur->subgroups) {
-			drawProfilerGroups(game, root, &subgroup, subname);
+			drawProfilerGroups(root, &subgroup, subname);
 		}
 
 		ImGui::TreePop();
@@ -47,7 +46,7 @@ struct tabEntry {
 	bool opened;
 };
 
-void gameEditor::profilerWindow(gameMain *game) {
+void gameEditor::profilerWindow() {
 	static std::vector<tabEntry> entries;
 	static unsigned counter = 0;
 
@@ -77,7 +76,7 @@ void gameEditor::profilerWindow(gameMain *game) {
 
 			if (ent.opened && ImGui::BeginTabItem(name.c_str(), &ent.opened)) {
 				ImGui::Separator();
-				drawProfilerGroups(game, ent.group.get());
+				drawProfilerGroups(ent.group.get());
 				ImGui::EndTabItem();
 			}
 		}

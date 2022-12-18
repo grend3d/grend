@@ -60,7 +60,7 @@ class renderContext : public IoC::Service {
 			PlainArray,
 		};
 
-		renderContext(context& ctx, const renderSettings& _settings);
+		renderContext(SDLContext& ctx, const renderSettings& _settings);
 		~renderContext() { };
 
 		void applySettings(const renderSettings& settings);

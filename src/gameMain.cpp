@@ -29,65 +29,67 @@
 #endif
 
 using namespace grendx;
+using namespace grendx::engine;
 
-// non-pure virtual destructors for rtti
-gameMain::~gameMain() {};
+// main IoC container
+static IoC::Container gameServices;
 
-gameMain::gameMain(const std::string& name, const renderSettings& _settings)
-	: ctx(name.c_str(), _settings),
-	  settings(_settings)
-{
+static bool running = true;
+static gameView::ptr view;
+static uint32_t last_frame_time = 0;
+
+IoC::Container& grendx::engine::Services() { return gameServices; }
+
+void grendx::engine::initialize(const std::string& name, const renderSettings& settings) {
+	Services().bind<SDLContext, SDLContext>(name.c_str(), settings);
 	initializeOpengl();
 
 #if defined(PHYSICS_BULLET)
-	services.bind<physics, bulletPhysics>();
-	//phys   = std::dynamic_pointer_cast<physics>(std::make_shared<bulletPhysics>());
+	Services().bind<physics, bulletPhysics>();
 #elif defined(PHYSICS_IMP)
-	services.bind<physics, impPhysics>();
-	//phys   = std::dynamic_pointer_cast<physics>(std::make_shared<impPhysics>());
+	Services().bind<physics, impPhysics>();
 #else
 #error "No physics implementation defined!"
 #endif
 
-	/*
-	state  = std::make_shared<gameState>();
-	rend   = std::make_shared<renderContext>(ctx, _settings);
-	audio  = std::make_shared<audioMixer>(ctx);
-	jobs   = std::make_shared<jobQueue>();
-
-	entities  = std::make_shared<ecs::entityManager>(this);
-	factories = std::make_shared<ecs::serializer>();
-	*/
-
-	services.bind<renderContext,      renderContext>(ctx, _settings);
-	services.bind<gameState,          gameState>();
-	services.bind<audioMixer,         audioMixer>(ctx);
-	services.bind<jobQueue,           jobQueue>();
-	services.bind<ecs::entityManager, ecs::entityManager>(this);
-	services.bind<ecs::serializer,    ecs::serializer>();
+	auto& ctx = *Resolve<SDLContext>();
+	Services().bind<renderContext,      renderContext>(ctx, settings);
+	Services().bind<gameState,          gameState>();
+	Services().bind<audioMixer,         audioMixer>(&ctx);
+	Services().bind<jobQueue,           jobQueue>();
+	Services().bind<ecs::entityManager, ecs::entityManager>();
+	Services().bind<ecs::serializer,    ecs::serializer>();
 
 	LogInfo("gameMain() finished");
 }
 
-void gameMain::applySettings(const renderSettings& newSettings) {
-	ctx.applySettings(newSettings);
+void handleInput(void) {
+	SDL_Event ev;
+
+	while (SDL_PollEvent(&ev)) {
+		if (ev.type == SDL_QUIT) {
+			running = false;
+			return;
+		}
+
+		if (view != nullptr) {
+			view->handleEvent(ev);
+		}
+	}
 }
 
-void gameMain::clearMetrics(void) {
-	metrics.drawnMeshes = 0;
-}
-
-int gameMain::step(void) {
+void grendx::engine::step(void) {
 	// TODO: kinda disperate set of metrics, should unify/clean this up
-	frame_timer.stop();
-	frame_timer.start();
-	clearMetrics();
+	//frame_timer.stop();
+	//frame_timer.start();
+	//clearMetrics();
 	profile::newFrame();
 	handleInput();
 
-	auto jobs = services.resolve<jobQueue>();
-	auto rend = services.resolve<renderContext>();
-	auto phys = services.resolve<physics>();
+	auto jobs = Resolve<jobQueue>();
+	auto rend = Resolve<renderContext>();
+	auto phys = Resolve<physics>();
+	auto ctx  = Resolve<SDLContext>();
 
 	if (running) {
 		// XXX: remove
@@ -104,11 +106,12 @@ int gameMain::step(void) {
 				"with gameMain::setView()"
 			);
 			running = false;
-			return running;
+			return;
+			//return running;
 		}
 
 		profile::startGroup("View");
-		view->update(this, fticks);
+		view->update(fticks);
 		profile::endGroup();
 
 		profile::startGroup("Syncronous jobs");
@@ -141,18 +144,18 @@ int gameMain::step(void) {
 		profile::startGroup("Render");
 		setDefaultGlFlags();
 		rend->framebuffer->clear();
-		view->render(this, rend->framebuffer);
+		view->render(rend->framebuffer);
 
 		if (phys) {
 			phys->drawDebug(view->cam->viewProjTransform());
 		}
 
-		SDL_GL_SwapWindow(ctx.window);
+		SDL_GL_SwapWindow(ctx->window);
 		profile::endGroup();
 	}
 
 	profile::endFrame();
-	return running;
+	//return running;
 }
 
 #ifdef __EMSCRIPTEN__
@@ -163,7 +166,7 @@ static int render_step(double time, void *data) {
 }
 #endif
 
-int gameMain::run(void) {
+void grendx::engine::run(void) {
 	running = true;
 
 #ifdef __EMSCRIPTEN__
@@ -174,30 +177,12 @@ int gameMain::run(void) {
 		step();
 	}
 #endif
-
-	return false;
 }
 
-void gameMain::setView(std::shared_ptr<gameView> nview) {
-	auto audio = services.resolve<audioMixer>();
+void grendx::engine::setView(gameView::ptr nview) {
 	view = nview;
-
-	if (audio != nullptr && view != nullptr && view->cam != nullptr) {
-		audio->setCamera(view->cam);
-	}
 }
 
-void gameMain::handleInput(void) {
-	SDL_Event ev;
-
-	while (SDL_PollEvent(&ev)) {
-		if (ev.type == SDL_QUIT) {
-			running = false;
-			return;
-		}
-
-		if (view != nullptr) {
-			view->handleEvent(this, ev);
-		}
-	}
+gameView::ptr grendx::engine::getView(void) {
+	return view;
 }

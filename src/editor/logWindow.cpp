@@ -6,7 +6,7 @@
 
 using namespace grendx;
 
-void gameEditor::logWindow(gameMain *game) {
+void gameEditor::logWindow() {
 	static bool autoscroll = true;
 
 	ImGui::SetNextWindowSize(ImVec2(480, 600), ImGuiCond_FirstUseEver);

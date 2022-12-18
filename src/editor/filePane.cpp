@@ -40,7 +40,7 @@ void paneNode::expand(void) {
 	}
 }
 
-void filePane::renderNodes(gameMain *game, paneNode& node) {
+void filePane::renderNodes(paneNode& node) {
 	ImGuiTreeNodeFlags flags
 		= base_flags
 		| ((&node == selected)?                  ImGuiTreeNodeFlags_Selected : 0)
@@ -66,15 +66,15 @@ void filePane::renderNodes(gameMain *game, paneNode& node) {
 		}
 
 		for (auto& subnode : node.subnodes) {
-			renderNodes(game, subnode);
+			renderNodes(subnode);
 		}
 
 		img::TreePop();
 	}
 }
 
-void filePane::render(gameMain *game) {
+void filePane::render() {
 	img::Begin("Files");
-	renderNodes(game, root);
+	renderNodes(root);
 	img::End();
 }

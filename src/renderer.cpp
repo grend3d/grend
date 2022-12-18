@@ -28,7 +28,7 @@ void renderContext::applySettings(const renderSettings& newsettings) {
 	framebuffer = std::make_shared<renderFramebuffer>(adjX, adjY, settings.msaaLevel);
 }
 
-renderContext::renderContext(context& ctx, const renderSettings& _settings) {
+renderContext::renderContext(SDLContext& ctx, const renderSettings& _settings) {
 	applySettings(_settings);
 
 	Framebuffer().bind();

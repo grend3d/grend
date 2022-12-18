@@ -6,6 +6,7 @@
 #include <grend/geometryGeneration.hpp>
 
 using namespace grendx;
+using namespace grendx::engine;
 
 static sceneNode::ptr testweapon = nullptr;
 static sceneModel::ptr cuboid = generate_cuboid(1.0, 1.0, 1.0);
@@ -14,7 +15,7 @@ struct nvg_data {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
 };
 
-playerView::playerView(gameMain *game) : gameView() {
+playerView::playerView() : gameView() {
 	/*
 	static const float speed = 15.f;
 	compileModel("physcuboid", cuboid);
@@ -72,9 +73,11 @@ playerView::playerView(gameMain *game) : gameView() {
 
 static glm::vec3 lastvel = glm::vec3(0);
 
-void playerView::logic(gameMain *game, float delta) {
-	auto phys = game->services.resolve<physics>();
-	phys->stepSimulation(1.f/game->frame_timer.last());
+void playerView::logic(float delta) {
+	auto phys = Resolve<physics>();
+	phys->stepSimulation(1.f/60.f);
+	// TODO: reimplement
+	//phys->stepSimulation(1.f/game->frame_timer.last());
 	cam->updatePosition(delta);
 }
 
@@ -175,7 +178,7 @@ void playerView::drawMainMenu(int wx, int wy) {
 }
 */
 
-void playerView::render(gameMain *game) {
+void playerView::render() {
 	/*
 	int winsize_x, winsize_y;
 	SDL_GetWindowSize(game->ctx.window, &winsize_x, &winsize_y);

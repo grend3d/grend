@@ -89,7 +89,7 @@ class audioMixer : public IoC::Service {
 		typedef std::shared_ptr<audioMixer> ptr;
 		typedef std::weak_ptr<audioMixer> weakptr;
 
-		audioMixer(context& ctx);
+		audioMixer(SDLContext *ctx);
 
 		void setCamera(camera::ptr cam);
 		std::pair<int16_t, int16_t> getSample(camera::ptr cam);

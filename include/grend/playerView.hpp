@@ -14,9 +14,9 @@ class playerView : public gameView {
 		typedef std::shared_ptr<playerView> ptr;
 		typedef std::weak_ptr<playerView>   weakptr;
 
-		playerView(gameMain *game);
-		virtual void render(gameMain *game);
-		virtual void logic(gameMain *game, float delta);
+		playerView();
+		virtual void render();
+		virtual void logic(float delta);
 
 		/*
 	private:

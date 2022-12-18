@@ -5,13 +5,14 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 using namespace grendx;
+using namespace grendx::engine;
 
-void gameEditor::settingsWindow(gameMain *game) {
+void gameEditor::settingsWindow() {
 	static renderSettings settings;
 	static bool showSteps = true;
 
-	auto rend  = game->services.resolve<renderContext>();
-	auto state = game->services.resolve<gameState>();
+	auto rend  = Resolve<renderContext>();
+	auto state = Resolve<gameState>();
 
 	ImGui::Begin("Render settings", &showSettingsWindow);
 	ImGui::Checkbox("Shadows enabled", &settings.shadowsEnabled);
