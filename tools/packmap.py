@@ -38,7 +38,8 @@ def getParent(path):
         return assetdirs[d]
     else:
         duuid = str(uuid.uuid4())
-        did = os.path.join("/", assetpath, duuid)
+        #did = os.path.join("/", assetpath, duuid)
+        did = os.path.join(assetpath, duuid)
         cpath = os.path.join(assetfullpath, duuid)
         assetdirs.update({d: did})
         fprint("dir:  %s => %s" % (d, did))

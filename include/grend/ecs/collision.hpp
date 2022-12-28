@@ -1,6 +1,7 @@
 #pragma once
 
 #include <grend/ecs/ecs.hpp>
+#include <grend/physics.hpp>
 
 namespace grendx::ecs {
 

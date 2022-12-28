@@ -135,7 +135,9 @@ class entityManager : public IoC::Service {
 
 		template <typename T, typename... Args>
 		T *construct(Args... args) {
-			return construct<T>((entity*)nullptr, args...);
+			T* ret = construct<T>((entity*)nullptr, args...);
+			add(ret);
+			return ret;
 		}
 
 		template <typename T>
@@ -200,10 +202,13 @@ class entityManager : public IoC::Service {
 			return (components.count(name))? components[name] : nullret;
 		}
 
+		// TODO: FIX
+		/*
 		// TODO: should this be similar to inputHandlerSystem, with
 		//       onCollision components?
 		std::shared_ptr<std::vector<collision>> collisions
 			= std::make_shared<std::vector<collision>>();
+			*/
 
 	private:
 		regArgs registerComponent(const char *name,
@@ -233,9 +238,6 @@ class component {
 
 class entity : public component {
 	public:
-		typedef std::shared_ptr<entity> ptr;
-		typedef std::weak_ptr<entity>   weakptr;
-
 		entity(regArgs t);
 
 		virtual ~entity();
@@ -559,6 +561,10 @@ struct componentIteratorPair
 			return it != other.it;
 		}
 	};
+
+	bool empty() {
+		return first == second;
+	}
 
 	castIterator begin() {
 		return castIterator(first);

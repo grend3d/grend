@@ -23,11 +23,13 @@ sceneMesh::~sceneMesh() {};
 sceneModel::~sceneModel() {};
 
 void sceneModel::genNormals(void) {
-	for (auto& [name, ptr] : nodes) {
+	for (auto link : nodes()) {
+		auto ptr = link->getRef();
+
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
+		sceneMesh::ptr mesh = ref_cast<sceneMesh>(ptr);
 
 		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
 			// TODO: bounds check
@@ -58,11 +60,13 @@ void sceneModel::genNormals(void) {
 }
 
 void sceneModel::genTexcoords(void) {
-	for (auto& [name, ptr] : nodes) {
+	for (auto link : nodes()) {
+		auto ptr = link->getRef();
+
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
+		sceneMesh::ptr mesh = ref_cast<sceneMesh>(ptr);
 
 		for (unsigned i = 0; i < mesh->faces.size(); i++) {
 			// TODO: bounds check
@@ -80,11 +84,13 @@ void sceneModel::genTexcoords(void) {
 }
 
 void sceneModel::genAABBs(void) {
-	for (auto& [name, ptr] : nodes) {
+	for (auto link : nodes()) {
+		auto ptr = link->getRef();
+
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
+		sceneMesh::ptr mesh = ref_cast<sceneMesh>(ptr);
 
 		if (mesh->faces.size() == 0) {
 			LogError(" > have face with no vertices...?");
@@ -116,11 +122,13 @@ void sceneModel::genAABBs(void) {
 
 void sceneModel::genTangents(void) {
 	// generate tangents for each triangle
-	for (auto& [name, ptr] : nodes) {
+	for (auto link : nodes()) {
+		auto ptr = link->getRef();
+
 		if (ptr->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
+		sceneMesh::ptr mesh = ref_cast<sceneMesh>(ptr);
 
 		for (std::size_t i = 0; i+2 < mesh->faces.size(); i += 3) {
 			// TODO: bounds check

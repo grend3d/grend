@@ -59,8 +59,10 @@ static std::pair<std::string, std::string> obj_models[] = {
 
 // TODO: should start thinking about splitting initialization into smaller functions
 gameState::gameState() {
-	rootnode = sceneNode::ptr(new sceneNode());
-	physObjects = sceneNode::ptr(new sceneNode());
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	rootnode    = ecs->construct<sceneNode>();
+	physObjects = ecs->construct<sceneNode>();
 }
 
 gameState::~gameState() {

@@ -160,9 +160,12 @@ bulletPhysics::addStaticModels(void *data,
 			return;
 		}
 
-		if (auto p = obj->parent.lock()) {
-			sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(obj);
-			sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(p);
+		if (auto p = obj->parent) {
+			// XXX:
+			auto mesh  = obj->get<sceneMesh>();
+			auto model = p->get<sceneModel>();
+			//sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(obj);
+			//sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(p);
 
 			if (mesh && model) {
 				collector.push_back(addStaticMesh(data, transform, model, mesh));
@@ -170,7 +173,8 @@ bulletPhysics::addStaticModels(void *data,
 		}
 	}
 
-	for (auto& [name, node] : obj->nodes) {
+	for (auto link : obj->nodes()) {
+		auto node = link->getRef();
 		TRS adjTrans = addTRS(transform, node->getTransformTRS());
 		addStaticModels(data, node, adjTrans, collector, propFilter);
 	}
@@ -513,12 +517,14 @@ void bulletPhysics::stepSimulation(float delta) {
 			trans = ptr->body->getWorldTransform();
 		}
 
+		/*
 		if (ptr->mass != 0) {
-			if (auto ref = ptr->obj.lock()) {
+			if (auto ref = ptr->obj) {
 				//ref->transform = ptr->getTransform();
 				ref->setTransform(ptr->getTransform());
 			}
 		}
+		*/
 	}
 }
 #endif

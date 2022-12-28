@@ -1,4 +1,5 @@
 #include <grend/gameEditor.hpp>
+#include <grend/gameState.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/fileDialog.hpp>
 #include <grend/ecs/serializer.hpp>
@@ -110,12 +111,13 @@ void gameEditor::menubar() {
 	auto state = Resolve<gameState>();
 	auto rend  = Resolve<renderContext>();
 	auto phys  = Resolve<physics>();
+	auto ecs   = Resolve<ecs::entityManager>();
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
-				selectedNode = state->rootnode = std::make_shared<sceneNode>();
+				selectedNode = state->rootnode = ecs->construct<sceneNode>();
 			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}

@@ -45,7 +45,6 @@ class bulletObject : public physicsObject {
 		virtual void removeSelf(void);
 
 	protected:
-		sceneNode::weakptr obj;
 		bulletPhysics *runtime = nullptr;
 
 		btRigidBody *body;

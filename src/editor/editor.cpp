@@ -24,7 +24,7 @@ using namespace grendx;
 using namespace grendx::engine;
 
 // XXX: TODO: what was this for?
-static sceneModel::ptr  physmodel;
+//static sceneModel::ptr  physmodel;
 
 void StyleColorsGrendDark(ImGuiStyle* dst = nullptr);
 
@@ -33,12 +33,13 @@ gameEditor::gameEditor()
 {
 	auto rend = Resolve<renderContext>();
 	auto ctx  = Resolve<SDLContext>();
+	auto ecs  = Resolve<ecs::entityManager>();
 
 	LogCallback([this] (LogType type, const std::string& msg) {
 		this->logEntries.push_back(msg);
 	});
 
-	objects = sceneNode::ptr(new sceneNode());
+	objects = ecs->construct<sceneNode>();
 	cam->setFar(1000.0);
 
 	// don't apply post-processing filters if this is an embedded profile
@@ -76,10 +77,8 @@ gameEditor::gameEditor()
 	initImgui();
 	loadUIModels();
 
-	auto moda = std::make_shared<sceneNode>();
-	auto modb = std::make_shared<sceneNode>();
-	physmodel = load_object(GR_PREFIX "assets/obj/smoothsphere.obj");
-	compileModel("testphys", physmodel);
+	auto moda = ecs->construct<sceneNode>();
+	auto modb = ecs->construct<sceneNode>();
 
 	loadInputBindings();
 	setMode(mode::View);
@@ -89,6 +88,8 @@ gameEditor::gameEditor()
 };
 
 void gameEditor::loadUIModels(void) {
+	auto ecs  = Resolve<ecs::entityManager>();
+
 	// TODO: Need to swap Z/Y pointer and spinner models
 	//       blender coordinate system isn't the same as opengl's (duh)
 	std::string dir = GR_PREFIX "assets/obj/UI/";
@@ -105,22 +106,23 @@ void gameEditor::loadUIModels(void) {
 		= load_object(dir + "Cursor-Placement.obj");
 	UIModels["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
 
-	UIObjects = sceneNode::ptr(new sceneNode());
-	sceneNode::ptr xptr = std::make_shared<sceneNode>();
-	sceneNode::ptr yptr = std::make_shared<sceneNode>();
-	sceneNode::ptr zptr = std::make_shared<sceneNode>();
-	sceneNode::ptr xrot = std::make_shared<sceneNode>();
-	sceneNode::ptr yrot = std::make_shared<sceneNode>();
-	sceneNode::ptr zrot = std::make_shared<sceneNode>();
+	//UIObjects = sceneNode::ptr(new sceneNode());
+	UIObjects = ecs->construct<sceneNode>();
+	sceneNode::ptr xptr = ecs->construct<sceneNode>();
+	sceneNode::ptr yptr = ecs->construct<sceneNode>();
+	sceneNode::ptr zptr = ecs->construct<sceneNode>();
+	sceneNode::ptr xrot = ecs->construct<sceneNode>();
+	sceneNode::ptr yrot = ecs->construct<sceneNode>();
+	sceneNode::ptr zrot = ecs->construct<sceneNode>();
 	//sceneNode::ptr xptr = sceneNode::ptr(new clicker(this, mode::MoveX));
 	//sceneNode::ptr yptr = sceneNode::ptr(new clicker(this, mode::MoveY));
 	//sceneNode::ptr zptr = sceneNode::ptr(new clicker(this, mode::MoveZ));
 	//sceneNode::ptr xrot = sceneNode::ptr(new clicker(this, mode::RotateX));
 	//sceneNode::ptr yrot = sceneNode::ptr(new clicker(this, mode::RotateY));
 	//sceneNode::ptr zrot = sceneNode::ptr(new clicker(this, mode::RotateZ));
-	sceneNode::ptr orientation = std::make_shared<sceneNode>();
-	sceneNode::ptr cursor      = std::make_shared<sceneNode>();
-	sceneNode::ptr bbox        = std::make_shared<sceneNode>();
+	sceneNode::ptr orientation = ecs->construct<sceneNode>();
+	sceneNode::ptr cursor      = ecs->construct<sceneNode>();
+	sceneNode::ptr bbox        = ecs->construct<sceneNode>();
 
 	setNode("X-Axis",           xptr,   UIModels["X-Axis-Pointer"]);
 	setNode("X-Rotation",       xrot,   UIModels["X-Axis-Rotation-Spinner"]);
@@ -183,12 +185,12 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	auto m = p->getTransformMatrix();
 
 	if (selectedNode) {
-		que.add(p->nodes["X-Axis"],     1, m);
-		que.add(p->nodes["Y-Axis"],     2, m);
-		que.add(p->nodes["Z-Axis"],     3, m);
-		que.add(p->nodes["X-Rotation"], 4, m);
-		que.add(p->nodes["Y-Rotation"], 5, m);
-		que.add(p->nodes["Z-Rotation"], 6, m);
+		que.add(p->getNode("X-Axis"),     1, m);
+		que.add(p->getNode("Y-Axis"),     2, m);
+		que.add(p->getNode("Z-Axis"),     3, m);
+		que.add(p->getNode("X-Rotation"), 4, m);
+		que.add(p->getNode("Y-Rotation"), 5, m);
+		que.add(p->getNode("Z-Rotation"), 6, m);
 	}
 
 	auto cursor = UIObjects->getNode("Cursor-Placement");
@@ -247,12 +249,14 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 void gameEditor::renderWorldObjects() {
 	auto rend  = Resolve<renderContext>();
 	auto state = Resolve<gameState>();
+	auto ecs   = Resolve<ecs::entityManager>();
 
 	DO_ERROR_CHECK();
 
 	// XXX: wasteful, a bit wrong
-	static sceneNode::ptr probeObj = std::make_shared<sceneNode>();
-	setNode("model", probeObj, physmodel);
+	//static sceneNode::ptr probeObj = std::make_shared<sceneNode>();
+	static sceneNode::ptr probeObj = ecs->construct<sceneNode>();
+	//setNode("model", probeObj, physmodel);
 
 	renderQueue tempque;
 	renderQueue que;
@@ -371,12 +375,14 @@ void gameEditor::runCallbacks(sceneNode::ptr node, editAction action) {
 }
 
 result<objectPair> grendx::loadModel(std::string path) noexcept {
+	auto ecs   = Resolve<ecs::entityManager>();
+
 	std::string ext = filename_extension(path);
 	if (ext == ".obj") {
 		sceneModel::ptr m = load_object(path);
 
 		// add the model at 0,0
-		auto obj = sceneNode::ptr(new sceneNode());
+		auto obj = ecs->construct<sceneNode>();
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 
@@ -387,7 +393,7 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 
 	else if (ext == ".gltf" || ext == ".glb") {
 		modelMap mods = load_gltf_models(path);
-		auto obj = std::make_shared<sceneNode>();
+		auto obj = ecs->construct<sceneNode>();
 
 		for (auto& [name, model] : mods) {
 			// add the models at 0,0
@@ -402,6 +408,8 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 
 //std::pair<sceneImport::ptr, modelMap>
 result<importPair> grendx::loadSceneData(std::string path) noexcept {
+	auto ecs = Resolve<ecs::entityManager>();
+
 	std::string ext = filename_extension(path);
 
 	if (ext == ".gltf" || ext == ".glb") {
@@ -421,7 +429,7 @@ result<importPair> grendx::loadSceneData(std::string path) noexcept {
 		sceneModel::ptr m = load_object(path);
 
 		// add the model at 0,0
-		auto obj = sceneImport::ptr(new sceneImport(path));
+		auto obj = ecs->construct<sceneImport>(path);
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 
@@ -447,8 +455,10 @@ result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 // TODO: return result type here somehow
 std::pair<sceneImport::ptr, std::future<bool>>
 grendx::loadSceneAsyncCompiled(std::string path) {
-	auto ret = std::make_shared<sceneImport>(path);
 	auto jobs = Resolve<jobQueue>();
+	auto ecs  = Resolve<ecs::entityManager>();
+
+	auto ret = ecs->construct<sceneImport>(path);
 
 	auto fut = jobs->addAsync([=] () {
 		if (auto res = loadSceneData(path)) {
@@ -546,8 +556,8 @@ void gameEditor::update(float delta) {
 	assert(orientation && cursor);
 
 	orientation->visible =
-		   selectedNode != nullptr
-		&& !selectedNode->parent.expired()
+		   selectedNode
+		&& selectedNode->parent
 		&& selectedNode != state->rootnode;
 
 	cursor->visible =
@@ -581,7 +591,7 @@ void gameEditor::update(float delta) {
 
 		if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
 			auto bbox = UIObjects->getNode("Bounding-Box");
-			auto probe = std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
+			auto probe = selectedNode->get<sceneReflectionProbe>();
 
 			TRS transform = probe->getTransformTRS();
 			glm::vec3 bmin = transform.position + probe->boundingBox.min;
@@ -626,7 +636,7 @@ void gameEditor::showLoadingScreen() {
 }
 
 bool gameEditor::isUIObject(sceneNode::ptr obj) {
-	for (sceneNode::ptr temp = obj; temp; temp = temp->parent.lock()) {
+	for (sceneNode::ptr temp = obj; temp; temp = temp->parent) {
 		if (temp == UIObjects) {
 			return true;
 		}
@@ -636,7 +646,7 @@ bool gameEditor::isUIObject(sceneNode::ptr obj) {
 }
 
 sceneNode::ptr gameEditor::getNonModel(sceneNode::ptr obj) {
-	for (sceneNode::ptr temp = obj; temp; temp = temp->parent.lock()) {
+	for (sceneNode::ptr temp = obj; temp; temp = temp->parent) {
 		if (temp->type != sceneNode::objType::Mesh
 		    && temp->type != sceneNode::objType::Model)
 		{
@@ -649,6 +659,7 @@ sceneNode::ptr gameEditor::getNonModel(sceneNode::ptr obj) {
 
 void gameEditor::clear() {
 	auto state = Resolve<gameState>();
+	auto ecs   = Resolve<ecs::entityManager>();
 
 	showLoadingScreen();
 
@@ -656,7 +667,7 @@ void gameEditor::clear() {
 	models.clear();
 
 	// TODO: clear() for state
-	selectedNode = state->rootnode = sceneNode::ptr(new sceneNode());
+	selectedNode = state->rootnode = ecs->construct<sceneNode>();
 }
 
 // TODO: rename 'renderer' to 'rend' or something

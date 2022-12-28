@@ -65,7 +65,7 @@ class sceneComponent : public component {
 				lookup = it->second;
 			}
 
-			if (auto foo = lookup.lock()) {
+			if (auto foo = lookup) {
 				res = foo;
 
 			} else {
@@ -80,7 +80,9 @@ class sceneComponent : public component {
 			}
 
 			curPath = path;
-			node = (usage == Copy)? duplicate(res) : res;
+
+			auto resnode = ref_cast<sceneNode>(res);
+			node = (usage == Copy)? duplicate(resnode) : resnode;
 			emitMessage(manager->getEntity(this));
 		}
 

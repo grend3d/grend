@@ -29,6 +29,8 @@ static std::string base_dir(std::string filename) {
 }
 
 sceneModel::ptr load_object(std::string filename) {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	LogFmt(" > loading ", filename);
 	std::ifstream input(filename);
 	std::string line;
@@ -49,7 +51,7 @@ sceneModel::ptr load_object(std::string filename) {
 		return nullptr;
 	}
 
-	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
+	sceneModel::ptr ret = ecs->construct<sceneModel>();
 	ret->sourceFile = filename;
 
 	// TODO: split this into a seperate parse function
@@ -66,7 +68,7 @@ sceneModel::ptr load_object(std::string filename) {
 			//       of this loop?
 			mesh_name = statement[1];
 			current_mesh_name = mesh_name + ":(null)";
-			current_mesh = sceneMesh::ptr(new sceneMesh());
+			current_mesh = ecs->construct<sceneMesh>();
 			//setNode(current_mesh_name, ret, current_mesh);
 		}
 
@@ -79,7 +81,7 @@ sceneModel::ptr load_object(std::string filename) {
 
 		else if (statement[0] == "usemtl") {
 			LogFmt(" > using material {}", statement[1]);
-			current_mesh = sceneMesh::ptr(new sceneMesh());
+			current_mesh = ecs->construct<sceneMesh>();
 			//current_mesh->material = statement[1];
 			// TODO: check that material exists
 			current_mesh->meshMaterial = materials[statement[1]];
@@ -157,8 +159,8 @@ sceneModel::ptr load_object(std::string filename) {
 
 	}
 
-	for (const auto& [name, ptr] : ret->nodes) {
-		LogFmt(" > > have mesh node {}", name);
+	for (auto ptr : ret->nodes()) {
+		LogFmt(" > > have mesh node {}", (*ptr)->name);
 	}
 
 	// TODO: check that normals size == vertices size and fill in the difference

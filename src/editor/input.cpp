@@ -1,4 +1,5 @@
 #include <grend/gameEditor.hpp>
+#include <grend/gameState.hpp>
 #include <grend/controllers.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/renderContext.hpp>
@@ -107,7 +108,8 @@ static bindFunc makeClicker(gameEditor *editor,
 		    && ev.type == SDL_MOUSEBUTTONDOWN
 			&& ev.button.button == SDL_BUTTON_LEFT)
 		{
-			auto ptr = std::make_shared<T>();
+			auto ecs = Resolve<ecs::entityManager>();
+			auto ptr = ecs->construct<T>();
 			std::string nodename = name + std::to_string(ptr->id);
 			handleAddNode(editor, nodename, ptr);
 			return (int)gameEditor::mode::View;
@@ -220,11 +222,12 @@ void gameEditor::loadInputBindings() {
 			if (ev.type == SDL_KEYDOWN
 			    && ev.key.keysym.sym == SDLK_d
 			    && flags & bindFlags::Shift
-			    && selectedNode && !selectedNode->parent.expired())
+			    && selectedNode
+			    && selectedNode->parent)
 			{
 				sceneNode::ptr temp = clone(selectedNode);
 				std::string name = "cloned " + std::to_string(temp->id);
-				setNode(name, selectedNode->parent.lock(), temp);
+				setNode(name, selectedNode->parent, temp);
 				runCallbacks(selectedNode, editAction::Added);
 				return (int)mode::MoveSomething;
 			}
@@ -414,8 +417,7 @@ void gameEditor::loadInputBindings() {
 			}
 
 			if (ret != MODAL_NO_CHANGE) {
-				sceneReflectionProbe::ptr probe =
-					std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
+				sceneReflectionProbe::ptr probe = selectedNode->get<sceneReflectionProbe>();
 
 				// XXX: put bounding box in position/scale transform...
 				// TODO: don't do that
@@ -685,8 +687,7 @@ void gameEditor::handleMoveRotate() {
 	}
 
 	if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
-		sceneReflectionProbe::ptr probe =
-			std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode);
+		sceneReflectionProbe::ptr probe = selectedNode->get<sceneReflectionProbe>();
 
 		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
 		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));

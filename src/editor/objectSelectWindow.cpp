@@ -18,7 +18,8 @@ void gameEditor::objectSelectWindow() {
 		}
 
 		ImGui::SameLine(300);
-		std::string mstr = "(" + std::to_string(obj->nodes.size()) + " meshes)";
+		//std::string mstr = "(" + std::to_string(obj->nodes.size()) + " meshes)";
+		std::string mstr = "(TODO: reimplement?)";
 		ImGui::Text("%s", mstr.c_str());
 	}
 

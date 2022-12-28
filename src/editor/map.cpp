@@ -94,6 +94,9 @@ class modelCache {
 // TODO: set to keep track of map files already being loaded to avoid
 //       recursive map loads
 sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
+	// TODO: avoid redundant resolves
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	sceneNode::ptr ret = nullptr;
 	std::vector<std::string> modelFiles;
 	bool recurse = true;
@@ -104,14 +107,14 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 			if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
 				LogErrorFmt("loadMap(): Unknown model {}", jay["sourceFile"]);
-				ret = std::make_shared<sceneNode>();
+				ret = ecs->construct<sceneNode>();
 			}
 
 		} else {
 			// XXX: top-level map import nodes are exported without a sourceFile,
 			//      so re-import without a source file set, the source file will
 			//      be set in the loadMap* functions
-			ret = std::make_shared<sceneImport>("");
+			ret = ecs->construct<sceneImport>("");
 		}
 
 	} else if (jay["type"] == "Model") {
@@ -119,11 +122,11 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 
 		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
 			LogErrorFmt("loadMap(): Unknown model {}", name);
-			ret = std::make_shared<sceneNode>();
+			ret = ecs->construct<sceneNode>();
 		}
 
 	} else if (jay["type"] == "Point light") {
-		auto light = std::make_shared<sceneLightPoint>();
+		auto light = ecs->construct<sceneLightPoint>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -132,10 +135,10 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->is_static = jay["is_static"];
 		light->radius = jay["radius"];
 
-		ret = std::static_pointer_cast<sceneNode>(light);
+		ret = static_cast<sceneNode*>(light);
 
 	} else if (jay["type"] == "Spot light") {
-		auto light = std::make_shared<sceneLightSpot>();
+		auto light = ecs->construct<sceneLightSpot>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -145,10 +148,10 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->radius = jay["radius"];
 		light->angle  = jay["angle"];
 
-		ret = std::static_pointer_cast<sceneNode>(light);
+		ret = static_cast<sceneNode*>(light);
 
 	} else if (jay["type"] == "Directional light") {
-		auto light = std::make_shared<sceneLightDirectional>();
+		auto light = ecs->construct<sceneLightDirectional>();
 		auto& diff = jay["diffuse"];
 
 		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
@@ -156,10 +159,10 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		light->casts_shadows = jay["casts_shadows"];
 		light->is_static = jay["is_static"];
 
-		ret = std::static_pointer_cast<sceneNode>(light);
+		ret = static_cast<sceneNode*>(light);
 
 	} else if (jay["type"] == "Reflection probe"){
-		auto probe = std::make_shared<sceneReflectionProbe>();
+		auto probe = ecs->construct<sceneReflectionProbe>();
 		auto bbox = jay["boundingBox"];
 
 		auto bmin = bbox["min"];
@@ -168,10 +171,10 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		probe->is_static = jay["is_static"];
 		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
 		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = std::static_pointer_cast<sceneNode>(probe);
+		ret = static_cast<sceneNode*>(probe);
 
 	} else if (jay["type"] == "Irradiance probe"){
-		auto probe = std::make_shared<sceneIrradianceProbe>();
+		auto probe = ecs->construct<sceneIrradianceProbe>();
 		auto bbox = jay["boundingBox"];
 
 		auto bmin = bbox["min"];
@@ -180,10 +183,10 @@ sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
 		probe->is_static = jay["is_static"];
 		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
 		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = std::static_pointer_cast<sceneNode>(probe);
+		ret = static_cast<sceneNode*>(probe);
 
 	} else {
-		ret = std::make_shared<sceneNode>();
+		ret = ecs->construct<sceneNode>();
 	}
 
 	auto& pos   = jay["position"];
@@ -218,7 +221,8 @@ grendx::loadMapData(std::string name) noexcept {
 	}
 
 	try {
-		sceneImport::ptr ret = std::make_shared<sceneImport>(name);
+		auto ecs = engine::Resolve<ecs::entityManager>();
+		sceneImport::ptr ret = ecs->construct<sceneImport>(name);
 		json j;
 		foo >> j;
 
@@ -228,10 +232,14 @@ grendx::loadMapData(std::string name) noexcept {
 
 		sceneNode::ptr temp = loadNodes(cache, "", j["root"]);
 		ret->setTransform(temp->getTransformTRS());
-		ret->nodes = temp->nodes;
 
-		for (auto& [_, ptr] : ret->nodes) {
-			ptr->parent = ret;
+		for (auto link : temp->nodes()) {
+			auto ptr = link->getRef();
+			setNode(ptr->name, ret, ptr);
+		}
+
+		for (auto ptr : ret->nodes()) {
+			(*ptr)->parent = ret;
 		}
 
 		for (auto& [name, ptr] : cache.sources) {
@@ -303,17 +311,17 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 	// XXX: toplevel flag to avoid empty recursive saves when saving an
 	//      imported map file
 	if (obj->type == sceneNode::objType::Import && !toplevel) {
-		sceneImport::ptr imported = std::static_pointer_cast<sceneImport>(obj);
+		sceneImport::ptr imported = ref_cast<sceneImport>(obj);
 		ret["sourceFile"] = imported->sourceFile;
 		recurse = false;
 
 	} else if (obj->type == sceneNode::objType::Model) {
-		sceneModel::ptr model = std::static_pointer_cast<sceneModel>(obj);
+		sceneModel::ptr model = ref_cast<sceneModel>(obj);
 		ret["sourceFile"] = model->sourceFile;
 		recurse = false;
 
 	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
-		auto probe = std::static_pointer_cast<sceneReflectionProbe>(obj);
+		auto probe = ref_cast<sceneReflectionProbe>(obj);
 		auto bmin = probe->boundingBox.min;
 		auto bmax = probe->boundingBox.max;
 
@@ -324,7 +332,7 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 		ret["is_static"] = probe->is_static;
 
 	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
-		auto probe = std::static_pointer_cast<sceneIrradianceProbe>(obj);
+		auto probe = ref_cast<sceneIrradianceProbe>(obj);
 		auto bmin = probe->boundingBox.min;
 		auto bmax = probe->boundingBox.max;
 
@@ -335,7 +343,7 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 		ret["is_static"] = probe->is_static;
 
 	} else if (obj->type == sceneNode::objType::Light) {
-		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
+		sceneLight::ptr light = ref_cast<sceneLight>(obj);
 
 		auto& d = light->diffuse;
 		ret["diffuse"] = {d[0], d[1], d[2], d[3]};
@@ -344,12 +352,12 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 		ret["is_static"] = light->is_static;
 
 		if (light->lightType == sceneLight::lightTypes::Point) {
-			sceneLightPoint::ptr p = std::static_pointer_cast<sceneLightPoint>(obj);
+			sceneLightPoint::ptr p = ref_cast<sceneLightPoint>(obj);
 			ret["radius"] = p->radius;
 		}
 
 		else if (light->lightType == sceneLight::lightTypes::Spot) {
-			sceneLightSpot::ptr p = std::static_pointer_cast<sceneLightSpot>(obj);
+			sceneLightSpot::ptr p = ref_cast<sceneLightSpot>(obj);
 			ret["radius"] = p->radius;
 			ret["angle"]  = p->angle;
 		}
@@ -363,8 +371,8 @@ static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
 
 	if (recurse) {
 		json nodes = {};
-		for (auto& [name, ptr] : obj->nodes) {
-			nodes[name] = objectJson(ptr);
+		for (auto ptr : obj->nodes()) {
+			nodes[(*ptr)->name] = objectJson(ptr->getRef());
 		}
 
 		ret["nodes"] = nodes;

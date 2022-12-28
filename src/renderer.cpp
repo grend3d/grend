@@ -350,7 +350,7 @@ void renderContext::setReflectionProbe(sceneReflectionProbe::ptr probe,
 		return;
 	}
 
-	if (program->cacheObject("reflection_probe", probe.get())) {
+	if (program->cacheObject("reflection_probe", probe.getPtr())) {
 		for (unsigned k = 0; k < 5; k++) {
 			for (unsigned i = 0; i < 6; i++) {
 				std::string sloc =
@@ -386,7 +386,7 @@ void renderContext::setIrradianceProbe(sceneIrradianceProbe::ptr probe,
 		return;
 	}
 
-	if (program->cacheObject("irradiance_probe", probe.get())) {
+	if (program->cacheObject("irradiance_probe", probe.getPtr())) {
 		for (unsigned i = 0; i < 6; i++) {
 			std::string sloc = "irradiance_probe[" + std::to_string(i) + "]";
 			glm::vec3 facevec = atlases.irradiance->tex_vector(probe->faces[i]);
@@ -641,23 +641,21 @@ void grendx::packRefprobe(sceneReflectionProbe::ptr probe,
 
 void grendx::invalidateLightMaps(sceneNode::ptr tree) {
 	if (tree->type == sceneNode::objType::Light) {
-		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(tree);
+		sceneLight::ptr light = ref_cast<sceneLight>(tree);
 		light->have_map = false;
 
 	// TODO: reflection probes and irradiance probes are basically the
 	//       same structure, should have a base class they derive from
 	} else if (tree->type == sceneNode::objType::ReflectionProbe) {
-		sceneReflectionProbe::ptr probe
-			= std::static_pointer_cast<sceneReflectionProbe>(tree);
+		sceneReflectionProbe::ptr probe = ref_cast<sceneReflectionProbe>(tree);
 		probe->have_map = false;
 
 	} else if (tree->type == sceneNode::objType::IrradianceProbe) {
-		sceneIrradianceProbe::ptr probe
-			= std::static_pointer_cast<sceneIrradianceProbe>(tree);
+		sceneIrradianceProbe::ptr probe = ref_cast<sceneIrradianceProbe>(tree);
 		probe->have_map = false;
 	}
 
-	for (auto& [name, node] : tree->nodes) {
-		invalidateLightMaps(node);
+	for (auto node : tree->nodes()) {
+		invalidateLightMaps(node->getRef());
 	}
 }

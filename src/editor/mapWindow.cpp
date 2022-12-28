@@ -21,7 +21,8 @@ void gameEditor::addnodesRec(const std::string& name,
 		ImGuiTreeNodeFlags flags
 			= base_flags
 			| ((selectedPath.count(obj))? ImGuiTreeNodeFlags_Selected : 0)
-			| ((obj->nodes.size() == 0)?  ImGuiTreeNodeFlags_Leaf : 0);
+			//| ((obj->nodes.size() == 0)?  ImGuiTreeNodeFlags_Leaf : 0);
+			| (obj->nodes().empty()?  ImGuiTreeNodeFlags_Leaf : 0);
 
 		std::string fullname = name + " : " + obj->typeString();
 		auto contextMenu = [&] () {
@@ -34,7 +35,7 @@ void gameEditor::addnodesRec(const std::string& name,
 				if (ImGui::Button("OK")) {
 					ImGui::CloseCurrentPopup();
 
-					if (auto p = obj->parent.lock()) {
+					if (auto p = obj->parent) {
 						unlink(obj);
 						setNode(namebuf, p, obj);
 					}
@@ -56,7 +57,9 @@ void gameEditor::addnodesRec(const std::string& name,
 						auto& newobj = *res;
 						std::string basename = basenameStr(fname) + ":";
 
-						for (unsigned count = obj->nodes.size();; count++) {
+						//for (unsigned count = obj->nodes.size();; count++) {
+						// XXX: TODO:
+						for (unsigned count = 0;; count++) {
 							auto temp = basename + std::to_string(count);
 
 							if (!obj->hasNode(temp)) {
@@ -81,8 +84,9 @@ void gameEditor::addnodesRec(const std::string& name,
 				selectedNode = obj;
 			}
 
-			for (auto& [subname, ptr] : obj->nodes) {
-				addnodesRec(subname, ptr, selectedPath);
+			for (auto link : obj->nodes()) {
+				auto ptr = link->getRef();
+				addnodesRec(ptr->name, ptr, selectedPath);
 			}
 
 			ImGui::TreePop();
@@ -105,7 +109,7 @@ void gameEditor::addnodes(std::string name,
 // TODO: could be a useful utility function
 static sceneNode::ptr findRoot(sceneNode::ptr p) {
 	while (p) {
-		auto next = p->parent.lock();
+		auto next = p->parent;
 
 		if (!next) {
 			return p;
@@ -113,26 +117,28 @@ static sceneNode::ptr findRoot(sceneNode::ptr p) {
 		} else {
 			p = next;
 		}
-
 	}
 
 	return nullptr;
 }
 
 void gameEditor::mapWindow() {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	static sceneNode::ptr clipboard = nullptr;
 	static std::string     clipboardName;
 	sceneNode::ptr root = findRoot(selectedNode);
 
 	std::set<sceneNode::ptr> selectedPath;
-	for (sceneNode::ptr p = selectedNode; p; p = p->parent.lock()) {
+	for (sceneNode::ptr p = selectedNode; p; p = p->parent) {
 		selectedPath.insert(p);
 	}
 
 	ImGui::Begin("Objects", &showMapWindow);
 
 	if (ImGui::Button("Add Node") && selectedNode) {
-		setNode("New node", selectedNode, std::make_shared<sceneNode>());
+		sceneNode::ptr ptr = ecs->construct<sceneNode>();
+		setNode("New node", selectedNode, ptr);
 	}
 
 	ImGui::SameLine();

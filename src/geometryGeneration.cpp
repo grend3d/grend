@@ -4,8 +4,10 @@
 namespace grendx {
 
 sceneModel::ptr generatePlaneMesh(int sx, int sy, int w, int h) {
-	sceneModel::ptr ret  = std::make_shared<sceneModel>();
-	sceneMesh::ptr  mesh = std::make_shared<sceneMesh>();
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	sceneModel::ptr ret  = ecs->construct<sceneModel>();
+	sceneMesh::ptr  mesh = ecs->construct<sceneMesh>();
 
 	setNode("mesh", ret, mesh);
 
@@ -15,8 +17,10 @@ sceneModel::ptr generatePlaneMesh(int sx, int sy, int w, int h) {
 sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
                                  float x, float y, heightFunction func)
 {
-	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
-	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	sceneModel::ptr ret  = ecs->construct<sceneModel>();
+	sceneMesh::ptr  mesh = ecs->construct<sceneMesh>();
 
 	unsigned xverts = width / unitsPerVert + 1;
 	unsigned yverts = height / unitsPerVert + 1;
@@ -64,9 +68,10 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 }
 
 sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
-	//model ret;
-	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
-	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	sceneModel::ptr ret = ecs->construct<sceneModel>();
+	sceneMesh::ptr mesh = ecs->construct<sceneMesh>();
 
 	unsigned i = 0;
 	for (int y = sx; y <= ey; y += spacing) {
@@ -129,8 +134,10 @@ sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 }
 
 sceneModel::ptr generate_cuboid(float width, float height, float depth) {
-	sceneModel::ptr ret = sceneModel::ptr(new sceneModel());
-	sceneMesh::ptr mesh = sceneMesh::ptr(new sceneMesh());
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	sceneModel::ptr ret  = ecs->construct<sceneModel>();
+	sceneMesh::ptr  mesh = ecs->construct<sceneMesh>();
 
 	float ax = width/2;
 	float ay = height/2;

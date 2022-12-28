@@ -1,7 +1,6 @@
 #pragma once
 
 #include <grend/renderFramebuffer.hpp>
-#include <grend/gameState.hpp>
 #include <grend/camera.hpp>
 #include <grend/modalSDLInput.hpp>
 

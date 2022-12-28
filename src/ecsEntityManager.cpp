@@ -111,7 +111,8 @@ void entityManager::update(float delta) {
 		}
 	}
 
-	collisions->clear();
+	// TODO: FIX
+	//collisions->clear();
 	added.clear();
 	clearFreedEntities();
 }

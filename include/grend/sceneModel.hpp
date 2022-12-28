@@ -20,10 +20,11 @@ class compiledModel;
 
 class sceneMesh : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneMesh> ptr;
-		typedef std::weak_ptr<sceneMesh> weakptr;
+		typedef ecs::ref<sceneMesh> ptr;
+		typedef ecs::ref<sceneMesh> weakptr;
 
-		sceneMesh() : sceneNode(objType::Mesh) {};
+		sceneMesh(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::Mesh) {};
 		virtual ~sceneMesh();
 
 		virtual std::string typeString(void) {
@@ -47,10 +48,11 @@ typedef glm::vec<4, uint8_t,  glm::defaultp> ubvec4;
 
 class sceneModel : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneModel> ptr;
-		typedef std::weak_ptr<sceneModel> weakptr;
+		typedef ecs::ref<sceneModel> ptr;
+		typedef ecs::ref<sceneModel> weakptr;
 
-		sceneModel() : sceneNode(objType::Model) {};
+		sceneModel(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::Model) {};
 		virtual ~sceneModel();
 
 		virtual std::string typeString(void) {

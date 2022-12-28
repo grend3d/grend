@@ -36,6 +36,8 @@ nlohmann::json collisionHandler::serialize(entityManager *manager) {
 }
 
 void entitySystemCollision::update(entityManager *manager, float delta) {
+	// TODO: FIX
+#if 0
 	for (auto& col : *manager->collisions) {
 		if (!col.adata && !col.bdata) {
 			// two collision events outside the ECS, nothing to do
@@ -84,6 +86,7 @@ void entitySystemCollision::update(entityManager *manager, float delta) {
 			}
 		}
 	}
+#endif
 }
 
 // namespace grendx::ecs

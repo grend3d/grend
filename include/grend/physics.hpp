@@ -1,6 +1,7 @@
 #pragma once
 
 #include <grend/sceneNode.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/TRS.hpp>
 #include <grend/boundingBox.hpp>
@@ -118,13 +119,13 @@ class physics : public IoC::Service {
 		virtual physicsObject::ptr
 		addStaticMesh(void *data,
 		              const TRS& transform,
-		              std::shared_ptr<sceneModel> model,
-		              std::shared_ptr<sceneMesh>  mesh) = 0;
+		              sceneModel::ptr model,
+		              sceneMesh::ptr  mesh) = 0;
 
 		// map of submesh name to physics object ID
 		// TODO: multimap?
-		virtual std::map<std::shared_ptr<sceneMesh>, physicsObject::ptr>
-		addModelMeshBoxes(std::shared_ptr<sceneModel> mod) = 0;
+		virtual std::map<sceneMesh::ptr, physicsObject::ptr>
+		addModelMeshBoxes(sceneModel::ptr mod) = 0;
 
 		virtual void remove(physicsObject::ptr obj) = 0;
 		virtual void clear(void) = 0;

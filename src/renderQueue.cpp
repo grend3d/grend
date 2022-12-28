@@ -35,19 +35,17 @@ void renderQueue::add(sceneNode::ptr obj,
 		addMesh(obj, renderID, adjTrans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Light) {
-		sceneLight::ptr light = std::static_pointer_cast<sceneLight>(obj);
+		sceneLight::ptr light = ref_cast<sceneLight>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		lights.push_back({adjTrans, center, inverted, light});
 
 	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
-		sceneReflectionProbe::ptr probe =
-			std::static_pointer_cast<sceneReflectionProbe>(obj);
+		sceneReflectionProbe::ptr probe = ref_cast<sceneReflectionProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		probes.push_back({adjTrans, center, inverted, probe});
 
 	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
-		sceneIrradianceProbe::ptr probe =
-			std::static_pointer_cast<sceneIrradianceProbe>(obj);
+		sceneIrradianceProbe::ptr probe = ref_cast<sceneIrradianceProbe>(obj);
 		glm::vec3 center = applyTransform(adjTrans);
 		irradProbes.push_back({adjTrans, center, inverted, probe});
 	}
@@ -56,20 +54,21 @@ void renderQueue::add(sceneNode::ptr obj,
 	    && obj->hasNode("skin")
 	    && obj->hasNode("mesh"))
 	{
-		auto s = std::static_pointer_cast<sceneSkin>(obj->getNode("skin"));
+		auto node = obj->getNode("skin");
+		auto s = ref_cast<sceneSkin>(node);
 		addSkinned(obj->getNode("mesh"), s, renderID, adjTrans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Particles) {
-		auto p = std::static_pointer_cast<sceneParticles>(obj);
+		auto p = ref_cast<sceneParticles>(obj);
 		addInstanced(obj, p, renderID, adjTrans, glm::mat4(1), inverted);
 
 	} else if (obj->type == sceneNode::objType::BillboardParticles) {
-		auto p = std::static_pointer_cast<sceneBillboardParticles>(obj);
+		auto p = ref_cast<sceneBillboardParticles>(obj);
 		addBillboards(obj, p, renderID, adjTrans, inverted);
 
 	} else {
-		for (auto& [name, ptr] : obj->nodes) {
-			add(ptr, renderID, adjTrans, inverted);
+		for (auto ptr : obj->nodes()) {
+			add(ptr->getRef(), renderID, adjTrans, inverted);
 		}
 	}
 }
@@ -95,7 +94,7 @@ void renderQueue::addMesh(sceneNode::ptr obj,
                           const glm::mat4& trans,
                           bool inverted)
 {
-	sceneMesh::ptr mesh = std::static_pointer_cast<sceneMesh>(obj);
+	sceneMesh::ptr mesh = ref_cast<sceneMesh>(obj);
 
 	if (mesh->comped_mesh) {
 		glm::vec3 center = applyTransform(trans);
@@ -138,13 +137,13 @@ void renderQueue::addSkinned(sceneNode::ptr obj,
 		return;
 
 	if (obj->type == sceneNode::objType::Mesh) {
-		auto m = std::static_pointer_cast<sceneMesh>(obj);
+		auto m = ref_cast<sceneMesh>(obj);
 		glm::vec3 center = applyTransform(trans, boxCenter(m->boundingBox));
 		skinnedMeshes[skin].push_back({trans, center, inverted, m});
 	}
 
-	for (auto& [name, ptr] : obj->nodes) {
-		addSkinned(ptr, skin, renderID, trans, inverted);
+	for (auto ptr : obj->nodes()) {
+		addSkinned(ptr->getRef(), skin, renderID, trans, inverted);
 	}
 }
 
@@ -170,12 +169,12 @@ void renderQueue::addInstanced(sceneNode::ptr obj,
 	inverted ^= invcount & 1;
 
 	if (obj->type == sceneNode::objType::Mesh) {
-		auto m = std::static_pointer_cast<sceneMesh>(obj);
+		auto m = ref_cast<sceneMesh>(obj);
 		instancedMeshes.push_back({adjTrans, outerTrans, inverted, particles, m});
 	}
 
-	for (auto& [name, ptr] : obj->nodes) {
-		addInstanced(ptr, particles, renderID, outerTrans, adjTrans, inverted);
+	for (auto ptr : obj->nodes()) {
+		addInstanced(ptr->getRef(), particles, renderID, outerTrans, adjTrans, inverted);
 	}
 }
 
@@ -199,12 +198,12 @@ void renderQueue::addBillboards(sceneNode::ptr obj,
 	inverted ^= invcount & 1;
 
 	if (obj->type == sceneNode::objType::Mesh) {
-		auto m = std::static_pointer_cast<sceneMesh>(obj);
+		auto m = ref_cast<sceneMesh>(obj);
 		billboardMeshes.push_back({adjTrans, inverted, particles, m});
 	}
 
-	for (auto& [name, ptr] : obj->nodes) {
-		addBillboards(ptr, particles, renderID, adjTrans, inverted);
+	for (auto ptr : obj->nodes()) {
+		addBillboards(ptr->getRef(), particles, renderID, adjTrans, inverted);
 	}
 }
 
@@ -220,8 +219,7 @@ void grendx::updateLights(renderContext *rctx,
 		if (light.data->lightType == sceneLight::lightTypes::Point) {
 			// TODO: check against view frustum to see if this light is visible,
 			//       avoid rendering shadow maps if not
-			sceneLightPoint::ptr plit =
-				std::static_pointer_cast<sceneLightPoint>(light.data);
+			sceneLightPoint::ptr plit = ref_cast<sceneLightPoint>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			for (unsigned i = 0; i < 6; i++) {
@@ -234,8 +232,7 @@ void grendx::updateLights(renderContext *rctx,
 			drawShadowCubeMap(que, plit, light.transform, rctx);
 
 		} else if (light.data->lightType == sceneLight::lightTypes::Spot) {
-			sceneLightSpot::ptr slit =
-				std::static_pointer_cast<sceneLightSpot>(light.data);
+			sceneLightSpot::ptr slit = ref_cast<sceneLightSpot>(light.data);
 
 			auto& shatree = rctx->atlases.shadows->tree;
 			if (!shatree.valid(slit->shadowmap)) {
@@ -495,13 +492,15 @@ void grendx::cullQueue(renderQueue& queue,
 }
 
 void grendx::batchQueue(renderQueue& queue) {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	std::map<sceneMesh*, unsigned> meshCount;
 	bool canBatch = false;
 	// TODO: configuration option
 	unsigned minbatch = 16;
 
 	for (auto& ent : queue.meshes) {
-		canBatch |= ++meshCount[ent.data.get()] >= minbatch;
+		canBatch |= ++meshCount[ent.data.getPtr()] >= minbatch;
 	}
 
 	if (!canBatch) {
@@ -517,13 +516,14 @@ void grendx::batchQueue(renderQueue& queue) {
 		auto& trans = it->transform;
 		auto& mesh  = it->data;
 
-		if (meshCount[mesh.get()] < minbatch) {
+		if (meshCount[mesh.getPtr()] < minbatch) {
 			tempMeshes.push_back(*it);
 			continue;
 		}
 
 		if (batches.find(mesh) == batches.end()) {
-			batches[mesh] = std::make_shared<sceneParticles>();
+			batches[mesh] = ecs->construct<sceneParticles>();
+			//batches[mesh] = std::make_shared<sceneParticles>();
 		}
 
 		auto& batch = batches[mesh];
@@ -1258,8 +1258,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 		if (activePoints < MAX_POINT_LIGHT_OBJECTS_TILED &&
 		    lit.data->lightType == sceneLight::lightTypes::Point)
 		{
-			sceneLightPoint::ptr plit =
-				std::static_pointer_cast<sceneLightPoint>(lit.data);
+			sceneLightPoint::ptr plit = ref_cast<sceneLightPoint>(lit.data);
 
 			packLight(plit,
 					  pointbuf.upoint_lights + activePoints,
@@ -1270,8 +1269,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 		} else if (activeSpots < MAX_SPOT_LIGHT_OBJECTS_TILED
 		           && lit.data->lightType == sceneLight::lightTypes::Spot)
 		{
-			sceneLightSpot::ptr slit =
-				std::static_pointer_cast<sceneLightSpot>(lit.data);
+			sceneLightSpot::ptr slit = ref_cast<sceneLightSpot>(lit.data);
 
 			packLight(slit,
 					  spotbuf.uspot_lights + activeSpots,
@@ -1282,8 +1280,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 		} else if (activeDirs < MAX_DIRECTIONAL_LIGHT_OBJECTS_TILED
 		          && lit.data->lightType == sceneLight::lightTypes::Directional)
 		{
-			sceneLightDirectional::ptr dlit =
-				std::static_pointer_cast<sceneLightDirectional>(lit.data);
+			sceneLightDirectional::ptr dlit = ref_cast<sceneLightDirectional>(lit.data);
 
 			packLight(dlit,
 					  dirbuf.udirectional_lights + activeDirs,

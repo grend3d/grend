@@ -1,6 +1,7 @@
 #pragma once
 
 #include <grend/IoC.hpp>
+#include <grend/sceneModel.hpp>
 #include <grend/renderData.hpp>
 #include <grend/renderSettings.hpp>
 #include <grend/renderFramebuffer.hpp>

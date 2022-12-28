@@ -4,6 +4,8 @@
 #include <grend/logger.hpp>
 #include <math.h>
 
+#include <grend/ecs/ecs.hpp>
+
 using namespace grendx;
 
 sceneNode::~sceneNode() {}
@@ -77,19 +79,27 @@ void sceneNode::setRotation(const glm::quat& rotation) {
 }
 
 sceneNode::ptr sceneNode::getNode(std::string name) {
-	return hasNode(name)? nodes[name] : nullptr;
+	for (auto link : nodes()) {
+		auto node = link->getRef();
+		if (node->name == name) {
+			return node;
+		}
+	}
+
+	return nullptr;
 }
 
 sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
-	if (node != nullptr) {
-		if (auto p = node->parent.lock()) {
-			for (auto& [key, ptr] : p->nodes) {
-				if (node == ptr) {
-					sceneNode::ptr ret = p;
-					p->nodes.erase(key);
-					node->parent.reset();
-					return ret;
-				}
+	auto manager = engine::Resolve<ecs::entityManager>();
+
+	if (auto p = node->parent) {
+		for (auto ptr : p->nodes()) {
+			if (node == ptr->getRef()) {
+				sceneNode::ptr ret = p;
+				// TODO: convenience function in entity for this
+				// TODO: actual implementation
+				manager->unregisterComponent(p.getPtr(), node.getPtr());
+				return ret;
 			}
 		}
 	}
@@ -97,14 +107,20 @@ sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
 	return node;
 }
 
+// TODO: rewrite
+[[deprecated("needs to be rewritten")]]
 sceneNode::ptr grendx::clone(sceneNode::ptr node) {
-	sceneNode::ptr ret = std::make_shared<sceneNode>();
+	auto manager = engine::Resolve<ecs::entityManager>();
+	sceneNode::ptr ret = manager->construct<sceneNode>();
+	//sceneNode::ptr ret = std::make_shared<sceneNode>();
 
 	ret->setTransform(node->getTransformTRS());
 
-	for (auto& [name, ptr] : node->nodes) {
-		setNode(name, ret, ptr);
-	}
+	//for (auto& [name, ptr] : node->nodes) {
+	//for (auto ptr : node->nodes()) {
+		//auto& name = ptr->name;
+		//setNode(name, ret, ptr);
+	//}
 
 	return ret;
 }
@@ -149,7 +165,7 @@ static sceneNode::ptr copySkinNodes(sceneSkin::ptr target,
                                      sceneSkin::ptr skin,
                                      sceneNode::ptr node)
 {
-	if (node == nullptr) {
+	if (!node) {
 		return node;
 	}
 
@@ -158,7 +174,9 @@ static sceneNode::ptr copySkinNodes(sceneSkin::ptr target,
 		return node;
 	}
 
-	sceneNode::ptr ret = std::make_shared<sceneNode>();
+	auto manager = engine::Resolve<ecs::entityManager>();
+	//sceneNode::ptr ret = std::make_shared<sceneNode>();
+	sceneNode::ptr ret = manager->construct<sceneNode>();
 
 	// copy generic sceneNode members
 	// XXX: two set transforms to ensure origTransform is the same
@@ -168,13 +186,16 @@ static sceneNode::ptr copySkinNodes(sceneSkin::ptr target,
 	ret->animChannel     = node->animChannel;
 	ret->extraProperties = node->extraProperties;
 
+	// TODO: bounds check
 	int i = indexOf(skin->joints, node);
 	if (i >= 0) {
 		target->joints[i] = ret;
 	}
 
 	// copy sub-nodes
-	for (auto& [name, ptr] : node->nodes) {
+	for (auto link : node->nodes()) {
+		auto ptr = link->getRef();
+		auto& name = ptr->name;
 		setNode(name, ret, copySkinNodes(target, skin, ptr));
 	}
 
@@ -187,7 +208,9 @@ static void copySkin(sceneSkin::ptr target, sceneSkin::ptr skin) {
 
 	target->joints.resize(skin->joints.size());
 
-	for (auto& [name, ptr] : skin->nodes) {
+	for (auto link : skin->nodes()) {
+		auto ptr = link->getRef();
+		auto& name = ptr->name;
 		setNode(name, target, copySkinNodes(target, skin, ptr));
 	}
 }
@@ -195,85 +218,99 @@ static void copySkin(sceneSkin::ptr target, sceneSkin::ptr skin) {
 sceneNode::ptr grendx::duplicate(sceneNode::ptr node) {
 	// TODO: need to copy all attributes
 
-	sceneNode::ptr ret;
+	auto manager = engine::Resolve<ecs::entityManager>();
+
+	auto doCopy = [&] (sceneNode::ptr ret, sceneNode::ptr node) {
+		// copy generic sceneNode members
+		// XXX: two set transforms to ensure origTransform is the same
+		ret->setTransform(node->getOrigTransform());
+		ret->setTransform(node->getTransformTRS());
+		ret->visible         = node->visible;
+		ret->animChannel     = node->animChannel;
+		ret->extraProperties = node->extraProperties;
+
+		// copy sub-nodes
+		for (auto link : node->nodes()) {
+			auto ptr = link->getRef();
+			auto sub = duplicate(ptr);
+
+			sub->name = ptr->name;
+			ret->attach<ecs::link<sceneNode>>(sub.getPtr());
+
+			//auto& name = ptr->name;
+			//setNode(name, ret, duplicate(ptr));
+		}
+
+		return ret;
+	};
 
 	// copy specific per-type object members
 	switch (node->type) {
-		case sceneNode::objType::None:
-			ret = std::make_shared<sceneNode>();
-			break;
+		case sceneNode::objType::None: {
+				sceneNode::ptr ret = manager->construct<sceneNode>();
+				return doCopy(ret, node);
+		   }
 
 		case sceneNode::objType::Import:
 			{
-				auto foo = std::static_pointer_cast<sceneImport>(node);
-				auto temp = std::make_shared<sceneImport>(foo->sourceFile);
+				auto foo = node->get<sceneImport>();
+				auto temp = manager->construct<sceneImport>(foo->sourceFile);
 				temp->animations = copyCollection(foo->animations);
-
-				ret = temp;
-				break;
+				return doCopy(temp, node);
 			}
 
 		case sceneNode::objType::Skin:
 			{
-				ret = std::make_shared<sceneSkin>();
+				//ret = std::make_shared<sceneSkin>();
+				sceneNode::ptr ret = manager->construct<sceneSkin>();
 
 				// small XXX: need to copy skin information after copying subnodes
-				auto skin = std::static_pointer_cast<sceneSkin>(node);
-				auto temp = std::static_pointer_cast<sceneSkin>(ret);
+				//auto skin = std::static_pointer_cast<sceneSkin>(node);
+				//auto temp = std::static_pointer_cast<sceneSkin>(ret);
+				auto skin = node->get<sceneSkin>();
+				auto temp = manager->construct<sceneSkin>();
 
 				copySkin(temp, skin);
 				return ret;
 			}
 			break;
 
-		// TODO: meshes/models, particles shouldn't be doCopy, but would it make
+		// TODO: meshes/models, particles shouldn't be copied, but would it make
 		//       sense to copy other types like lights, cameras?
 		default:
 			return node;
 	}
-
-	// copy generic sceneNode members
-	// XXX: two set transforms to ensure origTransform is the same
-	ret->setTransform(node->getOrigTransform());
-	ret->setTransform(node->getTransformTRS());
-	ret->visible         = node->visible;
-	ret->animChannel     = node->animChannel;
-	ret->parent          = node->parent;
-	ret->extraProperties = node->extraProperties;
-
-	// copy sub-nodes
-	for (auto& [name, ptr] : node->nodes) {
-		setNode(name, ret, duplicate(ptr));
-	}
-
-
-	return ret;
 }
 
 std::string grendx::getNodeName(sceneNode::ptr node) {
-	if (node != nullptr) {
-		if (auto p = node->parent.lock()) {
-			for (auto& [key, ptr] : p->nodes) {
-				if (node == ptr) {
-					return key;
-				}
-			}
-		}
-	}
-
-	return "";
+	return node? node->name : "";
 }
 
 void sceneNode::removeNode(std::string name) {
+	// XXX
+	auto ent = getNode(name);
+	// TODO:
+	// TODO: convenience function
+	//manager->unregisterComponent(this, ent.getPtr());
+
+	/*
 	auto it = nodes.find(name);
 
 	if (it != nodes.end()) {
 		nodes.erase(it);
 	}
+	*/
 }
 
 bool sceneNode::hasNode(std::string name) {
-	return nodes.find(name) != nodes.end();
+	// XXX: inefficient
+	for (auto ptr : nodes()) {
+		if ((*ptr)->name == name) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 float sceneLightPoint::extent(float threshold) {
@@ -297,11 +334,11 @@ static glm::mat4 lookup(std::map<sceneNode*, glm::mat4>& cache,
 	auto it = cache.find(ptr);
 
 	if (it == cache.end()) {
-		sceneNode::ptr parent = ptr->parent.lock();
+		sceneNode::ptr parent = ptr->parent;
 		glm::mat4 mat(1);
 
 		if (ptr != root && parent) {
-			mat = lookup(cache, root, parent.get()) * ptr->getTransformMatrix();
+			mat = lookup(cache, root, parent.getPtr()) * ptr->getTransformMatrix();
 		}
 
 		cache[ptr] = mat;
@@ -336,7 +373,7 @@ void sceneSkin::sync(Program::ptr program) {
 			continue;
 		}
 
-		glm::mat4 accum = lookup(accumTransforms, this, joints[i].get());
+		glm::mat4 accum = lookup(accumTransforms, this, joints[i].getPtr());
 		transforms[i] = accum*inverseBind[i];
 	}
 
@@ -376,8 +413,8 @@ void sceneParticles::update(void) {
 	synced = false;
 }
 
-sceneParticles::sceneParticles(unsigned _maxInstances)
-	: sceneNode(objType::Particles)
+sceneParticles::sceneParticles(ecs::regArgs t, unsigned _maxInstances)
+	: sceneNode(ecs::doRegister(this, t), objType::Particles)
 {
 	positions.reserve(_maxInstances);
 	positions.resize(positions.capacity());
@@ -406,8 +443,8 @@ void sceneBillboardParticles::update(void) {
 	synced = false;
 }
 
-sceneBillboardParticles::sceneBillboardParticles(unsigned _maxInstances)
-	: sceneNode(objType::BillboardParticles)
+sceneBillboardParticles::sceneBillboardParticles(ecs::regArgs t, unsigned _maxInstances)
+	: sceneNode(ecs::doRegister(this, t), objType::BillboardParticles)
 {
 	positions.reserve(_maxInstances);
 	positions.resize(positions.capacity());

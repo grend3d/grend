@@ -74,7 +74,7 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 	return ret;
 }
 
-compiledMesh::ptr compileMesh(sceneMesh::ptr& mesh) {
+compiledMesh::ptr compileMesh(sceneMesh::ptr mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
 
 	if (mesh->faces.size() == 0) {
@@ -113,10 +113,10 @@ compiledModel::ptr compileModel(std::string name, sceneModel::ptr model) {
 		                    model->joints.size() * sizeof(sceneModel::jointWeights));
 	}
 
-	for (auto& [meshname, ptr] : model->nodes) {
-		if (ptr->type == sceneNode::objType::Mesh) {
-			auto wptr = std::dynamic_pointer_cast<sceneMesh>(ptr);
-			obj->meshes[meshname] = compileMesh(wptr);
+	for (auto ptr : model->nodes()) {
+		if ((*ptr)->type == sceneNode::objType::Mesh) {
+			auto wptr = ref_cast<sceneMesh>(ptr->getRef());
+			obj->meshes[(*ptr)->name] = compileMesh(wptr);
 		}
 	}
 

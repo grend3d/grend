@@ -144,11 +144,13 @@ void octree::add_model(sceneModel::ptr mod, glm::mat4 transform) {
 	auto& verts = mod->vertices;
 	//auto& normals = mod->normals;
 
-	for (auto& [key, ptr] : mod->nodes) {
-		if (ptr->type != sceneNode::objType::Mesh) {
+	for (auto ptr : mod->nodes()) {
+		if ((*ptr)->type != sceneNode::objType::Mesh) {
 			continue;
 		}
-		sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
+
+		auto mesh = (*ptr)->get<sceneMesh>();
+		//sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		// TODO: what happens when degenerate meshes without a full triangle
 		//       are loaded here? might account for the sporadic bugs this has...

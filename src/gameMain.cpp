@@ -53,12 +53,12 @@ void grendx::engine::initialize(const std::string& name, const renderSettings& s
 #endif
 
 	auto& ctx = *Resolve<SDLContext>();
+	Services().bind<ecs::entityManager, ecs::entityManager>();
+	Services().bind<ecs::serializer,    ecs::serializer>();
 	Services().bind<renderContext,      renderContext>(ctx, settings);
 	Services().bind<gameState,          gameState>();
 	Services().bind<audioMixer,         audioMixer>(&ctx);
 	Services().bind<jobQueue,           jobQueue>();
-	Services().bind<ecs::entityManager, ecs::entityManager>();
-	Services().bind<ecs::serializer,    ecs::serializer>();
 
 	LogInfo("gameMain() finished");
 }

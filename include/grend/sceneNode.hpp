@@ -1,5 +1,8 @@
 #pragma once
 
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/link.hpp>
+
 #include <grend-config.h>
 #include <grend/glmIncludes.hpp>
 #include <grend/animation.hpp>
@@ -22,8 +25,10 @@ namespace grendx {
 
 size_t allocateObjID(void);
 
-class sceneNode {
+class sceneNode : public ecs::entity {
 	public:
+		std::string name = "";
+
 		// used for type checking, dynamically-typed tree here
 		enum objType {
 			None,
@@ -40,10 +45,13 @@ class sceneNode {
 			Camera,             // TODO: camera position marker
 		} type = objType::None;
 
-		typedef std::shared_ptr<sceneNode> ptr;
-		typedef std::weak_ptr<sceneNode> weakptr;
+		typedef ecs::ref<sceneNode> ptr;
+		typedef ecs::ref<sceneNode> weakptr;
 
-		sceneNode(enum objType t = objType::None) : type(t) {};
+		//sceneNode(enum objType t = objType::None) : type(t) {};
+		sceneNode(ecs::regArgs t, enum objType newtype = objType::None)
+			: ecs::entity(ecs::doRegister(this, t)),
+			  type(newtype) {};
 		virtual ~sceneNode();
 
 		virtual std::string typeString(void) {
@@ -68,6 +76,8 @@ class sceneNode {
 
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
+		//sceneNode::ptr getNode(std::string name);
+		// TODO: these are much less efficient now that that nodes aren't indexed in a map
 		sceneNode::ptr getNode(std::string name);
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
@@ -82,8 +92,12 @@ class sceneNode {
 		// whether the node visible
 		bool visible = true;
 
+		auto nodes() {
+			return getAll<ecs::link<sceneNode>>();
+		}
+
 		sceneNode::weakptr parent;
-		std::map<std::string, sceneNode::ptr> nodes;
+		//std::map<std::string, sceneNode::ptr> nodes;
 		// intended to map to gltf extra properties, useful for exporting
 		// info from blender
 		std::map<std::string, float> extraProperties;
@@ -99,7 +113,8 @@ class sceneNode {
 		} queueCache;
 
 	private:
-		TRS transform;
+		// TODO: transform setters/getters, cache in entity
+		//TRS transform;
 		TRS origTransform;
 
 		bool updated = true;
@@ -107,25 +122,34 @@ class sceneNode {
 		glm::mat4 cachedTransformMatrix;
 };
 
+/*
 static inline
 void setNode(std::string name, sceneNode::ptr obj, sceneNode::ptr sub) {
 	assert(obj != nullptr && sub != nullptr);
 
-	obj->nodes[name] = sub;
-	sub->parent = obj;
+	//obj->nodes[name] = sub;
+	//sub->parent = obj;
 }
 
 static inline
 void setNodeXXX(std::string name, sceneNode::ptr obj, sceneNode::ptr sub) {
 	assert(obj != nullptr && sub != nullptr);
 
-	obj->nodes[name] = sub;
+	//obj->nodes[name] = sub;
+}
+*/
+
+template <typename A, typename B>
+void setNode(std::string name, A a, B b) {
+	b->name = name;
+	a->template attach<ecs::link<sceneNode>>(b.getPtr());
+	b->parent = a;
 }
 
 static inline
 glm::mat4 fullTranslation(sceneNode::ptr node) {
 	if (node) {
-		if (auto p = node->parent.lock()) {
+		if (auto p = node->parent) {
 			return fullTranslation(p) * node->getTransformMatrix();
 
 		} else {
@@ -141,15 +165,16 @@ glm::mat4 fullTranslation(sceneNode::ptr node) {
 sceneNode::ptr unlink(sceneNode::ptr node);
 sceneNode::ptr clone(sceneNode::ptr node);     // shallow copy
 sceneNode::ptr duplicate(sceneNode::ptr node); // deep copy
-std::string    getNodeName(sceneNode::ptr node);
+std::string getNodeName(sceneNode::ptr node);
 
 class sceneImport : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneImport> ptr;
-		typedef std::weak_ptr<sceneImport>   weakptr;
+		typedef ecs::ref<sceneImport> ptr;
+		typedef ecs::ref<sceneImport> weakptr;
 
-		sceneImport(std::string path)
-			: sceneNode(objType::Import), sourceFile(path) {}
+		sceneImport(ecs::regArgs t, std::string_view path)
+			: sceneNode(ecs::doRegister(this, t), objType::Import),
+			  sourceFile(path) {};
 		virtual ~sceneImport();
 
 		virtual std::string typeString(void) {
@@ -171,12 +196,13 @@ class sceneImport : public sceneNode {
 class Buffer;
 class Program;
 
+// TODO: does this need to be an entity? probably should just be a component
 class sceneSkin : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneSkin> ptr;
-		typedef std::weak_ptr<sceneSkin>   weakptr;
+		typedef ecs::ref<sceneSkin> ptr;
+		typedef ecs::ref<sceneSkin> weakptr;
 
-		sceneSkin() : sceneNode(objType::Skin) {}
+		sceneSkin(ecs::regArgs t) : sceneNode(ecs::doRegister(this, t), objType::Skin) {}
 		virtual ~sceneSkin();
 
 		virtual std::string typeString(void) {
@@ -188,6 +214,8 @@ class sceneSkin : public sceneNode {
 		std::vector<glm::mat4> inverseBind;
 		std::vector<glm::mat4> transforms;
 		// keep internal pointers to joints, same nodes as in the tree
+		//std::vector<sceneNode::ptr> joints;
+		// TODO: don't store pointers, store entity IDs
 		std::vector<sceneNode::ptr> joints;
 
 		std::shared_ptr<Buffer> ubuffer = nullptr;
@@ -195,10 +223,10 @@ class sceneSkin : public sceneNode {
 
 class sceneParticles : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneParticles> ptr;
-		typedef std::weak_ptr<sceneParticles>   weakptr;
+		typedef ecs::ref<sceneParticles> ptr;
+		typedef ecs::ref<sceneParticles> weakptr;
 
-		sceneParticles(unsigned _maxInstances = 256);
+		sceneParticles(ecs::regArgs t, unsigned _maxInstances = 256);
 		virtual ~sceneParticles();
 
 		virtual std::string typeString(void) {
@@ -221,10 +249,10 @@ class sceneParticles : public sceneNode {
 
 class sceneBillboardParticles : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneBillboardParticles> ptr;
-		typedef std::weak_ptr<sceneBillboardParticles>   weakptr;
+		typedef ecs::ref<sceneBillboardParticles> ptr;
+		typedef ecs::ref<sceneBillboardParticles> weakptr;
 
-		sceneBillboardParticles(unsigned _maxInstances = 1024);
+		sceneBillboardParticles(ecs::regArgs t, unsigned _maxInstances = 1024);
 		virtual ~sceneBillboardParticles();
 
 		virtual std::string typeString(void) {
@@ -248,8 +276,8 @@ class sceneBillboardParticles : public sceneNode {
 
 class sceneLight : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneLight> ptr;
-		typedef std::weak_ptr<sceneLight> weakptr;
+		typedef ecs::ref<sceneLight> ptr;
+		typedef ecs::ref<sceneLight> weakptr;
 
 		enum lightTypes {
 			None,
@@ -261,8 +289,9 @@ class sceneLight : public sceneNode {
 			BoundedPoint, // TODO:
 		} lightType;
 
-		sceneLight(enum lightTypes t)
-			: sceneNode(objType::Light), lightType(t) {};
+		sceneLight(ecs::regArgs t, enum lightTypes lighttype)
+			: sceneNode(ecs::doRegister(this, t), objType::Light),
+			  lightType(lighttype) {};
 		virtual ~sceneLight();
 
 		virtual std::string typeString(void) {
@@ -283,10 +312,11 @@ class sceneLight : public sceneNode {
 
 class sceneLightPoint : public sceneLight {
 	public:
-		typedef std::shared_ptr<sceneLightPoint> ptr;
-		typedef std::weak_ptr<sceneLightPoint> weakptr;
+		typedef ecs::ref<sceneLightPoint> ptr;
+		typedef ecs::ref<sceneLightPoint> weakptr;
 
-		sceneLightPoint() : sceneLight(lightTypes::Point) {};
+		sceneLightPoint(ecs::regArgs t)
+			: sceneLight(ecs::doRegister(this, t), lightTypes::Point) {};
 		virtual ~sceneLightPoint();
 
 		virtual std::string typeString(void) {
@@ -302,10 +332,11 @@ class sceneLightPoint : public sceneLight {
 
 class sceneLightSpot : public sceneLight {
 	public:
-		typedef std::shared_ptr<sceneLightSpot> ptr;
-		typedef std::weak_ptr<sceneLightSpot> weakptr;
+		typedef ecs::ref<sceneLightSpot> ptr;
+		typedef ecs::ref<sceneLightSpot> weakptr;
 
-		sceneLightSpot() : sceneLight(lightTypes::Spot) {};
+		sceneLightSpot(ecs::regArgs t)
+			: sceneLight(ecs::doRegister(this, t), lightTypes::Spot) {};
 		virtual ~sceneLightSpot();
 
 		virtual std::string typeString(void) {
@@ -324,10 +355,11 @@ class sceneLightSpot : public sceneLight {
 
 class sceneLightDirectional : public sceneLight {
 	public:
-		typedef std::shared_ptr<sceneLightDirectional> ptr;
-		typedef std::weak_ptr<sceneLightDirectional> weakptr;
+		typedef ecs::ref<sceneLightDirectional> ptr;
+		typedef ecs::ref<sceneLightDirectional> weakptr;
 
-		sceneLightDirectional() : sceneLight(lightTypes::Directional) {};
+		sceneLightDirectional(ecs::regArgs t)
+			: sceneLight(ecs::doRegister(this, t), lightTypes::Directional) {};
 		virtual ~sceneLightDirectional();
 
 		virtual std::string typeString(void) {
@@ -343,14 +375,15 @@ class sceneLightDirectional : public sceneLight {
 
 class sceneReflectionProbe : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneReflectionProbe> ptr;
-		typedef std::weak_ptr<sceneReflectionProbe> weakptr;
+		typedef ecs::ref<sceneReflectionProbe> ptr;
+		typedef ecs::ref<sceneReflectionProbe> weakptr;
 
 		virtual std::string typeString(void) {
 			return "Reflection probe";
 		}
 
-		sceneReflectionProbe() : sceneNode(objType::ReflectionProbe) {};
+		sceneReflectionProbe(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::ReflectionProbe) {};
 		virtual ~sceneReflectionProbe();
 
 		quadtree::node_id faces[5][6];
@@ -368,19 +401,23 @@ class sceneReflectionProbe : public sceneNode {
 
 class sceneIrradianceProbe : public sceneNode {
 	public:
-		typedef std::shared_ptr<sceneIrradianceProbe> ptr;
-		typedef std::weak_ptr<sceneIrradianceProbe> weakptr;
+		typedef ecs::ref<sceneIrradianceProbe> ptr;
+		typedef ecs::ref<sceneIrradianceProbe> weakptr;
 
 		virtual std::string typeString(void) {
 			return "Irradiance probe";
 		}
 
-		sceneIrradianceProbe() : sceneNode(objType::IrradianceProbe) {
-			source = std::make_shared<sceneReflectionProbe>();
+		sceneIrradianceProbe(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::IrradianceProbe)
+		{
+			source = t.manager->construct<sceneReflectionProbe>();
 		};
 		virtual ~sceneIrradianceProbe();
 
-		sceneReflectionProbe::ptr source;
+		// TODO: not this
+		sceneReflectionProbe *source;
+
 		quadtree::node_id faces[6];
 		quadtree::node_id coefficients[6];
 

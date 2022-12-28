@@ -26,7 +26,8 @@ rigidBody::rigidBody(regArgs t)
 {
 	manager->registerInterface<activatable>(t.ent, this);
 	manager->registerInterface<transformUpdatable>(t.ent, this);
-	registerCollisionQueue(manager->collisions);
+	// TODO: FIX
+	//registerCollisionQueue(manager->collisions);
 }
 
 rigidBody::rigidBody(regArgs t, float _mass)

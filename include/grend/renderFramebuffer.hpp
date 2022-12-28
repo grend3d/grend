@@ -1,7 +1,5 @@
 #pragma once
 
-#include <grend/sceneNode.hpp>
-#include <grend/sceneModel.hpp>
 #include <grend/glManager.hpp>
 
 #include <vector>

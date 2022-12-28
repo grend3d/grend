@@ -45,15 +45,15 @@ static void editLight(sceneLight::ptr light) {
 
 	switch (light->lightType) {
 		case sceneLight::lightTypes::Point:
-			editPointLight(std::dynamic_pointer_cast<sceneLightPoint>(light));
+			editPointLight(ref_cast<sceneLightPoint>(light));
 			break;
 
 		case sceneLight::lightTypes::Spot:
-			editSpotLight(std::dynamic_pointer_cast<sceneLightSpot>(light));
+			editSpotLight(ref_cast<sceneLightSpot>(light));
 			break;
 
 		case sceneLight::lightTypes::Directional:
-			editDirectionalLight(std::dynamic_pointer_cast<sceneLightDirectional>(light));
+			editDirectionalLight(ref_cast<sceneLightDirectional>(light));
 			break;
 
 		default:
@@ -123,16 +123,16 @@ void gameEditor::objectEditorWindow() {
 	ImGui::Unindent(16.f);
 
 	if (selectedNode->type == sceneNode::objType::Light) {
-		editLight(std::dynamic_pointer_cast<sceneLight>(selectedNode));
+		editLight(ref_cast<sceneLight>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::ReflectionProbe) {
-		editRefProbe(std::dynamic_pointer_cast<sceneReflectionProbe>(selectedNode));
+		editRefProbe(ref_cast<sceneReflectionProbe>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::IrradianceProbe) {
-		editRefProbe(std::dynamic_pointer_cast<sceneIrradianceProbe>(selectedNode));
+		editRefProbe(ref_cast<sceneIrradianceProbe>(selectedNode));
 
 	} else if(selectedNode->type == sceneNode::objType::Model) {
-		editModel(std::dynamic_pointer_cast<sceneModel>(selectedNode));
+		editModel(ref_cast<sceneModel>(selectedNode));
 	}
 
 	ImGui::Separator();

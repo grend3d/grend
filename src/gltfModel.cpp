@@ -464,12 +464,14 @@ materialTexture::ptr load_gltf_lightmap(gltfModel& gltf) {
 }
 
 grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	modelMap ret;
 	materialTexture::ptr lightmap = load_gltf_lightmap(gltf);
 
 	for (auto& mesh : gltf.data.meshes) {
-		grendx::sceneModel::ptr curModel =
-			grendx::sceneModel::ptr(new grendx::sceneModel());
+		sceneModel::ptr curModel = ecs->construct<sceneModel>();
+
 		ret[mesh.name] = curModel;
 
 		/*
@@ -490,7 +492,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			todo << "        mode: " << prim.mode << std::endl;
 			*/
 
-			grendx::sceneMesh::ptr modmesh = grendx::sceneMesh::ptr(new grendx::sceneMesh());
+			sceneMesh::ptr modmesh = ecs->construct<sceneMesh>();
 			setNode(temp_name, curModel, modmesh);
 
 			// copy over extra property values
@@ -503,8 +505,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			}
 
 			if (prim.material >= 0) {
-				modmesh->meshMaterial
-					= gltf_load_material(gltf, prim.material);
+				modmesh->meshMaterial = gltf_load_material(gltf, prim.material);
 			} else {
 				// XXX: a little wasteful
 				modmesh->meshMaterial = std::make_shared<material>();
@@ -841,11 +842,13 @@ set_object_gltf_transform(sceneNode::ptr ptr, tinygltf::Node& node) {
 
 static sceneNode::ptr 
 load_gltf_skin_node_top(gltfModel& gltf, int nodeidx) {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	if (nodeidx < 0) {
 		return nullptr;
 	}
 
-	sceneNode::ptr ret = std::make_shared<sceneNode>();
+	sceneNode::ptr ret = ecs->construct<sceneNode>();
 
 	// TODO: range check
 	auto& node = gltf.data.nodes[nodeidx];
@@ -857,15 +860,17 @@ load_gltf_skin_node_top(gltfModel& gltf, int nodeidx) {
 
 static sceneSkin::ptr
 load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	if (nodeidx < 0) {
 		return nullptr;
 	}
 
 	// TODO: range checko
 	auto& skin = gltf.data.skins[nodeidx];
-	sceneSkin::ptr   obj    = std::make_shared<sceneSkin>();
-	sceneNode::ptr sub    = std::make_shared<sceneNode>();
-	sceneNode::ptr joints = std::make_shared<sceneNode>();
+	sceneSkin::ptr obj    = ecs->construct<sceneSkin>();
+	sceneNode::ptr sub    = ecs->construct<sceneNode>();
+	sceneNode::ptr joints = ecs->construct<sceneNode>();
 	std::string sname = "skin["+skin.name+"]";
 	setNode(sname, obj, sub);
 	setNode("joints", sub, joints);
@@ -902,7 +907,7 @@ load_gltf_skin_nodes(gltfModel& gltf, int nodeidx) {
 
 	for (unsigned i = 0; i < obj->joints.size(); i++) {
 		auto& ptr = obj->joints[i];
-		if (ptr->parent.expired()) {
+		if (!ptr->parent) {
 			std::string name = "rootjoint["+std::to_string(i)+"]";
 			setNode(name, joints, ptr);
 		}
@@ -927,7 +932,9 @@ static void load_gltf_node_light(gltfModel& gltf,
                                  tinygltf::Node& node,
                                  sceneNode::ptr obj)
 {
-	auto it = node.extensions.find("KHR_lights_punctual");
+	auto ecs = engine::Resolve<ecs::entityManager>();
+	auto it  = node.extensions.find("KHR_lights_punctual");
+
 	if (it != node.extensions.end()) {
 		LogInfo(" GLTF > have punctual light!");
 
@@ -953,7 +960,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 		LogFmt(" GLTF > node light! {}: {}", light.name, light.type);
 
 		if (light.type == "point") {
-			sceneLightPoint::ptr point = std::make_shared<sceneLightPoint>();
+			sceneLightPoint::ptr point = ecs->construct<sceneLightPoint>();
 			point->intensity = light.intensity;
 			//point->casts_shadows = true;
 			point->casts_shadows = false;
@@ -966,7 +973,7 @@ static void load_gltf_node_light(gltfModel& gltf,
 			setNode(light.name, obj, point);
 
 		} else if (light.type == "spot") {
-			sceneLightSpot::ptr spot = std::make_shared<sceneLightSpot>();
+			sceneLightSpot::ptr spot = ecs->construct<sceneLightSpot>();
 			spot->intensity = 10*light.intensity;
 			//spot->casts_shadows = true;
 			spot->casts_shadows = false;
@@ -990,9 +997,12 @@ load_gltf_scene_nodes_rec(gltfModel& gltf,
                           node_map& names,
                           int nodeidx)
 {
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
 	// TODO: range check
 	auto& node = gltf.data.nodes[nodeidx];
-	sceneNode::ptr ret = std::make_shared<sceneNode>();
+	sceneNode::ptr ret = ecs->construct<sceneNode>();
+
 	set_object_gltf_transform(ret, node);
 	load_gltf_node_light(gltf, node, ret);
 
@@ -1135,14 +1145,16 @@ load_gltf_scene_nodes(std::string filename,
                       gltfModel& gltf,
                       modelMap& models)
 {
-	sceneImport::ptr ret = std::make_shared<sceneImport>(filename);
+	auto ecs = engine::Resolve<ecs::entityManager>();
+
+	sceneImport::ptr ret = ecs->construct<sceneImport>(filename);
 	auto anims = collectAnimations(gltf);
 	node_map names;
 
 	// TODO: how to return animations?
 	//       could just stuff it in the import object
 
-	sceneImport::ptr sceneobj = std::make_shared<sceneImport>(filename);
+	sceneImport::ptr sceneobj = ecs->construct<sceneImport>(filename);
 	for (auto& scene : gltf.data.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
@@ -1151,7 +1163,7 @@ load_gltf_scene_nodes(std::string filename,
 		}
 	}
 
-	auto nameobj = std::make_shared<sceneNode>();
+	sceneNode::ptr nameobj = ecs->construct<sceneNode>();
 	nameobj->visible = false;
 
 	for (auto& [name, obj] : names) {
@@ -1239,6 +1251,7 @@ grendx::load_gltf_scene(std::string filename) {
 
 	} else {
 		// XXX: should return an optional here
-		return {std::make_shared<sceneImport>(""), {}};
+		auto ecs = engine::Resolve<ecs::entityManager>();
+		return {ecs->construct<sceneImport>(""), {}};
 	}
 }

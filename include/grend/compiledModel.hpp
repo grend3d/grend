@@ -1,5 +1,6 @@
 #pragma once
 
+#include <grend/ecs/ref.hpp>
 #include <grend/glManager.hpp>
 #include <grend/materialTexture.hpp>
 #include <grend/material.hpp>
@@ -60,12 +61,12 @@ class compiledModel {
 
 compiledMaterial::ptr matcache(material::ptr mat);
 
-compiledMesh::ptr compileMesh(std::shared_ptr<sceneMesh>& mesh);
-compiledModel::ptr compileModel(std::string name, std::shared_ptr<sceneModel> mod);
-void compileModels(const std::map<std::string, std::shared_ptr<sceneModel>>& models);
+compiledMesh::ptr compileMesh(ecs::ref<sceneMesh> mesh);
+compiledModel::ptr compileModel(std::string name, ecs::ref<sceneModel> mod);
+void compileModels(const std::map<std::string, ecs::ref<sceneModel>>& models);
 Vao::ptr preloadMeshVao(compiledModel::ptr obj, compiledMesh::ptr mesh);
 Vao::ptr preloadModelVao(compiledModel::ptr obj);
-void bindModel(std::shared_ptr<sceneModel> model);
+void bindModel(ecs::ref<sceneModel> model);
 
 // namespace grendx
 }

@@ -2,7 +2,6 @@
 
 #include <grend/IoC.hpp>
 #include <grend/sceneNode.hpp>
-#include <grend/sceneModel.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/glManager.hpp>
 #include <grend/utility.hpp>
@@ -47,8 +46,6 @@ class gameState : public IoC::Service {
 
 		sceneNode::ptr rootnode;
 		sceneNode::ptr physObjects;
-		// XXX: 
-		modelMap loadedModels;
 
 	private:
 
