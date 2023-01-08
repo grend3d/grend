@@ -5,25 +5,49 @@
 
 namespace grendx::ecs {
 
-template <typename T = entity>
-class link : public component {
+class baseLink : public component {
 	public:
-		link(regArgs t, T* target)
+		baseLink(regArgs t)
 			: component(doRegister(this, t)),
-			  ptr(target)
+			  basePtr(nullptr)
 			{ }
+
+		baseLink(regArgs t, entity* target)
+			: component(doRegister(this, t)),
+			  basePtr(target)
+			{ }
+
+		~baseLink() {};
+
+		ref<entity> getBaseRef(void) {
+			return basePtr;
+		}
+
+		static nlohmann::json serializer(component *comp) { return {}; };
+		static void deserializer(component *comp, nlohmann::json j) {};
+
+	private:
+		ref<entity> basePtr;
+};
+
+template <typename T = entity>
+class link : public baseLink {
+	public:
+		link(regArgs t)
+			: baseLink(doRegister(this, t)) {}
+
+		link(regArgs t, T* target)
+			: baseLink(doRegister(this, t), target) {}
+
 		~link() {};
 
 		ref<T> getRef(void) {
-			return ptr;
+			return ref_cast<T>(getBaseRef());
 		}
 	
-		T* operator->() { return ptr.operator->(); }
-		T const* operator->() const { return ptr.operator->(); }
-
-	private:
-		ref<T> ptr;
-		//T* ptr;
+		// TODO: weak ref that avoids taking reference
+		T* operator->() { return getRef().operator->(); }
+		T const* operator->() const { return getRef().operator->(); }
 };
 
 };
