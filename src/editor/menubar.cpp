@@ -55,8 +55,7 @@ static void handle_prompts(gameEditor *editor) {
 
 		if (auto res = loadModel(import_model_dialog.selection)) {
 			auto [obj, models] = *res;
-			std::string name = "model["+std::to_string(obj->id)+"]";
-			setNode(name, editor->selectedNode, obj);
+			setNode("", editor->selectedNode, obj);
 			compileModels(models);
 		} else printError(res);
 	}
@@ -67,8 +66,7 @@ static void handle_prompts(gameEditor *editor) {
 
 		if (auto res = loadSceneCompiled(import_scene_dialog.selection)) {
 			auto obj = *res;
-			std::string name = "import["+std::to_string(obj->id)+"]";
-			setNode(name, editor->selectedNode, obj);
+			setNode("", editor->selectedNode, obj);
 		} else printError(res);
 	}
 
@@ -78,8 +76,7 @@ static void handle_prompts(gameEditor *editor) {
 
 		if (auto res = loadMapCompiled(import_map_dialog.selection)) {
 			auto obj = *res;
-			std::string name = "map["+std::to_string(obj->id)+"]";
-			setNode(name, editor->selectedNode, obj);
+			setNode("", editor->selectedNode, obj);
 		} else printError(res);
 	}
 

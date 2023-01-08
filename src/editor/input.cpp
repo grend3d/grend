@@ -110,8 +110,9 @@ static bindFunc makeClicker(gameEditor *editor,
 		{
 			auto ecs = Resolve<ecs::entityManager>();
 			auto ptr = ecs->construct<T>();
-			std::string nodename = name + std::to_string(ptr->id);
-			handleAddNode(editor, nodename, ptr);
+			// TODO: don't think nodename is needed anywhere?
+			//std::string nodename = name + std::string(ptr->id);
+			handleAddNode(editor, name, ptr);
 			return (int)gameEditor::mode::View;
 		}
 
@@ -226,8 +227,8 @@ void gameEditor::loadInputBindings() {
 			    && selectedNode->parent)
 			{
 				sceneNode::ptr temp = clone(selectedNode);
-				std::string name = "cloned " + std::to_string(temp->id);
-				setNode(name, selectedNode->parent, temp);
+				//std::string name = "cloned " + (std::string)(temp->id);
+				setNode("cloned", selectedNode->parent, temp);
 				runCallbacks(selectedNode, editAction::Added);
 				return (int)mode::MoveSomething;
 			}

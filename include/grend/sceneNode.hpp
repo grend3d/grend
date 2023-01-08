@@ -27,8 +27,6 @@ size_t allocateObjID(void);
 
 class sceneNode : public ecs::entity {
 	public:
-		std::string name = "";
-
 		// used for type checking, dynamically-typed tree here
 		enum objType {
 			None,
@@ -83,7 +81,7 @@ class sceneNode : public ecs::entity {
 		bool hasNode(std::string name);
 
 		// used for routing click events
-		size_t id = allocateObjID();
+		//size_t id = allocateObjID();
 		// TODO: bounding box/radius
 
 		// hash index into animation channel table

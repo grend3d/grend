@@ -307,7 +307,8 @@ void gameEditor::entityListWindow() {
 			continue;
 		}
 
-		std::string entstr = "entity #" + std::to_string((uintptr_t)ent);
+		//std::string entstr = "entity #" + std::to_string((uintptr_t)ent);
+		std::string entstr = demangle(ent->mangledType) + " : " + ent->name;
 		std::string contextstr = entstr + ":context";
 		std::string popupstr = entstr + ":popup";
 

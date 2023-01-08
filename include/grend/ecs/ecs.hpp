@@ -136,7 +136,9 @@ class entityManager : public IoC::Service {
 		template <typename T, typename... Args>
 		T *construct(Args... args) {
 			T* ret = construct<T>((entity*)nullptr, args...);
+			ret->mangledType = getTypeName<T>();
 			add(ret);
+
 			return ret;
 		}
 
@@ -271,8 +273,15 @@ class entity : public component {
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
+		// TODO: make transform read-only externally, move sceneNode transform functions here
+		// TODO: possibly make transform a component
 		TRS transform;
 		bool active = true;
+
+		// TODO: maybe have name be a component, lots of things that don't need names, this
+		//       just takes up space and time
+		std::string name = "";
+		const char *mangledType = nullptr;
 
 		// Entity-wide message router, intended to be used for inter-component
 		// communication, but you can also subscribe to messages from other
