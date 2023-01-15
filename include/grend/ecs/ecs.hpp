@@ -18,6 +18,7 @@
 #include <memory>
 #include <tuple>
 #include <initializer_list>
+#include <typeinfo>
 
 #include <nlohmann/json.hpp>
 
@@ -233,7 +234,7 @@ class component {
 		}
 
 		virtual ~component();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
+		virtual const char* typeString(void) const { return typeid(*this).name(); };
 
 		entityManager *manager;
 };
@@ -243,7 +244,6 @@ class entity : public component {
 		entity(regArgs t);
 
 		virtual ~entity();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		template <typename T, typename... Args>
 		T* attach(Args... args) {

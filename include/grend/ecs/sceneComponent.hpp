@@ -54,7 +54,6 @@ class sceneComponent : public component {
 		}
 
 		virtual ~sceneComponent();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void load(const std::string& path, enum Usage usage) {
 			auto it = sceneCache.find(path);

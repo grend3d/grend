@@ -76,8 +76,6 @@ class rigidBody
 		std::shared_ptr<std::vector<collision>> cachedQueue = nullptr;
 
 		// serialization stuff
-		virtual const char* typeString(void) const { return getTypeName(*this); };
-
 		static nlohmann::json serializer(component *comp) {
 			rigidBody *body = static_cast<rigidBody*>(comp);
 
@@ -123,7 +121,6 @@ class rigidBodySphere : public rigidBody {
 		rigidBodySphere(regArgs t);
 
 		virtual ~rigidBodySphere();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
 			auto physicsServ = grendx::engine::Resolve<physics>();
@@ -177,7 +174,6 @@ class rigidBodyStaticMesh : public rigidBody,
 		rigidBodyStaticMesh(regArgs t);
 
 		virtual ~rigidBodyStaticMesh();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
 			auto physicsServ = grendx::engine::Resolve<physics>();
@@ -274,7 +270,6 @@ class rigidBodyBox : public rigidBody {
 		rigidBodyBox(regArgs t);
 
 		virtual ~rigidBodyBox();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
 			auto physicsServ = grendx::engine::Resolve<physics>();
@@ -306,7 +301,6 @@ class rigidBodyCylinder : public rigidBody {
 		rigidBodyCylinder(regArgs t);
 
 		virtual ~rigidBodyCylinder();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void initBody(entityManager *manager, entity *ent) {
 			auto physicsServ = grendx::engine::Resolve<physics>();
@@ -339,7 +333,6 @@ class rigidBodyCapsule : public rigidBody {
 		rigidBodyCapsule(regArgs t);
 
 		virtual ~rigidBodyCapsule();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		// for class activatable
 		// activation here means adding and deleting the physics object
@@ -359,7 +352,6 @@ class syncRigidBody : public component {
 			: component(doRegister(this, t)) {}
 
 		virtual ~syncRigidBody();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void sync(entityManager *manager, entity *ent) = 0;
 
@@ -373,7 +365,6 @@ class syncRigidBodyTransform : public syncRigidBody {
 			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyTransform();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void sync(entityManager *manager, entity *ent);
 };
@@ -384,7 +375,6 @@ class syncRigidBodyPosition : public syncRigidBody {
 			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyPosition();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void sync(entityManager *manager, entity *ent);
 };
@@ -395,7 +385,6 @@ class syncRigidBodyXZVelocity : public syncRigidBody {
 			: syncRigidBody(doRegister(this, t)) {}
 
 		virtual ~syncRigidBodyXZVelocity();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual void sync(entityManager *manager, entity *ent);
 };

@@ -51,7 +51,6 @@ class sceneNode : public ecs::entity {
 			: ecs::entity(ecs::doRegister(this, t)),
 			  type(newtype) {};
 		virtual ~sceneNode();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual std::string idString(void) {
 			std::stringstream strm;
@@ -179,7 +178,6 @@ class sceneImport : public sceneNode {
 			  sourceFile("") {};
 
 		virtual ~sceneImport();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual std::string idString(void) {
 			std::stringstream strm;
@@ -207,7 +205,6 @@ class sceneSkin : public sceneNode {
 
 		sceneSkin(ecs::regArgs t) : sceneNode(ecs::doRegister(this, t), objType::Skin) {}
 		virtual ~sceneSkin();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void sync(std::shared_ptr<Program> prog);
 
@@ -231,7 +228,6 @@ class sceneParticles : public sceneNode {
 
 		sceneParticles(ecs::regArgs t, unsigned _maxInstances = 256);
 		virtual ~sceneParticles();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void update(void);
 		void syncBuffer(void);
@@ -257,7 +253,6 @@ class sceneBillboardParticles : public sceneNode {
 
 		sceneBillboardParticles(ecs::regArgs t, unsigned _maxInstances = 1024);
 		virtual ~sceneBillboardParticles();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void update(void);
 		void syncBuffer(void);
@@ -296,7 +291,6 @@ class sceneLight : public sceneNode {
 			: sceneNode(ecs::doRegister(this, t), objType::Light),
 			  lightType(lighttype) {};
 		virtual ~sceneLight();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03) = 0;
 		// TODO: 'within(threshold, pos)' to test if a light affects a given point
@@ -321,7 +315,6 @@ class sceneLightPoint : public sceneLight {
 		sceneLightPoint(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Point) {};
 		virtual ~sceneLightPoint();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
 
@@ -341,7 +334,6 @@ class sceneLightSpot : public sceneLight {
 		sceneLightSpot(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Spot) {};
 		virtual ~sceneLightSpot();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
 
@@ -364,7 +356,6 @@ class sceneLightDirectional : public sceneLight {
 		sceneLightDirectional(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Directional) {};
 		virtual ~sceneLightDirectional();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
 
@@ -383,7 +374,6 @@ class sceneReflectionProbe : public sceneNode {
 
 		sceneReflectionProbe(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::ReflectionProbe) {};
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 		virtual ~sceneReflectionProbe();
 
 		static nlohmann::json serializer(component *comp);
@@ -406,8 +396,6 @@ class sceneIrradianceProbe : public sceneNode {
 	public:
 		typedef ecs::ref<sceneIrradianceProbe> ptr;
 		typedef ecs::ref<sceneIrradianceProbe> weakptr;
-
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		sceneIrradianceProbe(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::IrradianceProbe)

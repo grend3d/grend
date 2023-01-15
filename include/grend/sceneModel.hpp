@@ -27,10 +27,6 @@ class sceneMesh : public sceneNode {
 			: sceneNode(ecs::doRegister(this, t), objType::Mesh) {};
 		virtual ~sceneMesh();
 
-		virtual std::string typeString(void) {
-			return "Mesh";
-		}
-
 		std::shared_ptr<compiledMesh> comped_mesh;
 		bool compiled = false;
 
@@ -54,10 +50,6 @@ class sceneModel : public sceneNode {
 		sceneModel(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Model) {};
 		virtual ~sceneModel();
-
-		virtual std::string typeString(void) {
-			return "Model";
-		}
 
 		void genInfo(void);
 		void genNormals(void);

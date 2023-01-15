@@ -14,7 +14,6 @@ class abstractShader : public component {
 	public:
 		abstractShader(regArgs t);
 		virtual ~abstractShader();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		// TODO: rename renderFlags to renderShader or something
 		// TODO: renderFlags& should be const, need to refactor renderQueue
@@ -29,7 +28,6 @@ class abstractShader : public component {
 class staticShader : public abstractShader {
 	public:
 		staticShader(regArgs t, const renderFlags& flags);
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual ~staticShader();
 		virtual renderFlags& getShader();
@@ -44,7 +42,6 @@ class PBRShader : public staticShader {
 		PBRShader(regArgs t);
 
 		virtual ~PBRShader();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 };
 
 class UnlitShader : public staticShader {
@@ -52,7 +49,6 @@ class UnlitShader : public staticShader {
 		UnlitShader(regArgs t);
 
 		virtual ~UnlitShader();
-		virtual const char* typeString(void) const { return getTypeName(*this); };
 };
 
 // namespace grendx::ecs

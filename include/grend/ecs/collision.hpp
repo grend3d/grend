@@ -19,9 +19,6 @@ class collisionHandler : public component {
 		std::vector<const char *> tags;
 
 		// serialization stuff
-		constexpr static const char *serializedType = "collisionHandler";
-
-		virtual const char* typeString(void) const { return serializedType; };
 		virtual nlohmann::json serialize(entityManager *manager);
 };
 
