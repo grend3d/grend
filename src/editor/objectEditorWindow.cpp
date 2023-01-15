@@ -106,7 +106,7 @@ void gameEditor::objectEditorWindow() {
 	ImGui::Begin("Object editor", &showObjectEditorWindow, 
 	             ImGuiWindowFlags_AlwaysAutoResize);
 
-	ImGui::Text("%s", selectedNode->typeString().c_str());
+	ImGui::Text("%s", selectedNode->typeString());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 

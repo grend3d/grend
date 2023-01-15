@@ -452,3 +452,61 @@ sceneBillboardParticles::sceneBillboardParticles(ecs::regArgs t, unsigned _maxIn
 	maxInstances = _maxInstances;
 	activeInstances = 0;
 };
+
+nlohmann::json sceneNode::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneImport::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneSkin::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneParticles::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneBillboardParticles::serializer(ecs::component *comp) {
+	return {};
+}
+
+/*
+nlohmann::json sceneLight::serializer(ecs::component *comp) {
+	return {};
+}
+*/
+
+nlohmann::json sceneLightPoint::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneLightSpot::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneLightDirectional::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneReflectionProbe::serializer(ecs::component *comp) {
+	return {};
+}
+
+nlohmann::json sceneIrradianceProbe::serializer(ecs::component *comp) {
+	return {};
+}
+
+void sceneNode::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneImport::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneSkin::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneParticles::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneBillboardParticles::deserializer(ecs::component *comp, nlohmann::json j) {}
+//void sceneLight::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneLightPoint::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneLightSpot::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneLightDirectional::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneReflectionProbe::deserializer(ecs::component *comp, nlohmann::json j) {}
+void sceneIrradianceProbe::deserializer(ecs::component *comp, nlohmann::json j) {}

@@ -51,10 +51,7 @@ class sceneNode : public ecs::entity {
 			: ecs::entity(ecs::doRegister(this, t)),
 			  type(newtype) {};
 		virtual ~sceneNode();
-
-		virtual std::string typeString(void) {
-			return "sceneNode";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual std::string idString(void) {
 			std::stringstream strm;
@@ -79,6 +76,9 @@ class sceneNode : public ecs::entity {
 		sceneNode::ptr getNode(std::string name);
 		void removeNode(std::string name);
 		bool hasNode(std::string name);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// used for routing click events
 		//size_t id = allocateObjID();
@@ -173,17 +173,22 @@ class sceneImport : public sceneNode {
 		sceneImport(ecs::regArgs t, std::string_view path)
 			: sceneNode(ecs::doRegister(this, t), objType::Import),
 			  sourceFile(path) {};
-		virtual ~sceneImport();
 
-		virtual std::string typeString(void) {
-			return "Imported file";
-		}
+		sceneImport(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::Import),
+			  sourceFile("") {};
+
+		virtual ~sceneImport();
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual std::string idString(void) {
 			std::stringstream strm;
 			strm << "[" << typeString() << " : " << sourceFile <<  "]";
 			return strm.str();
 		}
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		std::string sourceFile;
 		animationCollection::ptr animations;
@@ -202,12 +207,12 @@ class sceneSkin : public sceneNode {
 
 		sceneSkin(ecs::regArgs t) : sceneNode(ecs::doRegister(this, t), objType::Skin) {}
 		virtual ~sceneSkin();
-
-		virtual std::string typeString(void) {
-			return "Skin";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void sync(std::shared_ptr<Program> prog);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		std::vector<glm::mat4> inverseBind;
 		std::vector<glm::mat4> transforms;
@@ -226,13 +231,13 @@ class sceneParticles : public sceneNode {
 
 		sceneParticles(ecs::regArgs t, unsigned _maxInstances = 256);
 		virtual ~sceneParticles();
-
-		virtual std::string typeString(void) {
-			return "Particle system";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void update(void);
 		void syncBuffer(void);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		std::vector<glm::mat4> positions;
 		// approximate bounding sphere for instances in this object,
@@ -252,13 +257,13 @@ class sceneBillboardParticles : public sceneNode {
 
 		sceneBillboardParticles(ecs::regArgs t, unsigned _maxInstances = 1024);
 		virtual ~sceneBillboardParticles();
-
-		virtual std::string typeString(void) {
-			return "Particle system";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		void update(void);
 		void syncBuffer(void);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		std::vector<glm::vec4> positions; /* xyz position, w scale */
 
@@ -291,13 +296,13 @@ class sceneLight : public sceneNode {
 			: sceneNode(ecs::doRegister(this, t), objType::Light),
 			  lightType(lighttype) {};
 		virtual ~sceneLight();
-
-		virtual std::string typeString(void) {
-			return "Light (abstract)";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03) = 0;
 		// TODO: 'within(threshold, pos)' to test if a light affects a given point
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// TODO: why not store things in std140 format to avoid packing?
 		glm::vec4 diffuse = glm::vec4(1);
@@ -316,12 +321,12 @@ class sceneLightPoint : public sceneLight {
 		sceneLightPoint(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Point) {};
 		virtual ~sceneLightPoint();
-
-		virtual std::string typeString(void) {
-			return "Point light";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		float radius = 1.0f;
 		// TODO: maybe abstract atlas textures more
@@ -336,12 +341,12 @@ class sceneLightSpot : public sceneLight {
 		sceneLightSpot(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Spot) {};
 		virtual ~sceneLightSpot();
-
-		virtual std::string typeString(void) {
-			return "Spot light";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		float radius = 1.0;
 		float angle = 3.1415/4.0;
@@ -359,12 +364,12 @@ class sceneLightDirectional : public sceneLight {
 		sceneLightDirectional(ecs::regArgs t)
 			: sceneLight(ecs::doRegister(this, t), lightTypes::Directional) {};
 		virtual ~sceneLightDirectional();
-
-		virtual std::string typeString(void) {
-			return "Directional light";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		virtual float extent(float threshold=0.03);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
@@ -376,13 +381,13 @@ class sceneReflectionProbe : public sceneNode {
 		typedef ecs::ref<sceneReflectionProbe> ptr;
 		typedef ecs::ref<sceneReflectionProbe> weakptr;
 
-		virtual std::string typeString(void) {
-			return "Reflection probe";
-		}
-
 		sceneReflectionProbe(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::ReflectionProbe) {};
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 		virtual ~sceneReflectionProbe();
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		quadtree::node_id faces[5][6];
 		// bounding box for parallax correction
@@ -402,9 +407,7 @@ class sceneIrradianceProbe : public sceneNode {
 		typedef ecs::ref<sceneIrradianceProbe> ptr;
 		typedef ecs::ref<sceneIrradianceProbe> weakptr;
 
-		virtual std::string typeString(void) {
-			return "Irradiance probe";
-		}
+		virtual const char* typeString(void) const { return getTypeName(*this); };
 
 		sceneIrradianceProbe(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::IrradianceProbe)
@@ -412,6 +415,9 @@ class sceneIrradianceProbe : public sceneNode {
 			source = t.manager->construct<sceneReflectionProbe>();
 		};
 		virtual ~sceneIrradianceProbe();
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// TODO: not this
 		sceneReflectionProbe *source;
