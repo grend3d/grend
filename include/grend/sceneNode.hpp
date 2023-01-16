@@ -171,7 +171,11 @@ class sceneImport : public sceneNode {
 
 		sceneImport(ecs::regArgs t, std::string_view path)
 			: sceneNode(ecs::doRegister(this, t), objType::Import),
-			  sourceFile(path) {};
+			  sourceFile(path)
+		{
+			// don't serialize links to imported entities
+			disable(entity::serializeLinks);
+		};
 
 		sceneImport(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Import),
@@ -287,12 +291,21 @@ class sceneLight : public sceneNode {
 			BoundedPoint, // TODO:
 		} lightType;
 
+		sceneLight(ecs::regArgs t)
+			: sceneNode(ecs::doRegister(this, t), objType::Light),
+			  lightType(None) {};
+
 		sceneLight(ecs::regArgs t, enum lightTypes lighttype)
 			: sceneNode(ecs::doRegister(this, t), objType::Light),
 			  lightType(lighttype) {};
 		virtual ~sceneLight();
 
-		virtual float extent(float threshold=0.03) = 0;
+		// XXX: need stub extent() here so this class can be instantiated, so that it can be
+		//      added to the entity factories, so that it can be serialized and deserialized...
+		//      should make a distinction between entities that can have their properties
+		//      serialized and entities that can be (directly) instantiated
+		//virtual float extent(float threshold=0.03) = 0;
+		virtual float extent(float threshold=0.03) { return 0.0; };
 		// TODO: 'within(threshold, pos)' to test if a light affects a given point
 
 		static nlohmann::json serializer(component *comp);

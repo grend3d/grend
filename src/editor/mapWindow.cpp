@@ -14,13 +14,13 @@ static const ImGuiTreeNodeFlags base_flags
 	| ImGuiTreeNodeFlags_SpanAvailWidth;
 
 void gameEditor::addnodesRec(const std::string& name,
-                               sceneNode::ptr obj,
-                               std::set<sceneNode::ptr>& selectedPath)
+                             sceneNode::ptr obj,
+                             std::set<sceneNode*>& selectedPath)
 {
 	if (obj) {
 		ImGuiTreeNodeFlags flags
 			= base_flags
-			| ((selectedPath.count(obj))? ImGuiTreeNodeFlags_Selected : 0)
+			| ((selectedPath.count(obj.getPtr()))? ImGuiTreeNodeFlags_Selected : 0)
 			//| ((obj->nodes.size() == 0)?  ImGuiTreeNodeFlags_Leaf : 0);
 			| (obj->nodes().empty()?  ImGuiTreeNodeFlags_Leaf : 0);
 
@@ -80,7 +80,7 @@ void gameEditor::addnodesRec(const std::string& name,
 			// avoid setting a new selected node if it's already a parent
 			// in the selected path, which avoids overwriting the selected
 			// node when trying to traverse to some clicked mesh
-			if (ImGui::IsItemClicked() && !selectedPath.count(obj)) {
+			if (ImGui::IsItemClicked() && !selectedPath.count(obj.getPtr())) {
 				selectedNode = obj;
 			}
 
@@ -101,7 +101,7 @@ void gameEditor::addnodesRec(const std::string& name,
 
 void gameEditor::addnodes(std::string name,
                           sceneNode::ptr obj,
-                          std::set<sceneNode::ptr>& selectedPath)
+                          std::set<sceneNode*>& selectedPath)
 {
 	addnodesRec(name, obj, selectedPath);
 }
@@ -129,9 +129,9 @@ void gameEditor::mapWindow() {
 	static std::string     clipboardName;
 	sceneNode::ptr root = findRoot(selectedNode);
 
-	std::set<sceneNode::ptr> selectedPath;
+	std::set<sceneNode*> selectedPath;
 	for (sceneNode::ptr p = selectedNode; p; p = p->parent) {
-		selectedPath.insert(p);
+		selectedPath.insert(p.getPtr());
 	}
 
 	ImGui::Begin("Objects", &showMapWindow);
@@ -162,7 +162,7 @@ void gameEditor::mapWindow() {
 
 		// avoid creating recursive trees
 		// TODO: some notification if this check fails
-		if (!selectedPath.count(clipboard)) {
+		if (!selectedPath.count(clipboard.getPtr())) {
 			setNode(clipboardName, selectedNode, clipboard);
 		}
 	}

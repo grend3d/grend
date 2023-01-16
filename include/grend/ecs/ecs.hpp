@@ -255,6 +255,11 @@ class entity : public component {
 			return getComponent<T>(manager, this);
 		}
 
+		template <typename... T>
+		bool has(void) {
+			return manager->hasComponents<T...>(this);
+		}
+
 		template <typename T>
 		componentIteratorPair<T> getAll() {
 			auto& compmap = manager->getEntityComponents(this);
@@ -277,6 +282,28 @@ class entity : public component {
 		// TODO: possibly make transform a component
 		TRS transform;
 		bool active = true;
+
+		enum flag {
+			reserved       = 1 << 0, // reserved for now
+			TODOactive     = 1 << 1, // TODO: move active flag into here
+			serializeLinks = 1 << 2, // links to other entities should be serialized
+			                         // when serializing this entity
+		};
+
+		// by default, set entity as active, and enable serialization for links,
+		// entities can disable this in their constructors (eg. for sceneImport)
+		uint32_t settings
+			= entity::TODOactive
+			| entity::serializeLinks
+			;
+
+		void enable(flag setting) {
+			settings |= setting;
+		}
+
+		void disable(flag setting) {
+			settings &= ~setting;
+		}
 
 		// TODO: maybe have name be a component, lots of things that don't need names, this
 		//       just takes up space and time

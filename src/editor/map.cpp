@@ -1,3 +1,6 @@
+#include <grend/ecs/ecs.hpp>
+#include <grend/ecs/serializer.hpp>
+
 #include <grend/gameEditor.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/utility.hpp>
@@ -12,7 +15,12 @@
 #include <nlohmann/json.hpp>
 
 using namespace grendx;
+using namespace grendx::engine;
 using namespace nlohmann;
+
+auto links(ecs::entity *ent) {
+	return ent->getAll<ecs::baseLink>();
+}
 
 static inline std::vector<float> strvec_to_float(std::vector<std::string> strs) {
 	std::vector<float> ret;
@@ -93,118 +101,55 @@ class modelCache {
 
 // TODO: set to keep track of map files already being loaded to avoid
 //       recursive map loads
-sceneNode::ptr loadNodes(modelCache& cache, std::string name, json jay) {
-	// TODO: avoid redundant resolves
-	auto ecs = engine::Resolve<ecs::entityManager>();
+sceneNode::ptr loadNodes(modelCache& cache,
+                         json js,
+                         bool lowerLevel = false)
+{
+	// TODO: avoid redundant resolves, only need to do resolves at the top level
+	auto ecs       = Resolve<ecs::entityManager>();
+	auto factories = Resolve<ecs::serializer>();
 
 	sceneNode::ptr ret = nullptr;
-	std::vector<std::string> modelFiles;
 	bool recurse = true;
 
-	if (jay["type"] == "Imported file") {
-		if (!jay["sourceFile"].is_null()) {
-			recurse = false;
+	ecs::entity *ent = factories->build(ecs, js);
 
-			if ((ret = cache.getScene(jay["sourceFile"])) == nullptr) {
-				LogErrorFmt("loadMap(): Unknown model {}", jay["sourceFile"]);
-				ret = ecs->construct<sceneNode>();
-			}
+	if (!ent) {
+		LogError("Couldn't load entity");
+		std::cerr<< js.dump(4) << std::endl;
+		return nullptr;
+	}
 
-		} else {
-			// XXX: top-level map import nodes are exported without a sourceFile,
-			//      so re-import without a source file set, the source file will
-			//      be set in the loadMap* functions
-			ret = ecs->construct<sceneImport>("");
-		}
-
-	} else if (jay["type"] == "Model") {
+	sceneImport* imp = dynamic_cast<sceneImport*>(ent);
+	if (lowerLevel && imp) {
 		recurse = false;
 
-		if ((ret = cache.getModel(jay["sourceFile"], name)) == nullptr) {
-			LogErrorFmt("loadMap(): Unknown model {}", name);
+		if ((ret = cache.getScene(imp->sourceFile)) == nullptr) {
+			LogErrorFmt("loadMap(): Unknown model {}", js["sourceFile"]);
 			ret = ecs->construct<sceneNode>();
 		}
 
-	} else if (jay["type"] == "Point light") {
-		auto light = ecs->construct<sceneLightPoint>();
-		auto& diff = jay["diffuse"];
-
-		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
-		light->intensity = jay["intensity"];
-		light->casts_shadows = jay["casts_shadows"];
-		light->is_static = jay["is_static"];
-		light->radius = jay["radius"];
-
-		ret = static_cast<sceneNode*>(light);
-
-	} else if (jay["type"] == "Spot light") {
-		auto light = ecs->construct<sceneLightSpot>();
-		auto& diff = jay["diffuse"];
-
-		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
-		light->intensity = jay["intensity"];
-		light->casts_shadows = jay["casts_shadows"];
-		light->is_static = jay["is_static"];
-		light->radius = jay["radius"];
-		light->angle  = jay["angle"];
-
-		ret = static_cast<sceneNode*>(light);
-
-	} else if (jay["type"] == "Directional light") {
-		auto light = ecs->construct<sceneLightDirectional>();
-		auto& diff = jay["diffuse"];
-
-		light->diffuse = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
-		light->intensity = jay["intensity"];
-		light->casts_shadows = jay["casts_shadows"];
-		light->is_static = jay["is_static"];
-
-		ret = static_cast<sceneNode*>(light);
-
-	} else if (jay["type"] == "Reflection probe"){
-		auto probe = ecs->construct<sceneReflectionProbe>();
-		auto bbox = jay["boundingBox"];
-
-		auto bmin = bbox["min"];
-		auto bmax = bbox["max"];
-
-		probe->is_static = jay["is_static"];
-		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
-		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = static_cast<sceneNode*>(probe);
-
-	} else if (jay["type"] == "Irradiance probe"){
-		auto probe = ecs->construct<sceneIrradianceProbe>();
-		auto bbox = jay["boundingBox"];
-
-		auto bmin = bbox["min"];
-		auto bmax = bbox["max"];
-
-		probe->is_static = jay["is_static"];
-		probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
-		probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
-		ret = static_cast<sceneNode*>(probe);
+	} else if (sceneNode *temp = dynamic_cast<sceneNode*>(ent)) {
+		ret = ecs::ref(temp);
 
 	} else {
-		ret = ecs->construct<sceneNode>();
+		LogErrorFmt("Entity is not a sceneNode: {}", ent->typeString());
 	}
 
-	auto& pos   = jay["position"];
-	auto& scale = jay["scale"];
-	auto& rot   = jay["rotation"];
+	if (ret && recurse && !js["nodes"].is_null()) {
+		for (auto& ptr : js["nodes"]) {
+			// TODO: don't assign new name
+			static unsigned counter = 0;
+			std::string name = "node" + std::to_string(counter++);
 
-	TRS newtrans = ret->getTransformTRS();
-	newtrans.position = glm::vec3(pos[0], pos[1], pos[2]);
-	newtrans.scale    = glm::vec3(scale[0], scale[1], scale[2]);
-	newtrans.rotation = glm::quat(rot[0], rot[1], rot[2], rot[3]);
-	ret->setTransform(newtrans);
-
-	if (recurse && !jay["nodes"].is_null()) {
-		for (auto& [name, ptr] : jay["nodes"].items()) {
-			if (!ptr.is_null()) {
-				setNode(name, ret, loadNodes(cache, name, ptr));
-			}
+			auto node = loadNodes(cache, ptr, true);
+			setNode(name, ret, node);
 		}
+	}
+
+	if (ret) {
+		// XXX: need to call this to update cached uniforms after entity is constructed
+		ret->setTransform(ret->transform);
 	}
 
 	return ret;
@@ -230,12 +175,13 @@ grendx::loadMapData(std::string name) noexcept {
 		modelCache cache;
 		modelMap retmodels;
 
-		sceneNode::ptr temp = loadNodes(cache, "", j["root"]);
+		sceneNode::ptr temp = loadNodes(cache, j["root"]);
 		ret->setTransform(temp->getTransformTRS());
 
 		for (auto link : temp->nodes()) {
-			auto ptr = link->getRef();
-			setNode(ptr->name, ret, ptr);
+			if (auto ptr = link->getRef()) {
+				setNode(ptr->name, ret, ptr);
+			}
 		}
 
 		for (auto ptr : ret->nodes()) {
@@ -291,88 +237,19 @@ static inline std::string format_mat(T& mtx) {
 }
 
 static json objectJson(sceneNode::ptr obj, bool toplevel = false) {
-	bool recurse = true;
-	TRS transform = obj->getTransformTRS();
+	auto factories = Resolve<ecs::serializer>();
+	auto entities  = Resolve<ecs::entityManager>();
 
-	json ret = {
-		{"type",     obj->typeString()},
-		{"position", {transform.position.x,
-		              transform.position.y,
-		              transform.position.z}},
-		{"scale",    {transform.scale.x,
-		              transform.scale.y,
-		              transform.scale.z}},
-		{"rotation", {transform.rotation.w,
-		              transform.rotation.x,
-		              transform.rotation.y,
-		              transform.rotation.z}},
-	};
+	bool recurse = toplevel || (obj->settings & ecs::entity::serializeLinks);
+	auto curjson = factories->serialize(entities, obj.getPtr());
 
-	// XXX: toplevel flag to avoid empty recursive saves when saving an
-	//      imported map file
-	if (obj->type == sceneNode::objType::Import && !toplevel) {
-		sceneImport::ptr imported = ref_cast<sceneImport>(obj);
-		ret["sourceFile"] = imported->sourceFile;
-		recurse = false;
-
-	} else if (obj->type == sceneNode::objType::Model) {
-		sceneModel::ptr model = ref_cast<sceneModel>(obj);
-		ret["sourceFile"] = model->sourceFile;
-		recurse = false;
-
-	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
-		auto probe = ref_cast<sceneReflectionProbe>(obj);
-		auto bmin = probe->boundingBox.min;
-		auto bmax = probe->boundingBox.max;
-
-		ret["boundingBox"] = {
-			{"min", {bmin[0], bmin[1], bmin[2]}},
-			{"max", {bmax[0], bmax[1], bmax[2]}},
-		};
-		ret["is_static"] = probe->is_static;
-
-	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
-		auto probe = ref_cast<sceneIrradianceProbe>(obj);
-		auto bmin = probe->boundingBox.min;
-		auto bmax = probe->boundingBox.max;
-
-		ret["boundingBox"] = {
-			{"min", {bmin[0], bmin[1], bmin[2]}},
-			{"max", {bmax[0], bmax[1], bmax[2]}},
-		};
-		ret["is_static"] = probe->is_static;
-
-	} else if (obj->type == sceneNode::objType::Light) {
-		sceneLight::ptr light = ref_cast<sceneLight>(obj);
-
-		auto& d = light->diffuse;
-		ret["diffuse"] = {d[0], d[1], d[2], d[3]};
-		ret["intensity"] = light->intensity;
-		ret["casts_shadows"] = light->casts_shadows;
-		ret["is_static"] = light->is_static;
-
-		if (light->lightType == sceneLight::lightTypes::Point) {
-			sceneLightPoint::ptr p = ref_cast<sceneLightPoint>(obj);
-			ret["radius"] = p->radius;
-		}
-
-		else if (light->lightType == sceneLight::lightTypes::Spot) {
-			sceneLightSpot::ptr p = ref_cast<sceneLightSpot>(obj);
-			ret["radius"] = p->radius;
-			ret["angle"]  = p->angle;
-		}
-
-		else if (light->lightType == sceneLight::lightTypes::Directional) {
-			// only base light members
-		}
-
-		// TODO: other lights
-	}
+	json ret = factories->serialize(entities, obj.getPtr());
 
 	if (recurse) {
 		json nodes = {};
+
 		for (auto ptr : obj->nodes()) {
-			nodes[(*ptr)->name] = objectJson(ptr->getRef());
+			nodes.push_back(objectJson(ptr->getRef()));
 		}
 
 		ret["nodes"] = nodes;

@@ -505,6 +505,7 @@ nlohmann::json entity::serializer(component *comp) {
 		{"position", {t.x, t.y, t.z}},
 		{"rotation", {r.w, r.x, r.y, r.z}},
 		{"scale",    {s.x, s.y, s.z}},
+		{"name",     ent->name},
 	};
 }
 
@@ -520,6 +521,8 @@ void entity::deserializer(component *comp, nlohmann::json j) {
 		.rotation = {r[0], r[1], r[2], r[3]},
 		.scale    = {s[0], s[1], s[2]},
 	};
+
+	ent->name = j["name"];
 }
 
 // namespace grendx::ecs

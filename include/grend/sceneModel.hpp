@@ -24,7 +24,12 @@ class sceneMesh : public sceneNode {
 		typedef ecs::ref<sceneMesh> weakptr;
 
 		sceneMesh(ecs::regArgs t)
-			: sceneNode(ecs::doRegister(this, t), objType::Mesh) {};
+			: sceneNode(ecs::doRegister(this, t), objType::Mesh)
+		{
+			// don't serialize links to imported entities
+			disable(entity::serializeLinks);
+		};
+
 		virtual ~sceneMesh();
 
 		std::shared_ptr<compiledMesh> comped_mesh;
@@ -48,7 +53,12 @@ class sceneModel : public sceneNode {
 		typedef ecs::ref<sceneModel> weakptr;
 
 		sceneModel(ecs::regArgs t)
-			: sceneNode(ecs::doRegister(this, t), objType::Model) {};
+			: sceneNode(ecs::doRegister(this, t), objType::Model)
+		{
+			// don't serialize links to imported entities
+			disable(entity::serializeLinks);
+		};
+
 		virtual ~sceneModel();
 
 		void genInfo(void);

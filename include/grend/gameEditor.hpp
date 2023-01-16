@@ -150,10 +150,10 @@ class gameEditor : public gameView {
 		// populates map object tree
 		void addnodes(std::string name,
 		              sceneNode::ptr obj,
-		              std::set<sceneNode::ptr>& selectedPath);
+		              std::set<sceneNode*>& selectedPath);
 		void addnodesRec(const std::string& name,
 		                  sceneNode::ptr obj,
-		                  std::set<sceneNode::ptr>& selectedPath);
+		                  std::set<sceneNode*>& selectedPath);
 
 		void handleMoveRotate();
 		void handleSelectObject();

@@ -458,7 +458,11 @@ nlohmann::json sceneNode::serializer(ecs::component *comp) {
 }
 
 nlohmann::json sceneImport::serializer(ecs::component *comp) {
-	return {};
+	sceneImport *ent = static_cast<sceneImport*>(comp);
+
+	return {
+		{"sourceFile", ent->sourceFile},
+	};
 }
 
 nlohmann::json sceneSkin::serializer(ecs::component *comp) {
@@ -473,18 +477,35 @@ nlohmann::json sceneBillboardParticles::serializer(ecs::component *comp) {
 	return {};
 }
 
-/*
 nlohmann::json sceneLight::serializer(ecs::component *comp) {
+	auto *light = static_cast<sceneLight*>(comp);
+	auto& d = light->diffuse;
+
+	return {
+		{"diffuse",       {d[0], d[1], d[2], d[3]}},
+		{"intensity",     light->intensity},
+		{"casts_shadows", light->casts_shadows},
+		{"is_static",     light->is_static},
+	};
+
 	return {};
 }
-*/
 
 nlohmann::json sceneLightPoint::serializer(ecs::component *comp) {
-	return {};
+	auto *light = static_cast<sceneLightPoint*>(comp);
+
+	return {
+		{"radius", light->radius},
+	};
 }
 
 nlohmann::json sceneLightSpot::serializer(ecs::component *comp) {
-	return {};
+	auto *light = static_cast<sceneLightSpot*>(comp);
+
+	return {
+		{"radius", light->radius},
+		{"angle",  light->angle},
+	};
 }
 
 nlohmann::json sceneLightDirectional::serializer(ecs::component *comp) {
@@ -492,21 +513,93 @@ nlohmann::json sceneLightDirectional::serializer(ecs::component *comp) {
 }
 
 nlohmann::json sceneReflectionProbe::serializer(ecs::component *comp) {
-	return {};
+	auto probe = static_cast<sceneReflectionProbe*>(comp);
+	auto bmin = probe->boundingBox.min;
+	auto bmax = probe->boundingBox.max;
+
+	return {
+		{"boundingBox", {
+			{"min", {bmin[0], bmin[1], bmin[2]}},
+			{"max", {bmax[0], bmax[1], bmax[2]}},
+		}},
+
+		{"is_static", probe->is_static},
+	};
 }
 
 nlohmann::json sceneIrradianceProbe::serializer(ecs::component *comp) {
-	return {};
+	auto probe = static_cast<sceneReflectionProbe*>(comp);
+	auto bmin = probe->boundingBox.min;
+	auto bmax = probe->boundingBox.max;
+
+	return {
+		{"boundingBox", {
+			{"min", {bmin[0], bmin[1], bmin[2]}},
+			{"max", {bmax[0], bmax[1], bmax[2]}},
+		}},
+
+		{"is_static", probe->is_static},
+	};
 }
 
 void sceneNode::deserializer(ecs::component *comp, nlohmann::json j) {}
-void sceneImport::deserializer(ecs::component *comp, nlohmann::json j) {}
+
+void sceneImport::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto im = static_cast<sceneImport*>(comp);
+
+	im->sourceFile = j["sourceFile"];
+}
+
 void sceneSkin::deserializer(ecs::component *comp, nlohmann::json j) {}
+
 void sceneParticles::deserializer(ecs::component *comp, nlohmann::json j) {}
+
 void sceneBillboardParticles::deserializer(ecs::component *comp, nlohmann::json j) {}
-//void sceneLight::deserializer(ecs::component *comp, nlohmann::json j) {}
-void sceneLightPoint::deserializer(ecs::component *comp, nlohmann::json j) {}
-void sceneLightSpot::deserializer(ecs::component *comp, nlohmann::json j) {}
+
+void sceneLight::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto *light = static_cast<sceneLight*>(comp);
+	auto& diff = j["diffuse"];
+
+	light->diffuse       = glm::vec4(diff[0], diff[1], diff[2], diff[3]);
+	light->intensity     = j["intensity"];
+	light->casts_shadows = j["casts_shadows"];
+	light->is_static     = j["is_static"];
+}
+
+void sceneLightPoint::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto *light = static_cast<sceneLightPoint*>(comp);
+	light->radius = j["radius"];
+}
+
+void sceneLightSpot::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto *light = static_cast<sceneLightSpot*>(comp);
+
+	light->radius = j["radius"];
+	light->angle  = j["angle"];
+}
+
 void sceneLightDirectional::deserializer(ecs::component *comp, nlohmann::json j) {}
-void sceneReflectionProbe::deserializer(ecs::component *comp, nlohmann::json j) {}
-void sceneIrradianceProbe::deserializer(ecs::component *comp, nlohmann::json j) {}
+
+void sceneReflectionProbe::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto *probe = static_cast<sceneReflectionProbe*>(comp);
+
+	auto bbox = j["boundingBox"];
+	auto bmin = bbox["min"];
+	auto bmax = bbox["max"];
+
+	probe->is_static       = j["is_static"];
+	probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
+	probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
+}
+
+void sceneIrradianceProbe::deserializer(ecs::component *comp, nlohmann::json j) {
+	auto *probe = static_cast<sceneIrradianceProbe*>(comp);
+
+	auto bbox = j["boundingBox"];
+	auto bmin = bbox["min"];
+	auto bmax = bbox["max"];
+
+	probe->is_static       = j["is_static"];
+	probe->boundingBox.min = glm::vec3(bmin[0], bmin[1], bmin[2]);
+	probe->boundingBox.max = glm::vec3(bmax[0], bmax[1], bmax[2]);
+}
