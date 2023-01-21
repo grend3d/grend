@@ -6,7 +6,7 @@
 
 using namespace grendx;
 
-void gameEditor::metricsWindow() {
+void gameEditorUI::metricsWindow() {
 	ImGui::Begin("Engine metrics", &showMetricsWindow);
 
 #if 0

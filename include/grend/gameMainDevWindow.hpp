@@ -16,10 +16,8 @@
 namespace grendx::engine::dev {
 
 void initialize(const std::string& name, const renderSettings& settings);
-void step(void);
-void run(void);
-void setView(gameView::ptr nview);
-gameView::ptr getView(void);
+void step(gameView::ptr view);
+void run(gameView::ptr view);
 
 /*
 // development instance with editor, a production instance would only

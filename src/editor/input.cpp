@@ -489,7 +489,6 @@ void gameEditor::loadInputBindings() {
 
 void gameEditor::handleEvent(const SDL_Event& ev)
 {
-	ImGui_ImplSDL2_ProcessEvent(&ev);
 	setMode((enum mode)inputBinds.dispatch(ev));
 }
 

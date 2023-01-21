@@ -25,7 +25,10 @@ static fileDialog import_map_dialog("Import Map");
 // TODO: move this to entity file
 static fileDialog load_entity_dialog("Load Entity");
 
-static void handle_prompts(gameEditor *editor) {
+static void handle_prompts(gameEditorUI *wrapper) {
+	// XXX
+	gameEditor::ptr editor = wrapper->editor;
+
 	auto state     = Resolve<gameState>();
 	auto factories = Resolve<ecs::serializer>();
 	auto entities  = Resolve<ecs::entityManager>();
@@ -102,7 +105,7 @@ static void handle_prompts(gameEditor *editor) {
 	}
 }
 
-void gameEditor::menubar() {
+void gameEditorUI::menubar() {
 	static bool demo_window = false;
 
 	auto state = Resolve<gameState>();
@@ -114,7 +117,7 @@ void gameEditor::menubar() {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
-				selectedNode = state->rootnode = ecs->construct<sceneNode>();
+				editor->selectedNode = state->rootnode = ecs->construct<sceneNode>();
 			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}
@@ -132,7 +135,7 @@ void gameEditor::menubar() {
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ reloadShaders(); }
+			if (ImGui::MenuItem("Reload shaders", "CTRL+R")){ editor->reloadShaders(); }
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "CTRL+Q")) {}
@@ -158,13 +161,13 @@ void gameEditor::menubar() {
 			float scale = cam->scale();
 			bool checkGL = GL_ERROR_CHECK_ENABLED();
 
-			ImGui::Checkbox("Snap to grid", &snapEnabled);
-			if (snapEnabled) {
-				ImGui::InputFloat("Snap increment", &snapAmount,
+			ImGui::Checkbox("Snap to grid", &editor->snapEnabled);
+			if (editor->snapEnabled) {
+				ImGui::InputFloat("Snap increment", &editor->snapAmount,
 								  0.1f, 10.f, "%.1f");
 			}
 
-			ImGui::SliderFloat("Movement speed", &movementSpeed,
+			ImGui::SliderFloat("Movement speed", &editor->movementSpeed,
 			                  1.f, 100.f, "%.1f");
 			ImGui::SliderFloat("Exposure (tonemapping)", &rend->exposure,
 			                   0.1, 10.f);
@@ -175,8 +178,8 @@ void gameEditor::menubar() {
 			ImGui::SliderFloat("Projection scale", &scale, 0.001, 0.2f);
 			ImGui::Checkbox("Check GL errors", &checkGL);
 
-			ImGui::Checkbox("Show environment probes", &showProbes);
-			ImGui::Checkbox("Show lights", &showLights);
+			ImGui::Checkbox("Show environment probes", &editor->showProbes);
+			ImGui::Checkbox("Show lights", &editor->showLights);
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Render settings")) {
@@ -218,27 +221,27 @@ void gameEditor::menubar() {
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("Add object", "lo")) {
-				setMode(mode::AddObject);
+				editor->setMode(gameEditor::mode::AddObject);
 			}
 
 			if (ImGui::MenuItem("Add point light", "lp")) {
-				setMode(mode::AddPointLight);
+				editor->setMode(gameEditor::mode::AddPointLight);
 			}
 
 			if (ImGui::MenuItem("Add spot light", "ls")) {
-				setMode(mode::AddSpotLight);
+				editor->setMode(gameEditor::mode::AddSpotLight);
 			}
 
 			if (ImGui::MenuItem("Add directional light", "ld")) {
-				setMode(mode::AddDirectionalLight);
+				editor->setMode(gameEditor::mode::AddDirectionalLight);
 			}
 
 			if (ImGui::MenuItem("Add reflection probe", "lr")) {
-				setMode(mode::AddReflectionProbe);
+				editor->setMode(gameEditor::mode::AddReflectionProbe);
 			}
 
 			if (ImGui::MenuItem("Add irradiance probe", "li")) {
-				setMode(mode::AddIrradianceProbe);
+				editor->setMode(gameEditor::mode::AddIrradianceProbe);
 			}
 
 			ImGui::EndMenu();
@@ -273,8 +276,8 @@ void gameEditor::menubar() {
 			if (ImGui::MenuItem("Generate reflectance cubemaps", "Shift-CTRL+L")) {}
 
 			if (ImGui::MenuItem("Re-render selected light maps", "CTRL+p")) {
-				if (selectedNode) {
-					invalidateLightMaps(selectedNode);
+				if (editor->selectedNode) {
+					invalidateLightMaps(editor->selectedNode);
 				}
 			}
 
@@ -342,7 +345,7 @@ void gameEditor::menubar() {
 			ImGui::EndMenu();
 		}
 
-		ImGui::Combo("[mode]", &mode,
+		ImGui::Combo("[mode]", &editor->mode,
 			"Exit editor\0"
 			"View\0"
 			"Add...\0"
@@ -372,8 +375,21 @@ void gameEditor::menubar() {
 			"Move bounding box lower Y bound\0"
 			"Move bounding box lower Z bound\0"
 			"\0");
+		editor->setMode((enum gameEditor::mode)editor->mode);
 
-		setMode((enum mode)mode);
+		// XXX: ideally would like this to be in the game view window
+		if (ImGui::Button("Run")) {
+			currentView = player;
+		}
+
+		if (ImGui::Button("Pause")) {
+
+		}
+
+		if (ImGui::Button("Stop")) {
+			currentView = editor;
+		}
+
 		ImGui::EndMainMenuBar();
 	}
 

@@ -98,6 +98,7 @@ add_library(Grend
 	src/editor/entitySelectWindow.cpp
 	src/editor/logWindow.cpp
 	src/editor/filePane.cpp
+	src/editor/ui.cpp
 
 	# TODO: maybe just part of the editor
 	src/gridDraw.cpp

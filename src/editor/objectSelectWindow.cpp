@@ -6,15 +6,17 @@
 
 using namespace grendx;
 
-void gameEditor::objectSelectWindow() {
+void gameEditorUI::objectSelectWindow() {
 	ImGui::Begin("Loaded Objects", &showObjectSelectWindow);
 
+	// TODO: not actually used anymore, remove
+#if 0
 	// TODO: another way to select from loaded models
 	for (auto it = models.begin(); it != models.end(); it++) {
 		auto& [name, obj] = *it;
 
-		if (ImGui::Selectable(name.c_str(), obj == selectedNode)) {
-			selectedNode = obj;
+		if (ImGui::Selectable(name.c_str(), obj == editor->selectedNode)) {
+			editor->selectedNode = obj;
 		}
 
 		ImGui::SameLine(300);
@@ -22,6 +24,7 @@ void gameEditor::objectSelectWindow() {
 		std::string mstr = "(TODO: reimplement?)";
 		ImGui::Text("%s", mstr.c_str());
 	}
+#endif
 
 	ImGui::End();
 }

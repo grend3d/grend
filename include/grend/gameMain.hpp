@@ -13,10 +13,8 @@
 namespace grendx::engine {
 
 void initialize(const std::string& name, const renderSettings& settings);
-void step(void);
-void run(void);
-void setView(gameView::ptr nview);
-gameView::ptr getView(void);
+void step(gameView::ptr view);
+void run(gameView::ptr view);
 void applySettings(const renderSettings& settings);
 
 IoC::Container& Services();

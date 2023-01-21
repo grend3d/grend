@@ -51,6 +51,9 @@ class gameEditor : public gameView {
 		void runCallbacks(sceneNode::ptr node, editAction action);
 		void clear();
 
+		bool showProbes = true;
+		bool showLights = true;
+
 		enum mode {
 			Inactive,
 			View,
@@ -105,8 +108,6 @@ class gameEditor : public gameView {
 		void reloadShaders();
 		void setMode(enum mode newmode);
 		// TODO: rename 'engine' to 'renderer' or something
-		void renderImguiData();
-		void renderEditor();
 		void renderMapModels();
 
 		modelMap::const_iterator edit_model;
@@ -132,28 +133,23 @@ class gameEditor : public gameView {
 		// TODO: don't need dynamic_models anymore
 		std::vector<editorEntry> dynamic_models;
 
-	private:
-		void updateSelected(const TRS& updated);
-		void renderWorldObjects();
-		void menubar();
-		void mapWindow();
-		void objectEditorWindow();
-		void objectSelectWindow();
-		void entityListWindow();
-		void entityEditorWindow();
-		void addEntityWindow();
-		void metricsWindow();
-		void profilerWindow();
-		void settingsWindow();
-		void logWindow();
-
 		// populates map object tree
+		// XXX:  referred to by gameEditorUI
+		// TODO: not this
 		void addnodes(std::string name,
 		              sceneNode::ptr obj,
 		              std::set<sceneNode*>& selectedPath);
 		void addnodesRec(const std::string& name,
-		                  sceneNode::ptr obj,
-		                  std::set<sceneNode*>& selectedPath);
+		                 sceneNode::ptr obj,
+		                 std::set<sceneNode*>& selectedPath);
+
+		// TODO: why is this in the editor class?
+		// list of log messages
+		std::list<std::string> logEntries;
+
+	private:
+		void updateSelected(const TRS& updated);
+		void renderWorldObjects();
 
 		void handleMoveRotate();
 		void handleSelectObject();
@@ -163,19 +159,40 @@ class gameEditor : public gameView {
 		void showLoadingScreen();
 		bool isUIObject(sceneNode::ptr obj);
 
+		modalSDLInput inputBinds;
+
 		// TODO: utility function, should be move somewhere else
 		sceneNode::ptr getNonModel(sceneNode::ptr obj);
-
-		// list of log messages
-		std::list<std::string> logEntries;
 
 		std::vector<editCallback> callbacks;
 		std::vector<std::pair<uint32_t, ecs::entity*>> clickState;
 
+		// last place the mouse was clicked, used for determining the amount of
+		// rotation, movement etc
+		// (position / width, height)
+		float clickedX, clickedY;
+		// distance from cursor to camera at the last click
+		float clickDepth;
+};
+
+class gameEditorUI : public gameView {
+	public:
+		typedef std::shared_ptr<gameEditorUI> ptr;
+		typedef std::weak_ptr<gameEditorUI> weakptr;
+
+		gameEditorUI();
+
+		virtual void handleEvent(const SDL_Event& ev);
+		virtual void render(renderFramebuffer::ptr fb);
+		virtual void update(float delta);
+
+		gameView::ptr   player;
+		gameEditor::ptr editor;
+		gameView::ptr   currentView;
+
 		// file pane state
 		filePane filepane;
 
-		modalSDLInput inputBinds;
 		bool showMapWindow = false;
 		bool showObjectEditorWindow = false;
 		bool showObjectSelectWindow = false;
@@ -188,15 +205,20 @@ class gameEditor : public gameView {
 		bool showLogWindow = true;
 		bool showFilePane = true;
 
-		bool showProbes = true;
-		bool showLights = true;
+		void menubar();
+		void mapWindow();
+		void objectEditorWindow();
+		void objectSelectWindow();
+		void entityListWindow();
+		void entityEditorWindow();
+		void addEntityWindow();
+		void metricsWindow();
+		void profilerWindow();
+		void settingsWindow();
+		void logWindow();
 
-		// last place the mouse was clicked, used for determining the amount of
-		// rotation, movement etc
-		// (position / width, height)
-		float clickedX, clickedY;
-		// distance from cursor to camera at the last click
-		float clickDepth;
+		void renderImguiData();
+		void renderEditor();
 };
 
 // namespace grendx

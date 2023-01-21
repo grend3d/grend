@@ -35,7 +35,6 @@ using namespace grendx::engine;
 static IoC::Container gameServices;
 
 static bool running = true;
-static gameView::ptr view;
 static uint32_t last_frame_time = 0;
 
 IoC::Container& grendx::engine::Services() { return gameServices; }
@@ -63,7 +62,7 @@ void grendx::engine::initialize(const std::string& name, const renderSettings& s
 	LogInfo("gameMain() finished");
 }
 
-void handleInput(void) {
+void handleInput(gameView::ptr view) {
 	SDL_Event ev;
 
 	while (SDL_PollEvent(&ev)) {
@@ -78,13 +77,13 @@ void handleInput(void) {
 	}
 }
 
-void grendx::engine::step(void) {
+void grendx::engine::step(gameView::ptr view) {
 	// TODO: kinda disperate set of metrics, should unify/clean this up
 	//frame_timer.stop();
 	//frame_timer.start();
 	//clearMetrics();
 	profile::newFrame();
-	handleInput();
+	handleInput(view);
 
 	auto jobs = Resolve<jobQueue>();
 	auto rend = Resolve<renderContext>();
@@ -160,29 +159,21 @@ void grendx::engine::step(void) {
 
 #ifdef __EMSCRIPTEN__
 // non-member step function for emscripten
-static int render_step(double time, void *data) {
+static int render_step(double time, void *data, gameView::ptr view) {
 	gameMain *game = static_cast<gameMain*>(data);
-	return game->step();
+	return game->step(view);
 }
 #endif
 
-void grendx::engine::run(void) {
+void grendx::engine::run(gameView::ptr view) {
 	running = true;
 
 #ifdef __EMSCRIPTEN__
-	emscripten_request_animation_frame_loop(&render_step, this);
+	emscripten_request_animation_frame_loop(&render_step, this, view);
 
 #else
 	while (running) {
-		step();
+		step(view);
 	}
 #endif
-}
-
-void grendx::engine::setView(gameView::ptr nview) {
-	view = nview;
-}
-
-gameView::ptr grendx::engine::getView(void) {
-	return view;
 }

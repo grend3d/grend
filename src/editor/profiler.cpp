@@ -46,7 +46,7 @@ struct tabEntry {
 	bool opened;
 };
 
-void gameEditor::profilerWindow() {
+void gameEditorUI::profilerWindow() {
 	static std::vector<tabEntry> entries;
 	static unsigned counter = 0;
 

@@ -8,7 +8,7 @@
 using namespace grendx;
 using namespace grendx::engine;
 
-void gameEditor::settingsWindow() {
+void gameEditorUI::settingsWindow() {
 	static renderSettings settings;
 	static bool showSteps = true;
 

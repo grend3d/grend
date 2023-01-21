@@ -14,8 +14,8 @@
 using namespace grendx;
 
 static bool inEditor = false;
-static gameView::ptr   player = nullptr;
 static gameEditor::ptr editor = nullptr;
+static gameEditorUI::ptr wrapper = nullptr;
 
 enum modes {
 	Editor,
@@ -26,30 +26,26 @@ int mode = modes::Editor;
 void grendx::engine::dev::initialize(const std::string& name, const renderSettings& settings) {
 	grendx::engine::initialize(name, settings);
 
-	editor = std::make_shared<gameEditor>();
+	editor  = std::make_shared<gameEditor>();
+	wrapper = std::make_shared<gameEditorUI>();
+
+	wrapper->editor      = editor;
+	wrapper->currentView = editor;
 
 	auto audio = Resolve<audioMixer>();
 	audio->setCamera(editor->cam);
-
-	grendx::engine::setView(editor);
 }
 
-void grendx::engine::dev::step(void) {
-	grendx::engine::step();
+void grendx::engine::dev::step(gameView::ptr view) {
+	wrapper->player = view;
+	grendx::engine::step(view);
 }
 
-void grendx::engine::dev::run(void) {
+void grendx::engine::dev::run(gameView::ptr view) {
 	auto state = Resolve<gameState>();
-	editor->selectedNode = state->rootnode;
-	grendx::engine::run();
-}
-
-void grendx::engine::dev::setView(gameView::ptr nview) {
-	grendx::engine::setView(nview);
-}
-
-gameView::ptr grendx::engine::dev::getView(void) {
-	return grendx::engine::getView();
+	wrapper->player = view;
+	wrapper->editor->selectedNode = state->rootnode;
+	grendx::engine::run(wrapper);
 }
 
 #if 0
