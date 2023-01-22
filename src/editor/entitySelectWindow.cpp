@@ -163,10 +163,11 @@ static void handle_prompts(gameEditorUI *wrapper) {
 	if (export_entity_dialog.promptFilename()) {
 		auto factories = Resolve<ecs::serializer>();
 		auto entities  = Resolve<ecs::entityManager>();
+		auto* selectedEntity = editor->getSelectedEntity().getPtr();
 
 		const std::string& name = export_entity_dialog.selection;
 
-		if (!editor->selectedEntity) {
+		if (!selectedEntity) {
 			LogErrorFmt("No entity selected, can't export to ", name);
 			return;
 		}
@@ -174,7 +175,7 @@ static void handle_prompts(gameEditorUI *wrapper) {
 		LogFmt("Exporting entity to ", name);
 
 		std::ofstream out(name);
-		auto curjson = factories->serialize(entities, editor->selectedEntity);
+		auto curjson = factories->serialize(entities, selectedEntity);
 
 		out << curjson.dump();
 
@@ -195,10 +196,11 @@ void gameEditorUI::entityEditorWindow() {
 	ImGui::BeginChild("editView");
 	static nlohmann::json curjson;
 	static ecs::entity* curcomp = nullptr;
+	auto* selectedEntity = editor->getSelectedEntity().getPtr();
 
-	if (editor->selectedEntity != curcomp && editor->selectedEntity) {
-		curjson = factories->serialize(entities, editor->selectedEntity);
-		curcomp = editor->selectedEntity;
+	if (selectedEntity != curcomp && selectedEntity) {
+		curjson = factories->serialize(entities, selectedEntity);
+		curcomp = selectedEntity;
 	}
 
 	drawJson(curjson);
@@ -206,11 +208,11 @@ void gameEditorUI::entityEditorWindow() {
 	if (ImGui::Button("Apply")) {
 		ecs::entity *ent = factories->build(entities, curjson);
 
-		entities->remove(editor->selectedEntity);
+		entities->remove(selectedEntity);
 		entities->clearFreedEntities();
 		entities->add(ent);
 
-		editor->selectedEntity = ent;
+		editor->setSelectedEntity(ent);
 	}
 
 	ImGui::EndChild();
@@ -231,6 +233,8 @@ void gameEditorUI::entityListWindow() {
 	ImGui::InputText("Search", searchBuffer, sizeof(searchBuffer));
 	auto tags = split_string(searchBuffer);
 	std::vector<const char *> tagchars;
+
+	auto* selectedEntity = editor->getSelectedEntity().getPtr();
 
 	for (const auto& v : tags) {
 		//tagchars.push_back(v.c_str());
@@ -289,7 +293,8 @@ void gameEditorUI::entityListWindow() {
 					ecs::entity *ent = factories->build(entities, j);
 					entities->add(ent);
 
-					editor->selectedEntity = ent;
+					editor->setSelectedEntity(ent);
+
 				} else {
 					LogFmt("Invalid file name: {}", fname);
 				}
@@ -318,8 +323,8 @@ void gameEditorUI::entityListWindow() {
 			entstr = "[deleted] " + entstr;
 		}
 
-		if (ImGui::Selectable(entstr.c_str(), ent == editor->selectedEntity)) {
-			editor->selectedEntity    = ent;
+		if (ImGui::Selectable(entstr.c_str(), ent == selectedEntity)) {
+			editor->setSelectedEntity(ent);
 		}
 
 		if (ImGui::BeginPopupContextItem(contextstr.c_str())) {
@@ -327,8 +332,8 @@ void gameEditorUI::entityListWindow() {
 			ImGui::Separator();
 
 			if (ImGui::Selectable("Delete")) {
-				entities->remove(editor->selectedEntity);
-				editor->selectedEntity = nullptr;
+				entities->remove(selectedEntity);
+				editor->setSelectedEntity(nullptr);
 			}
 
 			if (ImGui::Selectable("Duplicate")) { /* TODO */ }
@@ -350,8 +355,7 @@ void gameEditorUI::entityListWindow() {
 				if (ImGui::Selectable(demangle(name).c_str())) {
 					// TODO: need a way to serialize a specific component,
 					//       avoid recreating an entire entity
-					//selectedComponent = comp;
-					editor->selectedEntity = ent;
+					editor->setSelectedEntity(ent);
 				}
 
 				seen.insert(name);
@@ -368,7 +372,7 @@ void gameEditorUI::entityListWindow() {
 
 		ImGui::SameLine();
 		if (ImGui::Button("Save")) {
-			editor->selectedEntity = ent;
+			editor->setSelectedEntity(ent);
 			export_entity_dialog.show();
 		}
 

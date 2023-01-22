@@ -116,9 +116,6 @@ class gameEditor : public gameView {
 		modelMap models;
 		modelMap UIModels;
 
-		sceneNode::ptr selectedNode = nullptr;
-		ecs::entity *selectedEntity = nullptr;
-
 		float movementSpeed = 10.f;
 		float snapAmount = 1.f;
 		float exposure = 1.f;
@@ -147,6 +144,17 @@ class gameEditor : public gameView {
 		// list of log messages
 		std::list<std::string> logEntries;
 
+		ecs::ref<ecs::entity> getSelectedEntity(void) { return curEntity; };
+
+		void setSelectedEntity(ecs::ref<ecs::entity> ent) {
+			this->curEntity = ent;
+			this->curNode   = dynamic_ref_cast<sceneNode>(ent);
+		}
+
+		sceneNode::ptr getSelectedNode(void) {
+			return this->curNode;
+		}
+
 	private:
 		void updateSelected(const TRS& updated);
 		void renderWorldObjects();
@@ -173,6 +181,9 @@ class gameEditor : public gameView {
 		float clickedX, clickedY;
 		// distance from cursor to camera at the last click
 		float clickDepth;
+
+		sceneNode::ptr        curNode;
+		ecs::ref<ecs::entity> curEntity;
 };
 
 class gameEditorUI : public gameView {

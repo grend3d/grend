@@ -44,7 +44,7 @@ void grendx::engine::dev::step(gameView::ptr view) {
 void grendx::engine::dev::run(gameView::ptr view) {
 	auto state = Resolve<gameState>();
 	wrapper->player = view;
-	wrapper->editor->selectedNode = state->rootnode;
+	wrapper->editor->setSelectedEntity(state->rootnode);
 	grendx::engine::run(wrapper);
 }
 

@@ -9,6 +9,14 @@ class ref {
 			// TODO: explicit hard ref on base entity
 		};
 
+		// templated constructor to allow upcasting references when assigning
+		template <typename E>
+		ref(const ref<E>& other)
+			: ptr(other.getPtr())
+		{
+			// TODO: explicit hard ref on base entity
+		}
+
 		ref() : ptr(nullptr) {}
 
 		// TODO: copy, move constructors

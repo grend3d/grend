@@ -81,7 +81,7 @@ void gameEditor::addnodesRec(const std::string& name,
 			// in the selected path, which avoids overwriting the selected
 			// node when trying to traverse to some clicked mesh
 			if (ImGui::IsItemClicked() && !selectedPath.count(obj.getPtr())) {
-				selectedNode = obj;
+				setSelectedEntity(obj);
 			}
 
 			for (auto link : obj->nodes()) {
@@ -126,36 +126,38 @@ void gameEditorUI::mapWindow() {
 	auto ecs = engine::Resolve<ecs::entityManager>();
 
 	static sceneNode::ptr clipboard = nullptr;
-	static std::string     clipboardName;
-	sceneNode::ptr root = findRoot(editor->selectedNode);
+	static std::string    clipboardName;
+
+	sceneNode::ptr selectedNode = editor->getSelectedNode();
+	sceneNode::ptr root         = findRoot(selectedNode);
 
 	std::set<sceneNode*> selectedPath;
-	for (sceneNode::ptr p = editor->selectedNode; p; p = p->parent) {
+	for (sceneNode::ptr p = selectedNode; p; p = p->parent) {
 		selectedPath.insert(p.getPtr());
 	}
 
 	ImGui::Begin("Objects", &showMapWindow);
 
-	if (ImGui::Button("Add Node") && editor->selectedNode) {
+	if (ImGui::Button("Add Node") && selectedNode) {
 		sceneNode::ptr ptr = ecs->construct<sceneNode>();
-		setNode("New node", editor->selectedNode, ptr);
+		setNode("New node", selectedNode, ptr);
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button("Cut Node") && editor->selectedNode) {
-		clipboard     = editor->selectedNode;
-		clipboardName = getNodeName(editor->selectedNode);
-		unlink(editor->selectedNode);
+	if (ImGui::Button("Cut Node") && selectedNode) {
+		clipboard     = selectedNode;
+		clipboardName = getNodeName(selectedNode);
+		unlink(selectedNode);
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button("Copy Node") && editor->selectedNode) {
-		clipboard     = editor->selectedNode;
-		clipboardName = getNodeName(editor->selectedNode);
+	if (ImGui::Button("Copy Node") && selectedNode) {
+		clipboard     = selectedNode;
+		clipboardName = getNodeName(selectedNode);
 	}
 
 	ImGui::SameLine();
-	if (ImGui::Button("Paste Node") && editor->selectedNode) {
+	if (ImGui::Button("Paste Node") && selectedNode) {
 		if (clipboardName.empty()) {
 			clipboardName = "New node";
 		}
@@ -163,7 +165,7 @@ void gameEditorUI::mapWindow() {
 		// avoid creating recursive trees
 		// TODO: some notification if this check fails
 		if (!selectedPath.count(clipboard.getPtr())) {
-			setNode(clipboardName, editor->selectedNode, clipboard);
+			setNode(clipboardName, selectedNode, clipboard);
 		}
 	}
 
@@ -171,9 +173,9 @@ void gameEditorUI::mapWindow() {
 	ImGui::Text(" | ");
 
 	ImGui::SameLine();
-	if (ImGui::Button("Delete Node") && editor->selectedNode) {
-		unlink(editor->selectedNode);
-		editor->selectedNode = nullptr;
+	if (ImGui::Button("Delete Node") && selectedNode) {
+		unlink(selectedNode);
+		editor->setSelectedEntity(nullptr);
 	}
 
 	editor->addnodes("Objects", root, selectedPath);

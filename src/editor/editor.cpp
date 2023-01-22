@@ -175,7 +175,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	auto p = UIObjects->getNode("Orientation-Indicator");
 	auto m = p->getTransformMatrix();
 
-	if (selectedNode) {
+	if (getSelectedNode()) {
 		que.add(p->getNode("X-Axis"),     1, m);
 		que.add(p->getNode("Y-Axis"),     2, m);
 		que.add(p->getNode("Z-Axis"),     3, m);
@@ -539,6 +539,7 @@ void gameEditor::update(float delta) {
 	auto cursor      = UIObjects->getNode("Cursor-Placement");
 	assert(orientation && cursor);
 
+	auto selectedNode = getSelectedNode();
 	orientation->visible =
 		   selectedNode
 		&& selectedNode->parent
@@ -651,5 +652,6 @@ void gameEditor::clear() {
 	models.clear();
 
 	// TODO: clear() for state
-	selectedNode = state->rootnode = ecs->construct<sceneNode>();
+	state->rootnode = ecs->construct<sceneNode>();
+	setSelectedEntity(state->rootnode);
 }

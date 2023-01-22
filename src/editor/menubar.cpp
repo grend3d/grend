@@ -2,9 +2,7 @@
 #include <grend/gameState.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/fileDialog.hpp>
-#include <grend/ecs/serializer.hpp>
-
-// TODO: debugging, remove
+#include <grend/ecs/serializer.hpp> // TODO: debugging, remove
 #include <iostream>
 #include <fstream>
 
@@ -33,13 +31,16 @@ static void handle_prompts(gameEditorUI *wrapper) {
 	auto factories = Resolve<ecs::serializer>();
 	auto entities  = Resolve<ecs::entityManager>();
 
+	auto selectedNode = editor->getSelectedNode();
+
 	if (open_dialog.promptFilename()) {
 		LogFmt("Opening a file here! at {}", open_dialog.selection);
 		open_dialog.clear();
 
 		if (auto node = loadMapCompiled(open_dialog.selection)) {
 			editor->clear();
-			editor->selectedNode = state->rootnode = *node;
+			state->rootnode = *node;
+			editor->setSelectedEntity(*node);
 		} else printError(node);
 	}
 
@@ -58,7 +59,7 @@ static void handle_prompts(gameEditorUI *wrapper) {
 
 		if (auto res = loadModel(import_model_dialog.selection)) {
 			auto [obj, models] = *res;
-			setNode("", editor->selectedNode, obj);
+			setNode("", selectedNode, obj);
 			compileModels(models);
 		} else printError(res);
 	}
@@ -69,7 +70,7 @@ static void handle_prompts(gameEditorUI *wrapper) {
 
 		if (auto res = loadSceneCompiled(import_scene_dialog.selection)) {
 			auto obj = *res;
-			setNode("", editor->selectedNode, obj);
+			setNode("", selectedNode, obj);
 		} else printError(res);
 	}
 
@@ -79,7 +80,7 @@ static void handle_prompts(gameEditorUI *wrapper) {
 
 		if (auto res = loadMapCompiled(import_map_dialog.selection)) {
 			auto obj = *res;
-			setNode("", editor->selectedNode, obj);
+			setNode("", selectedNode, obj);
 		} else printError(res);
 	}
 
@@ -117,7 +118,8 @@ void gameEditorUI::menubar() {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "CTRL+N")) {
 				// TODO: "discard without saving" confirmation
-				editor->selectedNode = state->rootnode = ecs->construct<sceneNode>();
+				state->rootnode = ecs->construct<sceneNode>();
+				editor->setSelectedEntity(state->rootnode);
 			}
 			if (ImGui::MenuItem("Open", "CTRL+O")) { open_dialog.show(); }
 			if (ImGui::MenuItem("Save", "CTRL+S")) {}
@@ -276,8 +278,8 @@ void gameEditorUI::menubar() {
 			if (ImGui::MenuItem("Generate reflectance cubemaps", "Shift-CTRL+L")) {}
 
 			if (ImGui::MenuItem("Re-render selected light maps", "CTRL+p")) {
-				if (editor->selectedNode) {
-					invalidateLightMaps(editor->selectedNode);
+				if (auto selectedNode = editor->getSelectedNode()) {
+					invalidateLightMaps(selectedNode);
 				}
 			}
 

@@ -32,9 +32,11 @@ void gameEditor::handleSelectObject() {
 	LogErrorFmt("ent object: ", clickidx-10);
 	LogErrorFmt("clickables: ", clickState.size());
 
+	auto selectedNode = getSelectedNode();
+
 	if (clickidx - 10 < clickState.size()) {
 		auto& [_, ent] = clickState[clickidx - 10];
-		selectedEntity = ent;
+		setSelectedEntity(ent);
 
 		LogErrorFmt("selected entity: {}@{}", clickidx-10, (void*)ent);
 
@@ -69,8 +71,7 @@ void gameEditor::handleSelectObject() {
 		}
 
 	} else {
-		selectedNode   = nullptr;
-		selectedEntity = nullptr;
+		setSelectedEntity(nullptr);
 	}
 }
 
@@ -91,11 +92,12 @@ static void handleAddNode(gameEditor *editor,
                           std::string name,
                           sceneNode::ptr obj)
 {
-	assert(editor->selectedNode != nullptr);
+	auto selectedNode = editor->getSelectedNode();
+	assert(selectedNode != nullptr);
 
 	obj->setTransform(editor->cursorBuf);
-	setNode(name, editor->selectedNode, obj);
-	editor->selectedNode = obj;
+	setNode(name, selectedNode, obj);
+	editor->setSelectedEntity(obj);
 	editor->runCallbacks(obj, gameEditor::editAction::Added);
 };
 
@@ -104,7 +106,7 @@ static bindFunc makeClicker(gameEditor *editor,
                             std::string name)
 {
 	return [=] (const SDL_Event& ev, unsigned flags) {
-		if (editor->selectedNode
+		if (editor->getSelectedNode()
 		    && ev.type == SDL_MOUSEBUTTONDOWN
 			&& ev.button.button == SDL_BUTTON_LEFT)
 		{
@@ -202,15 +204,16 @@ void gameEditor::loadInputBindings() {
 					case SDLK_i:
 						if (auto node = loadMapCompiled()) {
 							clear();
-							selectedNode = state->rootnode = *node;
-							runCallbacks(selectedNode, editAction::NewScene);
+							state->rootnode = *node;
+							setSelectedEntity(*node);
+							runCallbacks(*node, editAction::NewScene);
 
 						} else printError(node);
 
 						break;
 
 					case SDLK_o: saveMap(state->rootnode); break;
-					case SDLK_DELETE: selectedNode = unlink(selectedNode); break;
+					case SDLK_DELETE: setSelectedEntity(unlink(getSelectedNode())); break;
 				}
 			}
 			return MODAL_NO_CHANGE;
@@ -220,6 +223,8 @@ void gameEditor::loadInputBindings() {
 	// clone keybind
 	inputBinds.bind(mode::View,
 		[&] (const SDL_Event& ev, unsigned flags) {
+			auto selectedNode = getSelectedNode();
+
 			if (ev.type == SDL_KEYDOWN
 			    && ev.key.keysym.sym == SDLK_d
 			    && flags & bindFlags::Shift
@@ -292,8 +297,7 @@ void gameEditor::loadInputBindings() {
 					// TODO: need like a keymapping system
 					// TODO: need more abstracted object/entity/we
 					//       selection/delection
-					selectedNode   = state->rootnode;
-					selectedEntity = nullptr;
+					setSelectedEntity(state->rootnode);
 
 				} else {
 					handleSelectObject();
@@ -338,6 +342,12 @@ void gameEditor::loadInputBindings() {
 	// handle move keybinds
 	inputBinds.bind(mode::MoveSomething,
 		[&] (const SDL_Event& ev, unsigned flags) {
+			auto selectedNode = getSelectedNode();
+
+			if (!selectedNode) {
+				return MODAL_NO_CHANGE;
+			}
+
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -355,6 +365,12 @@ void gameEditor::loadInputBindings() {
 	// rotate keybinds
 	inputBinds.bind(mode::RotateSomething,
 		[&] (const SDL_Event& ev, unsigned flags) {
+			auto selectedNode = getSelectedNode();
+
+			if (!selectedNode) {
+				return MODAL_NO_CHANGE;
+			}
+
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -372,6 +388,12 @@ void gameEditor::loadInputBindings() {
 	// scale keybinds
 	inputBinds.bind(mode::ScaleSomething,
 		[&] (const SDL_Event& ev, unsigned flags) {
+			auto selectedNode = getSelectedNode();
+
+			if (!selectedNode) {
+				return MODAL_NO_CHANGE;
+			}
+
 			if (ev.type == SDL_KEYDOWN) {
 				transformBuf = selectedNode->getTransformTRS();
 
@@ -389,6 +411,7 @@ void gameEditor::loadInputBindings() {
 	inputBinds.bind(mode::View,
 		[&] (const SDL_Event& ev, unsigned flags) {
 			int ret = MODAL_NO_CHANGE;
+			auto selectedNode = getSelectedNode();
 
 			if (selectedNode == nullptr
 			    || selectedNode->type != sceneNode::objType::ReflectionProbe)
@@ -462,7 +485,7 @@ void gameEditor::loadInputBindings() {
 		if (ev.type == SDL_MOUSEBUTTONUP
 		    && ev.button.button == SDL_BUTTON_LEFT)
 		{
-			invalidateLightMaps(selectedNode);
+			invalidateLightMaps(getSelectedNode());
 			return (int)mode::View;
 		} else {
 			return MODAL_NO_CHANGE;
@@ -506,6 +529,8 @@ static T sign(T x) {
 }
 
 void gameEditor::updateSelected(const TRS& updated) {
+	auto  selectedNode   = getSelectedNode();
+	auto* selectedEntity = getSelectedEntity().getPtr();
 	selectedNode->setTransform(updated);
 
 	if (selectedEntity) {
@@ -535,6 +560,12 @@ void gameEditor::handleMoveRotate() {
 	glm::mat3 rot;
 	glm::vec3 dir;
 	float rad;
+
+	auto selectedNode = getSelectedNode();
+
+	if (!selectedNode) {
+		return;
+	}
 
 	TRS selectedTransform = selectedNode->getTransformTRS();
 	glm::vec4 screenuv = cam->worldToScreenPosition(transformBuf.position);

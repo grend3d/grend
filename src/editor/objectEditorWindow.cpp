@@ -98,7 +98,9 @@ static void editModel(sceneModel::ptr model) {
 }
 
 void gameEditorUI::objectEditorWindow() {
-	if (!editor->selectedNode) {
+	auto selectedNode = editor->getSelectedNode();
+
+	if (!selectedNode) {
 		// should check before calling this, but just in case...
 		return;
 	}
@@ -106,37 +108,37 @@ void gameEditorUI::objectEditorWindow() {
 	ImGui::Begin("Object editor", &showObjectEditorWindow, 
 	             ImGuiWindowFlags_AlwaysAutoResize);
 
-	ImGui::Text("%s", editor->selectedNode->typeString());
+	ImGui::Text("%s", selectedNode->typeString());
 	ImGui::Separator();
 	ImGui::Indent(16.f);
 
-	TRS selectedTransform = editor->selectedNode->getTransformTRS();
+	TRS selectedTransform = selectedNode->getTransformTRS();
 
 	if (ImGui::InputFloat3("Position", glm::value_ptr(selectedTransform.position))
 	    || ImGui::InputFloat3("Scale", glm::value_ptr(selectedTransform.scale))
 	    || ImGui::InputFloat4("Rotation", glm::value_ptr(selectedTransform.rotation)))
 	{
-		editor->selectedNode->setTransform(selectedTransform);
+		selectedNode->setTransform(selectedTransform);
 	}
 
-	ImGui::Checkbox("Visible", &editor->selectedNode->visible);
+	ImGui::Checkbox("Visible", &selectedNode->visible);
 	ImGui::Unindent(16.f);
 
-	if (editor->selectedNode->type == sceneNode::objType::Light) {
-		editLight(ref_cast<sceneLight>(editor->selectedNode));
+	if (selectedNode->type == sceneNode::objType::Light) {
+		editLight(ref_cast<sceneLight>(selectedNode));
 
-	} else if(editor->selectedNode->type == sceneNode::objType::ReflectionProbe) {
-		editRefProbe(ref_cast<sceneReflectionProbe>(editor->selectedNode));
+	} else if(selectedNode->type == sceneNode::objType::ReflectionProbe) {
+		editRefProbe(ref_cast<sceneReflectionProbe>(selectedNode));
 
-	} else if(editor->selectedNode->type == sceneNode::objType::IrradianceProbe) {
-		editRefProbe(ref_cast<sceneIrradianceProbe>(editor->selectedNode));
+	} else if(selectedNode->type == sceneNode::objType::IrradianceProbe) {
+		editRefProbe(ref_cast<sceneIrradianceProbe>(selectedNode));
 
-	} else if(editor->selectedNode->type == sceneNode::objType::Model) {
-		editModel(ref_cast<sceneModel>(editor->selectedNode));
+	} else if(selectedNode->type == sceneNode::objType::Model) {
+		editModel(ref_cast<sceneModel>(selectedNode));
 	}
 
 	ImGui::Separator();
-	ImGui::Text("%s: %08x", "Animations channel", editor->selectedNode->animChannel);
+	ImGui::Text("%s: %08x", "Animations channel", selectedNode->animChannel);
 
 	ImGui::End();
 }
