@@ -4,6 +4,7 @@
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
+#include <grend/ecs/editor.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -186,6 +187,7 @@ static void handle_prompts(gameEditorUI *wrapper) {
 void gameEditorUI::entityEditorWindow() {
 	auto entities  = Resolve<ecs::entityManager>();
 	auto factories = Resolve<ecs::serializer>();
+	auto drawer    = Resolve<ecs::editor>();
 
 	ImGui::Begin("Entity Editor", &showEntityEditorWindow);
 
@@ -203,7 +205,10 @@ void gameEditorUI::entityEditorWindow() {
 		curcomp = selectedEntity;
 	}
 
-	drawJson(curjson);
+	drawer->draw(selectedEntity);
+
+	// TODO: remove
+	//drawJson(curjson);
 
 	if (ImGui::Button("Apply")) {
 		ecs::entity *ent = factories->build(entities, curjson);

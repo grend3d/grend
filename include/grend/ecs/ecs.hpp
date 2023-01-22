@@ -275,6 +275,8 @@ class entity : public component {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *ent);
+
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not

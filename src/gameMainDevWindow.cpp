@@ -4,6 +4,8 @@
 #include <grend/jobQueue.hpp>
 #include <grend/audioMixer.hpp>
 
+#include <grend/ecs/editor.hpp>
+
 #ifdef PHYSICS_BULLET
 #include <grend/bulletPhysics.hpp>
 #elif defined(PHYSICS_IMP)
@@ -25,6 +27,8 @@ int mode = modes::Editor;
 
 void grendx::engine::dev::initialize(const std::string& name, const renderSettings& settings) {
 	grendx::engine::initialize(name, settings);
+
+	Services().bind<ecs::editor, ecs::editor>();
 
 	editor  = std::make_shared<gameEditor>();
 	wrapper = std::make_shared<gameEditorUI>();
