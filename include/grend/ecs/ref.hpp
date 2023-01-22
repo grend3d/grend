@@ -43,4 +43,10 @@ ref<E> ref_cast(const ref<T>& r) {
 	return ref<E>(static_cast<E*>(r.getPtr()));
 }
 
+template <typename E, typename T>
+ref<E> dynamic_ref_cast(const ref<T>& r) {
+	//return ref<E>(r->template get<E>());
+	return ref<E>(dynamic_cast<E*>(r.getPtr()));
+}
+
 }

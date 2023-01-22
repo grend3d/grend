@@ -162,10 +162,8 @@ bulletPhysics::addStaticModels(void *data,
 
 		if (auto p = obj->parent) {
 			// XXX:
-			auto mesh  = obj->get<sceneMesh>();
-			auto model = p->get<sceneModel>();
-			//sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(obj);
-			//sceneModel::ptr model = std::dynamic_pointer_cast<sceneModel>(p);
+			auto mesh  = dynamic_ref_cast<sceneMesh>(obj);
+			auto model = dynamic_ref_cast<sceneModel>(p);
 
 			if (mesh && model) {
 				collector.push_back(addStaticMesh(data, transform, model, mesh));

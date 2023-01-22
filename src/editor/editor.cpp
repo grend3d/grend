@@ -149,6 +149,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	auto rend  = Resolve<renderContext>();
 	auto state = Resolve<gameState>();
 	auto ctx   = Resolve<SDLContext>();
+	auto phys  = Resolve<physics>();
 
 	auto vportPos  = rend->getDrawOffset();
 	auto vportSize = rend->getDrawSize();
@@ -157,6 +158,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	static gridDrawer grid;
 	grid.buildGrid(cam->position());
 	grid.flushLines(cam->viewProjTransform());
+
 
 	renderQueue que;
 	renderFlags flags = rend->getLightingFlags();
@@ -221,6 +223,11 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 
 	setPostUniforms(post, cam);
 	post->draw(rend->framebuffer);
+
+	glViewport(vportPos.x, fb->height - (vportPos.y + vportSize.y), vportSize.x, vportSize.y);
+	if (phys) {
+		phys->drawDebug(cam->viewProjTransform());
+	}
 }
 
 void gameEditor::renderWorldObjects() {

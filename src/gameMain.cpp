@@ -145,10 +145,6 @@ void grendx::engine::step(gameView::ptr view) {
 		rend->framebuffer->clear();
 		view->render(rend->framebuffer);
 
-		if (phys) {
-			phys->drawDebug(view->cam->viewProjTransform());
-		}
-
 		SDL_GL_SwapWindow(ctx->window);
 		profile::endGroup();
 	}
