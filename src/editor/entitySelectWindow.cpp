@@ -210,6 +210,7 @@ void gameEditorUI::entityEditorWindow() {
 	// TODO: remove
 	//drawJson(curjson);
 
+	/*
 	if (ImGui::Button("Apply")) {
 		ecs::entity *ent = factories->build(entities, curjson);
 
@@ -219,6 +220,7 @@ void gameEditorUI::entityEditorWindow() {
 
 		editor->setSelectedEntity(ent);
 	}
+	*/
 
 	ImGui::EndChild();
 	ImGui::EndChild();

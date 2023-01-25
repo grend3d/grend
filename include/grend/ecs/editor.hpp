@@ -64,7 +64,6 @@ class editor : public IoC::Service {
 					const std::string& demangled = demangle(subtype);
 
 					if (has(demangled)) {
-						LogFmt("got here, drawing a {}", demangled);
 						drawers[demangled](comp);
 					}
 				}

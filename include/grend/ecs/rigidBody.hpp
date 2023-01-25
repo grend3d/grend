@@ -96,6 +96,8 @@ class rigidBody
 			body->mass = j.contains("mass")? j["mass"].get<float>() : 0.f;
 			body->position = {p[0], p[1], p[2]};
 		}
+
+		static void drawEditor(component *comp);
 };
 
 class rigidBodySphere : public rigidBody {
@@ -154,6 +156,8 @@ class rigidBodySphere : public rigidBody {
 			body->radius = tryGet(j, "radius", 1.f);
 			body->activate(comp->manager, comp->manager->getEntity(comp));
 		}
+
+		static void drawEditor(component *ent);
 };
 
 class rigidBodyStaticMesh : public rigidBody,
@@ -280,6 +284,8 @@ class rigidBodyBox : public rigidBody {
 			.center = {0, 0, 0},
 			.extent = {1, 1, 1},
 		};
+
+		static void drawEditor(component *ent);
 };
 
 // TODO: activatable
@@ -311,6 +317,8 @@ class rigidBodyCylinder : public rigidBody {
 			.center = {0, 0, 0},
 			.extent = {1, 1, 1},
 		};
+
+		static void drawEditor(component *ent);
 };
 
 class rigidBodyCapsule : public rigidBody {
@@ -344,6 +352,8 @@ class rigidBodyCapsule : public rigidBody {
 		// position, mass in rigidBody
 		float radius = 1.f;
 		float height = 1.f;
+
+		static void drawEditor(component *ent);
 };
 
 class syncRigidBody : public component {

@@ -112,6 +112,11 @@ class sceneComponent : public component {
 				scn->load(path, sceneComponent::Reference);
 			}
 		}
+
+		static void drawEditor(component *comp);
+		static const size_t BufSize = 256;
+		using Buf = std::array<char, BufSize>;
+		Buf *editBuffer = nullptr;
 };
 
 // namespace grend::ecs
