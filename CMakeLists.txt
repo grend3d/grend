@@ -100,6 +100,7 @@ add_library(Grend
 	src/editor/filePane.cpp
 	src/editor/ui.cpp
 	src/editor/ecsTypes.cpp
+	src/editor/nodeTypes.cpp
 
 	# TODO: maybe just part of the editor
 	src/gridDraw.cpp

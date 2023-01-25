@@ -79,6 +79,8 @@ class sceneNode : public ecs::entity {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		// used for routing click events
 		//size_t id = allocateObjID();
 		// TODO: bounding box/radius
@@ -192,6 +194,8 @@ class sceneImport : public sceneNode {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		std::string sourceFile;
 		animationCollection::ptr animations;
 };
@@ -239,6 +243,8 @@ class sceneParticles : public sceneNode {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		std::vector<glm::mat4> positions;
 		// approximate bounding sphere for instances in this object,
 		// used for culling
@@ -263,6 +269,8 @@ class sceneBillboardParticles : public sceneNode {
 
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
+
+		static void drawEditor(component *comp);
 
 		std::vector<glm::vec4> positions; /* xyz position, w scale */
 
@@ -311,6 +319,8 @@ class sceneLight : public sceneNode {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		// TODO: why not store things in std140 format to avoid packing?
 		glm::vec4 diffuse = glm::vec4(1);
 		float     intensity = 50.0;
@@ -334,6 +344,8 @@ class sceneLightPoint : public sceneLight {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		float radius = 1.0f;
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap[6];
@@ -352,6 +364,8 @@ class sceneLightSpot : public sceneLight {
 
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
+
+		static void drawEditor(component *comp);
 
 		float radius = 1.0;
 		float angle = 3.1415/4.0;
@@ -375,6 +389,8 @@ class sceneLightDirectional : public sceneLight {
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
 
+		static void drawEditor(component *comp);
+
 		// TODO: maybe abstract atlas textures more
 		quadtree::node_id shadowmap;
 		glm::mat4 shadowproj;
@@ -391,6 +407,8 @@ class sceneReflectionProbe : public sceneNode {
 
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
+
+		static void drawEditor(component *comp);
 
 		quadtree::node_id faces[5][6];
 		// bounding box for parallax correction
@@ -419,6 +437,8 @@ class sceneIrradianceProbe : public sceneNode {
 
 		static nlohmann::json serializer(component *comp);
 		static void deserializer(component *comp, nlohmann::json j);
+
+		static void drawEditor(component *comp);
 
 		// TODO: not this
 		sceneReflectionProbe *source;
