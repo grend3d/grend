@@ -122,12 +122,16 @@ sceneNode::ptr loadNodes(modelCache& cache,
 
 	sceneImport* imp = dynamic_cast<sceneImport*>(ent);
 	if (lowerLevel && imp) {
+		// TODO: FIXME: previously built entity is unused here, ends up leaking
 		recurse = false;
 
 		if ((ret = cache.getScene(imp->sourceFile)) == nullptr) {
 			LogErrorFmt("loadMap(): Unknown model {}", js["sourceFile"]);
 			ret = ecs->construct<sceneNode>();
 		}
+
+		// XXX: reapply entity transforms to sceneImport
+		ecs::entity::deserializer(ret.getPtr(), js["entity-properties"]);
 
 	} else if (sceneNode *temp = dynamic_cast<sceneNode*>(ent)) {
 		ret = ecs::ref(temp);
