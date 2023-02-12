@@ -26,7 +26,7 @@ if (NOT EMSCRIPTEN)
 	set(CMAKE_C_FLAGS_RELEASE "-DGREND_BUILD_RELEASE=1 -O2")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wnon-virtual-dtor")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wnon-virtual-dtor -Werror=non-virtual-dtor")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
