@@ -2,10 +2,14 @@
 
 #include <grend/glmIncludes.hpp>
 #include <grend/openglIncludes.hpp>
+
 #include <string>
 #include <vector>
 #include <map>
 #include <memory>
+#include <variant>
+
+#include <stdint.h>
 
 namespace grendx {
 
@@ -18,13 +22,16 @@ class textureData {
 
 		textureData() { };
 		textureData(std::string filename);
-		void load_texture(std::string filename);
+		bool load_texture(std::string filename);
 		bool loaded(void) const { return channels != 0; };
 
 		int width = 0, height = 0;
 		int channels = 0;
 		size_t size;
-		std::vector<uint8_t> pixels;
+
+		std::variant<std::vector<uint8_t>,
+		             std::vector<uint16_t>,
+		             std::vector<float>> pixels;
 
 		// XXX: could use GL enums directly here, seems like that might
 		//      be tying it too closely to the OpenGL api though... idk,

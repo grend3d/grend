@@ -174,21 +174,31 @@ Texture::ptr texcache(textureData::ptr tex, bool srgb) {
 		return nullptr;
 	}
 
-	uint32_t hash = dumbhash(tex->pixels);
-	auto it = textureCache.find(hash);
+	// 0 is an invalid hash
+	uint32_t hash = 0;
 
-	if (it != textureCache.end()) {
-		if (auto observe = it->second.lock()) {
-			//static const unsigned sizes[4] = {256, 512, 2048, 4096};
-			//logfmt("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
-			return observe;
+	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex->pixels)) {
+		hash = dumbhash(*pixels);
+		auto it = textureCache.find(hash);
+
+		if (it != textureCache.end()) {
+			if (auto observe = it->second.lock()) {
+				//static const unsigned sizes[4] = {256, 512, 2048, 4096};
+				//logfmt("texture cache hit: %08x (%uK)\n", hash, sizes[hash >> 30]);
+				return observe;
+			}
 		}
+
+		// TODO: hashing for other pixel formats
+
 	}
 
 	Texture::ptr ret = genTexture();
-
-	textureCache[hash] = ret;
 	ret->buffer(tex, srgb);
+
+	if (hash) {
+		textureCache[hash] = ret;
+	}
 
 	return ret;
 }

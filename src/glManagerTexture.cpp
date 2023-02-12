@@ -33,7 +33,7 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 }
 
 void Texture::buffer(textureData::ptr tex, bool srgb) {
-	LogFmt(" > buffering image: w = {}, h = {}, bytesperpixel: {}\n",
+	LogFmt(" > buffering image: w = {}, h = {}, channels: {}\n",
 	       tex->width, tex->height, tex->channels);
 
 	GLenum texformat = surfaceGlFormat(tex->channels);
@@ -46,18 +46,22 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 	}
 
 #ifdef NO_FORMAT_CONVERSION
-	// XXX: need something more efficient
-	std::vector<uint8_t> temp = tex->pixels;
+	// TODO: format conversion utilities, need to be able to convert any data type
+	//       to a minimal internal format
+	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex->pixels)) {
+		// XXX: need something more efficient
+		std::vector<uint8_t> temp = *pixels;
 
-	if (srgb) {
-		srgb_to_linear(temp);
+		if (srgb) {
+			srgb_to_linear(temp);
+		}
+
+		// TODO: fallback SRBG conversion
+		glTexImage2D(GL_TEXTURE_2D,
+		             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
+		             0, texformat, tex->width, tex->height,
+		             0, texformat, GL_UNSIGNED_BYTE, temp.data());
 	}
-
-	// TODO: fallback SRBG conversion
-	glTexImage2D(GL_TEXTURE_2D,
-	             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
-	             0, texformat, tex->width, tex->height,
-	             0, texformat, GL_UNSIGNED_BYTE, temp.data());
 
 	/*
 	glTexImage2D(GL_TEXTURE_2D,
@@ -66,9 +70,29 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 				 */
 
 #else
-	glTexImage2D(GL_TEXTURE_2D,
-	             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
-	             0, texformat, GL_UNSIGNED_BYTE, tex->pixels.data());
+	if (auto *pixels = std::get_if<std::vector<float>>(&tex->pixels)) {
+		LogInfo(" > type: float");
+		glTexImage2D(GL_TEXTURE_2D,
+		             0, GL_RGBA, tex->width, tex->height,
+		             0, texformat, GL_FLOAT, pixels->data());
+	}
+
+	else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex->pixels)) {
+		LogInfo(" > type: unsigned short");
+		glTexImage2D(GL_TEXTURE_2D,
+		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
+		             0, texformat, GL_UNSIGNED_SHORT, pixels->data());
+	}
+
+	else if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex->pixels)) {
+		LogInfo(" > type: unsigned byte");
+		glTexImage2D(GL_TEXTURE_2D,
+		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
+		             0, texformat, GL_UNSIGNED_BYTE, pixels->data());
+
+	} else {
+		LogError("Texture::buffer: Somehow have a pixel format that isn't valid?");
+	}
 #endif
 
 	DO_ERROR_CHECK();
@@ -156,7 +180,8 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 	}
 
 	// debug info
-	size_t roughsize = tex->pixels.size() * 1.33;
+	// TODO: use type sizes
+	size_t roughsize = tex->width * tex->height * tex->channels * 1.33;
 	currentSize = glmanDbgUpdateTextures(currentSize, roughsize);
 }
 
@@ -180,72 +205,44 @@ void Texture::cubemap(std::string directory, std::string extension) {
 
 	for (const auto& [img, direction] : dirmap) {
 		std::string fname = directory + "/" + img + extension;
-		//SDL_Surface *surf = IMG_Load(fname.c_str());
-		int width, height, channels;
-		uint8_t *surf = stbi_load(fname.c_str(), &width, &height, &channels, 0);
-		LogFmt("Have cubemap image at {}", fname);
+		textureData tex;
 
-		if (!surf) {
-			SDL_Die("couldn't load cubemap texture");
+		if (!tex.load_texture(fname)) {
+			LogErrorFmt("Couldn't load cubemap text from '{}'", fname);
+			continue;
 		}
 
 		LogFmt(" > loaded image: w = {}, h = {}, pitch = {}, bytesperpixel: {}\n",
-		       width, height, 0, channels);
+		       tex.width, tex.height, 0, tex.channels);
 
-		GLenum texformat = surfaceGlFormat(channels);
+		GLenum texformat = surfaceGlFormat(tex.channels);
 
 #ifdef NO_FORMAT_CONVERSION
 		srgb_to_linear(surf, width*height*channels);
 		glTexImage2D(direction, 0, texformat, width, height, 0,
-			texformat, GL_UNSIGNED_BYTE, surf);
+		             texformat, GL_UNSIGNED_BYTE, surf);
 #else
-		glTexImage2D(direction, 0, GL_SRGB, width, height, 0,
-			texformat, GL_UNSIGNED_BYTE, surf);
+		if (auto *pixels = std::get_if<std::vector<float>>(&tex.pixels)) {
+			glTexImage2D(direction, 0, GL_RGBA, tex.width, tex.height, 0,
+			             texformat, GL_FLOAT, pixels->data());
+		}
+
+		else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex.pixels)) {
+			glTexImage2D(direction, 0, GL_SRGB, tex.width, tex.height, 0,
+			             texformat, GL_UNSIGNED_SHORT, pixels->data());
+		}
+
+		else if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
+			glTexImage2D(direction, 0, GL_SRGB, tex.width, tex.height, 0,
+			             texformat, GL_UNSIGNED_BYTE, pixels->data());
+
+		} else {
+			LogErrorFmt("{}: Somehow have a pixel format that isn't valid?", __func__);
+		}
+
 #endif
 		DO_ERROR_CHECK();
-
-		//SDL_FreeSurface(surf);
-		stbi_image_free(surf);
 		LogFmt("Loaded {} to cubemap", fname);
-
-#if 0
-		for (unsigned i = 1; surf; i++) {
-			std::string mipname = directory + "/mip" + std::to_string(i)
-			                      + "-" + img + extension;
-			std::cerr << " > looking for mipmap " << mipname << std::endl;
-
-			surf = stbi_load(mipname.c_str(), &width, &height, &channels, 0);
-			if (!surf) break;
-
-			// maybe this?
-			/*
-			if (!surf){
-				glTexParameteri(direction, GL_TEXTURE_BASE_LEVEL, 0);
-				glTexParameteri(direction, GL_TEXTURE_MAX_LEVEL, i - 1);
-				DO_ERROR_CHECK();
-				break;
-			}
-			*/
-
-			fprintf(stderr, " > loaded image: w = %u, h = %u, pitch = %u, bytesperpixel: %u\n",
-				width, height, 0, channels);
-
-
-			GLenum texformat = surfaceGlFormat(channels);
-#ifdef NO_FORMAT_CONVERSION
-			// again, SRGB fallback, also maybe have a function to init textures
-			glTexImage2D(direction, i, texformat, width, height, 0,
-				texformat, GL_UNSIGNED_BYTE, surf);
-#else
-			glTexImage2D(direction, i, GL_SRGB, width, height, 0,
-				texformat, GL_UNSIGNED_BYTE, surf);
-#endif
-
-			DO_ERROR_CHECK();
-
-			stbi_image_free(surf);
-		}
-#endif
 	}
 
 #if 1

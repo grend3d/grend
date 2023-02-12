@@ -276,6 +276,10 @@ void gltf_load_external(gltfModel& gltf, textureData::ptr tex, std::string uri)
 	// TODO: pkm, ktx, uuuuuuhhhhh.....
 	std::string pkmname = texname + ".pkm";
 
+	// TODO: remove this function
+	tex->load_texture(texname);
+
+	/*
 	uint8_t *px = nullptr;
 
 	// try vector texture first
@@ -304,6 +308,7 @@ void gltf_load_external(gltfModel& gltf, textureData::ptr tex, std::string uri)
 	        uri, size, texname);
 
 	stbi_image_free(px);
+	*/
 }
 
 static textureData::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
@@ -328,9 +333,12 @@ static textureData::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 			gltf_load_external(gltf, ret, img.uri);
 
 		} else {
-			ret->pixels.insert(ret->pixels.end(),
-			                   img.image.begin(), img.image.end());
+			// TODO: does tinygltf handle component sizes other than 8 bit uints?
+			std::vector<uint8_t> px;
 
+			px.insert(px.end(), img.image.begin(), img.image.end());
+
+			ret->pixels   = std::move(px);
 			ret->width    = img.width;
 			ret->height   = img.height;
 			ret->channels = img.component;
@@ -450,11 +458,15 @@ textureData::ptr load_gltf_lightmap(gltfModel& gltf) {
 					img.name, img.uri, img.mimeType);
 
 			textureData::ptr ret = std::make_shared<textureData>();
-			ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
-			ret->width = img.width;
-			ret->height = img.height;
+
+			std::vector<uint8_t> px;
+			px.insert(px.end(), img.image.begin(), img.image.end());
+
+			ret->pixels   = std::move(px);
+			ret->width    = img.width;
+			ret->height   = img.height;
 			ret->channels = img.component;
-			ret->size = ret->width * ret->height * ret->channels;
+			ret->size     = ret->width * ret->height * ret->channels;
 			
 			return ret;
 		}
