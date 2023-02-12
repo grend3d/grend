@@ -111,21 +111,21 @@ renderContext::renderContext(SDLContext& ctx, const renderSettings& _settings) {
 	default_material->factors.refract_idx = 1.5,
 
 	default_material->maps.diffuse
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
 	default_material->maps.metalRoughness
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
 	default_material->maps.normal
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/lightblue-normal.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/lightblue-normal.png"),
 	default_material->maps.ambientOcclusion
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
 	/*
 	default_material->maps.emissive
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/black.png"),
 		*/
 	default_material->maps.emissive
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/white.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
 	default_material->maps.lightmap
-		= std::make_shared<materialTexture>(GR_PREFIX "assets/tex/black.png"),
+		= std::make_shared<textureData>(GR_PREFIX "assets/tex/black.png"),
 
 	default_compiledMat = matcache(default_material);
 
@@ -469,7 +469,7 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 		if (program->cacheObject("material_diffuse", diffuse.get())) {
 			// TODO: could have setter functions for simple types
 			//       (or just do value caching in set())
-			bool is_vec = diffuse->type == materialTexture::imageType::VecTex;
+			bool is_vec = diffuse->type == textureData::imageType::VecTex;
 			if (program->cacheObject("diffuse-is-vec", is_vec)) {
 				program->set("diffuse_vec", is_vec);
 			}
@@ -494,7 +494,7 @@ void grendx::set_material(Program::ptr program, compiledMaterial::ptr mat) {
 		}
 
 		if (program->cacheObject("material_emissive", emissive.get())) {
-			bool is_vec = emissive->type == materialTexture::imageType::VecTex;
+			bool is_vec = emissive->type == textureData::imageType::VecTex;
 			if (program->cacheObject("emissive-is-vec", is_vec)) {
 				program->set("emissive_vec", is_vec);
 			}

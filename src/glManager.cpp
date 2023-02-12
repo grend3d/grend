@@ -169,7 +169,7 @@ static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	return (tag << 30) | (ret & ((1 << 30) - 1));
 }
 
-Texture::ptr texcache(materialTexture::ptr tex, bool srgb) {
+Texture::ptr texcache(textureData::ptr tex, bool srgb) {
 	if (!tex || !tex->loaded()) {
 		return nullptr;
 	}
@@ -375,7 +375,7 @@ GLenum surfaceGlFormat(SDL_Surface *surf) {
 	return surfaceGlFormat(surf->format->BytesPerPixel);
 }
 
-GLenum surfaceGlFormat(const materialTexture& tex) {
+GLenum surfaceGlFormat(const textureData& tex) {
 	return surfaceGlFormat(tex.channels);
 }
 

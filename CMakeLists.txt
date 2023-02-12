@@ -148,6 +148,7 @@ add_library(Grend
 	src/scancodes.cpp
 	src/glslParser.cpp
 	src/glslObject.cpp
+	src/textureData.cpp
 
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp

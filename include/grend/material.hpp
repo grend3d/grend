@@ -2,7 +2,7 @@
 
 #include <grend/glmIncludes.hpp>
 #include <grend/openglIncludes.hpp>
-#include <grend/materialTexture.hpp>
+#include <grend/textureData.hpp>
 #include <string>
 #include <vector>
 #include <map>
@@ -40,12 +40,12 @@ struct material {
 	} factors;
 
 	struct materialMaps {
-		materialTexture::ptr diffuse;
-		materialTexture::ptr metalRoughness;
-		materialTexture::ptr normal;
-		materialTexture::ptr ambientOcclusion;
-		materialTexture::ptr emissive;
-		materialTexture::ptr lightmap;
+		textureData::ptr diffuse;
+		textureData::ptr metalRoughness;
+		textureData::ptr normal;
+		textureData::ptr ambientOcclusion;
+		textureData::ptr emissive;
+		textureData::ptr lightmap;
 	} maps;
 };
 

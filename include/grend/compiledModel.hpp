@@ -2,7 +2,7 @@
 
 #include <grend/ecs/ref.hpp>
 #include <grend/glManager.hpp>
-#include <grend/materialTexture.hpp>
+#include <grend/textureData.hpp>
 #include <grend/material.hpp>
 
 namespace grendx {

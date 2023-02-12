@@ -32,7 +32,7 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 	}
 }
 
-void Texture::buffer(materialTexture::ptr tex, bool srgb) {
+void Texture::buffer(textureData::ptr tex, bool srgb) {
 	LogFmt(" > buffering image: w = {}, h = {}, bytesperpixel: {}\n",
 	       tex->width, tex->height, tex->channels);
 
@@ -40,7 +40,7 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	bind();
 
 	type = tex->type;
-	if (type == materialTexture::imageType::VecTex) {
+	if (type == textureData::imageType::VecTex) {
 		// vectex relies on exact pixel colors, avoid srgb conversion
 		srgb = false;
 	}
@@ -81,10 +81,10 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 
 	// TODO: tweakable max settings
 	switch (tex->minFilter) {
-		case materialTexture::filter::Nearest:
+		case textureData::filter::Nearest:
 			min = GL_NEAREST;
 			break;
-		case materialTexture::filter::Linear:
+		case textureData::filter::Linear:
 			min = GL_LINEAR;
 			break;
 
@@ -92,16 +92,16 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 		//       of what the format specifies, needs to be tweakable
 		//       for performance/visuals, blender seems to export with
 		//       "nearest_mipmap_linear" which looks terrible
-		case materialTexture::filter::NearestMipmapNearest:
+		case textureData::filter::NearestMipmapNearest:
 			min = GL_NEAREST_MIPMAP_NEAREST;
 			break;
-		case materialTexture::filter::NearestMipmapLinear:
+		case textureData::filter::NearestMipmapLinear:
 			min = GL_NEAREST_MIPMAP_LINEAR;
 			break;
-		case materialTexture::filter::LinearMipmapNearest:
+		case textureData::filter::LinearMipmapNearest:
 			min = GL_LINEAR_MIPMAP_NEAREST;
 			break;
-		case materialTexture::filter::LinearMipmapLinear:
+		case textureData::filter::LinearMipmapLinear:
 			min = GL_LINEAR_MIPMAP_LINEAR;
 			break;
 
@@ -109,22 +109,22 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 	}
 
 	switch (tex->magFilter) {
-		case materialTexture::filter::Nearest:
+		case textureData::filter::Nearest:
 			mag = GL_NEAREST;
 			break;
-		case materialTexture::filter::Linear:
+		case textureData::filter::Linear:
 			mag = GL_LINEAR;
 			break;
 		default:
 			break;
 	}
 
-	auto wrapGLFlags = [](materialTexture::wrap flag) {
+	auto wrapGLFlags = [](textureData::wrap flag) {
 		switch (flag) {
-			case materialTexture::wrap::ClampToEdge:    return GL_CLAMP_TO_EDGE;
-			case materialTexture::wrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
-			case materialTexture::wrap::Repeat:         return GL_REPEAT;
-			default:                                    return GL_REPEAT;
+			case textureData::wrap::ClampToEdge:    return GL_CLAMP_TO_EDGE;
+			case textureData::wrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
+			case textureData::wrap::Repeat:         return GL_REPEAT;
+			default:                                return GL_REPEAT;
 		}
 	};
 
@@ -151,7 +151,7 @@ void Texture::buffer(materialTexture::ptr tex, bool srgb) {
 #endif
 
 	// if format uses mipmap filtering, generate mipmaps
-	if (tex->minFilter >= materialTexture::filter::NearestMipmaps) {
+	if (tex->minFilter >= textureData::filter::NearestMipmaps) {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 

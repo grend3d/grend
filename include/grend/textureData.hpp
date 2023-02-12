@@ -11,13 +11,13 @@ namespace grendx {
 
 // TODO: need a material cache, having a way to lazily load/unload texture
 //       would be a very good thing
-class materialTexture {
+class textureData {
 	public:
-		typedef std::shared_ptr<materialTexture> ptr;
-		typedef std::weak_ptr<materialTexture> weakptr;
+		typedef std::shared_ptr<textureData> ptr;
+		typedef std::weak_ptr<textureData> weakptr;
 
-		materialTexture() { };
-		materialTexture(std::string filename);
+		textureData() { };
+		textureData(std::string filename);
 		void load_texture(std::string filename);
 		bool loaded(void) const { return channels != 0; };
 

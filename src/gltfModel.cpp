@@ -29,8 +29,8 @@ class gltfModel {
 		tinygltf::Model data;
 		std::string filename;
 
-		std::map<int, materialTexture::weakptr> texcache;
-		std::map<int, material::weakptr>        matcache;
+		std::map<int, textureData::weakptr> texcache;
+		std::map<int, material::weakptr>    matcache;
 };
 
 namespace grendx {
@@ -268,7 +268,7 @@ gltf_accessor_aabb(tinygltf::Accessor& acc) {
 }
 
 // TODO: make this a generic function, .obj loader needs this too
-void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string uri)
+void gltf_load_external(gltfModel& gltf, textureData::ptr tex, std::string uri)
 {
 	std::string dir  = dirnameStr(gltf.filename);
 	std::string texname = dir + "/" + uri;
@@ -282,13 +282,13 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 	// TODO: might want to split these into multiple functions
 	px = stbi_load(vecname.c_str(), &tex->width, &tex->height,
 	               &tex->channels, 0);
-	tex->type = materialTexture::imageType::VecTex;
+	tex->type = textureData::imageType::VecTex;
 
 	if (!px) {
 		// otherwise try plain image
 		px = stbi_load(texname.c_str(), &tex->width, &tex->height,
 		               &tex->channels, 0);
-		tex->type = materialTexture::imageType::Plain;
+		tex->type = textureData::imageType::Plain;
 	}
 
 	if (!px) {
@@ -306,14 +306,14 @@ void gltf_load_external(gltfModel& gltf, materialTexture::ptr tex, std::string u
 	stbi_image_free(px);
 }
 
-static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
-	materialTexture::ptr ret;
+static textureData::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
+	textureData::ptr ret;
 
 	if (gltf.texcache.count(tex_idx) && (ret = gltf.texcache[tex_idx].lock())) {
 		return ret;
 	}
 
-	gltf.texcache[tex_idx] = ret = std::make_shared<materialTexture>();
+	gltf.texcache[tex_idx] = ret = std::make_shared<textureData>();
 
 	auto& tex = gltf_texture(gltf, tex_idx);
 
@@ -343,32 +343,32 @@ static materialTexture::ptr gltf_load_texture(gltfModel& gltf, int tex_idx) {
 
 		switch (sampler.minFilter) {
 			case TINYGLTF_TEXTURE_FILTER_NEAREST:
-				ret->minFilter = materialTexture::filter::Nearest;
+				ret->minFilter = textureData::filter::Nearest;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_LINEAR:
-				ret->minFilter = materialTexture::filter::Linear;
+				ret->minFilter = textureData::filter::Linear;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
-				ret->minFilter = materialTexture::filter::NearestMipmapNearest;
+				ret->minFilter = textureData::filter::NearestMipmapNearest;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
-				ret->minFilter = materialTexture::filter::NearestMipmapLinear;
+				ret->minFilter = textureData::filter::NearestMipmapLinear;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
-				ret->minFilter = materialTexture::filter::LinearMipmapNearest;
+				ret->minFilter = textureData::filter::LinearMipmapNearest;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-				ret->minFilter = materialTexture::filter::LinearMipmapLinear;
+				ret->minFilter = textureData::filter::LinearMipmapLinear;
 				break;
 			default: break;
 		}
 
 		switch (sampler.magFilter) {
 			case TINYGLTF_TEXTURE_FILTER_NEAREST:
-				ret->magFilter = materialTexture::filter::Nearest;
+				ret->magFilter = textureData::filter::Nearest;
 				break;
 			case TINYGLTF_TEXTURE_FILTER_LINEAR:
-				ret->magFilter = materialTexture::filter::Linear;
+				ret->magFilter = textureData::filter::Linear;
 				break;
 			default: break;
 		}
@@ -443,13 +443,13 @@ static material::ptr gltf_load_material(gltfModel& gltf, int material_idx) {
 	}
 }
 
-materialTexture::ptr load_gltf_lightmap(gltfModel& gltf) {
+textureData::ptr load_gltf_lightmap(gltfModel& gltf) {
 	for (auto& img : gltf.data.images) {
 		if (img.name.find("grendLightmap") != std::string::npos) {
 			LogFmt("have lightmap: name: {}, uri: {} ({})",
 					img.name, img.uri, img.mimeType);
 
-			materialTexture::ptr ret = std::make_shared<materialTexture>();
+			textureData::ptr ret = std::make_shared<textureData>();
 			ret->pixels.insert(ret->pixels.end(), img.image.begin(), img.image.end());
 			ret->width = img.width;
 			ret->height = img.height;
@@ -467,7 +467,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 	auto ecs = engine::Resolve<ecs::entityManager>();
 
 	modelMap ret;
-	materialTexture::ptr lightmap = load_gltf_lightmap(gltf);
+	textureData::ptr lightmap = load_gltf_lightmap(gltf);
 
 	for (auto& mesh : gltf.data.meshes) {
 		sceneModel::ptr curModel = ecs->construct<sceneModel>();

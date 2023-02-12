@@ -1,9 +1,7 @@
 #include <grend/sceneModel.hpp>
 #include <grend/utility.hpp>
 #include <grend/logger.hpp>
-
-#include <stb/stb_image.h>
-#include <stb/stb_image_write.h>
+#include <grend/textureData.hpp>
 
 #include <vector>
 #include <map>
@@ -178,28 +176,6 @@ sceneModel::ptr load_object(std::string filename) {
 	return ret;
 }
 
-materialTexture::materialTexture(std::string filename) {
-	load_texture(filename);
-}
-
-void materialTexture::load_texture(std::string filename) {
-	LogFmt("loading {}", filename);
-	uint8_t *datas = stbi_load(filename.c_str(), &width,
-	                           &height, &channels, 0);
-
-	if (!datas) {
-		throw std::logic_error("Couldn't load material texture " + filename);
-	}
-
-	size_t imgsize = width * height * channels;
-	//pixels.insert(pixels.end(), datas, datas + imgsize);
-	for (unsigned i = 0; i < imgsize; i++) {
-		pixels.push_back(datas[i]);
-	}
-
-	stbi_image_free(datas);
-}
-
 std::map<std::string, material::ptr>
 load_materials(sceneModel::ptr model, std::string filename) {
 	std::map<std::string, material::ptr> ret;
@@ -213,7 +189,8 @@ load_materials(sceneModel::ptr model, std::string filename) {
 		return ret;
 	}
 
-	stbi_set_flip_vertically_on_load(true);
+	// TODO: add flag to textureData to flip images
+	//stbi_set_flip_vertically_on_load(true);
 
 	while (std::getline(input, line)) {
 		auto statement = split_string(line);
@@ -282,25 +259,25 @@ load_materials(sceneModel::ptr model, std::string filename) {
 
 		else if (statement[0] == "map_Kd") {
 			ret[current_material]->maps.diffuse =
-				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
 			ret[current_material]->maps.metalRoughness =
-				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
 			ret[current_material]->maps.ambientOcclusion =
-				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
 			ret[current_material]->maps.normal =
-				std::make_shared<materialTexture>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1]);
 		}
 
 		else if (statement[0] == "map_bump") {
@@ -317,7 +294,8 @@ load_materials(sceneModel::ptr model, std::string filename) {
 		// TODO: other light maps, attributes
 	}
 
-	stbi_set_flip_vertically_on_load(false);
+	// TODO: remove
+	// stbi_set_flip_vertically_on_load(false);
 	return ret;
 }
 

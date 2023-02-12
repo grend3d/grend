@@ -6,7 +6,7 @@
 #include <grend/openglIncludes.hpp>
 #include <grend/glmIncludes.hpp>
 #include <grend/bufferAllocator.hpp>
-#include <grend/materialTexture.hpp>
+#include <grend/textureData.hpp>
 
 #include <vector>
 #include <map>
@@ -260,13 +260,13 @@ class Texture : public Obj {
 		typedef std::weak_ptr<Texture> weakptr;
 
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
-		void buffer(materialTexture::ptr tex, bool srgb=false);
+		void buffer(textureData::ptr tex, bool srgb=false);
 		void cubemap(std::string directory, std::string extension=".jpg");
 		void bind(GLenum target = GL_TEXTURE_2D) {
 			glBindTexture(target, obj);
 		}
 
-		materialTexture::imageType type;
+		textureData::imageType type;
 };
 
 class Shader : public Obj {
@@ -362,7 +362,7 @@ class Framebuffer : public Obj {
 		std::map<GLenum, Texture::ptr> attachments;
 };
 
-Texture::ptr texcache(materialTexture::ptr tex, bool srgb = false);
+Texture::ptr texcache(textureData::ptr tex, bool srgb = false);
 
 void initializeOpengl(void);
 
@@ -479,7 +479,7 @@ Program::ptr loadProgram(std::string vert,
 
 GLenum surfaceGlFormat(SDL_Surface *surf);
 GLenum surfaceGlFormat(int channels);
-GLenum surfaceGlFormat(const materialTexture& tex);
+GLenum surfaceGlFormat(const textureData& tex);
 
 // namespace grendx
 }
