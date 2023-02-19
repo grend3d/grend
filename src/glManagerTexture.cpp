@@ -33,13 +33,17 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 }
 
 void Texture::buffer(textureData::ptr tex, bool srgb) {
-	LogFmt(" > buffering image: w = {}, h = {}, channels: {}\n",
-	       tex->width, tex->height, tex->channels);
+	return buffer(*tex.get(), srgb);
+}
 
-	GLenum texformat = surfaceGlFormat(tex->channels);
+void Texture::buffer(const textureData& tex, bool srgb) {
+	LogFmt(" > buffering image: w = {}, h = {}, channels: {}\n",
+	       tex.width, tex.height, tex.channels);
+
+	GLenum texformat = surfaceGlFormat(tex.channels);
 	bind();
 
-	type = tex->type;
+	type = tex.type;
 	if (type == textureData::imageType::VecTex) {
 		// vectex relies on exact pixel colors, avoid srgb conversion
 		srgb = false;
@@ -48,7 +52,7 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 #ifdef NO_FORMAT_CONVERSION
 	// TODO: format conversion utilities, need to be able to convert any data type
 	//       to a minimal internal format
-	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex->pixels)) {
+	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
 		// XXX: need something more efficient
 		std::vector<uint8_t> temp = *pixels;
 
@@ -59,35 +63,29 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 		// TODO: fallback SRBG conversion
 		glTexImage2D(GL_TEXTURE_2D,
 		             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
-		             0, texformat, tex->width, tex->height,
+		             0, texformat, tex.width, tex.height,
 		             0, texformat, GL_UNSIGNED_BYTE, temp.data());
 	}
 
-	/*
-	glTexImage2D(GL_TEXTURE_2D,
-	             0, texformat, tex->width, tex->height,
-	             0, texformat, GL_UNSIGNED_BYTE, tex->pixels.data());
-				 */
-
 #else
-	if (auto *pixels = std::get_if<std::vector<float>>(&tex->pixels)) {
+	if (auto *pixels = std::get_if<std::vector<float>>(&tex.pixels)) {
 		LogInfo(" > type: float");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, GL_RGBA, tex->width, tex->height,
+		             0, GL_RGBA, tex.width, tex.height,
 		             0, texformat, GL_FLOAT, pixels->data());
 	}
 
-	else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex->pixels)) {
+	else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex.pixels)) {
 		LogInfo(" > type: unsigned short");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
+		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 		             0, texformat, GL_UNSIGNED_SHORT, pixels->data());
 	}
 
-	else if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex->pixels)) {
+	else if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
 		LogInfo(" > type: unsigned byte");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex->width, tex->height,
+		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
 		             0, texformat, GL_UNSIGNED_BYTE, pixels->data());
 
 	} else {
@@ -104,7 +102,7 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 	GLenum wrapT = GL_REPEAT;
 
 	// TODO: tweakable max settings
-	switch (tex->minFilter) {
+	switch (tex.minFilter) {
 		case textureData::filter::Nearest:
 			min = GL_NEAREST;
 			break;
@@ -132,7 +130,7 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 		default: break;
 	}
 
-	switch (tex->magFilter) {
+	switch (tex.magFilter) {
 		case textureData::filter::Nearest:
 			mag = GL_NEAREST;
 			break;
@@ -152,8 +150,8 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 		}
 	};
 
-	wrapS = wrapGLFlags(tex->wrapS);
-	wrapT = wrapGLFlags(tex->wrapT);
+	wrapS = wrapGLFlags(tex.wrapS);
+	wrapT = wrapGLFlags(tex.wrapT);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag);
@@ -175,13 +173,13 @@ void Texture::buffer(textureData::ptr tex, bool srgb) {
 #endif
 
 	// if format uses mipmap filtering, generate mipmaps
-	if (tex->minFilter >= textureData::filter::NearestMipmaps) {
+	if (tex.minFilter >= textureData::filter::NearestMipmaps) {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
 	// debug info
 	// TODO: use type sizes
-	size_t roughsize = tex->width * tex->height * tex->channels * 1.33;
+	size_t roughsize = tex.width * tex.height * tex.channels * 1.33;
 	currentSize = glmanDbgUpdateTextures(currentSize, roughsize);
 }
 

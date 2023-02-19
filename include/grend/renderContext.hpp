@@ -5,29 +5,9 @@
 #include <grend/renderData.hpp>
 #include <grend/renderSettings.hpp>
 #include <grend/renderFramebuffer.hpp>
+#include <grend/skyRender.hpp>
 
 #include <grend/textureAtlas.hpp>
-
-// skybox
-#include <grend/camera.hpp>
-
-namespace grendx {
-// TODO: where should this be moved to?
-class skybox {
-	public:
-		skybox(const std::string& cubepath  = GR_PREFIX "assets/tex/cubes/default/",
-		       const std::string& extension = ".png");
-
-		void draw(camera::ptr cam, unsigned width, unsigned height);
-		void draw(camera::ptr cam, renderFramebuffer::ptr fb);
-
-		sceneModel::ptr model;
-		Program::ptr program;
-		Texture::ptr map;
-};
-
-// namespace grendx
-}
 
 namespace grendx {
 
@@ -121,7 +101,7 @@ class renderContext : public IoC::Service {
 		}
 
 		// sky box
-		skybox defaultSkybox;
+		std::unique_ptr<skyRender> defaultSkybox;
 
 		// global rendering state
 		renderAtlases atlases;

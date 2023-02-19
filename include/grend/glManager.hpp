@@ -260,8 +260,13 @@ class Texture : public Obj {
 		typedef std::weak_ptr<Texture> weakptr;
 
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
+
 		void buffer(textureData::ptr tex, bool srgb=false);
+		void buffer(const textureData& tex, bool srgb=false);
+
+		// TODO: don't like this class being responsible for loading data
 		void cubemap(std::string directory, std::string extension=".jpg");
+
 		void bind(GLenum target = GL_TEXTURE_2D) {
 			glBindTexture(target, obj);
 		}

@@ -6,11 +6,11 @@
 
 using namespace grendx;
 
-textureData::textureData(std::string filename) {
+textureData::textureData(const std::string& filename) {
 	load_texture(filename);
 }
 
-bool textureData::load_texture(std::string filename) {
+bool textureData::load_texture(const std::string& filename) {
 	if (stbi_is_hdr(filename.c_str())) {
 		// load image components as floats
 		LogFmt("Loading {} (float)", filename);

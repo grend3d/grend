@@ -21,8 +21,8 @@ class textureData {
 		typedef std::weak_ptr<textureData> weakptr;
 
 		textureData() { };
-		textureData(std::string filename);
-		bool load_texture(std::string filename);
+		textureData(const std::string& filename);
+		bool load_texture(const std::string& filename);
 		bool loaded(void) const { return channels != 0; };
 
 		int width = 0, height = 0;
