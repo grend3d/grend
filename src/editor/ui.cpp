@@ -141,9 +141,6 @@ static void initDocking() {
 
 			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 			ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-
-			ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
-
 		}
 
 		/*
@@ -162,7 +159,6 @@ static void initDocking() {
 		auto& pos  = dock_main->Pos;
 		auto& size = dock_main->Size;
 		ImVec2 end = {pos.x + size.x, pos.y + size.y};
-		ImGui::GetForegroundDrawList()->AddRect(pos, end, IM_COL32(255, 255, 0, 255));
 
 		rend->setViewport({pos.x, pos.y}, {size.x, size.y});
 
