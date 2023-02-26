@@ -175,7 +175,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	auto p = UIObjects->getNode("Orientation-Indicator");
 	auto m = p->getTransformMatrix();
 
-	if (getSelectedNode()) {
+	if (getSelectedEntity()) {
 		que.add(p->getNode("X-Axis"),     1, m);
 		que.add(p->getNode("Y-Axis"),     2, m);
 		que.add(p->getNode("Z-Axis"),     3, m);
@@ -540,10 +540,12 @@ void gameEditor::update(float delta) {
 	assert(orientation && cursor);
 
 	auto selectedNode = getSelectedNode();
+	auto selectedEnt  = getSelectedEntity();
+
 	orientation->visible =
-		   selectedNode
-		&& selectedNode->parent
-		&& selectedNode != state->rootnode;
+		selectedEnt || (selectedNode
+		                && selectedNode->parent
+		                && selectedNode != state->rootnode);
 
 	cursor->visible =
 		   mode == mode::AddObject
@@ -554,14 +556,17 @@ void gameEditor::update(float delta) {
 		|| mode == mode::AddIrradianceProbe
 		;
 
-	if (selectedNode) {
+	if (selectedEnt) {
 		for (auto& str : {"X-Axis", "Y-Axis", "Z-Axis",
 		                  "X-Rotation", "Y-Rotation", "Z-Rotation"})
 		{
 			auto ptr = orientation->getNode(str);
 
-			TRS newtrans = selectedNode->getTransformTRS();
-			glm::mat4 localToWorld = fullTranslation(selectedNode);
+			TRS newtrans = selectedEnt->transform;
+			glm::mat4 localToWorld = selectedNode
+				? fullTranslation(selectedNode)
+				: selectedEnt->transform.getTransform();
+
 			newtrans.position = applyTransform(localToWorld);
 
 			// project position relative to camera onto camera direction vector
@@ -574,9 +579,8 @@ void gameEditor::update(float delta) {
 			ptr->setTransform(newtrans);
 		}
 
-		if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
+		if (auto probe = dynamic_ref_cast<sceneReflectionProbe>(selectedEnt)) {
 			auto bbox = UIObjects->getNode("Bounding-Box");
-			auto probe = selectedNode->get<sceneReflectionProbe>();
 
 			TRS transform = probe->getTransformTRS();
 			glm::vec3 bmin = transform.position + probe->boundingBox.min;

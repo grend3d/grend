@@ -27,12 +27,14 @@ void gameEditor::handleSelectObject() {
 	float fx = x/(1.f*win_x);
 	float fy = y/(1.f*win_y);
 
-	uint32_t clickidx = rend->framebuffer->index(fx, fy);
-	LogErrorFmt("clicked object: ", clickidx);
-	LogErrorFmt("ent object: ", clickidx-10);
-	LogErrorFmt("clickables: ", clickState.size());
+	auto selectedEnt = getSelectedEntity();
 
-	auto selectedNode = getSelectedNode();
+	uint32_t clickidx = rend->framebuffer->index(fx, fy);
+
+	LogErrorFmt("clicked object: {}", clickidx);
+	LogErrorFmt("ent object: {}", clickidx-10);
+	LogErrorFmt("clickables: {}", clickState.size());
+	LogErrorFmt("Selected entity: {}", (void*)selectedEnt.getPtr());
 
 	if (clickidx - 10 < clickState.size()) {
 		auto& [_, ent] = clickState[clickidx - 10];
@@ -40,12 +42,12 @@ void gameEditor::handleSelectObject() {
 
 		LogErrorFmt("selected entity: {}@{}", clickidx-10, (void*)ent);
 
-	} else if (clickidx && selectedNode) {
+	} else if (clickidx && selectedEnt) {
 		clickedX = (x*1.f / win_x);
 		clickedY = ((win_y - y)*1.f / win_y);
 
 		if (clickidx > 0 && clickidx <= 6) {
-			transformBuf = selectedNode->getTransformTRS();
+			transformBuf = selectedEnt->transform;
 			LogInfo("It's a UI model");
 
 		} else {
@@ -63,9 +65,10 @@ void gameEditor::handleSelectObject() {
 			default: break;
 		}
 
-		if (selectedNode) {
-			clickDepth = glm::distance(selectedNode->getTransformTRS().position,
-					cam->position());
+		if (selectedEnt) {
+			// TODO: this isn't correct
+			clickDepth = glm::distance(selectedEnt->transform.position, cam->position());
+
 		} else {
 			clickDepth = 0.f;
 		}
@@ -485,8 +488,12 @@ void gameEditor::loadInputBindings() {
 		if (ev.type == SDL_MOUSEBUTTONUP
 		    && ev.button.button == SDL_BUTTON_LEFT)
 		{
-			invalidateLightMaps(getSelectedNode());
+			if (getSelectedNode()) {
+				invalidateLightMaps(getSelectedNode());
+			}
+
 			return (int)mode::View;
+
 		} else {
 			return MODAL_NO_CHANGE;
 		}
@@ -531,10 +538,14 @@ static T sign(T x) {
 void gameEditor::updateSelected(const TRS& updated) {
 	auto  selectedNode   = getSelectedNode();
 	auto* selectedEntity = getSelectedEntity().getPtr();
-	selectedNode->setTransform(updated);
 
-	if (selectedEntity) {
-		LogInfo("got here, updating entity");
+	if (selectedNode) {
+		// TODO: move setTransform to the base entity class
+		selectedNode->setTransform(updated);
+	}
+
+	else if (selectedEntity) {
+		selectedEntity->transform = updated;
 		updateEntityTransforms(selectedEntity->manager, selectedEntity, updated);
 	}
 
@@ -561,13 +572,13 @@ void gameEditor::handleMoveRotate() {
 	glm::vec3 dir;
 	float rad;
 
-	auto selectedNode = getSelectedNode();
+	auto selectedEnt = getSelectedEntity();
 
-	if (!selectedNode) {
+	if (!selectedEnt) {
 		return;
 	}
 
-	TRS selectedTransform = selectedNode->getTransformTRS();
+	TRS selectedTransform = selectedEnt->transform;
 	glm::vec4 screenuv = cam->worldToScreenPosition(transformBuf.position);
 	glm::vec2 screenpos = glm::vec2(screenuv.x*win_x, screenuv.y*win_y);
 	glm::vec2 normed, clicknorm;
@@ -591,8 +602,6 @@ void gameEditor::handleMoveRotate() {
 
 			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		case mode::MoveY:
@@ -609,8 +618,6 @@ void gameEditor::handleMoveRotate() {
 
 			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		case mode::MoveZ:
@@ -627,8 +634,6 @@ void gameEditor::handleMoveRotate() {
 
 			align(selectedTransform.position, snapAmount*snapEnabled);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Moved);
 			break;
 
 		// TODO: need to split rotation spinner in seperate quadrant meshes
@@ -645,8 +650,6 @@ void gameEditor::handleMoveRotate() {
 				                      reversed_x*rad,
 				                      glm::vec3(1, 0, 0)));
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		case mode::RotateY:
@@ -660,8 +663,6 @@ void gameEditor::handleMoveRotate() {
 				                      reversed_x*rad,
 				                      glm::vec3(0, 1, 0)));
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		case mode::RotateZ:
@@ -675,8 +676,6 @@ void gameEditor::handleMoveRotate() {
 				                      reversed_x*rad,
 				                      glm::vec3(0, 0, 1)));
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Rotated);
 			break;
 
 		// scale, unlike the others, has a mouse handler for the select mode,
@@ -685,41 +684,31 @@ void gameEditor::handleMoveRotate() {
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleX:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(TAUF*amount, 0, 0);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleY:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, TAUF*amount, 0);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		case mode::ScaleZ:
 			selectedTransform.scale =
 				transformBuf.scale + glm::vec3(0, 0, TAUF*amount);
 			updateSelected(selectedTransform);
-			//selectedNode->setTransform(selectedTransform);
-			//runCallbacks(selectedNode, editAction::Scaled);
 			break;
 
 		default:
 			break;
 	}
 
-	if (selectedNode->type == sceneNode::objType::ReflectionProbe) {
-		sceneReflectionProbe::ptr probe = selectedNode->get<sceneReflectionProbe>();
-
+	if (auto probe = dynamic_ref_cast<sceneReflectionProbe>(selectedEnt)) {
 		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
 		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));
 		float reversed_z = sign(glm::dot(glm::vec3(0, 0, 1), -cam->right()));
