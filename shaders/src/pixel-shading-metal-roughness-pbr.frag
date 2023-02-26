@@ -56,6 +56,11 @@ void main(void) {
 
 	float opacity = texcolor.a * anmaterial.opacity;
 
+	// convert from sRGB color space to linear color space
+	texcolor.rgb    = pow(texcolor.rgb,    vec3(2.2));
+	lightmapped.rgb = pow(lightmapped.rgb, vec3(2.2));
+	emissive.rgb    = pow(emissive.rgb,    vec3(2.2));
+
 	// XXX: assume that the glsl compiler will remove constantly false branches
 	//      easy optimization, so should be a safe bet...
 	// TODO: do own preprocessing that eliminates these, or better yet,

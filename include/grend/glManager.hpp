@@ -261,8 +261,8 @@ class Texture : public Obj {
 
 		Texture(GLuint o) : Obj(o, Obj::type::Texture) {}
 
-		void buffer(textureData::ptr tex, bool srgb=false);
-		void buffer(const textureData& tex, bool srgb=false);
+		void buffer(textureData::ptr tex);
+		void buffer(const textureData& tex);
 
 		// TODO: don't like this class being responsible for loading data
 		void cubemap(std::string directory, std::string extension=".jpg");
@@ -367,7 +367,7 @@ class Framebuffer : public Obj {
 		std::map<GLenum, Texture::ptr> attachments;
 };
 
-Texture::ptr texcache(textureData::ptr tex, bool srgb = false);
+Texture::ptr texcache(textureData::ptr tex);
 
 void initializeOpengl(void);
 

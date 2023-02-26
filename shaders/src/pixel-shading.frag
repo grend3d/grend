@@ -34,6 +34,8 @@ void main(void) {
 	vec3 normal_dir = normalize(TBN * normalize(normidx * 2.0 - 1.0));
 	vec4 radmap = textureCubeAtlas(irradiance_atlas, irradiance_probe, normal_dir);
 
+	texcolor.rgb = pow(texcolor.rgb, vec3(2.2));
+
 	vec3 albedo = f_color.rgb
 		* anmaterial.diffuse.rgb
 		* texcolor.rgb

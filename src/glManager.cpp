@@ -169,7 +169,7 @@ static inline uint32_t dumbhash(const std::vector<uint8_t>& pixels) {
 	return (tag << 30) | (ret & ((1 << 30) - 1));
 }
 
-Texture::ptr texcache(textureData::ptr tex, bool srgb) {
+Texture::ptr texcache(textureData::ptr tex) {
 	if (!tex || !tex->loaded()) {
 		return nullptr;
 	}
@@ -194,7 +194,7 @@ Texture::ptr texcache(textureData::ptr tex, bool srgb) {
 	}
 
 	Texture::ptr ret = genTexture();
-	ret->buffer(tex, srgb);
+	ret->buffer(tex);
 
 	if (hash) {
 		textureCache[hash] = ret;

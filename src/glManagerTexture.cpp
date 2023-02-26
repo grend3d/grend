@@ -32,66 +32,132 @@ static inline void srgb_to_linear(std::vector<uint8_t>& pixels) {
 	}
 }
 
-void Texture::buffer(textureData::ptr tex, bool srgb) {
-	return buffer(*tex.get(), srgb);
+void Texture::buffer(textureData::ptr tex) {
+	return buffer(*tex.get());
 }
 
-void Texture::buffer(const textureData& tex, bool srgb) {
+static GLenum getInternalTypeFloat(unsigned channels) {
+	return (channels == 1)? GL_R16F
+	     : (channels == 2)? GL_RG16F
+	     : (channels == 3)? GL_RGB16F
+	     : (channels == 4)? GL_RGBA16F
+	     : GL_RGBA16F;
+}
+
+#if GLSL_VERSION != 100 && GLSL_VERSION != 300
+static GLenum getInternalTypeUint16(unsigned channels) {
+	return (channels == 1)? GL_R16
+	     : (channels == 2)? GL_RG16
+	     : (channels == 3)? GL_RGB16
+	     : (channels == 4)? GL_RGBA16
+	     : GL_RGBA16;
+}
+#endif
+
+static GLenum getInternalTypeUint8(unsigned channels) {
+	return (channels == 1)? GL_R8
+	     : (channels == 2)? GL_RG8
+	     : (channels == 3)? GL_RGB8
+	     : (channels == 4)? GL_RGBA8
+	     : GL_RGBA8;
+}
+
+textureData resample8(const textureData& tex) {
+	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
+		return tex;
+	}
+
+	else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex.pixels)) {
+		std::vector<uint8_t> newPixels;
+		newPixels.reserve(pixels->size());
+
+		for (uint16_t comp : *pixels) {
+			newPixels.push_back(comp >> 8);
+		}
+
+		textureData ret;
+		ret.pixels = std::move(newPixels);
+		return ret;
+	}
+
+	else if (auto *pixels = std::get_if<std::vector<float>>(&tex.pixels)) {
+		std::vector<uint8_t> newPixels;
+		newPixels.reserve(pixels->size());
+
+		for (float comp : *pixels) {
+			newPixels.push_back(255 * comp);
+		}
+
+		textureData ret;
+		ret.pixels = std::move(newPixels);
+		return ret;
+	}
+
+	return textureData();
+}
+
+void Texture::buffer(const textureData& tex) {
 	LogFmt(" > buffering image: w = {}, h = {}, channels: {}\n",
 	       tex.width, tex.height, tex.channels);
 
 	GLenum texformat = surfaceGlFormat(tex.channels);
 	bind();
 
-	type = tex.type;
-	if (type == textureData::imageType::VecTex) {
-		// vectex relies on exact pixel colors, avoid srgb conversion
-		srgb = false;
-	}
-
-#ifdef NO_FORMAT_CONVERSION
-	// TODO: format conversion utilities, need to be able to convert any data type
-	//       to a minimal internal format
-	if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
-		// XXX: need something more efficient
-		std::vector<uint8_t> temp = *pixels;
-
-		if (srgb) {
-			srgb_to_linear(temp);
-		}
-
-		// TODO: fallback SRBG conversion
-		glTexImage2D(GL_TEXTURE_2D,
-		             //0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
-		             0, texformat, tex.width, tex.height,
-		             0, texformat, GL_UNSIGNED_BYTE, temp.data());
-	}
-
-#else
 	if (auto *pixels = std::get_if<std::vector<float>>(&tex.pixels)) {
+		// TODO: float isn't valid on gles2 (if I ever get to fixing that)
+		GLenum internalType = getInternalTypeFloat(tex.channels);
+
 		LogInfo(" > type: float");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, GL_RGBA, tex.width, tex.height,
+		             0, internalType, tex.width, tex.height,
 		             0, texformat, GL_FLOAT, pixels->data());
+		DO_ERROR_CHECK();
 	}
 
+	#if GLSL_VERSION == 100 || GLSL_VERSION == 300
+	// gles profiles don't support unsigned short textures, need to resample as unsigned bytes
+	else if (std::get_if<std::vector<uint16_t>>(&tex.pixels)) {
+		#if GREND_BUILD_DEBUG
+			LogWarn(" > WARNING: resampling uint16 texture as uint8, you should avoid "
+			        "using 16 bit component textures on OpenGL ES profiles");
+		#endif
+
+		textureData newtex = resample8(tex);
+
+		auto *pixels = std::get_if<std::vector<uint8_t>>(&newtex.pixels);
+		GLenum internalType = getInternalTypeUint8(tex.channels);
+
+		LogInfo(" > type: unsigned byte (resampled)");
+		glTexImage2D(GL_TEXTURE_2D,
+		             0, internalType, tex.width, tex.height,
+		             0, texformat, GL_UNSIGNED_BYTE, pixels->data());
+		DO_ERROR_CHECK();
+	}
+
+	#else
 	else if (auto *pixels = std::get_if<std::vector<uint16_t>>(&tex.pixels)) {
+		GLenum internalType = getInternalTypeUint16(tex.channels);
+
 		LogInfo(" > type: unsigned short");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
+		             0, internalType, tex.width, tex.height,
 		             0, texformat, GL_UNSIGNED_SHORT, pixels->data());
+		DO_ERROR_CHECK();
 	}
+	#endif
 
 	else if (auto *pixels = std::get_if<std::vector<uint8_t>>(&tex.pixels)) {
+		GLenum internalType = getInternalTypeUint8(tex.channels);
+
 		LogInfo(" > type: unsigned byte");
 		glTexImage2D(GL_TEXTURE_2D,
-		             0, srgb? GL_SRGB_ALPHA : GL_RGBA, tex.width, tex.height,
+		             0, internalType, tex.width, tex.height,
 		             0, texformat, GL_UNSIGNED_BYTE, pixels->data());
+		DO_ERROR_CHECK();
 
 	} else {
 		LogError("Texture::buffer: Somehow have a pixel format that isn't valid?");
 	}
-#endif
 
 	DO_ERROR_CHECK();
 
@@ -215,11 +281,6 @@ void Texture::cubemap(std::string directory, std::string extension) {
 
 		GLenum texformat = surfaceGlFormat(tex.channels);
 
-#ifdef NO_FORMAT_CONVERSION
-		srgb_to_linear(surf, width*height*channels);
-		glTexImage2D(direction, 0, texformat, width, height, 0,
-		             texformat, GL_UNSIGNED_BYTE, surf);
-#else
 		if (auto *pixels = std::get_if<std::vector<float>>(&tex.pixels)) {
 			glTexImage2D(direction, 0, GL_RGBA, tex.width, tex.height, 0,
 			             texformat, GL_FLOAT, pixels->data());
@@ -238,7 +299,6 @@ void Texture::cubemap(std::string directory, std::string extension) {
 			LogErrorFmt("{}: Somehow have a pixel format that isn't valid?", __func__);
 		}
 
-#endif
 		DO_ERROR_CHECK();
 		LogFmt("Loaded {} to cubemap", fname);
 	}

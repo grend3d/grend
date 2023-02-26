@@ -38,7 +38,7 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 	auto& maps = mat->maps;
 
 	if (maps.diffuse && maps.diffuse->loaded()) {
-		ret->textures.diffuse = texcache(maps.diffuse, true);
+		ret->textures.diffuse = texcache(maps.diffuse);
 	}
 
 	if (maps.metalRoughness && maps.metalRoughness->loaded()) {
@@ -54,11 +54,11 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 	}
 
 	if (maps.emissive && maps.emissive->loaded()) {
-		ret->textures.emissive = texcache(maps.emissive, true);
+		ret->textures.emissive = texcache(maps.emissive);
 	}
 
 	if (maps.lightmap && maps.lightmap->loaded()) {
-		ret->textures.lightmap = texcache(maps.lightmap, true);
+		ret->textures.lightmap = texcache(maps.lightmap);
 	}
 
 	materialCache[mat.get()] = ret;
