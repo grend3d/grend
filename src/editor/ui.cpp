@@ -174,7 +174,9 @@ void gameEditorUI::renderEditor() {
 	ImGui_ImplSDL2_NewFrame(ctx->window);
 	ImGui::NewFrame();
 
+
 	initDocking();
+
 	menubar();
 
 	// TODO: this could probably be reduced to like a map of
@@ -196,6 +198,14 @@ void gameEditorUI::renderEditor() {
 	if (showFilePane)           filepane.render();
 
 	if (showObjectEditorWindow) objectEditorWindow();
+
+	// avoid having imgui take focus when starting
+	static bool initialized = false;
+	if (!initialized) {
+		ImGui::SetWindowFocus(nullptr);
+		initialized = true;
+	}
+
 
 	/* TODO:
 	if (showEntityEditorWindow) {

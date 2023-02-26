@@ -382,6 +382,7 @@ void gameEditorUI::menubar() {
 		// XXX: ideally would like this to be in the game view window
 		if (ImGui::Button("Run")) {
 			currentView = player;
+			ImGui::SetWindowFocus(nullptr);
 		}
 
 		if (ImGui::Button("Pause")) {
@@ -390,6 +391,7 @@ void gameEditorUI::menubar() {
 
 		if (ImGui::Button("Stop")) {
 			currentView = editor;
+			ImGui::SetWindowFocus(nullptr);
 		}
 
 		ImGui::EndMainMenuBar();
