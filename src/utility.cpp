@@ -66,5 +66,16 @@ const char *remangle(const std::string& demang) {
 	return NULL;
 }
 
+void eraseChars(std::string& str, std::string_view chars) {
+	for (char c : chars) {
+		for (auto pos = str.find(c);
+		     pos != std::string::npos;
+		     pos = str.find(c))
+		{
+			str.erase(pos);
+		}
+	}
+}
+
 // namespace grendx
 }

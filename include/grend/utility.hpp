@@ -18,6 +18,7 @@ std::vector<std::string> split_string(std::string s, char delim=' ');
 std::string load_file(const std::string filename);
 const std::string& demangle(const char *type);
 const char *remangle(const std::string& demang);
+void eraseChars(std::string& str, std::string_view chars);
 
 // TODO: maybe move these to cpp, not used frequently enough
 //       and not performanceto justify being in the header

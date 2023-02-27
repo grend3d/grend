@@ -54,6 +54,7 @@ sceneModel::ptr load_object(std::string filename) {
 
 	// TODO: split this into a seperate parse function
 	while (std::getline(input, line)) {
+		eraseChars(line, "\r");
 		auto statement = split_string(line);
 
 		if (statement.size() < 2)
@@ -193,6 +194,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 	//stbi_set_flip_vertically_on_load(true);
 
 	while (std::getline(input, line)) {
+		eraseChars(line, "\r");
 		auto statement = split_string(line);
 
 		if (statement.size() < 2) {
