@@ -98,6 +98,8 @@ add_library(Grend
 	src/editor/entitySelectWindow.cpp
 	src/editor/logWindow.cpp
 	src/editor/filePane.cpp
+	src/editor/fileDialog.cpp
+	src/editor/fileBookmarks.cpp
 	src/editor/ui.cpp
 	src/editor/ecsTypes.cpp
 	src/editor/nodeTypes.cpp
@@ -106,7 +108,6 @@ add_library(Grend
 	src/gridDraw.cpp
 
 	src/logger.cpp
-	src/fileDialog.cpp
 	src/geometryGeneration.cpp
 	src/glManager.cpp
 	src/glManagerBuffer.cpp

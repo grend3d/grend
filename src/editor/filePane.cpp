@@ -1,4 +1,5 @@
 #include <grend/filePane.hpp>
+#include <grend/fileBookmarks.hpp>
 #include <grend/logger.hpp>
 
 #include <imgui/imgui.h>
@@ -10,6 +11,20 @@
 using namespace grendx;
 namespace img = ImGui;
 namespace fs = std::filesystem;
+
+// XXX: TODO: move
+#include <grend/gameMain.hpp>
+using namespace grendx::engine;
+template <typename T>
+T* ResolveOrBind(void) {
+	if (T* lookup = Services().tryResolve<T>()) {
+		return lookup;
+
+	} else {
+		Services().bind<T, T>();
+		return Resolve<T>();
+	}
+}
 
 static const ImGuiTreeNodeFlags base_flags
 	= ImGuiTreeNodeFlags_OpenOnArrow
@@ -43,10 +58,43 @@ void paneNode::expand(void) {
 void filePane::renderNodes(paneNode& node) {
 	ImGuiTreeNodeFlags flags
 		= base_flags
-		| ((&node == selected)?                  ImGuiTreeNodeFlags_Selected : 0)
-		| (((node.type != paneTypes::Directory)? ImGuiTreeNodeFlags_Leaf     : 0));
+		| ((&node == selected)?                  ImGuiTreeNodeFlags_Selected    : 0)
+		| ((&node == &root)?                     ImGuiTreeNodeFlags_DefaultOpen : 0)
+		| (((node.type != paneTypes::Directory)? ImGuiTreeNodeFlags_Leaf        : 0))
+		;
 
-	if (img::TreeNodeEx(node.name.c_str(), flags)) {
+	// XXX: need to pass a non-empty string to TreeNodeEx
+	std::string displayName = " " + node.name;
+	bool opened = img::TreeNodeEx(displayName.c_str(), flags);
+
+	std::string popupContext = node.name + ":context";
+	if (ImGui::BeginPopupContextItem(popupContext.c_str())) {
+		ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Action");
+		ImGui::Separator();
+
+		if (node.type == paneTypes::Directory) {
+			if (ImGui::Selectable("Add bookmark")) {
+				auto bookmarks = ResolveOrBind<fileBookmarksState>();
+				bookmarks->addBookmark(std::string(node.fullpath));
+			}
+
+			if (ImGui::Selectable("Change Directory")) {
+				std::string path = std::string(node.fullpath);
+				chdir(path);
+			}
+		}
+
+		else if (node.type == paneTypes::File) {
+			if (ImGui::Selectable("Import")) {
+				// TODO:
+			}
+		}
+
+		if (ImGui::Selectable("Other stuff maybe")) { /* TODO */ }
+		ImGui::EndPopup();
+	}
+
+	if (opened) {
 		node.expand();
 
 		if (img::IsItemClicked()) {
@@ -73,8 +121,67 @@ void filePane::renderNodes(paneNode& node) {
 	}
 }
 
+void filePane::updatePathBuf(void) {
+	std::string pathStr = root.fullpath;
+	strncpy(pathBuf, pathStr.c_str(), sizeof(pathBuf));
+	pathBuf[sizeof(pathBuf) - 1] = 0;
+}
+
+void filePane::chdir(std::string_view newroot) {
+	if (newroot == "..") {
+		if (root.fullpath.has_parent_path()) {
+			std::string pathStr = root.fullpath.parent_path();
+			root = paneNode(pathStr, paneTypes::Directory);
+		}
+
+	} else {
+		root = paneNode(newroot, paneTypes::Directory);
+	}
+
+	updatePathBuf();
+}
+
 void filePane::render() {
 	img::Begin("Files");
+
+	if (editPath == false) {
+		ImGui::Text("%s", pathBuf);
+
+		ImGui::SameLine();
+		if (ImGui::Button("Up")) {
+			chdir("..");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button(">")) {
+			editPath = true;
+		}
+
+	} else {
+		ImGui::InputText("Path", pathBuf, sizeof(pathBuf));
+		ImGui::SameLine();
+
+		if (ImGui::Button("Ok")) {
+			chdir(pathBuf);
+			editPath = false;
+		}
+	}
+
+	ImGui::BeginChild("Main View");
+	ImGui::BeginChild("File list", ImVec2(0, -300), false, 0);
 	renderNodes(root);
+	ImGui::EndChild();
+
+	ImGui::Separator();
+	ImGui::Text("Bookmarks");
+
+	ImGui::BeginChild("BookmarksList", ImVec2(0, 0), false, 0);
+	if (auto path = fileBookmarks()) {
+		LogFmt("Setting new path {}", *path);
+		chdir(*path);
+	}
+	ImGui::EndChild();
+
+	ImGui::EndChild();
 	img::End();
 }

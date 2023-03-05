@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
+#include <string.h>
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -40,14 +41,22 @@ struct filePane {
 	paneNode root;
 	void *selected;
 
-	filePane(fs::path rootpath = ".")
-		: root(rootpath, paneTypes::Directory) { }
+	bool editPath = false;
+	char pathBuf[1024];
+
+	filePane(fs::path rootpath = fs::current_path())
+		: root(rootpath, paneTypes::Directory)
+	{
+		updatePathBuf();
+	}
 
 	void render();
 	void renderNodes(paneNode& node);
 	void reset(void);
 	void chdir(std::string_view newroot);
 	void setSelected(std::string_view path);
+
+	void updatePathBuf(void);
 };
 
 // namespace grendx
