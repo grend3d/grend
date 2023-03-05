@@ -211,10 +211,10 @@ class gameEditorUI : public gameView {
 		bool showEntityListWindow = false;
 		bool showAddEntityWindow = false;
 		bool showProfilerWindow = false;
-		bool showMetricsWindow = true;
+		bool showMetricsWindow = false;
 		bool showSettingsWindow = false;
-		bool showLogWindow = true;
-		bool showFilePane = true;
+		bool showLogWindow = false;
+		bool showFilePane = false;
 
 		void menubar();
 		void mapWindow();

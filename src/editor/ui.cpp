@@ -25,7 +25,11 @@ using namespace grendx::engine;
 
 gameEditorUI::gameEditorUI() {
 	// XXX
-	showObjectEditorWindow = true;
+	showFilePane           = true;
+	showLogWindow          = true;
+	showMetricsWindow      = true;
+	showEntityEditorWindow = true;
+	showMapWindow          = true;
 }
 
 void gameEditorUI::handleEvent(const SDL_Event& ev) {
@@ -117,41 +121,35 @@ static void initDocking() {
 			ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
 			ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 1080));
 
-			auto dock_id_left      = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2, nullptr, &dockspace_id);
-			auto dock_id_right     = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25, nullptr, &dockspace_id);
-			auto dock_id_down      = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.3, nullptr, &dockspace_id);
-			auto dock_id_leftbota  = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Down, 0.5, nullptr, &dock_id_left);
-			auto dock_id_leftbotb  = ImGui::DockBuilderSplitNode(dock_id_leftbota, ImGuiDir_Down, 0.5, nullptr, &dock_id_leftbota);
+			auto dock_id_left  = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25,
+			                                                 nullptr, &dockspace_id);
+			auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.33,
+			                                                 nullptr, &dockspace_id);
+			auto dock_id_down  = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25,
+			                                                 nullptr, &dockspace_id);
 
-			ImGui::DockBuilderDockWindow("Down",  dock_id_down);
-			ImGui::DockBuilderDockWindow("Left",  dock_id_left);
-			ImGui::DockBuilderDockWindow("Right", dock_id_right);
+			ImGuiID dock_id_leftbota;
+			ImGuiID dock_id_leftbotb;
 
-			ImGui::DockBuilderDockWindow("Files",         dock_id_left);
-			ImGui::DockBuilderDockWindow("Objects",       dock_id_left);
-			ImGui::DockBuilderDockWindow("Entities",      dock_id_right);
-			ImGui::DockBuilderDockWindow("Entity Editor", dock_id_right);
+			ImGuiID dock_id_rightbota;
+			ImGuiID dock_id_rightbotb;
+
+			ImGui::DockBuilderSplitNode(dock_id_left,  ImGuiDir_Down, 0.25, &dock_id_leftbota,  &dock_id_leftbotb);
+			ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.25, &dock_id_rightbota, &dock_id_rightbotb);
+
+			ImGui::DockBuilderDockWindow("Files",          dock_id_leftbotb);
+			ImGui::DockBuilderDockWindow("Engine metrics", dock_id_leftbota);
+
+			ImGui::DockBuilderDockWindow("Objects",       dock_id_rightbotb);
+			ImGui::DockBuilderDockWindow("Entities",      dock_id_rightbotb);
+			ImGui::DockBuilderDockWindow("Entity Editor", dock_id_rightbota);
 			ImGui::DockBuilderDockWindow("Engine log",    dock_id_down);
-
-			ImGui::DockBuilderDockWindow("Object editor",  dock_id_leftbota);
-			ImGui::DockBuilderDockWindow("Engine metrics", dock_id_leftbotb);
-
 
 			ImGui::DockBuilderFinish(dockspace_id);
 
 			ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 			ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 		}
-
-		/*
-		ImGui::Begin("Left");
-		ImGui::Text("left");
-		ImGui::End();
-
-		ImGui::Begin("Down");
-		ImGui::Text("down");
-		ImGui::End();
-		*/
 
 		auto rend = Resolve<renderContext>();
 
