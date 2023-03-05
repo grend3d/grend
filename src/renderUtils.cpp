@@ -162,19 +162,16 @@ grendx::buildDrawableQueue(uint32_t renderID) {
 }
 
 // TODO: should return the last allocated render ID too, or take a counter pointer
-grendx::multiRenderQueue
-grendx::buildClickableQueue(entClicks& clicks, uint32_t startID) {
+void
+grendx::buildClickableQueue(clickableEntities& clicks, multiRenderQueue& que) {
 	using namespace grendx;
 	using namespace ecs;
 
 	auto entities = Resolve<ecs::entityManager>();
 
-	multiRenderQueue que;
-	uint32_t renderID = startID;
-
 	for (auto [ent, flags] : entities->search<abstractShader>()) {
 		renderFlags shader = flags->getShader();
-		clicks.push_back({renderID, ent});
+		uint32_t renderID = clicks.add(ent);
 
 		for (auto scene : ent->getAll<sceneComponent>()) {
 			que.add(shader,
@@ -182,13 +179,14 @@ grendx::buildClickableQueue(entClicks& clicks, uint32_t startID) {
 			        renderID,
 			        ent->transform.getTransform());
 		}
-
-		renderID++;
 	};
-
-	return que;
 }
 
+void grendx::makeMeshesClickable(clickableEntities& clicks, renderQueue& que) {
+	for (renderQueue::queueEnt<sceneMesh::ptr>& meshEnt : que.meshes) {
+		meshEnt.renderID = clicks.add(meshEnt.data.getPtr());
+	}
+}
 
 void grendx::setPostUniforms(renderPostChain::ptr post,
                              camera::ptr cam)
@@ -225,4 +223,30 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
 	post->setUniformBlock("point_light_buffer", rend->pointBuffer, UBO_POINT_LIGHT_BUFFER);
 	post->setUniformBlock("spot_light_buffer", rend->spotBuffer, UBO_SPOT_LIGHT_BUFFER);
 	post->setUniformBlock("directional_light_buffer", rend->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
+}
+
+clickableEntities::clickableEntities(uint32_t reserved)
+	: reservedStart(reserved) {};
+
+uint32_t clickableEntities::add(ecs::entity* ent) {
+	size_t temp = clickmap.size();
+	clickmap.push_back(ent);
+
+	return reservedStart + temp;
+}
+
+ecs::entity* clickableEntities::get(uint32_t id) {
+	if (id >= reservedStart && id - reservedStart < clickmap.size()) {
+		return clickmap[id - reservedStart];
+	}
+
+	return nullptr;
+}
+
+void clickableEntities::clear(void) {
+	clickmap.clear();
+}
+
+size_t clickableEntities::size(void) {
+	return clickmap.size();
 }

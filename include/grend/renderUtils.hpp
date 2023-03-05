@@ -1,3 +1,5 @@
+#pragma once
+
 #include <grend/renderPostStage.hpp>
 #include <grend/camera.hpp>
 
@@ -22,9 +24,21 @@ void drawMultiQueue(multiRenderQueue& que,
 
 multiRenderQueue buildDrawableQueue(uint32_t renderID = 0);
 
-using entClicks = std::vector<std::pair<uint32_t, grendx::ecs::entity*>>;
-multiRenderQueue buildClickableQueue(entClicks& clicks,
-                                     uint32_t startID = 10);
+struct clickableEntities {
+	clickableEntities(uint32_t reserved = 64);
+
+	uint32_t add(ecs::entity*);
+	ecs::entity* get(uint32_t id);
+	void clear(void);
+	size_t size();
+
+	std::vector<grendx::ecs::entity*> clickmap;
+	uint32_t reservedStart;
+};
+
+void buildClickableQueue(clickableEntities& clicks,
+                         multiRenderQueue& que);
+void makeMeshesClickable(clickableEntities& clicks, renderQueue& que);
 
 void setPostUniforms(renderPostChain::ptr post, camera::ptr cam);
 

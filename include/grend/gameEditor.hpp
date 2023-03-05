@@ -15,6 +15,7 @@
 #include <grend/modalSDLInput.hpp>
 #include <grend/TRS.hpp>
 #include <grend/logger.hpp>
+#include <grend/renderUtils.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/filePane.hpp>
@@ -173,7 +174,7 @@ class gameEditor : public gameView {
 		sceneNode::ptr getNonModel(sceneNode::ptr obj);
 
 		std::vector<editCallback> callbacks;
-		std::vector<std::pair<uint32_t, ecs::entity*>> clickState;
+		clickableEntities clickState;
 
 		// last place the mouse was clicked, used for determining the amount of
 		// rotation, movement etc

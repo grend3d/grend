@@ -167,8 +167,15 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
 	clickState.clear();
-	auto world = buildClickableQueue(clickState);
+	multiRenderQueue world;
 	world.add(flags, state->rootnode);
+
+	for (auto& [_, que] : world.queues) {
+		makeMeshesClickable(clickState, que);
+	}
+
+	buildClickableQueue(clickState, world);
+
 	drawMultiQueue(world, fb, cam);
 	renderWorldObjects();
 
@@ -244,6 +251,9 @@ void gameEditor::renderWorldObjects() {
 
 	renderQueue tempque;
 	renderQueue que;
+
+	// TODO: Wait... this is now just building a full render queue to find just
+	//       lights and probes in the scene for editing, it never draws meshes
 	tempque.add(state->rootnode);
 
 	if (showProbes) {

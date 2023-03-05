@@ -32,15 +32,25 @@ void gameEditor::handleSelectObject() {
 	uint32_t clickidx = rend->framebuffer->index(fx, fy);
 
 	LogErrorFmt("clicked object: {}", clickidx);
-	LogErrorFmt("ent object: {}", clickidx-10);
+	LogErrorFmt("ent object: {}", clickidx);
 	LogErrorFmt("clickables: {}", clickState.size());
 	LogErrorFmt("Selected entity: {}", (void*)selectedEnt.getPtr());
 
-	if (clickidx - 10 < clickState.size()) {
-		auto& [_, ent] = clickState[clickidx - 10];
-		setSelectedEntity(ent);
+	if (ecs::entity* ent = clickState.get(clickidx)) {
+		if (sceneNode *node = dynamic_cast<sceneMesh*>(ent)) {
+			while (node && !dynamic_cast<sceneImport*>(node)) {
+				node = node->parent.getPtr();
+			}
 
-		LogErrorFmt("selected entity: {}@{}", clickidx-10, (void*)ent);
+			if (node) {
+				setSelectedEntity(node);
+			}
+
+		} else {
+			setSelectedEntity(ent);
+		}
+
+		LogErrorFmt("selected entity: {}@{}", clickidx, (void*)ent);
 
 	} else if (clickidx && selectedEnt) {
 		clickedX = (x*1.f / win_x);
