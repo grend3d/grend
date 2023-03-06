@@ -169,6 +169,12 @@ void gameEditorUI::menubar() {
 								  0.1f, 10.f, "%.1f");
 			}
 
+			ImGui::Checkbox("Snap rotation", &editor->snapRotateEnabled);
+			if (editor->snapRotateEnabled) {
+				ImGui::InputFloat("Snap rotation (degrees)", &editor->snapRotation,
+				                  5.0f, 10.f, "%.1f");
+			}
+
 			ImGui::SliderFloat("Movement speed", &editor->movementSpeed,
 			                  1.f, 100.f, "%.1f");
 			ImGui::SliderFloat("Exposure (tonemapping)", &rend->exposure,

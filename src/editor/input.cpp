@@ -562,6 +562,7 @@ void gameEditor::updateSelected(const TRS& updated) {
 	runCallbacks(selectedNode, editAction::Moved);
 }
 
+// TODO: this code is gross man
 void gameEditor::handleMoveRotate() {
 	auto ctx = Resolve<SDLContext>();
 
@@ -596,6 +597,12 @@ void gameEditor::handleMoveRotate() {
 	clicknorm = glm::vec2(clickedX*win_x - screenpos.x,
 	                      clickedY*win_y - screenpos.y);
 	normed = glm::vec2(x - screenpos.x, (win_y-y) - screenpos.y);
+
+	auto alignRotation = [&] (glm::quat& q) {
+		glm::vec3 euler = 180.f*glm::eulerAngles(q)/(float)M_PI;
+		align(euler, snapRotation*snapRotateEnabled);
+		q = glm::quat(euler/180.f * (float)M_PI);
+	};
 
 	switch (mode) {
 		case mode::MoveX:
@@ -659,6 +666,8 @@ void gameEditor::handleMoveRotate() {
 				glm::quat(glm::rotate(transformBuf.rotation,
 				                      reversed_x*rad,
 				                      glm::vec3(1, 0, 0)));
+
+			alignRotation(selectedTransform.rotation);
 			updateSelected(selectedTransform);
 			break;
 
@@ -672,6 +681,9 @@ void gameEditor::handleMoveRotate() {
 				glm::quat(glm::rotate(transformBuf.rotation,
 				                      reversed_x*rad,
 				                      glm::vec3(0, 1, 0)));
+
+
+			alignRotation(selectedTransform.rotation);
 			updateSelected(selectedTransform);
 			break;
 
@@ -685,6 +697,8 @@ void gameEditor::handleMoveRotate() {
 				glm::quat(glm::rotate(transformBuf.rotation,
 				                      reversed_x*rad,
 				                      glm::vec3(0, 0, 1)));
+
+			alignRotation(selectedTransform.rotation);
 			updateSelected(selectedTransform);
 			break;
 

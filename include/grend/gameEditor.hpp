@@ -118,11 +118,13 @@ class gameEditor : public gameView {
 		modelMap UIModels;
 
 		float movementSpeed = 10.f;
-		float snapAmount = 1.f;
+		float snapAmount = 0.5f;
+		float snapRotation = 45.f;
 		float exposure = 1.f;
 		float lightThreshold = 0.03;
 		float editDistance = 5;
 		bool snapEnabled = false;
+		bool snapRotateEnabled = false;
 
 		TRS cursorBuf;
 		TRS transformBuf;
