@@ -528,7 +528,7 @@ nlohmann::json sceneReflectionProbe::serializer(ecs::component *comp) {
 }
 
 nlohmann::json sceneIrradianceProbe::serializer(ecs::component *comp) {
-	auto probe = static_cast<sceneReflectionProbe*>(comp);
+	auto probe = static_cast<sceneIrradianceProbe*>(comp);
 	auto bmin = probe->boundingBox.min;
 	auto bmax = probe->boundingBox.max;
 
