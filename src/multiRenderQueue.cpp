@@ -20,6 +20,16 @@ void multiRenderQueue::add(const renderFlags& shader,
 	queues[h].add(obj, renderID, trans, inverted);
 }
 
+void multiRenderQueue::add(const renderFlags& shader, renderQueue& que) {
+	size_t h = std::hash<renderFlags>{}(shader);
+
+	if (shadermap.find(h) == shadermap.end()) {
+		shadermap[h] = shader;
+	}
+
+	queues[h].add(que);
+}
+
 void grendx::cullQueue(multiRenderQueue& renque,
                        camera::ptr       cam,
                        unsigned          width,

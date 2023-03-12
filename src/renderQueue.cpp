@@ -5,49 +5,76 @@
 
 using namespace grendx;
 
-void renderQueue::add(sceneNode::ptr obj,
-                      uint32_t renderID,
-                      glm::mat4 trans,
-                      bool inverted)
+void grendx::getNodeTransform(sceneNode::ptr obj,
+                              glm::mat4 inTrans,
+                              bool inInverted,
+                              glm::mat4& outTrans,
+                              bool& outInverted)
 {
-	if (obj == nullptr || !obj->visible) {
-		return;
-	}
-
-	const glm::mat4& adjTrans =
+	const glm::mat4& temp =
 		// default transform is identity, so no need to waste
 		// cycles on the matrix multiply
 		obj->hasDefaultTransform()
-			? trans
-			: trans*obj->getTransformMatrix();
+			? inTrans
+			: inTrans*obj->getTransformMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
 		invcount += obj->getTransformTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
-	if (invcount&1) {
-		inverted = !inverted;
+	outInverted = (invcount & 1)? !inInverted : inInverted;
+	outTrans    = temp;
+}
+
+void renderQueue::add(sceneNode::ptr obj,
+                      uint32_t renderID,
+                      glm::mat4 trans,
+                      bool inverted)
+{
+	if (!obj) return;
+
+	glm::mat4 adjTrans;
+	bool adjInvert;
+
+	getNodeTransform(obj, trans, inverted, adjTrans, adjInvert);
+
+	if (addNode(obj, renderID, trans, inverted)) {
+		for (auto ptr : obj->nodes()) {
+			add(ptr->getRef(), renderID, adjTrans, adjInvert);
+		}
+	}
+}
+
+bool renderQueue::addNode(sceneNode::ptr obj,
+                          uint32_t renderID,
+                          glm::mat4 trans,
+                          bool inverted)
+{
+	bool ret = false;
+
+	if (obj == nullptr || !obj->visible) {
+		return ret;
 	}
 
 	if (obj->type == sceneNode::objType::Mesh) {
 		// TODO: addMesh()
-		addMesh(obj, renderID, adjTrans, inverted);
+		addMesh(obj, renderID, trans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Light) {
 		sceneLight::ptr light = ref_cast<sceneLight>(obj);
-		glm::vec3 center = applyTransform(adjTrans);
-		lights.push_back({adjTrans, center, inverted, light});
+		glm::vec3 center = applyTransform(trans);
+		lights.push_back({trans, center, inverted, light});
 
 	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
 		sceneReflectionProbe::ptr probe = ref_cast<sceneReflectionProbe>(obj);
-		glm::vec3 center = applyTransform(adjTrans);
-		probes.push_back({adjTrans, center, inverted, probe});
+		glm::vec3 center = applyTransform(trans);
+		probes.push_back({trans, center, inverted, probe});
 
 	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
 		sceneIrradianceProbe::ptr probe = ref_cast<sceneIrradianceProbe>(obj);
-		glm::vec3 center = applyTransform(adjTrans);
-		irradProbes.push_back({adjTrans, center, inverted, probe});
+		glm::vec3 center = applyTransform(trans);
+		irradProbes.push_back({trans, center, inverted, probe});
 	}
 
 	if (obj->type == sceneNode::objType::None
@@ -56,21 +83,21 @@ void renderQueue::add(sceneNode::ptr obj,
 	{
 		auto node = obj->getNode("skin");
 		auto s = ref_cast<sceneSkin>(node);
-		addSkinned(obj->getNode("mesh"), s, renderID, adjTrans, inverted);
+		addSkinned(obj->getNode("mesh"), s, renderID, trans, inverted);
 
 	} else if (obj->type == sceneNode::objType::Particles) {
 		auto p = ref_cast<sceneParticles>(obj);
-		addInstanced(obj, p, renderID, adjTrans, glm::mat4(1), inverted);
+		addInstanced(obj, p, renderID, trans, glm::mat4(1), inverted);
 
 	} else if (obj->type == sceneNode::objType::BillboardParticles) {
 		auto p = ref_cast<sceneBillboardParticles>(obj);
-		addBillboards(obj, p, renderID, adjTrans, inverted);
+		addBillboards(obj, p, renderID, trans, inverted);
 
 	} else {
-		for (auto ptr : obj->nodes()) {
-			add(ptr->getRef(), renderID, adjTrans, inverted);
-		}
+		ret = true;
 	}
+
+	return ret;
 }
 
 void renderQueue::add(renderQueue& other) {

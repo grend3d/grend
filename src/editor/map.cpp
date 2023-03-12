@@ -63,6 +63,24 @@ static modelMap xxx_load_model(std::string filename, std::string objName) {
 	return models;
 }
 
+static
+sceneImport::ptr cloneImport(sceneImport::ptr scene) {
+	if (!scene)
+		return scene;
+
+	auto ecs = Resolve<ecs::entityManager>();
+	sceneImport::ptr ret = ecs->construct<sceneImport>(scene->sourceFile);
+	ret->setTransform(scene->getTransformTRS());
+
+	for (auto link : scene->nodes()) {
+		auto ptr = link->getRef();
+		auto& name = ptr->name;
+		setNode(name, ret, ptr);
+	}
+
+	return ret;
+}
+
 // XXX: TODO: move to model loading code
 class modelCache {
 	public:
@@ -92,7 +110,7 @@ class modelCache {
 				}
 			}
 
-			return scenes[source];
+			return cloneImport(scenes[source]);
 		}
 
 		std::map<std::string, modelMap> sources;

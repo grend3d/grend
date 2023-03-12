@@ -37,19 +37,7 @@ void gameEditor::handleSelectObject() {
 	LogErrorFmt("Selected entity: {}", (void*)selectedEnt.getPtr());
 
 	if (ecs::entity* ent = clickState.get(clickidx)) {
-		if (sceneNode *node = dynamic_cast<sceneMesh*>(ent)) {
-			while (node && !dynamic_cast<sceneImport*>(node)) {
-				node = node->parent.getPtr();
-			}
-
-			if (node) {
-				setSelectedEntity(node);
-			}
-
-		} else {
-			setSelectedEntity(ent);
-		}
-
+		setSelectedEntity(ent);
 		LogErrorFmt("selected entity: {}@{}", clickidx, (void*)ent);
 
 	} else if (clickidx && selectedEnt) {

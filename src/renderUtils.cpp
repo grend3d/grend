@@ -182,10 +182,42 @@ grendx::buildClickableQueue(clickableEntities& clicks, multiRenderQueue& que) {
 	};
 }
 
-void grendx::makeMeshesClickable(clickableEntities& clicks, renderQueue& que) {
-	for (renderQueue::queueEnt<sceneMesh::ptr>& meshEnt : que.meshes) {
-		meshEnt.renderID = clicks.add(meshEnt.data.getPtr());
+static
+void buildClickableRec(clickableEntities& clicks,
+                       sceneNode::ptr obj,
+                       renderQueue& que,
+                       uint32_t renderID,
+                       glm::mat4 trans,
+                       bool inverted)
+{
+	if (!obj) return;
+
+	glm::mat4 adjTrans;
+	bool adjInverted;
+
+	getNodeTransform(obj, trans, inverted, adjTrans, adjInverted);
+
+	if (obj->type == sceneNode::objType::Import) {
+		renderID = clicks.add(obj.getPtr());
 	}
+
+	if (que.addNode(obj, renderID, adjTrans, adjInverted)) {
+		for (auto ptr : obj->nodes()) {
+			buildClickableRec(clicks,
+			                  ptr->getRef(),
+			                  que,
+			                  renderID,
+			                  adjTrans,
+			                  adjInverted);
+		}
+	}
+}
+
+void grendx::buildClickableImports(clickableEntities& clicks,
+                                   sceneNode::ptr obj,
+                                   renderQueue& que)
+{
+	buildClickableRec(clicks, obj, que, 0, glm::mat4(1), false);
 }
 
 void grendx::setPostUniforms(renderPostChain::ptr post,

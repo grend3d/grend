@@ -38,7 +38,7 @@ struct clickableEntities {
 
 void buildClickableQueue(clickableEntities& clicks,
                          multiRenderQueue& que);
-void makeMeshesClickable(clickableEntities& clicks, renderQueue& que);
+void buildClickableImports(clickableEntities& clicks, sceneNode::ptr obj, renderQueue& que);
 
 void setPostUniforms(renderPostChain::ptr post, camera::ptr cam);
 

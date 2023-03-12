@@ -8,6 +8,12 @@
 
 namespace grendx {
 
+void getNodeTransform(sceneNode::ptr obj,
+                      glm::mat4 inTrans,
+                      bool inInverted,
+                      glm::mat4& outTrans,
+                      bool& outInverted);
+
 class renderQueue {
 	public:
 		renderQueue() {};
@@ -35,6 +41,12 @@ class renderQueue {
 		         bool inverted = false);
 
 		void add(renderQueue& other);
+
+		// returns 'true' if it's possible to recurse
+		bool addNode(sceneNode::ptr obj,
+		             uint32_t renderID = 0,
+		             glm::mat4 trans = glm::mat4(1),
+		             bool inverted = false);
 
 		void addMesh(sceneNode::ptr obj,
 		             uint32_t renderID = 0,
@@ -99,6 +111,8 @@ struct multiRenderQueue {
 		         uint32_t renderID = 0,
 		         const glm::mat4& trans = glm::mat4(1),
 		         bool inverted = false);
+
+		void add(const renderFlags& shader, renderQueue& que);
 
 		// TODO:
 		//void add(multiRenderQueue& other);

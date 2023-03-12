@@ -159,7 +159,8 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	grid.buildGrid(cam->position());
 	grid.flushLines(cam->viewProjTransform());
 
-
+	// TODO: clean up messy renderQueue stuff here
+	multiRenderQueue world;
 	renderQueue que;
 	renderFlags flags = rend->getLightingFlags();
 	//flags.features |= renderFlags::Features::StencilTest;
@@ -167,14 +168,11 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	// TODO: avoid clearing then reallocating all of this state...
 	//       lots of allocations
 	clickState.clear();
-	multiRenderQueue world;
-	world.add(flags, state->rootnode);
 
-	for (auto& [_, que] : world.queues) {
-		makeMeshesClickable(clickState, que);
-	}
-
+	renderQueue tempque;
+	buildClickableImports(clickState, state->rootnode, tempque);
 	buildClickableQueue(clickState, world);
+	world.add(flags, tempque);
 
 	drawMultiQueue(world, fb, cam);
 	renderWorldObjects();
