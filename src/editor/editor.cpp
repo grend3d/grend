@@ -199,8 +199,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 
 	renderOptions frontOpts, backOpts;
 	frontOpts.features |=  renderOptions::Features::DepthTest;
-	frontOpts.features |=  renderOptions::Features::StencilTest;
-	frontOpts.features &= ~renderOptions::Features::DepthMask;
+	frontOpts.features |= ~renderOptions::Features::DepthMask;
 	backOpts.features = frontOpts.features;
 
 	frontOpts.depthFunc = renderOptions::Less;
@@ -221,6 +220,8 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 
 	por = que;
 	flush(por, cam, rend->framebuffer, rend, unshadedFlags, frontOpts);
+
+	rend->defaultSkybox->draw(cam, rend->framebuffer);
 
 	// TODO: function to do this
 	int winsize_x, winsize_y;
