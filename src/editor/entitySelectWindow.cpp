@@ -207,6 +207,22 @@ void gameEditorUI::entityEditorWindow() {
 
 	drawer->draw(selectedEntity);
 
+	if (ImGui::Button("Attach")) {
+		ImGui::OpenPopup("AttachPopup");
+	}
+
+	if (ImGui::BeginPopup("AttachPopup")) {
+		for (const auto& [name, _] : factories->factories) {
+			if (ImGui::Selectable(name.c_str())) {
+				nlohmann::json j = {name, {}};
+
+				factories->build(entities, selectedEntity, j);
+			}
+		}
+
+		ImGui::EndPopup();
+	}
+
 	// TODO: remove
 	//drawJson(curjson);
 
