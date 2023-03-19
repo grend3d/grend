@@ -173,7 +173,7 @@ bulletPhysics::addStaticModels(void *data,
 
 	for (auto link : obj->nodes()) {
 		auto node = link->getRef();
-		TRS adjTrans = addTRS(transform, node->getTransformTRS());
+		TRS adjTrans = addTRS(transform, node->transform.getTRS());
 		addStaticModels(data, node, adjTrans, collector, propFilter);
 	}
 }

@@ -849,7 +849,7 @@ set_object_gltf_transform(sceneNode::ptr ptr, tinygltf::Node& node) {
 	newtrans.position = translation;
 	newtrans.rotation = rotation;
 	newtrans.scale = scale;
-	ptr->setTransform(newtrans);
+	ptr->transform.set(newtrans);
 }
 
 static sceneNode::ptr 

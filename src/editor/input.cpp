@@ -45,7 +45,7 @@ void gameEditor::handleSelectObject() {
 		clickedY = ((win_y - y)*1.f / win_y);
 
 		if (clickidx > 0 && clickidx <= 6) {
-			transformBuf = selectedEnt->transform;
+			transformBuf = selectedEnt->transform.getTRS();
 			LogInfo("It's a UI model");
 
 		} else {
@@ -65,7 +65,7 @@ void gameEditor::handleSelectObject() {
 
 		if (selectedEnt) {
 			// TODO: this isn't correct
-			clickDepth = glm::distance(selectedEnt->transform.position, cam->position());
+			clickDepth = glm::distance(selectedEnt->transform.getTRS().position, cam->position());
 
 		} else {
 			clickDepth = 0.f;
@@ -96,7 +96,7 @@ static void handleAddNode(gameEditor *editor,
 	auto selectedNode = editor->getSelectedNode();
 	assert(selectedNode != nullptr);
 
-	obj->setTransform(editor->cursorBuf);
+	obj->transform.set(editor->cursorBuf);
 	setNode(name, selectedNode, obj);
 	editor->setSelectedEntity(obj);
 	editor->runCallbacks(obj, gameEditor::editAction::Added);
@@ -350,7 +350,7 @@ void gameEditor::loadInputBindings() {
 			}
 
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->getTransformTRS();
+				transformBuf = selectedNode->transform.getTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::MoveX;
@@ -373,7 +373,7 @@ void gameEditor::loadInputBindings() {
 			}
 
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->getTransformTRS();
+				transformBuf = selectedNode->transform.getTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::RotateX;
@@ -396,7 +396,7 @@ void gameEditor::loadInputBindings() {
 			}
 
 			if (ev.type == SDL_KEYDOWN) {
-				transformBuf = selectedNode->getTransformTRS();
+				transformBuf = selectedNode->transform.getTRS();
 
 				switch (ev.key.keysym.sym) {
 					case SDLK_x: return (int)mode::ScaleX;
@@ -537,13 +537,8 @@ void gameEditor::updateSelected(const TRS& updated) {
 	auto  selectedNode   = getSelectedNode();
 	auto* selectedEntity = getSelectedEntity().getPtr();
 
-	if (selectedNode) {
-		// TODO: move setTransform to the base entity class
-		selectedNode->setTransform(updated);
-	}
-
-	else if (selectedEntity) {
-		selectedEntity->transform = updated;
+	if (selectedEntity) {
+		selectedEntity->transform.set(updated);
 		updateEntityTransforms(selectedEntity->manager, selectedEntity, updated);
 	}
 
@@ -577,7 +572,7 @@ void gameEditor::handleMoveRotate() {
 		return;
 	}
 
-	TRS selectedTransform = selectedEnt->transform;
+	TRS selectedTransform = selectedEnt->transform.getTRS();
 	glm::vec4 screenuv = cam->worldToScreenPosition(transformBuf.position);
 	glm::vec2 screenpos = glm::vec2(screenuv.x*win_x, screenuv.y*win_y);
 	glm::vec2 normed, clicknorm;
@@ -724,7 +719,7 @@ void gameEditor::handleMoveRotate() {
 		float reversed_x = sign(glm::dot(glm::vec3(1, 0, 0), -cam->right()));
 		float reversed_y = sign(glm::dot(glm::vec3(0, 1, 0),  cam->up()));
 		float reversed_z = sign(glm::dot(glm::vec3(0, 0, 1), -cam->right()));
-		float depth = glm::distance(probe->getTransformTRS().position, cam->position());
+		float depth = glm::distance(probe->transform.getTRS().position, cam->position());
 
 		switch (mode) {
 			case mode::MoveAABBPosX:

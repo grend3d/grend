@@ -28,56 +28,6 @@ size_t grendx::allocateObjID(void) {
 	return ++counter;
 }
 
-// TODO: should have this return a const ref
-TRS sceneNode::getTransformTRS() {
-	return transform;
-}
-
-// TODO: should have this return a const ref
-TRS sceneNode::getOrigTransform() {
-	return origTransform;
-}
-
-// TODO: also const ref
-glm::mat4 sceneNode::getTransformMatrix() {
-	if (updated) {
-		cachedTransformMatrix = transform.getTransform();
-		updated = false;
-		// note that queueCache.updated isn't changed here
-	}
-
-	return cachedTransformMatrix;
-}
-
-void sceneNode::setTransform(const TRS& t) {
-	if (isDefault) {
-		origTransform = t;
-	}
-
-	updated = true;
-	queueCache.updated = true;
-	isDefault = false;
-	transform = t;
-}
-
-void sceneNode::setPosition(const glm::vec3& position) {
-	TRS temp = getTransformTRS();
-	temp.position = position;
-	setTransform(temp);
-}
-
-void sceneNode::setScale(const glm::vec3& scale) {
-	TRS temp = getTransformTRS();
-	temp.scale = scale;
-	setTransform(temp);
-}
-
-void sceneNode::setRotation(const glm::quat& rotation) {
-	TRS temp = getTransformTRS();
-	temp.rotation = rotation;
-	setTransform(temp);
-}
-
 sceneNode::ptr sceneNode::getNode(std::string name) {
 	for (auto link : nodes()) {
 		auto node = link->getRef();
@@ -114,7 +64,7 @@ sceneNode::ptr grendx::clone(sceneNode::ptr node) {
 	sceneNode::ptr ret = manager->construct<sceneNode>();
 	//sceneNode::ptr ret = std::make_shared<sceneNode>();
 
-	ret->setTransform(node->getTransformTRS());
+	ret->transform.set(node->transform.getTRS());
 
 	//for (auto& [name, ptr] : node->nodes) {
 	//for (auto ptr : node->nodes()) {
@@ -180,8 +130,8 @@ static sceneNode::ptr copySkinNodes(sceneSkin::ptr target,
 
 	// copy generic sceneNode members
 	// XXX: two set transforms to ensure origTransform is the same
-	ret->setTransform(node->getOrigTransform());
-	ret->setTransform(node->getTransformTRS());
+	ret->transform.set(node->transform.getOrig());
+	ret->transform.set(node->transform.getTRS());
 	ret->visible         = node->visible;
 	ret->animChannel     = node->animChannel;
 	ret->extraProperties = node->extraProperties;
@@ -223,8 +173,8 @@ sceneNode::ptr grendx::duplicate(sceneNode::ptr node) {
 	auto doCopy = [&] (sceneNode::ptr ret, sceneNode::ptr node) {
 		// copy generic sceneNode members
 		// XXX: two set transforms to ensure origTransform is the same
-		ret->setTransform(node->getOrigTransform());
-		ret->setTransform(node->getTransformTRS());
+		ret->transform.set(node->transform.getOrig());
+		ret->transform.set(node->transform.getTRS());
 		ret->visible         = node->visible;
 		ret->animChannel     = node->animChannel;
 		ret->extraProperties = node->extraProperties;
@@ -338,7 +288,7 @@ static glm::mat4 lookup(std::map<sceneNode*, glm::mat4>& cache,
 		glm::mat4 mat(1);
 
 		if (ptr != root && parent) {
-			mat = lookup(cache, root, parent.getPtr()) * ptr->getTransformMatrix();
+			mat = lookup(cache, root, parent.getPtr()) * ptr->transform.getMatrix();
 		}
 
 		cache[ptr] = mat;

@@ -297,7 +297,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 		flush(porque, cam, info.size, info.size, rctx, flags, opts);
 		DO_ERROR_CHECK();
 
-		rctx->defaultSkybox.draw(cam, info.size, info.size);
+		rctx->defaultSkybox->draw(cam, info.size, info.size);
 		DO_ERROR_CHECK();
 	}
 
@@ -316,7 +316,7 @@ void grendx::drawIrradianceProbe(renderQueue& queue,
                                  renderContext *rctx)
 {
 	// XXX
-	probe->source->setTransform(probe->getTransformTRS());
+	probe->source->transform.set(probe->transform.getTRS());
 	probe->source->is_static = probe->is_static;
 	probe->source->have_map  = probe->have_map;
 	probe->source->changed   = probe->changed;

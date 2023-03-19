@@ -33,15 +33,13 @@ static void endType() {
 void entity::drawEditor(component *comp) {
 	auto *ent = beginType<entity>(comp);
 
-	TRS selectedTransform = ent->transform;
-	//TRS selectedTransform = ent->getTransformTRS();
+	TRS selectedTransform = ent->transform.getTRS();
 
 	if (ImGui::InputFloat3("Position", glm::value_ptr(selectedTransform.position))
 	 || ImGui::InputFloat3("Scale",    glm::value_ptr(selectedTransform.scale))
 	 || ImGui::InputFloat4("Rotation", glm::value_ptr(selectedTransform.rotation)))
 	{
-		ent->transform = selectedTransform;
-		//ent->setTransform(selectedTransform);
+		ent->transform.set(selectedTransform);
 	}
 
 	//ImGui::Checkbox("Visible", &ent->visible);

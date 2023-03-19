@@ -281,7 +281,7 @@ entity *findNearest(entityManager *manager,
 	auto ents = searchEntities(manager, tags);
 	for (auto& ent : ents) {
 		//sceneNode::ptr node = ent->getNode();
-		float dist = glm::distance(position, ent->transform.position);
+		float dist = glm::distance(position, ent->transform.getTRS().position);
 		//float dist = glm::distance(position, node->getTransformTRS().position);
 
 		if (ent->active && dist < curmin) {
@@ -495,7 +495,7 @@ bool intersects(std::multimap<const char *, component*>& entdata,
 
 nlohmann::json entity::serializer(component *comp) {
 	entity *ent = static_cast<entity*>(comp);
-	const TRS& trs = ent->transform;
+	const TRS& trs = ent->transform.getTRS();
 
 	auto& t = trs.position;
 	auto& r = trs.rotation;
@@ -516,11 +516,11 @@ void entity::deserializer(component *comp, nlohmann::json j) {
 	auto& r = j["rotation"];
 	auto& s = j["scale"];
 
-	ent->transform = (TRS) {
+	ent->transform.set({
 		.position = {t[0], t[1], t[2]},
 		.rotation = {r[0], r[1], r[2], r[3]},
 		.scale    = {s[0], s[1], s[2]},
-	};
+	});
 
 	ent->name = j["name"];
 }

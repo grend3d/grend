@@ -178,7 +178,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	renderWorldObjects();
 
 	auto p = UIObjects->getNode("Orientation-Indicator");
-	auto m = p->getTransformMatrix();
+	auto m = p->transform.getMatrix();
 
 	if (getSelectedEntity()) {
 		que.add(p->getNode("X-Axis"),     1, m);
@@ -270,7 +270,7 @@ void gameEditor::renderWorldObjects() {
 		refShader->bind();
 
 		for (auto& entry : tempque.probes) {
-			probeObj->setTransform((TRS) {
+			probeObj->transform.set({
 				.position = entry.center,
 				.scale    = glm::vec3(0.5),
 			});
@@ -297,7 +297,7 @@ void gameEditor::renderWorldObjects() {
 		irradShader->bind();
 
 		for (auto& entry : tempque.irradProbes) {
-			probeObj->setTransform((TRS) {
+			probeObj->transform.set({
 				.position = entry.center,
 				.scale    = glm::vec3(0.5),
 			});
@@ -322,7 +322,7 @@ void gameEditor::renderWorldObjects() {
 			glm::vec3 pos = entry.center;
 
 			if (cam->sphereInFrustum(BSphere {pos, 0.5})) {
-				probeObj->setTransform((TRS) {
+				probeObj->transform.set({
 					.position = entry.center,
 					.scale    = glm::vec3(0.5),
 				});
@@ -571,10 +571,10 @@ void gameEditor::update(float delta) {
 		{
 			auto ptr = orientation->getNode(str);
 
-			TRS newtrans = selectedEnt->transform;
+			TRS newtrans = selectedEnt->transform.getTRS();
 			glm::mat4 localToWorld = selectedNode
 				? fullTranslation(selectedNode)
-				: selectedEnt->transform.getTransform();
+				: selectedEnt->transform.getMatrix();
 
 			newtrans.position = applyTransform(localToWorld);
 
@@ -585,13 +585,13 @@ void gameEditor::update(float delta) {
 
 			float t = glm::dot(u, v) / glm::dot(v, v);
 			newtrans.scale = glm::vec3(t*0.20f);
-			ptr->setTransform(newtrans);
+			ptr->transform.set(newtrans);
 		}
 
 		if (auto probe = dynamic_ref_cast<sceneReflectionProbe>(selectedEnt)) {
 			auto bbox = UIObjects->getNode("Bounding-Box");
 
-			TRS transform = probe->getTransformTRS();
+			TRS transform = probe->transform.getTRS();
 			glm::vec3 bmin = transform.position + probe->boundingBox.min;
 			glm::vec3 bmax = transform.position + probe->boundingBox.max;
 			glm::vec3 center = 0.5f*(bmax + bmin);
@@ -599,7 +599,7 @@ void gameEditor::update(float delta) {
 
 			assert(bbox != nullptr);
 			bbox->visible = true;
-			bbox->setTransform((TRS) {
+			bbox->transform.set({
 				.position = center,
 				.scale    = extent,
 			});
@@ -619,7 +619,7 @@ void gameEditor::update(float delta) {
 
 		if (ptr) {
 			handleCursorUpdate();
-			ptr->setTransform((TRS) { .position = cursorBuf.position, });
+			ptr->transform.set({ .position = cursorBuf.position, });
 		}
 	}
 }

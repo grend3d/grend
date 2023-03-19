@@ -58,16 +58,6 @@ class sceneNode : public ecs::entity {
 			return strm.str();
 		}
 
-		TRS getTransformTRS();
-		TRS getOrigTransform();
-		glm::mat4 getTransformMatrix();
-		bool hasDefaultTransform(void) const { return isDefault; }
-
-		void setTransform(const TRS& t);
-		void setPosition(const glm::vec3& position);
-		void setScale(const glm::vec3& scale);
-		void setRotation(const glm::quat& rotation);
-
 		// setNode isn't a member function, since it needs to be able to set
 		// the shared pointer parent
 		//sceneNode::ptr getNode(std::string name);
@@ -100,25 +90,6 @@ class sceneNode : public ecs::entity {
 		// intended to map to gltf extra properties, useful for exporting
 		// info from blender
 		std::map<std::string, float> extraProperties;
-
-		// cache for renderQueue state, queueCache only changed externally
-		// from renderQueue::add(), queueUpdated changed both from 
-		// setTransfrom() and renderQueue::add()
-		// TODO: documented, link up documentation
-		struct {
-			bool      updated = true;
-			glm::mat4 transform;
-			glm::vec3 center;
-		} queueCache;
-
-	private:
-		// TODO: transform setters/getters, cache in entity
-		//TRS transform;
-		TRS origTransform;
-
-		bool updated = true;
-		bool isDefault = true;
-		glm::mat4 cachedTransformMatrix;
 };
 
 /*
@@ -149,10 +120,10 @@ static inline
 glm::mat4 fullTranslation(sceneNode::ptr node) {
 	if (node) {
 		if (auto p = node->parent) {
-			return fullTranslation(p) * node->getTransformMatrix();
+			return fullTranslation(p) * node->transform.getMatrix();
 
 		} else {
-			return node->getTransformMatrix();
+			return node->transform.getMatrix();
 		}
 	}
 

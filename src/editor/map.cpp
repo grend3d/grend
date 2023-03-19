@@ -70,7 +70,7 @@ sceneImport::ptr cloneImport(sceneImport::ptr scene) {
 
 	auto ecs = Resolve<ecs::entityManager>();
 	sceneImport::ptr ret = ecs->construct<sceneImport>(scene->sourceFile);
-	ret->setTransform(scene->getTransformTRS());
+	ret->transform.set(scene->transform.getTRS());
 
 	for (auto link : scene->nodes()) {
 		auto ptr = link->getRef();
@@ -171,7 +171,7 @@ sceneNode::ptr loadNodes(modelCache& cache,
 
 	if (ret) {
 		// XXX: need to call this to update cached uniforms after entity is constructed
-		ret->setTransform(ret->transform);
+		ret->transform.set(ret->transform.getTRS());
 	}
 
 	return ret;
@@ -198,7 +198,7 @@ grendx::loadMapData(std::string name) noexcept {
 		modelMap retmodels;
 
 		sceneNode::ptr temp = loadNodes(cache, j["root"]);
-		ret->setTransform(temp->getTransformTRS());
+		ret->transform.set(temp->transform.getTRS());
 
 		for (auto link : temp->nodes()) {
 			if (auto ptr = link->getRef()) {

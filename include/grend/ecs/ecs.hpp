@@ -6,6 +6,7 @@
 #include <grend/IoC.hpp>
 #include <grend/typenames.hpp>
 #include <grend/ecs/message.hpp>
+#include <grend/transform.hpp>
 
 // TODO: Not gameMain, maybe utility? common? something like that
 #include <grend/gameMain.hpp>
@@ -277,12 +278,12 @@ class entity : public component {
 
 		static void drawEditor(component *ent);
 
+		transformState transform;
 		// TODO: should have a seperate entity list for deactivated
 		//       entities, where being in that list is what decides whether
 		//       an entity is deactivated or not
 		// TODO: make transform read-only externally, move sceneNode transform functions here
 		// TODO: possibly make transform a component
-		TRS transform;
 		bool active = true;
 
 		enum flag {

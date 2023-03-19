@@ -14,13 +14,13 @@ void grendx::getNodeTransform(sceneNode::ptr obj,
 	const glm::mat4& temp =
 		// default transform is identity, so no need to waste
 		// cycles on the matrix multiply
-		obj->hasDefaultTransform()
+		obj->transform.hasDefaultTransform()
 			? inTrans
-			: inTrans*obj->getTransformMatrix();
+			: inTrans*obj->transform.getMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->getTransformTRS().scale[i] < 0;
+		invcount += obj->transform.getTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	outInverted = (invcount & 1)? !inInverted : inInverted;
@@ -186,11 +186,11 @@ void renderQueue::addInstanced(sceneNode::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans = innerTrans*obj->getTransformMatrix();
+	glm::mat4 adjTrans = innerTrans*obj->transform.getMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->getTransformTRS().scale[i] < 0;
+		invcount += obj->transform.getTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
@@ -215,11 +215,11 @@ void renderQueue::addBillboards(sceneNode::ptr obj,
 		return;
 	}
 
-	glm::mat4 adjTrans = trans*obj->getTransformMatrix();
+	glm::mat4 adjTrans = trans*obj->transform.getMatrix();
 
 	unsigned invcount = 0;
 	for (unsigned i = 0; i < 3; i++)
-		invcount += obj->getTransformTRS().scale[i] < 0;
+		invcount += obj->transform.getTRS().scale[i] < 0;
 
 	// only want to invert face order if flipped an odd number of times
 	inverted ^= invcount & 1;
@@ -1440,7 +1440,7 @@ sceneReflectionProbe::ptr renderQueue::nearest_reflection_probe(glm::vec3 pos) {
 
 	// TODO: optimize this, O(N) is meh
 	for (auto& p : probes) {
-		float dist = glm::distance(pos, p.data->getTransformTRS().position);
+		float dist = glm::distance(pos, p.data->transform.getTRS().position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
 			ret = p.data;
@@ -1456,7 +1456,7 @@ sceneIrradianceProbe::ptr renderQueue::nearest_irradiance_probe(glm::vec3 pos) {
 
 	// TODO: optimize this, O(N) is meh
 	for (auto& p : irradProbes) {
-		float dist = glm::distance(pos, p.data->getTransformTRS().position);
+		float dist = glm::distance(pos, p.data->transform.getTRS().position);
 		if (!ret || dist < mindist) {
 			mindist = dist;
 			ret = p.data;
