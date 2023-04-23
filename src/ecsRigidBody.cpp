@@ -15,11 +15,7 @@ rigidBodyCylinder::~rigidBodyCylinder() {};
 rigidBodyCapsule::~rigidBodyCapsule() {};
 rigidBodyStaticMesh::~rigidBodyStaticMesh() {};
 
-syncRigidBody::~syncRigidBody() {};
-syncRigidBodyTransform::~syncRigidBodyTransform() {};
-syncRigidBodyPosition::~syncRigidBodyPosition() {};
-syncRigidBodyXZVelocity::~syncRigidBodyXZVelocity() {};
-syncRigidBodySystem::~syncRigidBodySystem() {};
+rigidBodyUpdateSystem::~rigidBodyUpdateSystem() {};
 
 rigidBody::rigidBody(regArgs t)
 	: component(doRegister(this, t))
@@ -56,63 +52,11 @@ rigidBodyStaticMesh::rigidBodyStaticMesh(regArgs t)
 	activate(t.manager, t.ent);
 }
 
-void syncRigidBodyTransform::sync(entityManager *manager, entity *ent) {
-	rigidBody *body;
-	castEntityComponent(body, manager, ent);
-
-	if (!body || !body->phys) {
-		// no attached physics body
-		return;
-	}
-
-	ent->transform.set(body->phys->getTransform());
-}
-
-void syncRigidBodyPosition::sync(entityManager *manager, entity *ent) {
-	rigidBody *body;
-	castEntityComponent(body, manager, ent);
-
-	if (!body || !body->phys) {
-		// no attached physics body
-		return;
-	}
-
-	ent->transform.setPosition(body->phys->getTransform().position);
-}
-
-void syncRigidBodyXZVelocity::sync(entityManager *manager, entity *ent) {
-	rigidBody *body;
-	castEntityComponent(body, manager, ent);
-
-	// TODO: need way to avoid syncing if velocity is low to avoid
-	//       glitchy movement, but still allow updating explicitly
-	if (!body || !body->phys /*|| glm::length(body->phys->getVelocity()) < 0.1*/) {
-		// no attached physics body
-		return;
-	}
-
-	TRS physTransform = body->phys->getTransform();
-	glm::vec3 vel = body->phys->getVelocity();
-	glm::quat rot = glm::quat(glm::vec3(0, atan2(vel.x, vel.z), 0));
-
-	ent->transform.setPosition(physTransform.position);
-	ent->transform.setRotation(rot);
-}
-
-void syncRigidBodySystem::update(entityManager *manager, float delta) {
-	//std::set<component*> syncers = manager->getComponents("syncRigidBody");
-	std::set<component*> syncers = manager->getComponents<syncRigidBody>();
-
-	for (auto& comp : syncers) {
-		syncRigidBody *syncer = static_cast<syncRigidBody*>(comp);
-		entity *ent = manager->getEntity(comp);
-
-		if (!syncer || !ent || !ent->active) {
-			// TODO: warning
-			continue;
-		}
-
-		syncer->sync(manager, ent);
+void rigidBodyUpdateSystem::update(entityManager *manager, float delta) {
+	for (auto [ent, body] : manager->search<rigidBody>()) {
+		TRS transform = body->phys->getTransform();
+		transform.scale = ent->transform.getTRS().scale;
+		ent->transform.set(transform);
 	}
 }
 

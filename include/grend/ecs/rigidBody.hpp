@@ -71,7 +71,7 @@ class rigidBody
 
 		physicsObject::ptr phys = nullptr;
 		float mass = 0.f;
-		float cachedAngularFactor = 1.f;
+		glm::vec3 cachedAngularFactor = glm::vec3(1.f);
 		glm::vec3 position;
 		std::shared_ptr<std::vector<collision>> cachedQueue = nullptr;
 
@@ -361,55 +361,12 @@ class rigidBodyCapsule : public rigidBody {
 		static void drawEditor(component *ent);
 };
 
-class syncRigidBody : public component {
-	public:
-		syncRigidBody(regArgs t)
-			: component(doRegister(this, t)) {}
-
-		virtual ~syncRigidBody();
-
-		virtual void sync(entityManager *manager, entity *ent) = 0;
-
-		static nlohmann::json serializer(component *comp) { return {}; }
-		static void deserializer(component *comp, nlohmann::json j) { };
-};
-
-class syncRigidBodyTransform : public syncRigidBody {
-	public:
-		syncRigidBodyTransform(regArgs t)
-			: syncRigidBody(doRegister(this, t)) {}
-
-		virtual ~syncRigidBodyTransform();
-
-		virtual void sync(entityManager *manager, entity *ent);
-};
-
-class syncRigidBodyPosition : public syncRigidBody {
-	public:
-		syncRigidBodyPosition(regArgs t)
-			: syncRigidBody(doRegister(this, t)) {}
-
-		virtual ~syncRigidBodyPosition();
-
-		virtual void sync(entityManager *manager, entity *ent);
-};
-
-class syncRigidBodyXZVelocity : public syncRigidBody {
-	public:
-		syncRigidBodyXZVelocity(regArgs t)
-			: syncRigidBody(doRegister(this, t)) {}
-
-		virtual ~syncRigidBodyXZVelocity();
-
-		virtual void sync(entityManager *manager, entity *ent);
-};
-
-class syncRigidBodySystem : public entitySystem {
+class rigidBodyUpdateSystem : public entitySystem {
 	public:
 		typedef std::shared_ptr<entitySystem> ptr;
 		typedef std::weak_ptr<entitySystem>   weakptr;
 
-		virtual ~syncRigidBodySystem();
+		virtual ~rigidBodyUpdateSystem();
 		virtual void update(entityManager *manager, float delta);
 };
 

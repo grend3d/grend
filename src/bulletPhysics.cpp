@@ -121,6 +121,11 @@ void bulletObject::setAngularFactor(float amount) {
 	// TODO: implement impObject::setAngularFactor();
 }
 
+void bulletObject::setAngularFactor(const glm::vec3& amount) {
+	body->setAngularFactor(btVector3(amount.x, amount.y, amount.z));
+	// TODO: implement impObject::setAngularFactor();
+}
+
 glm::vec3 bulletObject::getVelocity(void) {
 	// TODO
 	auto v = body->getLinearVelocity();
@@ -132,8 +137,9 @@ glm::vec3 bulletObject::getAcceleration(void) {
 	return glm::vec3(0);
 }
 
-float bulletObject::getAngularFactor(void) {
-	return body->getAngularFactor().x();
+glm::vec3 bulletObject::getAngularFactor(void) {
+	auto v = body->getAngularFactor();
+	return {v.x(), v.y(), v.z()};
 }
 
 void bulletPhysics::drawDebug(glm::mat4 cam) {
