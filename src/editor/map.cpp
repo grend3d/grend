@@ -143,9 +143,20 @@ sceneNode::ptr loadNodes(modelCache& cache,
 		// TODO: FIXME: previously built entity is unused here, ends up leaking
 		recurse = false;
 
-		if ((ret = cache.getScene(imp->sourceFile)) == nullptr) {
+		ret = imp;
+		sceneImport::ptr tempNode = cache.getScene(imp->sourceFile);
+
+		if (tempNode == nullptr) {
 			LogErrorFmt("loadMap(): Unknown model {}", js["sourceFile"]);
 			ret = ecs->construct<sceneNode>();
+
+		} else {
+			for (auto link : tempNode->nodes()) {
+				auto node = link->getRef();
+				setNode(node->name, ret, node);
+			}
+
+			imp->animations = tempNode->animations;
 		}
 
 		// XXX: reapply entity transforms to sceneImport

@@ -76,6 +76,7 @@ endif()
 add_library(Grend
 	${PHYSICS_IMPLEMENTATION}
 	src/animation.cpp
+	src/animationController.cpp
 	src/controllers.cpp
 	src/gameObject.cpp
 	src/octree.cpp
