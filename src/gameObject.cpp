@@ -40,16 +40,17 @@ sceneNode::ptr sceneNode::getNode(std::string name) {
 }
 
 sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
+	if (!node)
+		return nullptr;
+
 	auto manager = engine::Resolve<ecs::entityManager>();
 
 	if (auto p = node->parent) {
-		for (auto ptr : p->nodes()) {
+		for (auto *ptr : p->nodes()) {
 			if (node == ptr->getRef()) {
 				sceneNode::ptr ret = p;
-				// TODO: convenience function in entity for this
-				// TODO: actual implementation
-				manager->unregisterComponent(p.getPtr(), node.getPtr());
-				return ret;
+				// TODO: convenience function in entity to unregister components
+				manager->unregisterComponent(p.getPtr(), ptr);
 			}
 		}
 	}

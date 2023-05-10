@@ -228,6 +228,8 @@ regArgs doRegister(T *ptr, const regArgs& t) {
 
 class component {
 	public:
+		enum { MAGIC = 0xc0def00d };
+
 		component(regArgs t)
 			: manager(t.manager)
 		{
@@ -238,6 +240,7 @@ class component {
 		virtual const char* typeString(void) const { return typeid(*this).name(); };
 
 		entityManager *manager;
+		uint32_t magic = MAGIC;
 };
 
 class entity : public component {

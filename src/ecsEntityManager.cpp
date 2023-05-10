@@ -135,7 +135,9 @@ void entityManager::remove(entity *ent) {
 }
 
 bool entityManager::valid(entity *ent) {
-	return entities.count(ent);
+	return ent != nullptr
+	    && ent->magic == component::MAGIC
+	    && entities.count(ent);
 }
 
 void entityManager::activate(entity *ent) {
@@ -386,10 +388,16 @@ void entityManager::unregisterComponent(entity *ent, component *ptr) {
 	}
 
 	auto it = componentTypes.find(ptr);
-	if (it == componentTypes.end())
+	if (it == componentTypes.end()) {
 		// doesn't exist in the entity manager, maybe double free?
-		// TODO: debug-only log statement
+		LogWarnFmt("Have invalid component at {}!", (void*)ptr);
 		return;
+	}
+
+	if (ptr->magic != component::MAGIC) {
+		LogErrorFmt("DOUBLE FREE: Component at {} is not a valid component!", (void*)ptr);
+		return;
+	}
 
 	for (auto& name : it->second) {
 		auto& comps = entityComponents[ent];
@@ -407,6 +415,10 @@ void entityManager::unregisterComponent(entity *ent, component *ptr) {
 	componentEntities.erase(ptr);
 	componentTypes.erase(ptr);
 
+	// XXX: set a magic value indicating that the component is now invalid to
+	//      help catch use-after-free errors
+	//      (might be better to store a counter here rather than a static value)
+	ptr->magic = 0xbadc0de;
 	delete ptr;
 }
 
