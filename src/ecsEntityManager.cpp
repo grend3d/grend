@@ -384,6 +384,7 @@ void entityManager::registerInterface(entity *ent,
 // TODO: docs, noting possible linear time
 void entityManager::unregisterComponent(entity *ent, component *ptr) {
 	if (!valid(ent)) {
+		LogWarnFmt("Trying to remove component from invalid entity at {}!", (void*)ent);
 		return;
 	}
 

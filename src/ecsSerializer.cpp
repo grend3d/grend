@@ -85,6 +85,7 @@ entity *serializer::build(entityManager *manager, json serialized)
 		;
 
 	if (!complete) {
+		LogErrorFmt("incomplete entity: {}", serialized);
 		return nullptr;
 	}
 
@@ -96,10 +97,19 @@ entity *serializer::build(entityManager *manager, json serialized)
 
 	if (has(typestr)) {
 		component *built = factories[typestr]->allocate(manager, nullptr);
+
 		if ((ret = dynamic_cast<entity*>(built)) == nullptr) {
+			LogErrorFmt("Could not cast to entity: {}", typestr);
 			// TODO: need to delete 'built' and return,
 			//       given type was not an entity type
 		}
+
+		if (!manager->valid(ret)) {
+			LogErrorFmt("Newly-built entity {} (base: {}) is invalid!", (void*)ret, (void*)built);
+		}
+
+	} else {
+		LogErrorFmt("Don't have factory for type: {}", typestr);
 	}
 
 	if (!ret) {
@@ -133,6 +143,10 @@ component *serializer::build(entityManager *manager,
 	// unmangled name stored in serialized form
 	std::string type = serialized[0].get<std::string>();
 	LogFmt("Attempting to add component {} to entity {}...", type, (void*)ent);
+
+	if (!manager->valid(ent)) {
+		LogWarnFmt("Entity {} is invalid! This shouldn't happen!", (void*)ent);
+	}
 
 	if (!has(type)) {
 		return nullptr;

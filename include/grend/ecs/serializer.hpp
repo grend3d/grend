@@ -33,6 +33,33 @@ class abstractFactory {
 		virtual component *allocate(entityManager *manager, entity *ent) = 0;
 };
 
+// SFINAE hax, dispatch to different constructors depending on whether
+// a type is derived from the entity class
+template <typename T>
+consteval bool isEntityType() {
+	return std::is_base_of<entity, T>::value;
+}
+
+template <typename T>
+consteval bool isComponentType() {
+	return  std::is_base_of<component, T>::value
+	    && !std::is_base_of<entity, T>::value;
+}
+
+template <typename T>
+static inline component* doConstruct(entityManager* manager, entity* ent,
+                                     char(*)[isComponentType<T>()] = 0)
+{
+	return manager->construct<T>(ent);
+}
+
+template <typename T>
+static inline component* doConstruct(entityManager* manager, entity* ent,
+                                     char(*)[isEntityType<T>()] = 0)
+{
+	return manager->construct<T>();
+}
+
 template <class T>
 class factory : public abstractFactory {
 	public:
@@ -41,7 +68,7 @@ class factory : public abstractFactory {
 
 		virtual component *allocate(entityManager *manager, entity *ent)
 		{
-			return manager->construct<T>(ent);
+			return doConstruct<T>(manager, ent);
 		}
 };
 
