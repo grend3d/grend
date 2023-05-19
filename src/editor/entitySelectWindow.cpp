@@ -263,6 +263,9 @@ void gameEditorUI::entityListWindow() {
 		//tagchars.push_back(v.c_str());
 		if (const char *re = remangle(v)) {
 			tagchars.push_back(re);
+
+		} else if (v.length() > 0) {
+			tagchars.push_back("<invalid type name>");
 		}
 	}
 
@@ -330,12 +333,20 @@ void gameEditorUI::entityListWindow() {
 	}
 
 	ImGui::BeginChild("entityList", ImVec2(0, 0), false, 0);
+	unsigned entID = 0;
 	for (auto& ent : entities->entities) {
+		if (!entities->valid(ent)) {
+			ImGui::Text("[Invalid entity %p]", ent);
+			continue;
+		}
+
 		if (*searchBuffer && !entities->hasComponents(ent, tagchars)) {
 			// entity doesn't have the searched tags, filtered out
 			// TODO: wait, why am I not using the search interface here?
 			continue;
 		}
+
+		ImGui::PushID(entID++);
 
 		//std::string entstr = "entity #" + std::to_string((uintptr_t)ent);
 		std::string entstr = demangle(ent->mangledType) + " : " + ent->name;
@@ -350,70 +361,74 @@ void gameEditorUI::entityListWindow() {
 			editor->setSelectedEntity(ent);
 		}
 
-		if (ImGui::BeginPopupContextItem(contextstr.c_str())) {
-			ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Action");
+		if (ent == selectedEntity) {
+			if (ImGui::BeginPopupContextItem(contextstr.c_str())) {
+				ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Action");
+				ImGui::Separator();
+
+				if (ImGui::Selectable("Delete")) {
+					entities->remove(selectedEntity);
+					editor->setSelectedEntity(nullptr);
+				}
+
+				if (ImGui::Selectable("Duplicate")) { /* TODO */ }
+				ImGui::EndPopup();
+			}
+
+			auto& components = entities->getEntityComponents(ent);
+			std::set<std::string> seen;
 			ImGui::Separator();
+			ImGui::Indent(16.f);
+			ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Attached components:");
+			//ImGui::Columns(2);
 
-			if (ImGui::Selectable("Delete")) {
-				entities->remove(selectedEntity);
-				editor->setSelectedEntity(nullptr);
-			}
+			std::string sectionName = entstr + ":components";
+			ImGui::TreePush(sectionName.c_str());
 
-			if (ImGui::Selectable("Duplicate")) { /* TODO */ }
-			ImGui::EndPopup();
-		}
+			for (auto& [name, comp] : components) {
+				if (!seen.count(name)) {
+					const auto& demangled = demangle(name);
+					if (ImGui::Selectable(demangled.c_str())) {
+						strncat(searchBuffer, demangled.c_str(), sizeof(searchBuffer) - 1);
+						strncat(searchBuffer, " ", sizeof(searchBuffer) - 1);
+					}
 
-		auto& components = entities->getEntityComponents(ent);
-		std::set<std::string> seen;
-		ImGui::Separator();
-		ImGui::Indent(16.f);
-		ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.f), "Attached components:");
-		//ImGui::Columns(2);
-
-		std::string sectionName = entstr + ":components";
-		ImGui::TreePush(sectionName.c_str());
-
-		for (auto& [name, comp] : components) {
-			if (!seen.count(name)) {
-				if (ImGui::Selectable(demangle(name).c_str())) {
-					// TODO: need a way to serialize a specific component,
-					//       avoid recreating an entire entity
-					editor->setSelectedEntity(ent);
-				}
-
-				seen.insert(name);
-			}
-		}
-
-		ImGui::TreePop();
-
-		std::string asdf = entstr + ":sec";
-		ImGui::TreePush(asdf.c_str());
-		if (ImGui::Button("Attach")) {
-			ImGui::OpenPopup(popupstr.c_str());
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Save")) {
-			editor->setSelectedEntity(ent);
-			export_entity_dialog.show();
-		}
-
-		if (ImGui::BeginPopup(popupstr.c_str())) {
-			for (const auto& [name, _] : factories->factories) {
-				if (ImGui::Selectable(name.c_str())) {
-					nlohmann::json j = {name, {}};
-
-					factories->build(entities, ent, j);
+					seen.insert(name);
 				}
 			}
 
-			ImGui::EndPopup();
-		}
-		ImGui::TreePop();
+			ImGui::TreePop();
 
-		ImGui::Unindent(16.f);
+			std::string asdf = entstr + ":sec";
+			ImGui::TreePush(asdf.c_str());
+			if (ImGui::Button("Attach")) {
+				ImGui::OpenPopup(popupstr.c_str());
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Save")) {
+				editor->setSelectedEntity(ent);
+				export_entity_dialog.show();
+			}
+
+			if (ImGui::BeginPopup(popupstr.c_str())) {
+				for (const auto& [name, _] : factories->factories) {
+					if (ImGui::Selectable(name.c_str())) {
+						nlohmann::json j = {name, {}};
+
+						factories->build(entities, ent, j);
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+			ImGui::TreePop();
+
+			ImGui::Unindent(16.f);
+		}
+
 		ImGui::Separator();
+		ImGui::PopID();
 	}
 
 	ImGui::EndChild();
