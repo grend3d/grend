@@ -283,13 +283,15 @@ void gameEditorUI::entityListWindow() {
 					{"entity-properties", {
 						{"position", {0,0,0}},
 						{"rotation", {1,0,0,0}},
-						{"scale",    {1,1,1}}
+						{"scale",    {1,1,1}},
+						{"name",     "<Unnamed>"},
 					}},
 					{"components", {}},
 				};
 
 				ecs::entity *ent = factories->build(entities, j);
 				entities->add(ent);
+				editor->setSelectedEntity(ent);
 			}
 			//drawSelectableLabel(demangle(name).c_str());
 		}
