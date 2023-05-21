@@ -1,4 +1,5 @@
 #include <grend/ecs/animationController.hpp>
+#include <grend/ecs/sceneComponent.hpp>
 
 #include <grend/utility.hpp>
 #include <imgui/imgui.h>
@@ -51,13 +52,10 @@ animationController::animationController(regArgs t)
 			// TODO: copy
 			animations = p->animations;
 		}
+	}
 
-		if (!animations) {
-			animations = std::make_shared<animationCollection>();
-		}
-
-	} else {
-		LogError("Animation controller attached to something which isn't a scene node!");
+	if (!animations) {
+		animations = std::make_shared<animationCollection>();
 	}
 };
 
@@ -92,7 +90,20 @@ void animationController::update(entityManager *manager, float delta) {
 
 	if (currentAnimation->endtime == 0) return;
 
-	auto *node = dynamic_cast<sceneNode*>(manager->getEntity(this));
+	entity *ent = manager->getEntity(this);
+	// order of priorities for choosing animation targets:
+	// - sceneImport node if the node is an import
+	// - sceneComponent node if a scene component is attached
+	// - sceneNode if the node is any other derived class of sceneNode
+	sceneNode *node = dynamic_cast<sceneImport*>(ent);
+
+	if (!node) {
+		if (auto *scene = ent->get<sceneComponent>()) {
+			node = scene->getNode().getPtr();
+		} else {
+			node = dynamic_cast<sceneNode*>(ent);
+		}
+	}
 
 	if (node) {
 		animTime = fmod(animTime + delta*animSpeed, currentAnimation->endtime);
