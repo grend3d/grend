@@ -54,9 +54,11 @@ rigidBodyStaticMesh::rigidBodyStaticMesh(regArgs t)
 
 void rigidBodyUpdateSystem::update(entityManager *manager, float delta) {
 	for (auto [ent, body] : manager->search<rigidBody>()) {
-		TRS transform = body->phys->getTransform();
-		transform.scale = ent->transform.getTRS().scale;
-		ent->transform.set(transform);
+		if (body->phys) {
+			TRS transform = body->phys->getTransform();
+			transform.scale = ent->transform.getTRS().scale;
+			ent->transform.set(transform);
+		}
 	}
 }
 
