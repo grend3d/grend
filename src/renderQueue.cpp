@@ -164,9 +164,16 @@ void renderQueue::addSkinned(sceneNode::ptr obj,
 		return;
 
 	if (obj->type == sceneNode::objType::Mesh) {
-		auto m = ref_cast<sceneMesh>(obj);
-		glm::vec3 center = applyTransform(trans, boxCenter(m->boundingBox));
-		skinnedMeshes[skin].push_back({trans, center, inverted, m});
+		auto mesh = ref_cast<sceneMesh>(obj);
+		glm::vec3 center = applyTransform(trans, boxCenter(mesh->boundingBox));
+
+		skinnedMeshes[skin].push_back({
+			.transform = trans,
+			.center    = center,
+			.inverted  = inverted,
+			.data      = mesh,
+			.renderID  = renderID,
+		});
 	}
 
 	for (auto ptr : obj->nodes()) {
