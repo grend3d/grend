@@ -36,8 +36,7 @@ void gameEditor::addnodesRec(const std::string& name,
 					ImGui::CloseCurrentPopup();
 
 					if (auto p = obj->parent) {
-						unlink(obj);
-						setNode(namebuf, p, obj);
+						obj->name = std::string(namebuf);
 					}
 				}
 

@@ -35,8 +35,8 @@ class ref {
 			return *this;
 		}
 
-		bool operator==(const ref& rhs) { return ptr == rhs.ptr; }
-		bool operator==(const T* rhs) { return ptr == rhs; }
+		bool operator==(const ref& rhs) const { return ptr == rhs.ptr; }
+		bool operator==(const T* rhs) const { return ptr == rhs; }
 		//bool operator==(T* rhs) { return ptr == rhs; }
 
 		T* getPtr() const { return ptr; }

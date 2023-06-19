@@ -132,7 +132,7 @@ glm::mat4 fullTranslation(sceneNode::ptr node) {
 
 // TODO: just realized these overload syscalls, should that be avoided?
 //       in principle it's fine, might be confusing in code though
-sceneNode::ptr unlink(sceneNode::ptr node);
+void unlink(sceneNode::ptr node);
 sceneNode::ptr clone(sceneNode::ptr node);     // shallow copy
 sceneNode::ptr duplicate(sceneNode::ptr node); // deep copy
 std::string getNodeName(sceneNode::ptr node);

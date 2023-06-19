@@ -39,9 +39,9 @@ sceneNode::ptr sceneNode::getNode(std::string name) {
 	return nullptr;
 }
 
-sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
+void grendx::unlink(sceneNode::ptr node) {
 	if (!node)
-		return nullptr;
+		return;
 
 	auto manager = engine::Resolve<ecs::entityManager>();
 
@@ -54,8 +54,6 @@ sceneNode::ptr grendx::unlink(sceneNode::ptr node) {
 			}
 		}
 	}
-
-	return node;
 }
 
 // TODO: rewrite

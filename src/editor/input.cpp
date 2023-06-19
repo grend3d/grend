@@ -214,7 +214,10 @@ void gameEditor::loadInputBindings() {
 						break;
 
 					case SDLK_o: saveMap(state->rootnode); break;
-					case SDLK_DELETE: setSelectedEntity(unlink(getSelectedNode())); break;
+					case SDLK_DELETE:
+						unlink(getSelectedNode());
+						setSelectedEntity(state->rootnode);
+						break;
 				}
 			}
 			return MODAL_NO_CHANGE;
