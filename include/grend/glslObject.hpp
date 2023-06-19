@@ -1,10 +1,11 @@
 #pragma once
 
+#include <grend/glslParser.hpp>
+
 #include <string>
 #include <vector>
 #include <string_view>
-
-#include <grend/glslParser.hpp>
+#include <cstdint>
 
 namespace grendx {
 
