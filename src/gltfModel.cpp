@@ -1166,7 +1166,7 @@ load_gltf_scene_nodes(std::string filename,
 	// TODO: how to return animations?
 	//       could just stuff it in the import object
 
-	sceneImport::ptr sceneobj = ecs->construct<sceneImport>(filename);
+	sceneNode::ptr sceneobj = ecs->construct<sceneNode>();
 	for (auto& scene : gltf.data.scenes) {
 		for (int nodeidx : scene.nodes) {
 			std::string id = "scene-root["+std::to_string(nodeidx)+"]";
