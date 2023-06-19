@@ -259,6 +259,8 @@ class rigidBodyStaticMesh : public rigidBody,
 
 			body->activate(comp->manager, comp->manager->getEntity(comp));
 		}
+
+		static void drawEditor(component *ent);
 };
 
 class rigidBodyBox : public rigidBody {
@@ -359,6 +361,19 @@ class rigidBodyCapsule : public rigidBody {
 		float height = 1.f;
 
 		static void drawEditor(component *ent);
+
+		static nlohmann::json serializer(component *comp) {
+			// TODO:
+			return {
+				{"TODO", 0},
+			};
+		}
+
+		static void deserializer(component *comp, nlohmann::json j) {
+			rigidBodyStaticMesh *body = static_cast<rigidBodyStaticMesh*>(comp);
+
+			body->activate(comp->manager, comp->manager->getEntity(comp));
+		}
 };
 
 class rigidBodyUpdateSystem : public entitySystem {
