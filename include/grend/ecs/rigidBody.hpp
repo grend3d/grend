@@ -193,7 +193,12 @@ class rigidBodyStaticMesh : public rigidBody,
 
 			// if this is attached to a scene node, add static meshes
 			if (sceneNode* node = dynamic_cast<sceneNode*>(ent)) {
-				physicsServ->addStaticModels(ent, node, ent->transform.getTRS(), meshObjects);
+				TRS t = ent->transform.getTRS();
+				for (auto p = node->parent; p; p = p->parent) {
+					t = addTRS(p->transform.getTRS(), t);
+				}
+
+				physicsServ->addStaticModels(ent, node, t, meshObjects);
 			}
 		}
 
