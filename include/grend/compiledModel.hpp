@@ -59,7 +59,7 @@ class compiledModel {
 		Buffer::ptr joints;
 };
 
-compiledMaterial::ptr matcache(material::ptr mat);
+compiledMaterial::ptr matcache(material *mat);
 
 compiledMesh::ptr compileMesh(ecs::ref<sceneMesh> mesh);
 compiledModel::ptr compileModel(std::string name, ecs::ref<sceneModel> mod);

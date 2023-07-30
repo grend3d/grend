@@ -1,5 +1,6 @@
 #include <grend/compiledModel.hpp>
 #include <grend/logger.hpp>
+#include <grend/ecs/materialComponent.hpp>
 
 namespace grendx {
 
@@ -19,12 +20,12 @@ compiledModel::~compiledModel() {
 }
 
 
-compiledMaterial::ptr matcache(material::ptr mat) {
+compiledMaterial::ptr matcache(material *mat) {
 	if (!mat) {
 		return nullptr;
 	}
 
-	auto it = materialCache.find(mat.get());
+	auto it = materialCache.find(mat);
 
 	if (it != materialCache.end()) {
 		if (auto observe = it->second.lock()) {
@@ -61,7 +62,7 @@ compiledMaterial::ptr matcache(material::ptr mat) {
 		ret->textures.lightmap = texcache(maps.lightmap);
 	}
 
-	materialCache[mat.get()] = ret;
+	materialCache[mat] = ret;
 	// XXX: once the material is cached no need to keep pointers around...
 	//      need better way to do this
 	maps.diffuse.reset();
@@ -89,8 +90,9 @@ compiledMesh::ptr compileMesh(sceneMesh::ptr mesh) {
 	foo->elements->buffer(mesh->faces.data(),
 						  mesh->faces.size() * sizeof(GLuint));
 
+	auto comp = mesh->get<ecs::materialComponent>();
 	// TODO: more consistent naming here
-	foo->mat   = matcache(mesh->meshMaterial);
+	foo->mat   = comp? matcache(&comp->mat) : nullptr;
 	foo->blend = foo->mat? foo->mat->factors.blend : material::blend_mode::Opaque;
 
 	return foo;

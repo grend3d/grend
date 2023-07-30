@@ -2,6 +2,7 @@
 #include <grend/utility.hpp>
 #include <grend/logger.hpp>
 #include <grend/textureData.hpp>
+#include <grend/ecs/materialComponent.hpp>
 
 #include <vector>
 #include <map>
@@ -15,6 +16,9 @@
 #include <stdint.h>
 
 namespace grendx {
+
+std::map<std::string, material::ptr>
+load_materials(sceneModel::ptr model, std::string filename);
 
 static std::string base_dir(std::string filename) {
 	std::size_t found = filename.rfind("/");
@@ -81,9 +85,11 @@ sceneModel::ptr load_object(std::string filename) {
 		else if (statement[0] == "usemtl") {
 			LogFmt(" > using material {}", statement[1]);
 			current_mesh = ecs->construct<sceneMesh>();
-			//current_mesh->material = statement[1];
-			// TODO: check that material exists
-			current_mesh->meshMaterial = materials[statement[1]];
+
+			if (auto mat = materials[statement[1]]) {
+				current_mesh->attach<ecs::materialComponent>(*mat.get());
+			}
+
 			current_mesh_name = mesh_name + ":" + statement[1];
 			current_mesh_name += ":" + std::to_string(matMeshCount[statement[1]]++);
 

@@ -36,7 +36,6 @@ class sceneMesh : public sceneNode {
 		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
-		material::ptr meshMaterial;
 		std::vector<GLuint> faces;
 
 		struct AABB    boundingBox;
@@ -112,8 +111,6 @@ typedef std::map<std::string, sceneMesh::ptr> meshMap;
 typedef std::map<std::string, sceneModel::ptr> modelMap;
 
 sceneModel::ptr load_object(std::string filename);
-std::map<std::string, material::ptr>
-  load_materials(sceneModel::ptr model, std::string filename);
 
 modelMap load_gltf_models(std::string filename);
 std::pair<sceneImport::ptr, modelMap> load_gltf_scene(std::string filename);

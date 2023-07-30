@@ -13,7 +13,7 @@
 
 using namespace grendx;
 
-material::ptr default_material;
+material default_material;
 compiledMaterial::ptr default_compiledMat;
 
 void renderContext::applySettings(const renderSettings& newsettings) {
@@ -100,34 +100,33 @@ renderContext::renderContext(SDLContext& ctx, const renderSettings& _settings) {
 	// TODO: skybox should be a setable node object
 	//skybox = glman.load_cubemap("assets/tex/cubes/LancellottiChapel/");
 	//
-	default_material = std::make_shared<material>();
-	default_material->factors.diffuse = {1, 1, 1, 1},
-	default_material->factors.ambient = {1, 1, 1, 1},
-	default_material->factors.specular = {1, 1, 1, 1},
-	default_material->factors.emissive = {1, 1, 1, 1},
-	default_material->factors.roughness = 1.f,
-	default_material->factors.metalness = 0.f,
-	default_material->factors.opacity = 1,
-	default_material->factors.refract_idx = 1.5,
+	default_material.factors.diffuse = {1, 1, 1, 1},
+	default_material.factors.ambient = {1, 1, 1, 1},
+	default_material.factors.specular = {1, 1, 1, 1},
+	default_material.factors.emissive = {1, 1, 1, 1},
+	default_material.factors.roughness = 1.f,
+	default_material.factors.metalness = 0.f,
+	default_material.factors.opacity = 1,
+	default_material.factors.refract_idx = 1.5,
 
-	default_material->maps.diffuse
+	default_material.maps.diffuse
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
-	default_material->maps.metalRoughness
+	default_material.maps.metalRoughness
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
-	default_material->maps.normal
+	default_material.maps.normal
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/lightblue-normal.png"),
-	default_material->maps.ambientOcclusion
+	default_material.maps.ambientOcclusion
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
 	/*
-	default_material->maps.emissive
+	default_material.maps.emissive
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/black.png"),
 		*/
-	default_material->maps.emissive
+	default_material.maps.emissive
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/white.png"),
-	default_material->maps.lightmap
+	default_material.maps.lightmap
 		= std::make_shared<textureData>(GR_PREFIX "assets/tex/black.png"),
 
-	default_compiledMat = matcache(default_material);
+	default_compiledMat = matcache(&default_material);
 
 	loadShaders();
 	LogInfo("Initialized render context");

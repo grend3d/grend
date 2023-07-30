@@ -2,6 +2,7 @@
 #include <grend/utility.hpp>
 #include <grend/animation.hpp>
 #include <grend/logger.hpp>
+#include <grend/ecs/materialComponent.hpp>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
@@ -517,13 +518,10 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 			}
 
 			if (prim.material >= 0) {
-				modmesh->meshMaterial = gltf_load_material(gltf, prim.material);
-			} else {
-				// XXX: a little wasteful
-				modmesh->meshMaterial = std::make_shared<material>();
+				auto mat     = gltf_load_material(gltf, prim.material);
+				auto matcomp = modmesh->attach<ecs::materialComponent>(*mat.get());
+				matcomp->mat.maps.lightmap = lightmap;
 			}
-
-			modmesh->meshMaterial->maps.lightmap = lightmap;
 
 			// accessor indices
 			int elements = prim.indices;
