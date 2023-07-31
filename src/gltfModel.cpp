@@ -3,6 +3,7 @@
 #include <grend/animation.hpp>
 #include <grend/logger.hpp>
 #include <grend/ecs/materialComponent.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
@@ -484,6 +485,8 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 	for (auto& mesh : gltf.data.meshes) {
 		sceneModel::ptr curModel = ecs->construct<sceneModel>();
+		auto vertBuf = curModel->attach<ecs::bufferComponent<sceneModel::vertex>>();
+		auto& verts = vertBuf->data;
 
 		ret[mesh.name] = curModel;
 
@@ -576,8 +579,9 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 				auto& acc = gltf.data.accessors[elements];
 				assert_type(acc.type, TINYGLTF_TYPE_SCALAR);
 
-				size_t vsize = curModel->vertices.size();
-				auto& submesh = modmesh->faces;
+				size_t vsize = verts.size();
+				auto  faceBuf = modmesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+				auto& submesh = faceBuf->data;
 
 				if (acc.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
 					gltf_unpack_ushort_to_uint(gltf, elements, submesh);
@@ -597,8 +601,9 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 				// identity-mapped indices
 				// todo << "        generating indices..." << std::endl;
 				auto& acc = gltf.data.accessors[position];
-				auto& submesh = modmesh->faces;
-				size_t vsize = curModel->vertices.size();
+				auto  faceBuf = modmesh->get<ecs::bufferComponent<sceneMesh::faceType>>();
+				auto& submesh = faceBuf->data;
+				size_t vsize = verts.size();
 
 				for (size_t i = 0; i < acc.count; i++) {
 					submesh.push_back(i + vsize);
@@ -712,7 +717,7 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 				if (!uvIt.atEnd())      {vert.uv       = *uvIt;      uvIt++;};
 				if (!litIt.atEnd())     {vert.lightmap = *litIt;     litIt++;};
 
-				curModel->vertices.push_back(vert);
+				verts.push_back(vert);
 			}
 
 			accessorIterator<usvec4> jointItShort;
@@ -748,29 +753,30 @@ grendx::modelMap grendx::load_gltf_models(gltfModel& gltf) {
 
 				weightIt = gltf_buffer_iterator<glm::vec4>(gltf, weights);
 				curModel->haveJoints = true;
+				auto  jointBuf = curModel->attach<ecs::bufferComponent<sceneModel::jointWeights>>();
+				auto& joints   = jointBuf->data;
 				// todo << "        have joints: " << joints << std::endl;
-			}
 
-			for (; !weightIt.atEnd(); weightIt++) {
-				sceneModel::jointWeights joint;
+				for (; !weightIt.atEnd(); weightIt++) {
+					sceneModel::jointWeights joint;
 
-				if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
-					if (!jointItByte.atEnd()) {
-						joint.joints = *jointItByte;
-						jointItByte++;
+					if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+						if (!jointItByte.atEnd()) {
+							joint.joints = *jointItByte;
+							jointItByte++;
+						}
+
+					} else if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+						if (!jointItShort.atEnd()) {
+							joint.joints = *jointItShort;
+							jointItShort++;
+						}
 					}
 
-				} else if (jointType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-					if (!jointItShort.atEnd()) {
-						joint.joints = *jointItShort;
-						jointItShort++;
-					}
+					joint.weights = *weightIt;
+					joints.push_back(joint);
 				}
-
-				joint.weights = *weightIt;
-				curModel->joints.push_back(joint);
 			}
-
 		}
 
 		// generate anything not included

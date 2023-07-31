@@ -4,6 +4,7 @@
 #include <grend/physics.hpp>
 #include <grend/bulletPhysics.hpp>
 #include <grend/logger.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 //#include "btBulletDynamicsCommon.h"
 
 using namespace grendx;
@@ -345,18 +346,28 @@ bulletPhysics::addStaticMesh(void *data,
 {
 	std::lock_guard<std::mutex> lock(bulletMutex);
 
-	if (mesh->faces.size() / 3 == 0) {
+	auto vertBuf = model->get<ecs::bufferComponent<sceneModel::vertex>>();
+	auto faceBuf = mesh->get<ecs::bufferComponent<sceneMesh::faceType>>();
+
+	if (!vertBuf || !faceBuf) {
+		return nullptr;
+	}
+
+	auto& verts = vertBuf->data;
+	auto& faces = faceBuf->data;
+
+	if (faces.size() / 3 == 0) {
 		LogError("WARNING: bulletPhysics::addStaticMesh(): "
 		         "can't add mesh with no elements");
 		return nullptr;
 	}
 
 	btTriangleIndexVertexArray* indexArray =
-		new btTriangleIndexVertexArray(mesh->faces.size() / 3,
-		                               (int*)mesh->faces.data(),
+		new btTriangleIndexVertexArray(faces.size() / 3,
+		                               (int*)faces.data(),
 		                               sizeof(GLuint[3]),
-		                               model->vertices.size(),
-		                               (GLfloat*)model->vertices.data(),
+		                               verts.size(),
+		                               (GLfloat*)verts.data(),
 									   sizeof(sceneModel::vertex));
 
 	bulletObject::ptr ret = std::make_shared<bulletObject>();

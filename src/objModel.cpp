@@ -3,6 +3,7 @@
 #include <grend/logger.hpp>
 #include <grend/textureData.hpp>
 #include <grend/ecs/materialComponent.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 
 #include <vector>
 #include <map>
@@ -40,6 +41,7 @@ sceneModel::ptr load_object(std::string filename) {
 	std::string mesh_material = "(null)";
 	std::string current_mesh_name = mesh_name + ":" + mesh_material;
 	sceneMesh::ptr current_mesh = nullptr;
+	std::vector<sceneMesh::faceType>* curFaces = nullptr;
 
 	std::vector<glm::vec3> vertbuf = {};
 	std::vector<glm::vec3> normbuf = {};
@@ -55,6 +57,9 @@ sceneModel::ptr load_object(std::string filename) {
 
 	sceneModel::ptr ret = ecs->construct<sceneModel>();
 	ret->sourceFile = filename;
+
+	auto  vertBuf = ret->attach<ecs::bufferComponent<sceneModel::vertex>>();
+	auto& verts   = vertBuf->data;
 
 	// TODO: split this into a seperate parse function
 	while (std::getline(input, line)) {
@@ -72,6 +77,9 @@ sceneModel::ptr load_object(std::string filename) {
 			mesh_name = statement[1];
 			current_mesh_name = mesh_name + ":(null)";
 			current_mesh = ecs->construct<sceneMesh>();
+
+			auto faceBuf = current_mesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+			curFaces = &faceBuf->data;
 			//setNode(current_mesh_name, ret, current_mesh);
 		}
 
@@ -85,6 +93,9 @@ sceneModel::ptr load_object(std::string filename) {
 		else if (statement[0] == "usemtl") {
 			LogFmt(" > using material {}", statement[1]);
 			current_mesh = ecs->construct<sceneMesh>();
+
+			auto faceBuf = current_mesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+			curFaces = &faceBuf->data;
 
 			if (auto mat = materials[statement[1]]) {
 				current_mesh->attach<ecs::materialComponent>(*mat.get());
@@ -129,14 +140,19 @@ sceneModel::ptr load_object(std::string filename) {
 					normal = normbuf[std::stoi(spec[2]) - 1];
 				}
 
-				ret->vertices.push_back((sceneModel::vertex) {
+				verts.push_back((sceneModel::vertex) {
 					.position = position,
 					.normal   = normal,
 					.color    = glm::vec3(1, 1, 1),
 					.uv       = texcoord,
 				});
 
-				current_mesh->faces.push_back(ret->vertices.size() - 1);
+				if (!curFaces) {
+					LogError("Don't have index buffer! This shouldn't happen!");
+
+				} else {
+					curFaces->push_back(verts.size() - 1);
+				}
 			};
 
 			for (std::size_t cur = 1; cur + 2 < end; cur++) {

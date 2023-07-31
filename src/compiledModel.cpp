@@ -1,6 +1,7 @@
 #include <grend/compiledModel.hpp>
 #include <grend/logger.hpp>
 #include <grend/ecs/materialComponent.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 
 namespace grendx {
 
@@ -77,8 +78,16 @@ compiledMaterial::ptr matcache(material *mat) {
 
 compiledMesh::ptr compileMesh(sceneMesh::ptr mesh) {
 	compiledMesh::ptr foo = compiledMesh::ptr(new compiledMesh());
+	auto faceBuf = mesh->get<ecs::bufferComponent<sceneMesh::faceType>>();
 
-	if (mesh->faces.size() == 0) {
+	if (!faceBuf) {
+		LogInfo("Mesh has no faces!");
+		return nullptr;
+	}
+
+	auto& faces = faceBuf->data;
+
+	if (faces.size() == 0) {
 		LogInfo("Mesh has no indices!");
 		return foo;
 	}
@@ -87,8 +96,8 @@ compiledMesh::ptr compileMesh(sceneMesh::ptr mesh) {
 	mesh->compiled = true;
 
 	foo->elements = genBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	foo->elements->buffer(mesh->faces.data(),
-						  mesh->faces.size() * sizeof(GLuint));
+	foo->elements->buffer(faces.data(),
+	                      faces.size() * sizeof(GLuint));
 
 	auto comp = mesh->get<ecs::materialComponent>();
 	// TODO: more consistent naming here
@@ -101,24 +110,38 @@ compiledMesh::ptr compileMesh(sceneMesh::ptr mesh) {
 compiledModel::ptr compileModel(std::string name, sceneModel::ptr model) {
 	// TODO: might be able to clear vertex info after compiling here
 	compiledModel::ptr obj = compiledModel::ptr(new compiledModel());
+
+	auto vertBuf  = model->get<ecs::bufferComponent<sceneModel::vertex>>();
+	auto jointBuf = model->get<ecs::bufferComponent<sceneModel::jointWeights>>();
+
+	if (!vertBuf || (model->haveJoints && !jointBuf)) {
+		return nullptr;
+	}
+
+	auto& verts = vertBuf->data;
+
 	model->comped_model = obj;
 	model->compiled = true;
 
 	obj->vertices = genBuffer(GL_ARRAY_BUFFER);
-	obj->vertices->buffer(model->vertices.data(),
-	                      model->vertices.size() * sizeof(sceneModel::vertex));
+	obj->vertices->buffer(verts.data(),
+	                      verts.size() * sizeof(sceneModel::vertex));
 
 	if (model->haveJoints) {
+		auto& joints = jointBuf->data;
+
 		obj->haveJoints = true;
 		obj->joints = genBuffer(GL_ARRAY_BUFFER);
-		obj->joints->buffer(model->joints.data(),
-		                    model->joints.size() * sizeof(sceneModel::jointWeights));
+		obj->joints->buffer(joints.data(),
+		                    joints.size() * sizeof(sceneModel::jointWeights));
 	}
 
 	for (auto ptr : model->nodes()) {
 		if ((*ptr)->type == sceneNode::objType::Mesh) {
 			auto wptr = ref_cast<sceneMesh>(ptr->getRef());
-			obj->meshes[(*ptr)->name] = compileMesh(wptr);
+			if (auto compiled = compileMesh(wptr)) {
+				obj->meshes[(*ptr)->name] = compiled;
+			}
 		}
 	}
 

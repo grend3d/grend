@@ -1,5 +1,6 @@
 #include <grend/geometryGeneration.hpp>
 #include <grend/sceneModel.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 
 namespace grendx {
 
@@ -22,6 +23,16 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 	sceneModel::ptr ret  = ecs->construct<sceneModel>();
 	sceneMesh::ptr  mesh = ecs->construct<sceneMesh>();
 
+	auto vertBuf = ret->attach<ecs::bufferComponent<sceneModel::vertex>>();
+	auto faceBuf = mesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+
+	if (!vertBuf || !faceBuf) {
+		return nullptr;
+	}
+
+	auto& verts = vertBuf->data;
+	auto& faces = faceBuf->data;
+
 	unsigned xverts = width / unitsPerVert + 1;
 	unsigned yverts = height / unitsPerVert + 1;
 
@@ -31,7 +42,7 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 			float vz = j * unitsPerVert;
 			float height = func(x + vx, y + vz);
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {vx, height, vz},
 				.uv       = {vx / 12.0, vz / 12.0},
 			});
@@ -47,13 +58,13 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 				(j + 1)*xverts + k + 1,
 			};
 
-			mesh->faces.push_back(vs[0]);
-			mesh->faces.push_back(vs[1]);
-			mesh->faces.push_back(vs[2]);
+			faces.push_back(vs[0]);
+			faces.push_back(vs[1]);
+			faces.push_back(vs[2]);
 
-			mesh->faces.push_back(vs[3]);
-			mesh->faces.push_back(vs[2]);
-			mesh->faces.push_back(vs[1]);
+			faces.push_back(vs[3]);
+			faces.push_back(vs[2]);
+			faces.push_back(vs[1]);
 		}
 	}
 
@@ -73,6 +84,16 @@ sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	sceneModel::ptr ret = ecs->construct<sceneModel>();
 	sceneMesh::ptr mesh = ecs->construct<sceneMesh>();
 
+	auto vertBuf = ret->attach<ecs::bufferComponent<sceneModel::vertex>>();
+	auto faceBuf = mesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+
+	if (!vertBuf || !faceBuf) {
+		return nullptr;
+	}
+
+	auto& verts = vertBuf->data;
+	auto& faces = faceBuf->data;
+
 	unsigned i = 0;
 	for (int y = sx; y <= ey; y += spacing) {
 		for (int x = sx; x <= ex; x += spacing) {
@@ -81,44 +102,44 @@ sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 			float x1 = 0.2*sin((x)*0.2f);
 			float x2 = 0.2*sin((x + spacing)*0.2f);
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 0},
 			});
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x, x2+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
 			});
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x, x2+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 1},
 			});
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x - spacing, x1+y1, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
-			ret->vertices.push_back((sceneModel::vertex) {
+			verts.push_back((sceneModel::vertex) {
 				.position = {x, x2+y2, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
 			});
 
 			for (unsigned k = 0; k < 6; k++) {
-				mesh->faces.push_back(i++);
+				faces.push_back(i++);
 			}
 		}
 	}
@@ -142,6 +163,16 @@ sceneModel::ptr generate_cuboid(float width, float height, float depth) {
 	float ax = width/2;
 	float ay = height/2;
 	float az = depth/2;
+
+	auto vertBuf = ret->attach<ecs::bufferComponent<sceneModel::vertex>>();
+	auto faceBuf = mesh->attach<ecs::bufferComponent<sceneMesh::faceType>>();
+
+	if (!vertBuf || !faceBuf) {
+		return nullptr;
+	}
+
+	auto& verts = vertBuf->data;
+	auto& faces = faceBuf->data;
 
 	// TODO: cube generation still borked after VBO refactor,
 	//       leaving this here for reference
@@ -224,7 +255,7 @@ sceneModel::ptr generate_cuboid(float width, float height, float depth) {
 		{0, 1}, {1, 1},
 	};
 
-	glm::vec3 verts[24] = {
+	glm::vec3 vertData[24] = {
 		// front
 		{-ax, -ay,  az}, { ax, -ay,  az},
 		{ ax,  ay,  az}, {-ax,  ay,  az},
@@ -245,21 +276,21 @@ sceneModel::ptr generate_cuboid(float width, float height, float depth) {
 		{ ax,  ay, -az}, { ax,  ay,  az},
 	};
 
-	ret->vertices.resize(24);
+	verts.resize(24);
 
 	for (unsigned i = 0; i < 24; i += 4) {
 		for (unsigned k = 0; k < 4; k++) {
-			ret->vertices[i+k].position = verts[i+k];
-			ret->vertices[i+k].uv       = uvs[k];
+			verts[i+k].position = vertData[i+k];
+			verts[i+k].uv       = uvs[k];
 		}
 
-		mesh->faces.push_back(i);
-		mesh->faces.push_back(i+1);
-		mesh->faces.push_back(i+2);
+		faces.push_back(i);
+		faces.push_back(i+1);
+		faces.push_back(i+2);
 
-		mesh->faces.push_back(i+2);
-		mesh->faces.push_back(i+3);
-		mesh->faces.push_back(i);
+		faces.push_back(i+2);
+		faces.push_back(i+3);
+		faces.push_back(i);
 	}
 
 	setNode("mesh", ret, mesh);

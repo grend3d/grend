@@ -1,5 +1,6 @@
 #include <grend/octree.hpp>
 #include <grend/logger.hpp>
+#include <grend/ecs/bufferComponent.hpp>
 
 #include <math.h>
 #include <algorithm>
@@ -141,8 +142,13 @@ void octree::add_tri(const glm::vec3 tri[3], const glm::vec3 normals[3]) {
 
 void octree::add_model(sceneModel::ptr mod, glm::mat4 transform) {
 	// TODO: range check on vertices
-	auto& verts = mod->vertices;
-	//auto& normals = mod->normals;
+	auto vertBuf = mod->get<ecs::bufferComponent<sceneModel::vertex>>();
+
+	if (!vertBuf) {
+		return;
+	}
+
+	auto& verts = vertBuf->data;
 
 	for (auto ptr : mod->nodes()) {
 		if ((*ptr)->type != sceneNode::objType::Mesh) {
@@ -150,25 +156,31 @@ void octree::add_model(sceneModel::ptr mod, glm::mat4 transform) {
 		}
 
 		auto mesh = (*ptr)->get<sceneMesh>();
+		auto faceBuf = mesh->get<ecs::bufferComponent<sceneMesh::faceType>>();
+
+		if (!faceBuf)
+			continue;
+
+		auto& faces = faceBuf->data;
 		//sceneMesh::ptr mesh = std::dynamic_pointer_cast<sceneMesh>(ptr);
 
 		// TODO: what happens when degenerate meshes without a full triangle
 		//       are loaded here? might account for the sporadic bugs this has...
 		//       should check for those here
-		for (unsigned i = 0; i < mesh->faces.size(); i += 3) {
+		for (unsigned i = 0; i < faces.size(); i += 3) {
 
-			if (mesh->faces[i] > verts.size()
-			 || mesh->faces[i+1] > verts.size()
-			 || mesh->faces[i+2] > verts.size())
+			if (faces[i] > verts.size()
+			 || faces[i+1] > verts.size()
+			 || faces[i+2] > verts.size())
 			{
 				LogError(" > Invalid face index! (octree::add_model)");
 				break;
 			}
 
 			sceneModel::vertex tri[3] = {
-				verts[mesh->faces[i]],
-				verts[mesh->faces[i+1]],
-				verts[mesh->faces[i+2]]
+				verts[faces[i]],
+				verts[faces[i+1]],
+				verts[faces[i+2]]
 			};
 
 			glm::vec3 positions[3];

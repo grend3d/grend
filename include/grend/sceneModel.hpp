@@ -23,6 +23,8 @@ class sceneMesh : public sceneNode {
 		typedef ecs::ref<sceneMesh> ptr;
 		typedef ecs::ref<sceneMesh> weakptr;
 
+		typedef GLuint faceType;
+
 		sceneMesh(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Mesh)
 		{
@@ -32,11 +34,11 @@ class sceneMesh : public sceneNode {
 
 		virtual ~sceneMesh();
 
+		// TODO: don't store reference to compiled data here
 		std::shared_ptr<compiledMesh> comped_mesh;
 		bool compiled = false;
 
 		std::string meshName = "unit_cube:default";
-		std::vector<GLuint> faces;
 
 		struct AABB    boundingBox;
 		struct BSphere boundingSphere;
@@ -50,6 +52,21 @@ class sceneModel : public sceneNode {
 	public:
 		typedef ecs::ref<sceneModel> ptr;
 		typedef ecs::ref<sceneModel> weakptr;
+
+		// TODO: move these out of sceneModel
+		struct vertex {
+			glm::vec3 position;
+			glm::vec3 normal;
+			glm::vec4 tangent;
+			glm::vec3 color;
+			glm::vec2 uv;
+			glm::vec2 lightmap;
+		};
+
+		struct jointWeights {
+			glm::vec4 joints;  // joints that affect the vertex
+			glm::vec4 weights; // how much the joint affects the vertex
+		};
 
 		sceneModel(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Model)
@@ -69,6 +86,7 @@ class sceneModel : public sceneNode {
 		std::string modelName = "unit_cube";
 		// TODO: some sort of specifier for generated meshes
 		std::string sourceFile = "";
+		// TODO: don't store reference to compiled model here, just a container for data
 		bool compiled = false;
 		std::shared_ptr<compiledModel> comped_model;
 
@@ -78,24 +96,6 @@ class sceneModel : public sceneNode {
 		// TODO: vertex data can be freed after compiling, can keep a
 		//       reference to the compiled model, which would also make it
 		//       much easier to free models from the GPU
-
-		struct vertex {
-			glm::vec3 position;
-			glm::vec3 normal;
-			glm::vec4 tangent;
-			glm::vec3 color;
-			glm::vec2 uv;
-			glm::vec2 lightmap;
-		};
-
-		std::vector<vertex> vertices;
-
-		struct jointWeights {
-			glm::vec4 joints;  // joints that affect the vertex
-			glm::vec4 weights; // how much the joint affects the vertex
-		};
-
-		std::vector<jointWeights> joints;
 
 		// used to determine if normals, etc need to be generated
 		bool haveNormals = false;
