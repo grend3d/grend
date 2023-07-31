@@ -1,3 +1,5 @@
+#pragma once
+
 #include <grend/ecs/ecs.hpp>
 #include <grend/material.hpp>
 
