@@ -19,6 +19,8 @@ class materialComponent : public component {
 		// TODO:
 		static nlohmann::json serializer(component *comp) { return {}; }
 		static void deserializer(component *comp, nlohmann::json j) { };
+
+		static void drawEditor(component *comp);
 };
 
 // namespace grendx::ecs

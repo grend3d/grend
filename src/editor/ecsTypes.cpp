@@ -6,6 +6,7 @@
 #include <grend/ecs/serializer.hpp>
 #include <grend/ecs/rigidBody.hpp>
 #include <grend/ecs/sceneComponent.hpp>
+#include <grend/ecs/materialComponent.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -161,6 +162,33 @@ void sceneComponent::drawEditor(component *comp) {
 	ImGui::SameLine();
 	if (ImGui::Button("OK")) {
 		scene->load(data, sceneComponent::Reference);
+	}
+
+	endType();
+}
+
+void materialComponent::drawEditor(component *comp) {
+	auto *mat = beginType<materialComponent>(comp);
+	if (!mat) { endType(); return; };
+
+	bool changed = false;
+
+	changed |= ImGui::ColorEdit4("Diffuse",  glm::value_ptr(mat->mat.factors.diffuse));
+	changed |= ImGui::ColorEdit4("Ambient",  glm::value_ptr(mat->mat.factors.ambient));
+	changed |= ImGui::ColorEdit4("Specular", glm::value_ptr(mat->mat.factors.specular));
+	changed |= ImGui::ColorEdit4("Emissive", glm::value_ptr(mat->mat.factors.emissive));
+
+	changed |= ImGui::SliderFloat( "Roughness",        &mat->mat.factors.roughness,   0.0f, 1.0f);
+	changed |= ImGui::SliderFloat( "Metalness",        &mat->mat.factors.metalness,   0.0f, 1.0f);
+	changed |= ImGui::SliderFloat( "Opacity",          &mat->mat.factors.opacity,     0.0f, 1.0f);
+	changed |= ImGui::SliderFloat( "Alpha Cutoff",     &mat->mat.factors.alphaCutoff, 0.0f, 1.0f);
+	changed |= ImGui::SliderFloat( "Refraction index", &mat->mat.factors.refract_idx, 0.0f, 1.0f);
+	changed |= ImGui::InputInt(    "Blend Mode",       (int*)&mat->mat.factors.blend);
+
+	if (changed) {
+		if (auto comped = matcache(&mat->mat)) {
+			comped->factors = mat->mat.factors;
+		}
 	}
 
 	endType();
