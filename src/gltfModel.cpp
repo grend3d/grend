@@ -1229,19 +1229,12 @@ static std::optional<gltfModel> open_gltf_model(std::string filename) {
 	return gltfModel(gltf, filename);
 }
 
-static void updateModelSources(grendx::modelMap& models, std::string filename) {
-	for (auto& [name, model] : models) {
-		model->sourceFile = filename;
-	}
-}
-
 grendx::modelMap grendx::load_gltf_models(std::string filename) {
 	if (auto gltf = open_gltf_model(filename)) {
 		auto models = load_gltf_models(*gltf);
 		LogInfo("GLTF > loaded a thing successfully");
 		// todo << " GLTF > loaded a thing successfully" << std::endl;
 
-		updateModelSources(models, filename);
 		return models;
 
 	} else {
@@ -1259,9 +1252,6 @@ grendx::load_gltf_scene(std::string filename) {
 		grendx::modelMap models = load_gltf_models(*gltf);
 		LogFmt("Loading gltf scene nodes {}...", filename);
 		sceneImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
-
-		LogFmt("updating sources {}...", filename);
-		updateModelSources(models, filename);
 		LogFmt("done loading {}", filename);
 		return {ret, models};
 

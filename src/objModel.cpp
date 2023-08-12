@@ -56,7 +56,6 @@ sceneModel::ptr load_object(std::string filename) {
 	}
 
 	sceneModel::ptr ret = ecs->construct<sceneModel>();
-	ret->sourceFile = filename;
 
 	auto  vertBuf = ret->attach<ecs::bufferComponent<sceneModel::vertex>>();
 	auto& verts   = vertBuf->data;

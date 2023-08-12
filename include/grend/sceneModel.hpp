@@ -38,8 +38,6 @@ class sceneMesh : public sceneNode {
 		std::shared_ptr<compiledMesh> comped_mesh;
 		bool compiled = false;
 
-		std::string meshName = "unit_cube:default";
-
 		struct AABB    boundingBox;
 		struct BSphere boundingSphere;
 };
@@ -91,16 +89,10 @@ class sceneModel : public sceneNode {
 		void genTangents(void);
 		void genAABBs(void);
 
-		std::string modelName = "unit_cube";
-		// TODO: some sort of specifier for generated meshes
-		std::string sourceFile = "";
 		// TODO: don't store reference to compiled model here, just a container for data
 		bool compiled = false;
 		std::shared_ptr<compiledModel> comped_model;
 
-		// TODO: allow attaching shaders to objects
-		//Program::ptr shader = nullptr;
-		//
 		// TODO: vertex data can be freed after compiling, can keep a
 		//       reference to the compiled model, which would also make it
 		//       much easier to free models from the GPU
