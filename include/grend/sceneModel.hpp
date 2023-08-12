@@ -61,11 +61,19 @@ class sceneModel : public sceneNode {
 			glm::vec3 color;
 			glm::vec2 uv;
 			glm::vec2 lightmap;
+
+			static void serializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {}
+			static void deserializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {}
+			static size_t serializedByteSize(void) { return sizeof(struct vertex); }
 		};
 
 		struct jointWeights {
 			glm::vec4 joints;  // joints that affect the vertex
 			glm::vec4 weights; // how much the joint affects the vertex
+							   //
+			static void serializeBytes(jointWeights *v, uint8_t *buf, size_t offset) {}
+			static void deserializeBytes(jointWeights *v, uint8_t *buf, size_t offset) {}
+			static size_t serializedByteSize(void) { return sizeof(struct jointWeights); }
 		};
 
 		sceneModel(ecs::regArgs t)
