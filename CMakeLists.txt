@@ -153,6 +153,8 @@ add_library(Grend
 	src/textureData.cpp
 	src/transform.cpp
 
+	src/base64.c
+
 	libs/imgui/imgui.cpp
 	libs/imgui/imgui_demo.cpp
 	libs/imgui/imgui_draw.cpp
