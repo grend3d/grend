@@ -196,14 +196,16 @@ void gameEditorUI::entityEditorWindow() {
 	ImGui::Separator();
 
 	ImGui::BeginChild("editView");
-	static nlohmann::json curjson;
-	static ecs::entity* curcomp = nullptr;
+	//static nlohmann::json curjson;
+	//static ecs::entity* curcomp = nullptr;
 	auto* selectedEntity = editor->getSelectedEntity().getPtr();
 
+	/*
 	if (selectedEntity != curcomp && selectedEntity) {
 		curjson = factories->serialize(entities, selectedEntity);
 		curcomp = selectedEntity;
 	}
+	*/
 
 	drawer->draw(selectedEntity);
 
