@@ -23,6 +23,66 @@ namespace grendx {
 sceneMesh::~sceneMesh() {};
 sceneModel::~sceneModel() {};
 
+nlohmann::json sceneMesh::serializer(component *comp) {
+	sceneMesh* mesh = static_cast<sceneMesh*>(comp);
+
+	glm::vec3& aabb_min = mesh->boundingBox.min;
+	glm::vec3& aabb_max = mesh->boundingBox.max;
+
+	glm::vec3& sph_cen = mesh->boundingSphere.center;
+	float      sph_ex  = mesh->boundingSphere.extent;
+
+	return {
+		{"boundingBox", {
+			{"min", {aabb_min.x, aabb_min.y, aabb_min.z}},
+			{"max", {aabb_max.x, aabb_max.y, aabb_max.z}},
+		}},
+
+		{"boundingSphere", {
+			{"center", {sph_cen.x, sph_cen.y, sph_cen.z}},
+			{"extent", sph_ex},
+	    }},
+	};
+}
+
+void sceneMesh::deserializer(component *comp, nlohmann::json j) {
+	sceneMesh* mesh = static_cast<sceneMesh*>(comp);
+
+	glm::vec3 aabb_min;
+	glm::vec3 aabb_max;
+	glm::vec3 sph_cen;
+	float     sph_ex = 0;
+
+	auto& box    = j["boundingBox"];
+	auto& sphere = j["boundingSphere"];
+
+	if (!box.is_null()) {
+		auto& min = box["min"];
+		auto& max = box["max"];
+
+		aabb_min = glm::vec3(min[0], min[1], min[2]);
+		aabb_max = glm::vec3(max[0], max[1], max[2]);
+	}
+
+	if (!sphere.is_null()) {
+		auto& center = sphere["center"];
+		auto& extent = sphere["extent"];
+
+		sph_cen = glm::vec3(center[0], center[1], center[2]);
+		sph_ex  = extent;
+	}
+
+	mesh->boundingBox    = { .min = aabb_min,   .max = aabb_max };
+	mesh->boundingSphere = { .center = sph_cen, .extent = sph_ex };
+}
+
+nlohmann::json sceneModel::serializer(component *comp) {
+	return {};
+}
+
+void sceneModel::deserializer(component *comp, nlohmann::json j) {
+}
+
 void sceneModel::genNormals(void) {
 	for (auto link : nodes()) {
 		auto ptr = link->getRef();

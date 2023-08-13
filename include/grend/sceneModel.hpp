@@ -27,12 +27,12 @@ class sceneMesh : public sceneNode {
 
 		sceneMesh(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Mesh)
-		{
-			// don't serialize links to imported entities
-			disable(entity::serializeLinks);
-		};
+		{ };
 
 		virtual ~sceneMesh();
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// TODO: don't store reference to compiled data here
 		std::shared_ptr<compiledMesh> comped_mesh;
@@ -76,10 +76,7 @@ class sceneModel : public sceneNode {
 
 		sceneModel(ecs::regArgs t)
 			: sceneNode(ecs::doRegister(this, t), objType::Model)
-		{
-			// don't serialize links to imported entities
-			disable(entity::serializeLinks);
-		};
+		{ };
 
 		virtual ~sceneModel();
 
@@ -88,6 +85,9 @@ class sceneModel : public sceneNode {
 		void genTexcoords(void);
 		void genTangents(void);
 		void genAABBs(void);
+
+		static nlohmann::json serializer(component *comp);
+		static void deserializer(component *comp, nlohmann::json j);
 
 		// TODO: don't store reference to compiled model here, just a container for data
 		bool compiled = false;
