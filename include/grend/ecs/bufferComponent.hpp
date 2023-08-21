@@ -16,10 +16,6 @@ template <typename T>
 using BinarySerializedSize = std::function<size_t(void)>;
 
 template <typename T>
-concept PrimitiveType = std::is_arithmetic<T>::value
-                     || std::is_enum<T>::value;
-
-template <PrimitiveType T>
 struct primitiveSerializer { };
 
 template <typename T>
@@ -48,9 +44,22 @@ struct simplePrimitiveSerializer {
 template <> struct primitiveSerializer<uint8_t>  : simplePrimitiveSerializer<uint8_t>  {};
 template <> struct primitiveSerializer<uint16_t> : simplePrimitiveSerializer<uint16_t> {};
 template <> struct primitiveSerializer<uint32_t> : simplePrimitiveSerializer<uint32_t> {};
-template <> struct primitiveSerializer<int8_t>   : simplePrimitiveSerializer<uint8_t>  {};
-template <> struct primitiveSerializer<int16_t>  : simplePrimitiveSerializer<uint16_t> {};
-template <> struct primitiveSerializer<int32_t>  : simplePrimitiveSerializer<uint32_t> {};
+template <> struct primitiveSerializer<uint64_t> : simplePrimitiveSerializer<uint64_t> {};
+
+template <> struct primitiveSerializer<int8_t>   : simplePrimitiveSerializer<int8_t>  {};
+template <> struct primitiveSerializer<int16_t>  : simplePrimitiveSerializer<int16_t> {};
+template <> struct primitiveSerializer<int32_t>  : simplePrimitiveSerializer<int32_t> {};
+template <> struct primitiveSerializer<int64_t>  : simplePrimitiveSerializer<int64_t> {};
+
+template <> struct primitiveSerializer<float>    : simplePrimitiveSerializer<float>  {};
+template <> struct primitiveSerializer<double>   : simplePrimitiveSerializer<double> {};
+
+template <typename T>
+concept PrimitiveType = requires(T a) {
+	(BinarySerializer<T>)primitiveSerializer<T>::serializeBytes;
+	(BinaryDeserializer<T>)primitiveSerializer<T>::deserializeBytes;
+	(BinarySerializedSize<T>)primitiveSerializer<T>::serializedByteSize;
+};
 
 template <typename T>
 concept BinarySerializeableClass
@@ -80,7 +89,7 @@ struct serializerImpl<T> getSerializerImpl() {
 	};
 }
 
-template <PrimitiveType T>
+template <typename T>
 struct serializerImpl<T> getSerializerImpl() {
 	using P = primitiveSerializer<T>;
 
@@ -118,7 +127,32 @@ class bufferComponent : public component {
 			return {{"data", temp}};
 		}
 
-		static void deserializer(component *comp, nlohmann::json j) { };
+		static void deserializer(component *comp, nlohmann::json j) {
+			LogInfo("Deserializer!");
+
+			auto serializer = getSerializerImpl<T>();
+			auto *self = static_cast<bufferComponent<T>*>(comp);
+			auto& dataobj = j["data"];
+
+			if (!dataobj.is_string()) {
+				return;
+			}
+
+			const std::string& data = dataobj;
+
+			uint8_t *buffer;
+			size_t  length;
+			base64_decode_binary(data.c_str(), &buffer, &length);
+
+			size_t elems = length / serializer.size();
+			self->data.resize(elems);
+
+			for (size_t i = 0; i < elems; i++) {
+				serializer.deserialize(self->data.data(), buffer, i*serializer.size());
+			}
+
+			free(buffer);
+		};
 
 		static void drawEditor(component *comp) {};
 };

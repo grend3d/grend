@@ -10,6 +10,9 @@
 #include <map>
 #include <memory>
 
+#include <grend/ecs/serializeBuilder.hpp>
+#include <grend/ecs/glmSerializers.hpp>
+
 #include <stdint.h>
 
 namespace grendx {
@@ -60,9 +63,39 @@ class sceneModel : public sceneNode {
 			glm::vec2 uv;
 			glm::vec2 lightmap;
 
-			static void serializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {}
-			static void deserializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {}
-			static size_t serializedByteSize(void) { return sizeof(struct vertex); }
+			static void serializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {
+				ecs::serializeBuilder(buf, offset)
+					<< v->position
+					<< v->normal
+					<< v->tangent
+					<< v->color
+					<< v->uv
+					<< v->lightmap;
+			}
+
+			static void deserializeBytes(struct vertex *v, uint8_t *buf, size_t offset) {
+				ecs::deserializeBuilder(buf, offset)
+					<< v->position
+					<< v->normal
+					<< v->tangent
+					<< v->color
+					<< v->uv
+					<< v->lightmap;
+			}
+
+			static size_t serializedByteSize(void) {
+				static struct vertex v;
+
+				auto temp = ecs::serializeSizeBuilder()
+					<< v.position
+					<< v.normal
+					<< v.tangent
+					<< v.color
+					<< v.uv
+					<< v.lightmap;
+
+				return temp.size;
+			}
 		};
 
 		struct jointWeights {
