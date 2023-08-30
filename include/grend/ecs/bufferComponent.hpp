@@ -148,7 +148,7 @@ class bufferComponent : public component {
 			self->data.resize(elems);
 
 			for (size_t i = 0; i < elems; i++) {
-				serializer.deserialize(self->data.data(), buffer, i*serializer.size());
+				serializer.deserialize(self->data.data() + i, buffer, i*serializer.size());
 			}
 
 			free(buffer);

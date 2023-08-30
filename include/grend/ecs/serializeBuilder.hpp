@@ -15,8 +15,8 @@ struct serializerState operator<<(const struct serializerState& state, T& value)
 	serializer.serialize(&value, state.buffer, state.currentOffset);
 
 	return {
-		state.buffer,
-		state.currentOffset + serializer.size()
+		.buffer        = state.buffer,
+		.currentOffset = state.currentOffset + serializer.size()
 	};
 }
 
@@ -27,8 +27,8 @@ struct deserializerState operator<<(const struct deserializerState& state, T& va
 	serializer.deserialize(&value, state.buffer, state.currentOffset);
 
 	return {
-		state.buffer,
-		state.currentOffset + serializer.size()
+		.buffer        = state.buffer,
+		.currentOffset = state.currentOffset + serializer.size()
 	};
 }
 
