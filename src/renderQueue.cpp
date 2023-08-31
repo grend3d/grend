@@ -57,6 +57,16 @@ bool renderQueue::addNode(sceneNode::ptr obj,
 		return ret;
 	}
 
+	// XXX: a bit of a hack to handle deserialized models, there's not really a good
+	//      place to compile the model when deserializing
+	if (obj->type == sceneNode::objType::Model) {
+		sceneModel::ptr model = ref_cast<sceneModel>(obj);
+
+		if (!model->compiled) {
+			compileModel("<TODO: remove this parameter>", model);
+		}
+	}
+
 	if (obj->type == sceneNode::objType::Mesh) {
 		// TODO: addMesh()
 		addMesh(obj, renderID, trans, inverted);
