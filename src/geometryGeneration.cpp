@@ -69,6 +69,7 @@ sceneModel::ptr generateHeightmap(float width, float height, float unitsPerVert,
 	}
 
 	setNode("mesh", ret, mesh);
+	ret->genColors();
 	ret->genNormals();
 	ret->genTangents();
 	ret->genAABBs();
@@ -97,43 +98,49 @@ sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 	unsigned i = 0;
 	for (int y = sx; y <= ey; y += spacing) {
 		for (int x = sx; x <= ex; x += spacing) {
+			float y1 = y;
+			float y2 = y + spacing;
+			float x1 = x;
+			float x2 = x + spacing;
+			/*
 			float y1 = 0.2*sin(y*0.3f);
 			float y2 = 0.2*sin((y + spacing)*0.3f);
 			float x1 = 0.2*sin((x)*0.2f);
 			float x2 = 0.2*sin((x + spacing)*0.2f);
+			*/
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x - spacing, x1+y2, y},
+				.position = {x - spacing, 0, y},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 0},
 			});
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x, x2+y2, y},
+				.position = {x, 0, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
 			});
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x - spacing, x1+y1, y - spacing},
+				.position = {x - spacing, 0, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x, x2+y1, y - spacing},
+				.position = {x, 0, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 1},
 			});
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x - spacing, x1+y1, y - spacing},
+				.position = {x - spacing, 0, y - spacing},
 				.normal   = {0, 1, 0},
 				.uv       = {0, 1},
 			});
 
 			verts.push_back((sceneModel::vertex) {
-				.position = {x, x2+y2, y},
+				.position = {x, 0, y},
 				.normal   = {0, 1, 0},
 				.uv       = {1, 0},
 			});
@@ -146,7 +153,9 @@ sceneModel::ptr generate_grid(int sx, int sy, int ex, int ey, int spacing) {
 
 	setNode("mesh", ret, mesh);
 
+	ret->genColors();
 	ret->genTangents();
+	ret->genAABBs();
 
 	ret->haveNormals = true;
 	ret->haveTexcoords = true;
@@ -294,6 +303,7 @@ sceneModel::ptr generate_cuboid(float width, float height, float depth) {
 	}
 
 	setNode("mesh", ret, mesh);
+	ret->genColors();
 	ret->genNormals();
 	ret->genTangents();
 	ret->genAABBs();

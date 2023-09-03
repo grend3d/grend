@@ -114,6 +114,7 @@ class sceneModel : public sceneNode {
 		virtual ~sceneModel();
 
 		void genInfo(void);
+		void genColors(const glm::vec3& color = glm::vec3(1, 1, 1));
 		void genNormals(void);
 		void genTexcoords(void);
 		void genTangents(void);

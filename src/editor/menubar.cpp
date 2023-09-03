@@ -2,6 +2,7 @@
 #include <grend/gameState.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/fileDialog.hpp>
+#include <grend/geometryGeneration.hpp>
 #include <grend/ecs/serializer.hpp> // TODO: debugging, remove
 #include <iostream>
 #include <fstream>
@@ -250,6 +251,77 @@ void gameEditorUI::menubar() {
 
 			if (ImGui::MenuItem("Add irradiance probe", "li")) {
 				editor->setMode(gameEditor::mode::AddIrradianceProbe);
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem("Generate cube")) {
+				auto model = generate_cuboid(1, 1, 1);
+				auto node  = editor->getSelectedNode();
+
+				if (!node)
+					node = state->rootnode;
+
+				setNode("generated", node, model);
+			}
+
+			if (ImGui::BeginMenu("Generate Grid")) {
+				static int planeWidth  = 1;
+				static int planeHeight = 1;
+				static int spacing     = 1;
+
+				ImGui::InputInt("Width",   &planeWidth,  1, 1000);
+				ImGui::InputInt("Height",  &planeHeight, 1, 1000);
+				ImGui::InputInt("Spacing", &spacing,     1, 1000);
+
+
+				if (ImGui::Button("Generate")) {
+					auto model = generate_grid(0, 0, planeWidth, planeHeight, spacing);
+					auto node  = editor->getSelectedNode();
+
+					if (!node)
+						node = state->rootnode;
+
+					setNode("generated", node, model);
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Generate heightmap")) {
+				// TODO: more generator functions
+				// TODO: it would be cool to have this as an entity that can be automatically
+				//       regenerated for live editing
+				// TODO: also, some way to pass in a texture as a function
+				// TODO: also also, basic texture painting for live heightmap editing
+				static float hmWidth  = 100;
+				static float hmHeight = 100;
+				static float upv      = 100;
+				static float xpos     = 0;
+				static float ypos     = 0;
+				static int func = 0;
+				auto sinfunc = [](float x, float y) -> float { return sin(x) + sin(y); };
+
+				ImGui::InputFloat("Width",          &hmWidth,  1.0f, 1000.f, "%1.f");
+				ImGui::InputFloat("Height",         &hmHeight, 1.0f, 1000.f, "%1.f");
+				ImGui::InputFloat("Units Per Vert", &upv,      0.1f, 10.f,   "%0.1f");
+
+				ImGui::Combo("Generator Function", &func,
+					"Sine\0"
+					"Cosine\0"
+					"Perlin Noise\0"
+				);
+
+				if (ImGui::Button("Generate")) {
+					auto model = generateHeightmap(hmWidth, hmHeight, upv, 0, 0, sinfunc);
+					auto node  = editor->getSelectedNode();
+
+					if (!node)
+						node = state->rootnode;
+
+					setNode("generated", node, model);
+				}
+
+				ImGui::EndMenu();
 			}
 
 			ImGui::EndMenu();

@@ -162,6 +162,28 @@ void sceneModel::genTexcoords(void) {
 	}
 }
 
+void sceneModel::genColors(const glm::vec3& color) {
+	for (auto link : nodes()) {
+		auto ptr = link->getRef();
+
+		if (ptr->type != sceneNode::objType::Mesh) {
+			continue;
+		}
+		sceneMesh::ptr mesh = ref_cast<sceneMesh>(ptr);
+
+		auto vertBuf = this->get<ecs::bufferComponent<sceneModel::vertex>>();
+
+		if (!vertBuf)
+			continue;
+
+		auto& verts = vertBuf->data;
+
+		for (auto& vert : verts) {
+			vert.color = color;
+		}
+	}
+}
+
 void sceneModel::genAABBs(void) {
 	for (auto link : nodes()) {
 		auto ptr = link->getRef();
