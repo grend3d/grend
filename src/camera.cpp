@@ -23,17 +23,45 @@ void camera::updatePosition(float delta) {
 	updated = true;
 }
 
-void camera::setDirection(glm::vec3 dir) {
-	direction_ = glm::normalize(dir);
-	right_     = glm::normalize(glm::cross(glm::vec3(0, 1, 0), direction_));
-	up_        = glm::normalize(glm::cross(direction_, right_));
+// XXX: this function still used by shadow, reflection map code
+void camera::setDirection(glm::vec3 dir, glm::vec3 upwards) {
+	glm::vec3 b_forward = glm::normalize(dir);
+	glm::vec3 b_right   = glm::normalize(glm::cross(b_forward, upwards));
+	glm::vec3 b_up      = glm::normalize(glm::cross(b_right, b_forward));
+
+	glm::mat3 temp(b_right, b_up, -b_forward);
+
+	rotation_  = glm::normalize(glm::quat_cast(temp));
+
+	direction_ = temp * glm::vec3(0, 0, -1);
+	up_        = temp * glm::vec3(0, 1, 0);
+	right_     = glm::normalize(glm::cross(up_, direction_));
+
 	updated = true;
 }
 
-void camera::setDirection(glm::vec3 dir, glm::vec3 upwards) {
-	direction_ = glm::normalize(dir);
-	up_        = upwards;
-	right_     = glm::normalize(glm::cross(up_, dir));
+void camera::setRotation(const glm::quat& quat) {
+	rotation_  = quat;
+
+	direction_ = glm::mat3_cast(rotation_) * glm::vec3(0, 0, -1);
+	up_        = glm::mat3_cast(rotation_) * glm::vec3(0, 1,  0);
+	right_     = glm::normalize(glm::cross(up_, direction_));
+
+	updated = true;
+}
+
+void camera::setRotation(const glm::vec3& euler) {
+	glm::quat temp = glm::quat(1, 0, 0, 0);
+
+	temp = glm::rotate(temp, euler.z, glm::vec3(0, 0, 1));
+	temp = glm::rotate(temp, euler.y, glm::vec3(0, 1, 0));
+	temp = glm::rotate(temp, euler.x, glm::vec3(1, 0, 0));
+
+	rotation_ = glm::normalize(temp);
+	direction_ = glm::normalize(glm::mat3_cast(rotation_) * glm::vec3(0, 0, -1));
+	up_        = glm::normalize(glm::mat3_cast(rotation_) * glm::vec3(0, 1, 0));
+	right_     = glm::normalize(glm::cross(up_, direction_));
+
 	updated = true;
 }
 
@@ -143,9 +171,13 @@ glm::mat4 camera::projectionTransform(void) {
 }
 
 glm::mat4 camera::viewTransform(void) {
-	return glm::lookAt(position_,
-	                   position_ + direction_,
-	                   up_);
+	glm::mat4 ret = mat4_cast(glm::inverse(rotation_));
+	glm::mat4 pos = glm::mat4(1, 0, 0, 0,
+	                          0, 1, 0, 0,
+	                          0, 0, 1, 0,
+	                          -position_.x, -position_.y, -position_.z, 1);
+
+	return ret*pos;
 }
 
 glm::mat4 camera::viewProjTransform(void) {

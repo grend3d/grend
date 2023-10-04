@@ -23,6 +23,7 @@ class camera {
 		}
 
 		const glm::vec3& position() { return position_; };
+		const glm::quat& rotation() { return rotation_; };
 		const glm::vec3& direction() { return direction_; };
 		const glm::vec3& velocity() { return velocity_; };
 		const glm::vec3& right() { return right_; };
@@ -36,8 +37,9 @@ class camera {
 
 		void slide(glm::vec3 target, float divisor, float delta);
 		void setPosition(glm::vec3 pos);
+		void setRotation(const glm::quat& quat);
+		void setRotation(const glm::vec3& euler);
 		void updatePosition(float delta); // increment by velocity
-		void setDirection(glm::vec3 dir);
 		void setDirection(glm::vec3 dir, glm::vec3 up);
 		void setVelocity(glm::vec3 vel);
 		void setViewport(unsigned x, unsigned y);
@@ -61,6 +63,7 @@ class camera {
 
 	private:
 		glm::vec3 position_ = glm::vec3(0);
+		glm::quat rotation_ = glm::quat(1, 0, 0, 0);
 		glm::vec3 direction_ = glm::vec3(0, 0, 1);
 		glm::vec3 velocity_ = glm::vec3(0, 0, 0);
 

@@ -100,10 +100,19 @@ bindFunc grendx::controller::camFPS(camera::ptr cam) {
 		float rel_x = ((float)x - center_x) / center_x;
 		float rel_y = ((float)y - center_y) / center_y;
 
+		/*
 		cam->setDirection(glm::vec3(
 			sin(rel_x*2*M_PI),
 			sin(-rel_y*M_PI/2.f),
 			-cos(rel_x*2*M_PI)
+		));
+		*/
+
+		cam->setRotation(glm::vec3(
+			sin(rel_x*2*M_PI),
+			sin(-rel_y*M_PI/2.f),
+			0
+			//-cos(rel_x*2*M_PI)
 		));
 
 		return MODAL_NO_CHANGE;
@@ -128,7 +137,15 @@ grendx::controller::camAngled2D(camera::ptr cam, float angle) {
 		float center_x = (float)win_x / 2;
 		float rel_x = ((float)x - center_x) / center_x;
 
+		/*
 		cam->setDirection(glm::vec3(
+			sin(rel_x*2*M_PI),
+			sin(angle),
+			-cos(rel_x*2*M_PI)
+		));
+		*/
+
+		cam->setRotation(glm::vec3(
 			sin(rel_x*2*M_PI),
 			sin(angle),
 			-cos(rel_x*2*M_PI)
@@ -152,7 +169,8 @@ grendx::controller::camAngled2DFixed(camera::ptr cam, float angle) {
 		x = (x > 0)? x : win_x/2;
 		y = (x > 0)? y : win_y/2;
 
-		cam->setDirection(glm::vec3(0, sin(angle), -cos(angle)));
+		//cam->setDirection(glm::vec3(0, sin(angle), -cos(angle)));
+		cam->setRotation(glm::vec3(0, sin(angle), -cos(angle)));
 
 		return MODAL_NO_CHANGE;
 	};
@@ -186,11 +204,14 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 		bool isController = ev.type == SDL_CONTROLLERBUTTONDOWN || ev.type == SDL_CONTROLLERBUTTONUP;
 
 		if (!state->initialized) {
+			/*
 			cam->setDirection(glm::vec3 {
 				sin(4.f*state->distMoved.x),
 				sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
 				-cos(4.f*state->distMoved.x)
 			});
+			*/
+			// TODO:
 
 			state->initialized = true;
 		}
@@ -215,11 +236,14 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 					ev.motion.yrel / float(win_y)
 				};
 
+				/*
 				cam->setDirection(glm::vec3 {
 					sin(4.f*state->distMoved.x),
 					sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
 					-cos(4.f*state->distMoved.x)
 				});
+				*/
+				// TODO:
 			}
 		}
 
@@ -236,11 +260,14 @@ grendx::controller::camAngled2DRotatable(camera::ptr cam,
 			}
 
 			state->distMoved.x += n;
+			// TODO:
+			/*
 			cam->setDirection(glm::vec3 {
 				sin(4.f*state->distMoved.x),
 				sin(glm::clamp(-state->distMoved.y + angle, minY, maxY)),
 				-cos(4.f*state->distMoved.x)
 			});
+			*/
 		}
 
 		return MODAL_NO_CHANGE;

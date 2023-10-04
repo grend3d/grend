@@ -268,11 +268,19 @@ void gameEditor::loadInputBindings() {
 				float rel_x = ((float)x - center_x) / center_x;
 				float rel_y = ((float)y - center_y) / center_y;
 
+				cam->setRotation(glm::vec3(
+					float(2)*-rel_y,
+					float(2*M_PI)*-rel_x,
+					0
+				));
+
+				/*
 				cam->setDirection(glm::vec3(
 					sin(rel_x*2*M_PI),
 					sin(-rel_y*M_PI/2.f),
 					-cos(rel_x*2*M_PI)
-				));
+				), glm::vec3(0, 1, 0));
+				*/
 			}
 			return MODAL_NO_CHANGE;
 		},
