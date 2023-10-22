@@ -152,6 +152,7 @@ add_library(Grend
 	src/glslObject.cpp
 	src/textureData.cpp
 	src/transform.cpp
+	src/serializeDefs.cpp
 
 	src/base64.c
 

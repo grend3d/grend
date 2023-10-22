@@ -14,6 +14,7 @@
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
+#include <grend/ecs/serializeDefs.hpp>
 
 #include <string.h> // memset
 
@@ -58,6 +59,8 @@ void grendx::engine::initialize(const std::string& name, const renderSettings& s
 	Services().bind<gameState,          gameState>();
 	Services().bind<audioMixer,         audioMixer>(&ctx);
 	Services().bind<jobQueue,           jobQueue>();
+
+	ecs::addDefaultFactories();
 
 	LogInfo("gameMain() finished");
 }

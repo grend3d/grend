@@ -5,6 +5,7 @@
 #include <grend/audioMixer.hpp>
 
 #include <grend/ecs/editor.hpp>
+#include <grend/ecs/serializeDefs.hpp>
 
 #ifdef PHYSICS_BULLET
 #include <grend/bulletPhysics.hpp>
@@ -29,6 +30,7 @@ void grendx::engine::dev::initialize(const std::string& name, const renderSettin
 	grendx::engine::initialize(name, settings);
 
 	Services().bind<ecs::editor, ecs::editor>();
+	ecs::addDefaultEditors();
 
 	editor  = std::make_shared<gameEditor>();
 	wrapper = std::make_shared<gameEditorUI>();
