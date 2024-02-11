@@ -86,8 +86,6 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 		// TODO: texture atlas should have some tree wrappers, just for
 		//       clean encapsulation...
 		quadinfo info = rctx->atlases.shadows->tree.info(light->shadowmap[i]);
-		cullQueue(porque, cam, info.size, info.size, rctx->lightThreshold);
-		sortQueue(porque, cam);
 
 		cam->setDirection(cube_dirs[i], cube_up[i]);
 		cam->setViewport(info.size, info.size);
