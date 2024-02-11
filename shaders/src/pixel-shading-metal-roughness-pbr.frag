@@ -66,18 +66,18 @@ void main(void) {
 	// TODO: do own preprocessing that eliminates these, or better yet,
 	//       write my own darn shading language already
 	// TODO: move these to macros
-	if (BLEND_MODE_MASKED == 1) {
+	#pragma glsl #if BLEND_MODE_MASKED == 1
 		if (opacity < anmaterial.alphaCutoff) {
 			discard;
 		}
-	}
+	#pragma glsl #endif
 
-	if (BLEND_MODE_DITHERED_BLEND == 1) {
+	#pragma glsl #if BLEND_MODE_DITHERED_BLEND == 1
 		float noise = hash12(gl_FragCoord.xy*1.0);
 		if (opacity < noise) {
 			discard;
 		}
-	}
+	#pragma glsl #endif
 
 	vec3 view_pos = vec3(v_inv * vec4(0, 0, 0, 1));
 	vec3 view_vec = view_pos - f_position.xyz;
