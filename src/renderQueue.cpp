@@ -39,7 +39,7 @@ void renderQueue::add(sceneNode::ptr obj,
 
 	getNodeTransform(obj, trans, inverted, adjTrans, adjInvert);
 
-	if (addNode(obj, renderID, trans, inverted)) {
+	if (addNode(obj, renderID, adjTrans, adjInvert)) {
 		for (auto ptr : obj->nodes()) {
 			add(ptr->getRef(), renderID, adjTrans, adjInvert);
 		}
