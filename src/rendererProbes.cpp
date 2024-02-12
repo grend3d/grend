@@ -60,7 +60,7 @@ void grendx::drawShadowCubeMap(renderQueue& queue,
 	glDepthFunc(GL_LESS);
 
 	camera::ptr cam = camera::ptr(new camera());
-	cam->setPosition(applyTransform(transform));
+	cam->setPosition(extractTranslation(transform));
 	cam->setFovx(90);
 	cam->setFar(50);
 
@@ -127,7 +127,7 @@ void grendx::drawSpotlightShadow(renderQueue& queue,
 
 	camera::ptr cam = camera::ptr(new camera());
 	profile::startGroup("Set flags, bind");
-	cam->setPosition(applyTransform(transform));
+	cam->setPosition(extractTranslation(transform));
 	//cam->setFovx(360.f*acos(light->angle)/M_PI);
 	cam->setFovx(2.f*180.f*acosf(light->angle)/M_PI);
 	//cam->setFovx(90);
@@ -258,7 +258,7 @@ void grendx::drawReflectionProbe(renderQueue& queue,
 	DO_ERROR_CHECK();
 
 	camera::ptr cam = camera::ptr(new camera());
-	cam->setPosition(applyTransform(transform));
+	cam->setPosition(extractTranslation(transform));
 	cam->setFovx(90);
 
 	const renderFlags& flags = rctx->probeShaders["refprobe"];

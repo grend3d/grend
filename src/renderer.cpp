@@ -537,7 +537,7 @@ void grendx::packLight(sceneLightPoint::ptr light,
                        renderContext *rctx,
                        glm::mat4& trans)
 {
-	glm::vec3 rpos = applyTransform(trans);
+	glm::vec3 rpos = extractTranslation(trans);
 
 	memcpy(p->position, glm::value_ptr(rpos), sizeof(float[3]));
 	memcpy(p->diffuse, glm::value_ptr(light->diffuse), sizeof(float[4]));
@@ -558,7 +558,7 @@ void grendx::packLight(sceneLightSpot::ptr light,
                        renderContext *rctx,
                        glm::mat4& trans)
 {
-	glm::vec3 rpos = applyTransform(trans);
+	glm::vec3 rpos = extractTranslation(trans);
 	glm::vec3 rotvec = glm::mat3(trans) * glm::vec3(0, 0, -1);
 
 	memcpy(p->position,  glm::value_ptr(rpos),           sizeof(float[3]));
@@ -582,7 +582,7 @@ void grendx::packLight(sceneLightDirectional::ptr light,
                        renderContext *rctx,
                        glm::mat4& trans)
 {
-	glm::vec3 rpos = applyTransform(trans);
+	glm::vec3 rpos = extractTranslation(trans);
 	glm::vec3 rotvec =
 		glm::mat3_cast(light->transform.getTRS().rotation) * glm::vec3(1, 0, 0);
 

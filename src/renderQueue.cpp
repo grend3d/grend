@@ -73,17 +73,17 @@ bool renderQueue::addNode(sceneNode::ptr obj,
 
 	} else if (obj->type == sceneNode::objType::Light) {
 		sceneLight::ptr light = ref_cast<sceneLight>(obj);
-		glm::vec3 center = applyTransform(trans);
+		glm::vec3 center = extractTranslation(trans);
 		lights.push_back({trans, center, inverted, light});
 
 	} else if (obj->type == sceneNode::objType::ReflectionProbe) {
 		sceneReflectionProbe::ptr probe = ref_cast<sceneReflectionProbe>(obj);
-		glm::vec3 center = applyTransform(trans);
+		glm::vec3 center = extractTranslation(trans);
 		probes.push_back({trans, center, inverted, probe});
 
 	} else if (obj->type == sceneNode::objType::IrradianceProbe) {
 		sceneIrradianceProbe::ptr probe = ref_cast<sceneIrradianceProbe>(obj);
-		glm::vec3 center = applyTransform(trans);
+		glm::vec3 center = extractTranslation(trans);
 		irradProbes.push_back({trans, center, inverted, probe});
 	}
 
@@ -134,7 +134,7 @@ void renderQueue::addMesh(sceneNode::ptr obj,
 	sceneMesh::ptr mesh = ref_cast<sceneMesh>(obj);
 
 	if (mesh->comped_mesh) {
-		glm::vec3 center = applyTransform(trans);
+		glm::vec3 center = extractTranslation(trans);
 
 		queueEnt<sceneMesh::ptr> entry = {
 			trans,
@@ -502,7 +502,7 @@ void grendx::cullQueue(renderQueue& queue,
 		// conservative culling, keeps any lights that may possibly affect
 		// what's in view, without considering direction of spotlights, shadows
 		BSphere sphere = {
-			.center = applyTransform(trans),
+			.center = extractTranslation(trans),
 			.extent = lit->extent(lightext),
 		};
 
@@ -524,7 +524,7 @@ void grendx::cullQueue(renderQueue& queue,
 		auto& [_, trans, __, particles, ___] = *it;
 
 		BSphere sphere = {
-			.center = applyTransform(trans),
+			.center = extractTranslation(trans),
 			.extent = particles->radius,
 		};
 
@@ -1014,7 +1014,7 @@ unsigned grendx::flush(renderQueue& que,
 	for (auto& [innerTrans, outerTrans, inverted, particleSystem, mesh] : que.instancedMeshes) {
 		trySetIrradProbe(que, rctx, options,
 		                 instancedProg,
-		                 applyTransform(outerTrans));
+		                 extractTranslation(outerTrans));
 		drawMeshInstanced(options, fb, instancedProg,
 		                  innerTrans, outerTrans, inverted,
 		                  particleSystem, mesh);
@@ -1027,7 +1027,7 @@ unsigned grendx::flush(renderQueue& que,
 
 	for (auto& [transform, inverted, particleSystem, mesh] : que.billboardMeshes) {
 		trySetIrradProbe(que, rctx, options, billboardProg,
-		                 applyTransform(transform));
+		                 extractTranslation(transform));
 		drawBillboards(options, fb, billboardProg,
 		               transform, inverted, particleSystem, mesh);
 
@@ -1261,7 +1261,7 @@ void grendx::buildTilemapTiled(renderQueue::LightQ& queue,
 
 	// TODO: parallelism
 	auto buildTiles = [&] (sceneLight::ptr lit, glm::mat4& trans, unsigned idx) {
-		glm::vec3 lightpos = applyTransform(trans);
+		glm::vec3 lightpos = extractTranslation(trans);
 		float ext = lit->extent(rctx->lightThreshold);
 
 		for (unsigned cluster = 0; cluster < 16*9; cluster++) {
