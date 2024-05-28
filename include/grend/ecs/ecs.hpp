@@ -504,7 +504,13 @@ struct searchIterator {
 				if (it == end)
 					break;
 
-				ent = (*it)->manager->getEntity(*it);
+				entity *temp = (*it)->manager->getEntity(*it);
+
+				if (!temp->active || temp->manager->condemned.count(temp)) {
+					continue;
+				}
+
+				ent = temp;
 			}
 		}
 	}
