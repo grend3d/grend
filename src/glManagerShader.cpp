@@ -309,7 +309,7 @@ GLuint Program::lookupUniformBlock(std::string name) {
 			GLint foo;
 			glGetActiveUniformBlockiv(obj, temp, GL_UNIFORM_BLOCK_DATA_SIZE, &foo);
 
-			LogFmt("UBO at {} ({}) has block data size of {}", temp, name, foo);
+			//LogFmt("UBO at {} ({}) has block data size of {}", temp, name, foo);
 			return temp;
 
 		} else {
