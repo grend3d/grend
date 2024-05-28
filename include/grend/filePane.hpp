@@ -44,6 +44,9 @@ struct filePane {
 	bool editPath = false;
 	char pathBuf[1024];
 
+	bool rootUpdated = false;
+	std::string newPathBuf;
+
 	filePane(fs::path rootpath = fs::current_path())
 		: root(rootpath, paneTypes::Directory)
 	{
@@ -51,7 +54,8 @@ struct filePane {
 	}
 
 	void render();
-	void renderNodes(paneNode& node);
+	void renderNodesRec(paneNode& node);
+	void renderNodes(void);
 	void reset(void);
 	void chdir(std::string_view newroot);
 	void setSelected(std::string_view path);

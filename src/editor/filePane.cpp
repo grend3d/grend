@@ -49,13 +49,14 @@ void paneNode::expand(void) {
 			else if (ent.is_regular_file()) t = paneTypes::File;
 			else                            t = paneTypes::Other;
 
-			auto p = paneNode(fullpath / ent.path().filename(), t);
+			fs::path entPath = fullpath / ent.path().filename();
+			auto p = paneNode(entPath, t);
 			subnodes.push_back(p);
 		}
 	}
 }
 
-void filePane::renderNodes(paneNode& node) {
+void filePane::renderNodesRec(paneNode& node) {
 	ImGuiTreeNodeFlags flags
 		= base_flags
 		| ((&node == selected)?                  ImGuiTreeNodeFlags_Selected    : 0)
@@ -79,8 +80,8 @@ void filePane::renderNodes(paneNode& node) {
 			}
 
 			if (ImGui::Selectable("Change Directory")) {
-				std::string path = std::string(node.fullpath);
-				chdir(path);
+				newPathBuf = node.fullpath;
+				rootUpdated = true;
 			}
 		}
 
@@ -114,10 +115,19 @@ void filePane::renderNodes(paneNode& node) {
 		}
 
 		for (auto& subnode : node.subnodes) {
-			renderNodes(subnode);
+			renderNodesRec(subnode);
 		}
 
 		img::TreePop();
+	}
+}
+
+void filePane::renderNodes(void) {
+	renderNodesRec(root);
+
+	if (rootUpdated) {
+		chdir(newPathBuf);
+		rootUpdated = false;
 	}
 }
 
@@ -128,6 +138,7 @@ void filePane::updatePathBuf(void) {
 }
 
 void filePane::chdir(std::string_view newroot) {
+	LogFmt("Changing directory to {}", newroot);
 	if (newroot == "..") {
 		if (root.fullpath.has_parent_path()) {
 			std::string pathStr = root.fullpath.parent_path();
@@ -169,7 +180,7 @@ void filePane::render() {
 
 	ImGui::BeginChild("Main View");
 	ImGui::BeginChild("File list", ImVec2(0, -300), false, 0);
-	renderNodes(root);
+	renderNodes();
 	ImGui::EndChild();
 
 	ImGui::Separator();
