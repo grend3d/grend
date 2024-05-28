@@ -23,9 +23,6 @@
 using namespace grendx;
 using namespace grendx::engine;
 
-// XXX: TODO: what was this for?
-//static sceneModel::ptr  physmodel;
-
 void StyleColorsGrendDark(ImGuiStyle* dst = nullptr);
 
 gameEditor::gameEditor()
@@ -99,6 +96,7 @@ void gameEditor::loadUIModels(void) {
 	UIModels["Cursor-Placement"]
 		= load_object(dir + "Cursor-Placement.obj");
 	UIModels["Bounding-Box"] = generate_cuboid(1.f, 1.f, 1.f);
+	UIModels["DebugSphere"] = load_object(dir + "../smoothsphere.obj");
 
 	//UIObjects = sceneNode::ptr(new sceneNode());
 	UIObjects = ecs->construct<sceneNode>();
@@ -199,7 +197,7 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 
 	renderOptions frontOpts, backOpts;
 	frontOpts.features |=  renderOptions::Features::DepthTest;
-	frontOpts.features |= ~renderOptions::Features::DepthMask;
+	frontOpts.features &= ~renderOptions::Features::DepthMask;
 	backOpts.features = frontOpts.features;
 
 	frontOpts.depthFunc = renderOptions::Less;
@@ -243,10 +241,7 @@ void gameEditor::renderWorldObjects() {
 
 	DO_ERROR_CHECK();
 
-	// XXX: wasteful, a bit wrong
-	//static sceneNode::ptr probeObj = std::make_shared<sceneNode>();
-	static sceneNode::ptr probeObj = ecs->construct<sceneNode>();
-	//setNode("model", probeObj, physmodel);
+	sceneNode::ptr probeObj = UIModels["DebugSphere"];
 
 	renderQueue tempque;
 	renderQueue que;
@@ -257,8 +252,8 @@ void gameEditor::renderWorldObjects() {
 
 	if (showProbes) {
 		renderFlags probeFlags;
-		auto refShader = rend->internalShaders["refprobe_debug"];
 		auto irradShader = rend->internalShaders["irradprobe_debug"];
+		auto refShader   = rend->internalShaders["refprobe_debug"];
 
 		// TODO: function in renderFlags that sets every shader
 		for (auto& v : probeFlags.variants) {
@@ -576,7 +571,7 @@ void gameEditor::update(float delta) {
 				? fullTranslation(selectedNode)
 				: selectedEnt->transform.getMatrix();
 
-			newtrans.position = applyTransform(localToWorld);
+			newtrans.position = extractTranslation(localToWorld);
 
 			// project position relative to camera onto camera direction vector
 			// to get depth, then scale with depth to keep size constant on screen
