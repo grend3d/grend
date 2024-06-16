@@ -169,6 +169,10 @@ add_library(Grend
 	libs/stb/stb_vorbis.c
 )
 
+add_executable(shaderComp shaderComp.cpp)
+target_link_libraries(shaderComp Grend)
+install(TARGETS shaderComp DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 if (ANDROID)
 	message(STATUS "Target: Android")
 	# TODO: how's this going to work in production, just require assets
@@ -307,7 +311,7 @@ else()
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(SDL2   REQUIRED IMPORTED_TARGET sdl2)
 	pkg_check_modules(Bullet REQUIRED IMPORTED_TARGET bullet)
-	pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
+	#pkg_check_modules(GLM    REQUIRED IMPORTED_TARGET glm)
 
 	list(APPEND GREND_LINK_LIBS
 		PkgConfig::SDL2
@@ -315,7 +319,8 @@ else()
 		BulletCollision BulletDynamics BulletSoftBody LinearMath
 		pthread
 	)
-	set(GREND_PKG "sdl2 bullet glm")
+	#set(GREND_PKG "sdl2 bullet glm")
+	set(GREND_PKG "sdl2 bullet")
 
 	if (GLSL_VERSION EQUAL 100)
 		message(STATUS "GL: Using GLESv2")
@@ -413,7 +418,7 @@ foreach(_shaderpath ${SHADER_SRC})
 		DEPENDS ${_shaderpath}
 
 		COMMAND sed -i
-			-e"s/#pragma.*glsl\\[ \\t\\]*//"
+			-e "s/#pragma.*glsl\\[ \\t\\]*//"
 			${_shaderout}
 	)
 endforeach()
