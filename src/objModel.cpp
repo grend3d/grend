@@ -213,6 +213,7 @@ load_materials(sceneModel::ptr model, std::string filename) {
 
 	// TODO: add flag to textureData to flip images
 	//stbi_set_flip_vertically_on_load(true);
+	const bool flipVertically = true;
 
 	while (std::getline(input, line)) {
 		eraseChars(line, "\r");
@@ -282,25 +283,25 @@ load_materials(sceneModel::ptr model, std::string filename) {
 
 		else if (statement[0] == "map_Kd") {
 			ret[current_material]->maps.diffuse =
-				std::make_shared<textureData>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1], flipVertically);
 		}
 
 		else if (statement[0] == "map_Ns") {
 			// specular map
 			ret[current_material]->maps.metalRoughness =
-				std::make_shared<textureData>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1], flipVertically);
 		}
 
 		else if (statement[0] == "map_ao") {
 			// ambient occlusion map (my own extension)
 			ret[current_material]->maps.ambientOcclusion =
-				std::make_shared<textureData>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1], flipVertically);
 		}
 
 		else if (statement[0] == "map_norm" || statement[0] == "norm") {
 			// normal map (also non-standard)
 			ret[current_material]->maps.normal =
-				std::make_shared<textureData>(base_dir(filename) + statement[1]);
+				std::make_shared<textureData>(base_dir(filename) + statement[1], flipVertically);
 		}
 
 		else if (statement[0] == "map_bump") {

@@ -6,17 +6,20 @@
 
 using namespace grendx;
 
-textureData::textureData(const std::string& filename) {
-	load_texture(filename);
+textureData::textureData(const std::string& filename, bool flipVertical) {
+	load_texture(filename, flipVertical);
 }
 
-bool textureData::load_texture(const std::string& filename) {
+bool textureData::load_texture(const std::string& filename, bool flipVertical) {
+	stbi_set_flip_vertically_on_load(flipVertical);
+
 	if (stbi_is_hdr(filename.c_str())) {
 		// load image components as floats
 		LogFmt("Loading {} (float)", filename);
 		float *datas = stbi_loadf(filename.c_str(), &width, &height, &channels, 0);
 
 		if (!datas) {
+			stbi_set_flip_vertically_on_load(false);
 			throw std::logic_error("Couldn't load texture");
 			return false;
 		}
@@ -28,6 +31,7 @@ bool textureData::load_texture(const std::string& filename) {
 		this->pixels = std::move(px);
 		stbi_image_free(datas);
 
+		stbi_set_flip_vertically_on_load(false);
 		return true;
 
 	} else if (stbi_is_16_bit(filename.c_str())) {
@@ -36,6 +40,7 @@ bool textureData::load_texture(const std::string& filename) {
 		uint16_t *datas = stbi_load_16(filename.c_str(), &width, &height, &channels, 0);
 
 		if (!datas) {
+			stbi_set_flip_vertically_on_load(false);
 			throw std::logic_error("Couldn't load texture");
 			return false;
 		}
@@ -47,6 +52,7 @@ bool textureData::load_texture(const std::string& filename) {
 		this->pixels = std::move(px);
 		stbi_image_free(datas);
 
+		stbi_set_flip_vertically_on_load(false);
 		return true;
 
 	} else {
@@ -56,6 +62,7 @@ bool textureData::load_texture(const std::string& filename) {
 		uint8_t *datas = stbi_load(filename.c_str(), &width, &height, &channels, 0);
 
 		if (!datas) {
+			stbi_set_flip_vertically_on_load(false);
 			throw std::logic_error("Couldn't load texture");
 			return false;
 		}
@@ -68,6 +75,7 @@ bool textureData::load_texture(const std::string& filename) {
 		this->pixels = std::move(px);
 		stbi_image_free(datas);
 
+		stbi_set_flip_vertically_on_load(false);
 		return true;
 	}
 }
