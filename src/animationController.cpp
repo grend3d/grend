@@ -16,6 +16,9 @@ void animationController::setAnimation(std::string animation, float weight) {
 
 	} else {
 		LogWarnFmt("WARNING: setting nonexistant animation '{}'!", animation);
+		for (const auto& [name, _] : *animations) {
+			LogFmt("Available: {}", name);
+		}
 	}
 }
 
@@ -71,8 +74,17 @@ void animationController::bind(std::string name, animationMap::ptr anim) {
 void animationController::bind(std::string name, std::string path) {
 	if (auto obj = loadSceneCompiled(path)) {
 		auto& anims = *(*obj)->animations;
+		unsigned count = 0;
+
 		for (const auto& [importedName, map] : anims) {
-			auto fullName = name + ":" + importedName;
+			std::string fullName = name;
+
+			if (count++ > 0) {
+				fullName += ":" + importedName;
+				//auto fullName = name + ":" + importedName;
+				LogWarnFmt("Remapping additional animation for {} to {}", name, fullName);
+			}
+
 			this->bind(fullName, map);
 			this->paths.push_back({name, path});
 		}
