@@ -29,6 +29,8 @@
 #include <grend/impPhysics.hpp>
 #endif
 
+#include <grend/thumbnails.hpp>
+
 using namespace grendx;
 using namespace grendx::engine;
 
@@ -59,6 +61,7 @@ void grendx::engine::initialize(const std::string& name, const renderSettings& s
 	Services().bind<gameState,          gameState>();
 	Services().bind<audioMixer,         audioMixer>(&ctx);
 	Services().bind<jobQueue,           jobQueue>();
+	Services().bind<thumbnails,         thumbnails>();
 
 	ecs::addDefaultFactories();
 

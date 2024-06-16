@@ -98,15 +98,19 @@ std::packaged_task<bool()> jobQueue::getAsync(void) {
 
 	if (asyncJobs.empty()) {
 		// TODO: debug statements hurt performance
+		/*
 		LogFmt("[job queue] got here, thread {} waiting for job",
 		       std::hash<std::thread::id>{}(std::this_thread::get_id()));
+			   */
 
 		waiters.wait(slock, [this]{ return !asyncJobs.empty(); });
 	}
 
+	/*
 	LogFmt("[job queue] (empty: {}) got here, thread {}",
 		asyncJobs.empty(),
 		std::hash<std::thread::id>{}(std::this_thread::get_id()));
+		*/
 
 	auto job = std::move(asyncJobs.front());
 	asyncJobs.pop_front();

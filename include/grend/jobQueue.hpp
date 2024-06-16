@@ -9,6 +9,7 @@
 #include <utility>
 #include <memory>
 #include <condition_variable>
+#include <chrono>
 
 namespace grendx {
 
@@ -46,6 +47,11 @@ class jobQueue : public IoC::Service {
 		// (eg. anything that touches openGL)
 		std::list<std::packaged_task<bool()>> deferredJobs;
 };
+
+template <typename T>
+bool jobFinished(std::future<T>& f) {
+	return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
 
 // namespace grendx
 }

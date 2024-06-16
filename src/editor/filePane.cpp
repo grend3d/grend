@@ -1,6 +1,10 @@
 #include <grend/filePane.hpp>
 #include <grend/fileBookmarks.hpp>
 #include <grend/logger.hpp>
+#include <grend/gameMain.hpp>
+
+#include <grend/jobQueue.hpp>
+#include <grend/thumbnails.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
@@ -9,6 +13,7 @@
 #include <filesystem>
 
 using namespace grendx;
+using namespace grendx::engine;
 namespace img = ImGui;
 namespace fs = std::filesystem;
 
@@ -66,6 +71,25 @@ void filePane::renderNodesRec(paneNode& node) {
 
 	// XXX: need to pass a non-empty string to TreeNodeEx
 	std::string displayName = " " + node.name;
+
+	auto thumbnailService = Resolve<thumbnails>();
+	auto thumbfb = thumbnailService->getThumbnail((std::string)node.fullpath);
+
+	ImGuiIO& io = ImGui::GetIO();
+	ImTextureID defaultID = io.Fonts->TexID;
+
+	if (thumbfb && *thumbfb) {
+		defaultID = reinterpret_cast<void*>((*thumbfb)->obj);
+	}
+
+	float texWidth  = (float)128;
+	float texHeight = (float)128;
+	ImVec2 uvMin = ImVec2(0.0f, 1.0f);
+	ImVec2 uvMax = ImVec2(1.0f, 0.0f); // flipped Y
+	ImVec4 tintColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 borderColor = ImVec4(0.0f, 0.0f, 0.0f, 0.0f); // no border
+	ImGui::Image(defaultID, ImVec2(texWidth, texHeight), uvMin, uvMax, tintColor, borderColor);
+	ImGui::SameLine();
 	bool opened = img::TreeNodeEx(displayName.c_str(), flags);
 
 	std::string popupContext = node.name + ":context";
