@@ -197,7 +197,6 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 
 	renderOptions frontOpts, backOpts;
 	frontOpts.features |=  renderOptions::Features::DepthTest;
-	frontOpts.features &= ~renderOptions::Features::DepthMask;
 	backOpts.features = frontOpts.features;
 
 	frontOpts.depthFunc = renderOptions::Less;
