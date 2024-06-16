@@ -20,20 +20,20 @@ renderFramebuffer::renderFramebuffer(int Width, int Height, unsigned Multisample
 	if (multisample) {
 		LogFmt("Multisample! samples={}", multisample);
 		framebufferMultisampled = genFramebuffer();
+
+		// TODO: option here
+		Shader::parameters nullopts; // XXX: no options
+		msaaResolver =
+			loadPostShader(GR_PREFIX "shaders/baked/msaa-tonemapped-blit.frag",
+						   nullopts);
+
+		if (!msaaResolver) {
+			throw std::logic_error("Couldn't load msaa blitter shader");
+		}
+
+		msaaResolver->bind();
+		msaaResolver->set("samples", int(multisample));
 	}
-
-	// TODO: option here
-	Shader::parameters nullopts; // XXX: no options
-	msaaResolver =
-		loadPostShader(GR_PREFIX "shaders/baked/msaa-tonemapped-blit.frag",
-		               nullopts);
-
-	if (!msaaResolver) {
-		throw std::logic_error("Couldn't load msaa blitter shader");
-	}
-
-	msaaResolver->bind();
-	msaaResolver->set("samples", int(multisample));
 #endif
 
 	setSize(Width, Height);
@@ -75,7 +75,7 @@ void renderFramebuffer::clear(void) {
 	allocatedIDs = 0;
 
 	glClearStencil(0);
-	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	DO_ERROR_CHECK();
 
