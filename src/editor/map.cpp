@@ -147,7 +147,7 @@ sceneNode::ptr loadNodes(modelCache& cache,
 		sceneImport::ptr tempNode = cache.getScene(imp->sourceFile);
 
 		if (tempNode == nullptr) {
-			LogErrorFmt("loadMap(): Unknown model {}", js["sourceFile"]);
+			LogErrorFmt("loadMap(): Unknown model {}", (std::string)js["sourceFile"]);
 			ret = ecs->construct<sceneNode>();
 
 		} else {

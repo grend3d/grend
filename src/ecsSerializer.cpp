@@ -7,8 +7,6 @@
 #include <grend/ecs/collision.hpp>
 #include <grend/ecs/serializer.hpp>
 
-#include <fmt/core.h>
-
 using namespace grendx;
 using namespace grendx::ecs;
 using namespace nlohmann;
@@ -85,7 +83,7 @@ entity *serializer::build(entityManager *manager, json serialized)
 		;
 
 	if (!complete) {
-		LogErrorFmt("incomplete entity: {}", serialized);
+		LogErrorFmt("incomplete entity: {}", (std::string)serialized);
 		return nullptr;
 	}
 

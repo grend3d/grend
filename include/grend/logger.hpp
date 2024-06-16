@@ -3,7 +3,7 @@
 #include <string>
 #include <functional>
 
-#include <fmt/core.h>
+#include <format>
 
 namespace grendx {
 
@@ -17,10 +17,10 @@ void LogInfo(const std::string& message);
 void LogWarn(const std::string& message);
 void LogError(const std::string& message);
 
-#define LogFmt(...)      LogInfo(fmt::format(__VA_ARGS__));
-#define LogInfoFmt(...)  LogInfo(fmt::format(__VA_ARGS__));
-#define LogWarnFmt(...)  LogWarn(fmt::format(__VA_ARGS__));
-#define LogErrorFmt(...) LogError(fmt::format(__VA_ARGS__));
+#define LogFmt(...)      LogInfo(std::format(__VA_ARGS__));
+#define LogInfoFmt(...)  LogInfo(std::format(__VA_ARGS__));
+#define LogWarnFmt(...)  LogWarn(std::format(__VA_ARGS__));
+#define LogErrorFmt(...) LogError(std::format(__VA_ARGS__));
 
 using LogCallbackFunc = std::function<void(enum LogType, const std::string&)>;
 void LogCallback(LogCallbackFunc callback);
