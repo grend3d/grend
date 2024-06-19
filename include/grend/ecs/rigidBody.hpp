@@ -182,23 +182,27 @@ class rigidBodyStaticMesh : public rigidBody,
 		virtual void initBody(entityManager *manager, entity *ent) {
 			auto physicsServ = grendx::engine::Resolve<physics>();
 
-			for (auto scene : ent->getAll<sceneComponent>()) {
-				if (!scene->getNode())
-					continue;
-
-				physicsServ->addStaticModels(ent, scene->getNode(),
-				                             ent->transform.getTRS(),
-				                             meshObjects);
-			}
-
-			// if this is attached to a scene node, add static meshes
 			if (sceneNode* node = dynamic_cast<sceneNode*>(ent)) {
+				// if this is attached to a scene node, add static meshes from there,
+				// scene components will have this node as a parent
 				TRS t = ent->transform.getTRS();
 				for (auto p = node->parent; p; p = p->parent) {
 					t = addTRS(p->transform.getTRS(), t);
 				}
 
 				physicsServ->addStaticModels(ent, node, t, meshObjects);
+
+			} else {
+				// if the entity isn't a scene node then use the current entity
+				// transform as the top-level transform
+				for (auto scene : ent->getAll<sceneComponent>()) {
+					if (!scene->getNode())
+						continue;
+
+					physicsServ->addStaticModels(ent, scene->getNode(),
+					                             ent->transform.getTRS(),
+					                             meshObjects);
+				}
 			}
 		}
 

@@ -52,11 +52,10 @@ void printError(result<T>& res) {
 	}
 }
 
-using importPair = std::pair<sceneImport::ptr, modelMap>;
 using objectPair = std::pair<sceneNode::ptr, modelMap>;
 
 result<objectPair> loadModel(std::string path) noexcept;
-result<importPair> loadSceneData(std::string path) noexcept;
+result<objectPair> loadSceneData(std::string path) noexcept;
 
 /// @file
 /**
@@ -64,9 +63,9 @@ result<importPair> loadSceneData(std::string path) noexcept;
  *
  * @param path Path to the scene.
  *
- * @return sceneImport::ptr representing the scene.
+ * @return sceneNode::ptr representing the scene.
  */
-result<sceneImport::ptr> loadSceneCompiled(std::string path) noexcept;
+result<sceneNode::ptr> loadSceneCompiled(std::string path) noexcept;
 
 /**
  * Load a scene asyncronously.
@@ -76,22 +75,22 @@ result<sceneImport::ptr> loadSceneCompiled(std::string path) noexcept;
  *
  * @return A pair with a node that will contain the loaded scene, and a future to
  *         wait on, if needed.
- *         If the scene couldn't be loaded, the result will be a sceneImport::ptr
+ *         If the scene couldn't be loaded, the result will be a sceneNode::ptr
  *         with no subnodes. (Should probably return an error of some sort...)
  */
-std::pair<sceneImport::ptr, std::future<bool>>
+std::pair<sceneNode::ptr, std::future<bool>>
 loadSceneAsyncCompiled(std::string path);
 
 void saveMap(sceneNode::ptr root,
 			 std::string name="save.map") noexcept;
 
-result<importPair>
+result<objectPair>
 loadMapData(std::string name="save.map") noexcept;
 
-result<sceneImport::ptr>
+result<sceneNode::ptr>
 loadMapCompiled(std::string name="save.map") noexcept;
 
-result<sceneImport::ptr>
+result<sceneNode::ptr>
 loadMapAsyncCompiled(std::string name="save.map") noexcept;
 
 // namespace grendx

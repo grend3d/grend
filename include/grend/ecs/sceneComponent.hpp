@@ -12,10 +12,6 @@ struct sceneComponentAdded {
 	sceneNode::ptr node;
 };
 
-// TODO: proper cache for this, need to have a more universal cache
-//       (something to also work with the model loading code)
-inline std::map<std::string, sceneImport::weakptr> sceneCache;
-
 class sceneComponent : public component {
 	sceneNode::ptr node = nullptr;
 	std::string curPath = "";
@@ -56,33 +52,24 @@ class sceneComponent : public component {
 		virtual ~sceneComponent();
 
 		void load(const std::string& path, enum Usage usage) {
-			auto it = sceneCache.find(path);
-			sceneImport::weakptr lookup;
-			sceneImport::ptr res;
+			if (auto temp = loadSceneCompiled(path)) {
+				auto ecs = grendx::engine::Resolve<entityManager>();
+				auto resnode = ref_cast<sceneNode>(*temp);
+				entity *ent = ecs->getEntity(this);
 
-			if (it != sceneCache.end()) {
-				lookup = it->second;
-			}
+				emitMessage(manager->getEntity(this));
+				this->node    = resnode;
+				this->curPath = path;
 
-			if (auto foo = lookup) {
-				res = foo;
+				// TODO: ideally there should be a better way to check if the entity is a node
+				if (sceneNode *pnode = dynamic_cast<sceneNode*>(ent)) {
+					setNode(node->name, pnode, node);
+				}
 
 			} else {
-				if (auto temp = loadSceneCompiled(path)) {
-					sceneCache[path] = *temp;
-					res = *temp;
-
-				} else {
-					printError(temp);
-					return;
-				}
+				printError(temp);
+				return;
 			}
-
-			curPath = path;
-
-			auto resnode = ref_cast<sceneNode>(res);
-			node = (usage == Copy)? duplicate(resnode) : resnode;
-			emitMessage(manager->getEntity(this));
 		}
 
 		sceneNode::ptr getNode() {

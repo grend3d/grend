@@ -35,7 +35,6 @@ void grendx::ecs::addDefaultFactories(void) {
 	factories->add<UnlitShader>();
 
 	factories->add<sceneNode>();
-	factories->add<sceneImport>();
 	factories->add<sceneSkin>();
 	factories->add<sceneParticles>();
 	factories->add<sceneBillboardParticles>();
@@ -70,7 +69,6 @@ void grendx::ecs::addDefaultEditors(void) {
 	editor->add<ecs::sceneComponent>();
 
 	editor->add<sceneNode>();
-	editor->add<sceneImport>();
 	editor->add<sceneParticles>();
 	editor->add<sceneBillboardParticles>();
 	editor->add<sceneLight>();

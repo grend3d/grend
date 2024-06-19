@@ -1,5 +1,6 @@
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/serializer.hpp>
+#include <grend/ecs/sceneComponent.hpp>
 
 #include <grend/gameEditor.hpp>
 #include <grend/loadScene.hpp>
@@ -15,6 +16,7 @@
 #include <nlohmann/json.hpp>
 
 using namespace grendx;
+using namespace grendx::ecs;
 using namespace grendx::engine;
 using namespace nlohmann;
 
@@ -63,63 +65,9 @@ static modelMap xxx_load_model(std::string filename, std::string objName) {
 	return models;
 }
 
-static
-sceneImport::ptr cloneImport(sceneImport::ptr scene) {
-	if (!scene)
-		return scene;
-
-	auto ecs = Resolve<ecs::entityManager>();
-	sceneImport::ptr ret = ecs->construct<sceneImport>(scene->sourceFile);
-	ret->transform.set(scene->transform.getTRS());
-
-	for (auto link : scene->nodes()) {
-		auto ptr = link->getRef();
-		auto& name = ptr->name;
-		setNode(name, ret, ptr);
-	}
-
-	return ret;
-}
-
-// XXX: TODO: move to model loading code
-class modelCache {
-	public:
-		sceneModel::ptr getModel(std::string source, std::string name) {
-			if (sources.find(source) == sources.end()) {
-				sources[source] = xxx_load_model(source, name);
-			}
-
-			modelMap& models = sources[source];
-
-			// hmm... just added it to the map no?
-			return (models.find(name) != models.end())
-				? models[name]
-				: nullptr;
-		}
-
-		sceneImport::ptr getScene(std::string source) {
-			if (scenes.find(source) == scenes.end()) {
-				if (auto scene = loadSceneData(source)) {
-					auto [objs, models] = *scene;
-					scenes[source]  = objs;
-					sources[source] = models;
-
-				} else {
-					printError(scene);
-					scenes[source] = nullptr;
-				}
-			}
-
-			return cloneImport(scenes[source]);
-		}
-
-		std::map<std::string, modelMap> sources;
-		std::map<std::string, sceneImport::ptr> scenes;
-};
-
 // TODO: set to keep track of map files already being loaded to avoid
 //       recursive map loads
-sceneNode::ptr loadNodes(modelCache& cache,
+sceneNode::ptr loadNodes(std::map<std::string, modelMap>& sources,
                          json js,
                          bool lowerLevel = false)
 {
@@ -138,29 +86,28 @@ sceneNode::ptr loadNodes(modelCache& cache,
 		return nullptr;
 	}
 
-	sceneImport* imp = dynamic_cast<sceneImport*>(ent);
-	if (lowerLevel && imp) {
+	sceneNode* imp = dynamic_cast<sceneNode*>(ent);
+	// TODO: source link
+	LogInfo((std::string)js.dump(4));
+
+	bool haveSourceFile = js.contains("entity-properties")
+		&& js["entity-properties"].contains("sourceFile");
+
+	if (lowerLevel && haveSourceFile) {
+		// backward compatibility for old map files (for now)
+		// TODO: remove this at some point, it's just for my own convenience
+		std::string sourceFile = js["entity-properties"]["sourceFile"];
+		LogFmt("Got here, have a legacy source file: '{}'", sourceFile);
+
+		imp->attach<sceneComponent>(sourceFile, sceneComponent::Usage::Copy);
+
 		// TODO: FIXME: previously built entity is unused here, ends up leaking
 		recurse = false;
-
 		ret = imp;
-		sceneImport::ptr tempNode = cache.getScene(imp->sourceFile);
 
-		if (tempNode == nullptr) {
-			LogErrorFmt("loadMap(): Unknown model {}", (std::string)js["sourceFile"]);
-			ret = ecs->construct<sceneNode>();
-
-		} else {
-			for (auto link : tempNode->nodes()) {
-				auto node = link->getRef();
-				setNode(node->name, ret, node);
-			}
-
-			imp->animations = tempNode->animations;
-		}
-
-		// XXX: reapply entity transforms to sceneImport
-		ecs::entity::deserializer(ret.getPtr(), js["entity-properties"]);
+	} else if (imp->has<sceneComponent>()) {
+		ret     = imp;
+		recurse = false;
 
 	} else if (sceneNode *temp = dynamic_cast<sceneNode*>(ent)) {
 		ret = ecs::ref(temp);
@@ -173,9 +120,20 @@ sceneNode::ptr loadNodes(modelCache& cache,
 		for (auto& ptr : js["nodes"]) {
 			// TODO: don't assign new name
 			static unsigned counter = 0;
-			std::string name = "node" + std::to_string(counter++);
+			std::string name;
 
-			auto node = loadNodes(cache, ptr, true);
+			if (ptr.contains("entity-properties")
+			    && ptr["entity-properties"].contains("name")
+			    && ptr["entity-properties"]["name"].is_string()
+			    && ptr["entity-properties"]["name"].size() > 0)
+			{
+				name = ptr["entity-properties"]["name"];
+
+			} else {
+				name = "node" + std::to_string(counter++);
+			}
+
+			auto node = loadNodes(sources, ptr, true);
 			setNode(name, ret, node);
 		}
 	}
@@ -188,7 +146,7 @@ sceneNode::ptr loadNodes(modelCache& cache,
 	return ret;
 }
 
-result<importPair>
+result<objectPair>
 grendx::loadMapData(std::string name) noexcept {
 	std::ifstream foo(name);
 	LogFmt("loading map {}", name);
@@ -200,15 +158,16 @@ grendx::loadMapData(std::string name) noexcept {
 
 	try {
 		auto ecs = engine::Resolve<ecs::entityManager>();
-		sceneImport::ptr ret = ecs->construct<sceneImport>(name);
+		sceneNode::ptr ret = ecs->construct<sceneNode>();
+		// TODO: source link
 		json j;
 		foo >> j;
 
 		// XXX: again TODO
-		modelCache cache;
 		modelMap retmodels;
+		std::map<std::string, modelMap> sources;
 
-		sceneNode::ptr temp = loadNodes(cache, j["root"]);
+		sceneNode::ptr temp = loadNodes(sources, j["root"]);
 		ret->transform.set(temp->transform.getTRS());
 
 		for (auto link : temp->nodes()) {
@@ -221,11 +180,11 @@ grendx::loadMapData(std::string name) noexcept {
 			(*ptr)->parent = ret;
 		}
 
-		for (auto& [name, ptr] : cache.sources) {
+		for (auto& [name, ptr] : sources) {
 			retmodels.insert(ptr.begin(), ptr.end());
 		}
 
-		return importPair {ret, retmodels};
+		return objectPair {ret, retmodels};
 
 	} catch (std::exception& e) {
 		LogErrorFmt("loadMap(): couldn't parse {}: {}", name, e.what());
@@ -233,7 +192,7 @@ grendx::loadMapData(std::string name) noexcept {
 	}
 }
 
-grendx::result<sceneImport::ptr>
+grendx::result<sceneNode::ptr>
 grendx::loadMapCompiled(std::string name) noexcept {
 	if (auto res = loadMapData(name)) {
 		auto [obj, models] = *res;

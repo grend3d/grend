@@ -12,7 +12,6 @@ sceneNode::~sceneNode() {}
 
 // XXX: "key functions", needed to do dynamic_cast across .so boundries
 //      Requires that the function be a "non-inline, non-pure virtual function"
-sceneImport::~sceneImport() {};
 sceneSkin::~sceneSkin() {};
 sceneParticles::~sceneParticles() {};
 sceneBillboardParticles::~sceneBillboardParticles() {};
@@ -74,6 +73,8 @@ sceneNode::ptr grendx::clone(sceneNode::ptr node) {
 	return ret;
 }
 
+/*
+// TODO: save this for later
 static animationMap::ptr copyAnimationMap(animationMap::ptr anim) {
 	auto ret = std::make_shared<animationMap>();
 
@@ -98,6 +99,7 @@ static animationCollection::ptr copyCollection(animationCollection::ptr anims) {
 
 	return ret;
 }
+*/
 
 template <typename T>
 static int indexOf(const std::vector<T>& vec, const T& value) {
@@ -199,14 +201,6 @@ sceneNode::ptr grendx::duplicate(sceneNode::ptr node) {
 				sceneNode::ptr ret = manager->construct<sceneNode>();
 				return doCopy(ret, node);
 		   }
-
-		case sceneNode::objType::Import:
-			{
-				auto foo = node->get<sceneImport>();
-				auto temp = manager->construct<sceneImport>(foo->sourceFile);
-				temp->animations = copyCollection(foo->animations);
-				return doCopy(temp, node);
-			}
 
 		case sceneNode::objType::Skin:
 			{
@@ -406,14 +400,6 @@ nlohmann::json sceneNode::serializer(ecs::component *comp) {
 	return {};
 }
 
-nlohmann::json sceneImport::serializer(ecs::component *comp) {
-	sceneImport *ent = static_cast<sceneImport*>(comp);
-
-	return {
-		{"sourceFile", ent->sourceFile},
-	};
-}
-
 nlohmann::json sceneSkin::serializer(ecs::component *comp) {
 	return {};
 }
@@ -492,12 +478,6 @@ nlohmann::json sceneIrradianceProbe::serializer(ecs::component *comp) {
 }
 
 void sceneNode::deserializer(ecs::component *comp, nlohmann::json j) {}
-
-void sceneImport::deserializer(ecs::component *comp, nlohmann::json j) {
-	auto im = static_cast<sceneImport*>(comp);
-
-	im->sourceFile = j["sourceFile"];
-}
 
 void sceneSkin::deserializer(ecs::component *comp, nlohmann::json j) {}
 

@@ -44,14 +44,6 @@ void sceneNode::drawEditor(component *comp) {
 	endType();
 }
 
-void sceneImport::drawEditor(component *comp) {
-	auto *ent = beginType<sceneImport>(comp);
-
-	ImGui::Text("Source: '%s'", ent->sourceFile.c_str());
-
-	endType();
-}
-
 static inline bool InputUInt(const char* label, unsigned *v) {
 	return ImGui::InputInt(label, (int *)v);
 }

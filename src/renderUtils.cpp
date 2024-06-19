@@ -190,6 +190,9 @@ void buildClickableRec(clickableEntities& clicks,
                        glm::mat4 trans,
                        bool inverted)
 {
+	using namespace grendx;
+	using namespace ecs;
+
 	if (!obj) return;
 
 	glm::mat4 adjTrans;
@@ -197,7 +200,7 @@ void buildClickableRec(clickableEntities& clicks,
 
 	getNodeTransform(obj, trans, inverted, adjTrans, adjInverted);
 
-	if (obj->type == sceneNode::objType::Import) {
+	if (obj->has<sceneComponent>()) {
 		renderID = clicks.add(obj.getPtr());
 	}
 

@@ -30,8 +30,6 @@ class sceneNode : public ecs::entity {
 		// used for type checking, dynamically-typed tree here
 		enum objType {
 			None,
-			Import,             // Imported model, indicates where to stop saving
-			                    // + where to load from
 			Model,              // generic model, static/dynamic/etc subclasses
 			Mesh,               // meshes that make up a model
 			Skin,               // Skinning info
@@ -136,40 +134,6 @@ void unlink(sceneNode::ptr node);
 sceneNode::ptr clone(sceneNode::ptr node);     // shallow copy
 sceneNode::ptr duplicate(sceneNode::ptr node); // deep copy
 std::string getNodeName(sceneNode::ptr node);
-
-class sceneImport : public sceneNode {
-	public:
-		typedef ecs::ref<sceneImport> ptr;
-		typedef ecs::ref<sceneImport> weakptr;
-
-		sceneImport(ecs::regArgs t, std::string_view path)
-			: sceneNode(ecs::doRegister(this, t), objType::Import),
-			  sourceFile(path)
-		{
-			// don't serialize links to imported entities
-			disable(entity::serializeLinks);
-		};
-
-		sceneImport(ecs::regArgs t)
-			: sceneNode(ecs::doRegister(this, t), objType::Import),
-			  sourceFile("") {};
-
-		virtual ~sceneImport();
-
-		virtual std::string idString(void) {
-			std::stringstream strm;
-			strm << "[" << typeString() << " : " << sourceFile <<  "]";
-			return strm.str();
-		}
-
-		static nlohmann::json serializer(component *comp);
-		static void deserializer(component *comp, nlohmann::json j);
-
-		static void drawEditor(component *comp);
-
-		std::string sourceFile;
-		animationCollection::ptr animations;
-};
 
 // forward declaration defined in glManager.hpp
 // ugh, this is becoming a maze of forward declarations...

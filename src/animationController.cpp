@@ -50,16 +50,13 @@ animationController::animationController(regArgs t)
 {
 	manager->registerInterface<updatable>(t.ent, this);
 
-	if (dynamic_cast<sceneNode*>(t.ent)) {
-		if (auto *p = dynamic_cast<sceneImport*>(t.ent)) {
-			// TODO: copy
-			animations = p->animations;
-		}
-	}
+	animations = std::make_shared<animationCollection>();
+};
 
-	if (!animations) {
-		animations = std::make_shared<animationCollection>();
-	}
+animationController::animationController(regArgs t, animationCollection::ptr anims)
+	: component(doRegister(this, t)), animations(anims)
+{
+	manager->registerInterface<updatable>(t.ent, this);
 };
 
 void animationController::bind(std::string name, animationMap::ptr anim) {
@@ -73,26 +70,25 @@ void animationController::bind(std::string name, animationMap::ptr anim) {
 
 void animationController::bind(std::string name, std::string path) {
 	if (auto obj = loadSceneCompiled(path)) {
-		auto& anims = *(*obj)->animations;
-		unsigned count = 0;
+		sceneNode::ptr node = *obj;
+		if (node->has<animationController>()) {
+			auto animCtrl = node->get<animationController>();
+			unsigned count = 0;
 
-		for (const auto& [importedName, map] : anims) {
-			std::string fullName = name;
+			for (const auto& [importedName, map] : *animCtrl->animations) {
+				std::string fullName = name;
 
-			if (count++ > 0) {
-				fullName += ":" + importedName;
-				//auto fullName = name + ":" + importedName;
-				LogWarnFmt("Remapping additional animation for {} to {}", name, fullName);
+				if (count++ > 0) {
+					fullName += ":" + importedName;
+					//auto fullName = name + ":" + importedName;
+					LogWarnFmt("Remapping additional animation for {} to {}", name, fullName);
+				}
+
+				this->bind(fullName, map);
+				this->paths.push_back({name, path});
 			}
-
-			this->bind(fullName, map);
-			this->paths.push_back({name, path});
 		}
 	}
-}
-
-sceneImport::ptr animationController::getObject(void) {
-	return objects;
 }
 
 void animationController::update(entityManager *manager, float delta) {
@@ -103,18 +99,15 @@ void animationController::update(entityManager *manager, float delta) {
 	if (currentAnimation->endtime == 0) return;
 
 	entity *ent = manager->getEntity(this);
+
 	// order of priorities for choosing animation targets:
-	// - sceneImport node if the node is an import
 	// - sceneComponent node if a scene component is attached
 	// - sceneNode if the node is any other derived class of sceneNode
-	sceneNode *node = dynamic_cast<sceneImport*>(ent);
-
-	if (!node) {
-		if (auto *scene = ent->get<sceneComponent>()) {
-			node = scene->getNode().getPtr();
-		} else {
-			node = dynamic_cast<sceneNode*>(ent);
-		}
+	sceneNode *node;
+	if (auto *scene = ent->get<sceneComponent>()) {
+		node = scene->getNode().getPtr();
+	} else {
+		node = dynamic_cast<sceneNode*>(ent);
 	}
 
 	if (node) {
@@ -167,7 +160,6 @@ static void endType() {
 
 void animationController::drawEditor(component *comp) {
 	auto *ent = beginType<animationController>(comp);
-	auto *controller = dynamic_cast<sceneImport*>(comp->manager->getEntity(comp));
 
 	static char name[128];
 	static char path[128];
@@ -181,9 +173,6 @@ void animationController::drawEditor(component *comp) {
 
 	} else {
 		ImGui::Text("[No animations?]");
-		if (controller && controller->animations) {
-			ImGui::Text("Have controller");
-		}
 	}
 
 	ImGui::Separator();

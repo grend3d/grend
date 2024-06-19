@@ -4,6 +4,7 @@
 #include <grend/logger.hpp>
 #include <grend/ecs/materialComponent.hpp>
 #include <grend/ecs/bufferComponent.hpp>
+#include <grend/ecs/animationController.hpp>
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb/stb_image.h>
@@ -1156,19 +1157,17 @@ static animationCollection::ptr collectAnimations(gltfModel& gltf) {
 	return ret;
 }
 
-static sceneImport::ptr
+static sceneNode::ptr
 load_gltf_scene_nodes(std::string filename,
                       gltfModel& gltf,
                       modelMap& models)
 {
 	auto ecs = engine::Resolve<ecs::entityManager>();
 
-	sceneImport::ptr ret = ecs->construct<sceneImport>(filename);
+	sceneNode::ptr ret = ecs->construct<sceneNode>();
+	// TODO: source link
 	auto anims = collectAnimations(gltf);
 	node_map names;
-
-	// TODO: how to return animations?
-	//       could just stuff it in the import object
 
 	sceneNode::ptr sceneobj = ecs->construct<sceneNode>();
 	for (auto& scene : gltf.data.scenes) {
@@ -1187,7 +1186,9 @@ load_gltf_scene_nodes(std::string filename,
 		obj->animChannel = std::hash<std::string>{}(name);
 	}
 
-	ret->animations = anims;
+	if (anims->size() > 0) {
+		ret->attach<animationController>(anims);
+	}
 
 	setNode("names", ret, nameobj);
 	setNode("scene", ret, sceneobj);
@@ -1243,7 +1244,7 @@ grendx::modelMap grendx::load_gltf_models(std::string filename) {
 }
 
 // TODO: return optional
-std::pair<grendx::sceneImport::ptr, grendx::modelMap>
+std::pair<grendx::sceneNode::ptr, grendx::modelMap>
 grendx::load_gltf_scene(std::string filename) {
 	LogFmt("Opening gltf scene {}...", filename);
 
@@ -1251,13 +1252,13 @@ grendx::load_gltf_scene(std::string filename) {
 		LogFmt("Loading gltf scene {}...", filename);
 		grendx::modelMap models = load_gltf_models(*gltf);
 		LogFmt("Loading gltf scene nodes {}...", filename);
-		sceneImport::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
+		sceneNode::ptr ret = load_gltf_scene_nodes(filename, *gltf, models);
 		LogFmt("done loading {}", filename);
 		return {ret, models};
 
 	} else {
 		// XXX: should return an optional here
 		auto ecs = engine::Resolve<ecs::entityManager>();
-		return {ecs->construct<sceneImport>(""), {}};
+		return {ecs->construct<sceneNode>(), {}};
 	}
 }

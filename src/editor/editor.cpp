@@ -393,8 +393,7 @@ result<objectPair> grendx::loadModel(std::string path) noexcept {
 	return {resultError, "loadModel: unknown file extension: " + ext};
 }
 
-//std::pair<sceneImport::ptr, modelMap>
-result<importPair> grendx::loadSceneData(std::string path) noexcept {
+result<objectPair> grendx::loadSceneData(std::string path) noexcept {
 	auto ecs = Resolve<ecs::entityManager>();
 
 	std::string ext = filename_extension(path);
@@ -416,19 +415,20 @@ result<importPair> grendx::loadSceneData(std::string path) noexcept {
 		sceneModel::ptr m = load_object(path);
 
 		// add the model at 0,0
-		auto obj = ecs->construct<sceneImport>(path);
+		// TODO: add source file link here
+		auto obj = ecs->construct<sceneNode>();
 		// make up a name for .obj models
 		auto fname = basenameStr(path) + ":model";
 
 		setNode(fname, obj, m);
 		modelMap models = {{ fname, m }};
-		return importPair {obj, models};
+		return objectPair {obj, models};
 	}
 
-	return {resultError, "loadSceneData: unknown file extension: " + ext};
+	return {resultError, std::format("loadSceneData: unknown file extension for {}: '{}'", path, ext)};
 }
 
-result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
+result<sceneNode::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 	if (auto res = loadSceneData(path)) {
 		auto [obj, models] = *res;
 		compileModels(models);
@@ -440,12 +440,13 @@ result<sceneImport::ptr> grendx::loadSceneCompiled(std::string path) noexcept {
 }
 
 // TODO: return result type here somehow
-std::pair<sceneImport::ptr, std::future<bool>>
+std::pair<sceneNode::ptr, std::future<bool>>
 grendx::loadSceneAsyncCompiled(std::string path) {
 	auto jobs = Resolve<jobQueue>();
 	auto ecs  = Resolve<ecs::entityManager>();
 
-	auto ret = ecs->construct<sceneImport>(path);
+	auto ret = ecs->construct<sceneNode>();
+	// TODO: add source file link here
 
 	auto fut = jobs->addAsync([=] () {
 		if (auto res = loadSceneData(path)) {
@@ -453,7 +454,7 @@ grendx::loadSceneAsyncCompiled(std::string path) {
 
 			// apparently you can't (officially) capture destructured bindings, only variables...
 			// ffs
-			sceneImport::ptr objptr = obj;
+			sceneNode::ptr objptr = obj;
 			modelMap modelptr = models;
 
 			setNode("asyncData", ret, objptr);

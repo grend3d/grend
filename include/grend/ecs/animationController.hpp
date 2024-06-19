@@ -19,8 +19,9 @@ class animationController
 		typedef std::weak_ptr<animationController>   weakptr;
 
 		animationController(regArgs t);
+		animationController(regArgs t, animationCollection::ptr anims);
+
 		void setAnimation(std::string animation, float weight = 1.0);
-		sceneImport::ptr getObject(void);
 		void update(ecs::entityManager *manager, float delta);
 
 		// bind an animation to a name
@@ -43,7 +44,6 @@ class animationController
 
 		animationCollection::ptr animations;
 		animationMap::ptr currentAnimation;
-		sceneImport::ptr objects;
 };
 
 void applyAnimation(sceneNode::ptr node, animationMap::ptr anim, float time);

@@ -147,7 +147,7 @@ typedef std::map<std::string, sceneModel::ptr> modelMap;
 sceneModel::ptr load_object(std::string filename);
 
 modelMap load_gltf_models(std::string filename);
-std::pair<sceneImport::ptr, modelMap> load_gltf_scene(std::string filename);
+std::pair<sceneNode::ptr, modelMap> load_gltf_scene(std::string filename);
 // TODO: load scene
 
 // namespace grendx
