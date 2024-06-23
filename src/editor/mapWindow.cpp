@@ -1,12 +1,15 @@
 #include <grend/gameEditor.hpp>
 #include <grend/loadScene.hpp>
 #include <grend/utility.hpp>
+#include <grend/ecs/sceneComponent.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 using namespace grendx;
+using namespace grendx::engine;
+using namespace grendx::ecs;
 
 static const ImGuiTreeNodeFlags base_flags
 	= ImGuiTreeNodeFlags_OpenOnArrow
@@ -50,25 +53,12 @@ void gameEditor::addnodesRec(const std::string& name,
 
 			if (ImGui::BeginDragDropTarget()) {
 				if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DRAG_FILENAME")) {
+					auto ecs = Resolve<entityManager>();
 					const char *fname = (const char*)payload->Data;
 
-					if (auto res = loadSceneCompiled(fname)) {
-						auto& newobj = *res;
-						std::string basename = basenameStr(fname) + ":";
-
-						//for (unsigned count = obj->nodes.size();; count++) {
-						// XXX: TODO:
-						for (unsigned count = 0;; count++) {
-							auto temp = basename + std::to_string(count);
-
-							if (!obj->hasNode(temp)) {
-								basename = temp;
-								break;
-							}
-						}
-
-						setNode(basename, obj, newobj);
-					}
+					sceneNode::ptr node = ecs->construct<sceneNode>();
+					node->attach<sceneComponent>(fname);
+					setNode(fname, obj, node);
 				}
 			}
 		};

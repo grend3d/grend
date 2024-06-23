@@ -4,6 +4,7 @@
 #include <grend/fileDialog.hpp>
 #include <grend/geometryGeneration.hpp>
 #include <grend/ecs/serializer.hpp> // TODO: debugging, remove
+#include <grend/ecs/sceneComponent.hpp>
 #include <iostream>
 #include <fstream>
 
@@ -13,6 +14,7 @@
 
 using namespace grendx;
 using namespace grendx::engine;
+using namespace grendx::ecs;
 
 static fileDialog open_dialog("Open File");
 static fileDialog save_as_dialog("Save As...");
@@ -69,20 +71,9 @@ static void handle_prompts(gameEditorUI *wrapper) {
 		LogFmt("Importing a scene! at {}", import_scene_dialog.selection);
 		import_scene_dialog.clear();
 
-		if (auto res = loadSceneCompiled(import_scene_dialog.selection)) {
-			auto obj = *res;
-			setNode("", selectedNode, obj);
-		} else printError(res);
-	}
-
-	if (import_map_dialog.promptFilename()) {
-		LogFmt("Importing a map! at {}", import_map_dialog.selection);
-		import_map_dialog.clear();
-
-		if (auto res = loadMapCompiled(import_map_dialog.selection)) {
-			auto obj = *res;
-			setNode("", selectedNode, obj);
-		} else printError(res);
+		sceneNode::ptr obj = entities->construct<sceneNode>();
+		obj->attach<sceneComponent>(import_scene_dialog.selection);
+		setNode("", selectedNode, obj);
 	}
 
 	if (load_entity_dialog.promptFilename()) {
