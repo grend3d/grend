@@ -53,8 +53,16 @@ gameEditor::gameEditor()
 		loadPostShader(GR_PREFIX "shaders/baked/deferred-metal-roughness-pbr.frag",
 		                rend->globalShaderOptions),
 #endif
+#if 0
+		loadPostShader(GR_PREFIX "shaders/baked/fog-volumetric.frag",
+		                rend->globalShaderOptions),
+#endif
 		loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
-		                rend->globalShaderOptions)
+		                rend->globalShaderOptions),
+#if 0
+		loadPostShader(GR_PREFIX "shaders/baked/boxblur.frag",
+		                rend->globalShaderOptions),
+#endif
 		},
 		ctx->getSettings().targetResX, ctx->getSettings().targetResY));
 #endif
@@ -69,6 +77,12 @@ gameEditor::gameEditor()
 	// XXX: constructing a full shared pointer for this is a bit wasteful...
 	loading_img = genTexture();
 	loading_img->buffer(std::make_shared<textureData>(GR_PREFIX "assets/tex/loading-splash.png"));
+
+	auto data = std::make_shared<textureData>(GR_PREFIX "assets/tex/bluenoise.png");
+	//auto data = std::make_shared<textureData>(GR_PREFIX "assets/tex/bayer.png");
+	data->minFilter = textureData::Nearest;
+	data->magFilter = textureData::Nearest;
+	bluenoise = texcache(data);
 
 	clear();
 	initImgui();
@@ -225,7 +239,12 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	SDL_GetWindowSize(ctx->window, &winsize_x, &winsize_y);
 
 	setPostUniforms(post, cam);
+	// XXX: not using the lightmap unit for anything else in post effects
+	glActiveTexture(TEX_GL_LIGHTMAP);
+	bluenoise->bind();
+	post->setUniform("blueNoise", TEXU_LIGHTMAP);
 	post->draw(rend->framebuffer);
+	post->setSize(fb->width, fb->height);
 
 	glViewport(vportPos.x, fb->height - (vportPos.y + vportSize.y), vportSize.x, vportSize.y);
 	if (phys) {

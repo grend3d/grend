@@ -42,6 +42,7 @@ class gameEditor : public gameView {
 		renderPostChain::ptr post;
 		renderPostStage<rOutput>::ptr loading_thing;
 		Texture::ptr loading_img;
+		Texture::ptr bluenoise;
 
 		virtual void handleEvent(const SDL_Event& ev);
 		virtual void render(renderFramebuffer::ptr fb);

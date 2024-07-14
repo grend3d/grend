@@ -131,6 +131,10 @@ class renderContext : public IoC::Service {
 
 		float lightThreshold = 0.05;
 		float exposure       = 1.f;
+		float fogStrength    = 0.025;
+		float fogAbsorption  = 0.01;
+		float fogConcentration = 0.01;
+		float fogAmbient       = 0.01;
 		renderSettings settings;
 
 	protected:

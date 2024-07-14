@@ -173,6 +173,14 @@ void gameEditorUI::menubar() {
 			                   0.1, 10.f);
 			ImGui::SliderFloat("Light threshold", &rend->lightThreshold,
 			                   0.001, 1.f);
+			ImGui::SliderFloat("Fog strength", &rend->fogStrength,
+			                   0.0001f, 0.5f);
+			ImGui::SliderFloat("Fog absorption", &rend->fogAbsorption,
+			                   0.0001f, 0.5f);
+			ImGui::SliderFloat("Fog concentration", &rend->fogConcentration,
+			                   0.0001f, 0.5f);
+			ImGui::SliderFloat("Fog ambient", &rend->fogAmbient,
+			                   0.0001f, 0.5f);
 
 			ImGui::Combo("Projection", &proj, "Perspective\0Orthographic\0");
 			ImGui::SliderFloat("Projection scale", &scale, 0.001, 0.2f);

@@ -231,18 +231,29 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
 	glm::mat4 view       = cam->viewTransform();
 	glm::mat4 projection = cam->projectionTransform();
 	glm::mat4 v_inv      = glm::inverse(view);
+	glm::mat4 p_inv      = glm::inverse(projection);
 
 	post->setUniform("v", view);
 	post->setUniform("p", projection);
 	post->setUniform("v_inv", v_inv);
+	post->setUniform("p_inv", p_inv);
+
+	post->setUniform("fogStrength",      rend->fogStrength);
+	post->setUniform("fogAbsorption",    rend->fogAbsorption);
+	post->setUniform("fogConcentration", rend->fogConcentration);
+	post->setUniform("fogAmbient",       rend->fogAmbient);
 
 	post->setUniform("cameraPosition", cam->position());
 	post->setUniform("cameraForward",  cam->direction());
 	post->setUniform("cameraRight",    cam->right());
 	post->setUniform("cameraUp",       cam->up());
-	post->setUniform("cameraFov",      cam->fovx());
+	post->setUniform("cameraFovx",     cam->fovx());
+	post->setUniform("cameraFovy",     cam->fovy());
 
-	float tim = SDL_GetTicks() * 1000.f;
+	post->setUniform("drawOffset",     rend->getDrawOffset());
+	post->setUniform("drawSize",       rend->getDrawSize());
+
+	float tim = SDL_GetTicks() * 1.f;
 	post->setUniform("exposure", rend->exposure);
 	post->setUniform("time_ms",  tim);
 	post->setUniform("lightThreshold", rend->lightThreshold);
