@@ -306,7 +306,7 @@ bindFunc grendx::controller::camScrollZoom(camera::ptr cam, float *zoom, float s
 //      resizing the framebuffer on window resize, etc.
 // TODO: dedicated file for generic close, minimize, copy/paste, drag and drop, etc
 //       handlers... windowControllers.cpp?
-bindFunc grendx::resizeInputHandler(renderPostChain::ptr post) {
+bindFunc grendx::resizeInputHandler() {
 	return [=] (const SDL_Event& ev, unsigned flags) {
 		if (ev.type == SDL_WINDOWEVENT
 		    && ev.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -320,10 +320,7 @@ bindFunc grendx::resizeInputHandler(renderPostChain::ptr post) {
 			float scaleY = rend->settings.scaleY;
 
 			rend->framebuffer->setSize(width*scaleX, height*scaleY);
-
-			if (post != nullptr) {
-				post->setSize(width, height);
-			}
+			rend->defaultFramebuffer->setSize(width, height);
 		}
 
 		return MODAL_NO_CHANGE;

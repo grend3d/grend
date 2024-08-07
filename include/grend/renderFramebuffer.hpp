@@ -18,6 +18,10 @@ class renderFramebuffer {
 		//       the codebase, need to just pick one
 		renderFramebuffer(int Width, int Height, unsigned multisample = 0);
 		renderFramebuffer(Framebuffer::ptr fb, int Width, int Height);
+		// XXX: default framebuffer output, no backing textures
+		// TODO: might be a good idea to have this class be multiple derived classes
+		renderFramebuffer(void);
+		bool isDefaultOutput = false;
 
 		void bind(void);
 		void clear(void);

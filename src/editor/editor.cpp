@@ -11,6 +11,7 @@
 #include <grend/renderUtils.hpp>
 #include <grend/jobQueue.hpp>
 #include <grend/gridDraw.hpp>
+#include <grend/renderPostChain.hpp>
 
 #include <grend/ecs/ecs.hpp>
 #include <grend/ecs/shader.hpp>
@@ -39,40 +40,53 @@ gameEditor::gameEditor()
 	objects = ecs->construct<sceneNode>();
 	cam->setFar(1000.0);
 
+	post = std::make_shared<renderPostChain>();
+
+#if 1
+	auto fogChain = std::make_shared<renderPostChain>();
+	auto texChain = std::make_shared<renderPostChain>();
+	//fogChain->setScale(0.75, 0.75);
+
+	fogChain->add(
+		loadPostShader(GR_PREFIX "shaders/baked/fog-volumetric.frag",
+		                rend->globalShaderOptions));
+	fogChain->add(
+		loadPostShader(GR_PREFIX "shaders/baked/boxblur.frag",
+		                rend->globalShaderOptions));
+
+	texChain->add(
+		loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
+		               rend->globalShaderOptions));
+
+	auto addShader =
+		loadPostShader(GR_PREFIX "shaders/baked/post-add.frag",
+		               rend->globalShaderOptions);
+
+	auto fogJoin = std::make_shared<renderPostJoin>(addShader, fogChain, texChain);
+	post->add(static_pointer_cast<renderPostStage>(fogJoin));
+#endif
+
 	// don't apply post-processing filters if this is an embedded profile
 	// (so no tonemapping/HDR)
 #ifdef NO_FLOATING_FB
-	post = renderPostChain::ptr(new renderPostChain(
-		{loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
-		                rend->globalShaderOptions)},
-		ctx->getSettings().targetResX, ctx->getSettings().targetResY));
+	post->add(
+		loadPostShader(GR_PREFIX "shaders/baked/texpresent.frag",
+		               rend->globalShaderOptions));
 #else
-	post = renderPostChain::ptr(new renderPostChain(
-		{
 #if 0
+	post->add(
 		loadPostShader(GR_PREFIX "shaders/baked/deferred-metal-roughness-pbr.frag",
-		                rend->globalShaderOptions),
+		                rend->globalShaderOptions));
 #endif
-#if 0
-		loadPostShader(GR_PREFIX "shaders/baked/fog-volumetric.frag",
-		                rend->globalShaderOptions),
-#endif
+	post->add(
 		loadPostShader(GR_PREFIX "shaders/baked/tonemap.frag",
-		                rend->globalShaderOptions),
-#if 0
-		loadPostShader(GR_PREFIX "shaders/baked/boxblur.frag",
-		                rend->globalShaderOptions),
-#endif
-		},
-		ctx->getSettings().targetResX, ctx->getSettings().targetResY));
+		                rend->globalShaderOptions));
 #endif
 
-	loading_thing = makePostprocessor<rOutput>(
+	loading_thing = makePostprocessor(
 		loadProgram(GR_PREFIX "shaders/baked/postprocess.vert",
 		            GR_PREFIX "shaders/baked/texpresent.frag",
-		            rend->globalShaderOptions),
-		ctx->getSettings().targetResX, ctx->getSettings().targetResY
-	);
+		            rend->globalShaderOptions));
 
 	// XXX: constructing a full shared pointer for this is a bit wasteful...
 	loading_img = genTexture();
@@ -235,16 +249,18 @@ void gameEditor::render(renderFramebuffer::ptr fb) {
 	rend->defaultSkybox->draw(cam, rend->framebuffer);
 
 	// TODO: function to do this
-	int winsize_x, winsize_y;
-	SDL_GetWindowSize(ctx->window, &winsize_x, &winsize_y);
+	//int winsize_x, winsize_y;
+	//SDL_GetWindowSize(ctx->window, &winsize_x, &winsize_y);
 
+	// XXX:
+	rend->defaultFramebuffer->setSize(fb->width, fb->height);
 	setPostUniforms(post, cam);
 	// XXX: not using the lightmap unit for anything else in post effects
 	glActiveTexture(TEX_GL_LIGHTMAP);
 	bluenoise->bind();
 	post->setUniform("blueNoise", TEXU_LIGHTMAP);
-	post->draw(rend->framebuffer);
-	post->setSize(fb->width, fb->height);
+	post->draw(rend->framebuffer, rend->defaultFramebuffer);
+	//post->setSize(fb->width, fb->height);
 
 	glViewport(vportPos.x, fb->height - (vportPos.y + vportSize.y), vportSize.x, vportSize.y);
 	if (phys) {
@@ -643,7 +659,8 @@ void gameEditor::showLoadingScreen() {
 	auto ctx  = Resolve<SDLContext>();
 
 	// TODO: maybe not this
-	loading_thing->draw(loading_img, nullptr);
+	//loading_thing->draw(loading_img, nullptr);
+	//loading_thing->draw(/* TODO: output framebuffer */);
 	SDL_GL_SwapWindow(ctx->window);
 }
 

@@ -3,7 +3,6 @@
 #include <grend/sceneNode.hpp>
 #include <grend/modalSDLInput.hpp>
 #include <grend/camera.hpp>
-#include <grend/renderPostStage.hpp>
 
 namespace grendx {
 namespace controller {
@@ -26,10 +25,7 @@ bindFunc camScrollZoom(camera::ptr cam, float *zoom, float scale=1.f);
 // namespace controller
 }
 
-// XXX: don't know where to put this, input handlers for
-//      resizing the framebuffer on window resize, etc.
-// TODO: maybe dedicated header
-bindFunc resizeInputHandler(renderPostChain::ptr post);
+bindFunc resizeInputHandler();
 
 // namespace grendx
 }

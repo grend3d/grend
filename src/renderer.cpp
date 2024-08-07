@@ -34,6 +34,8 @@ renderContext::renderContext(SDLContext& ctx, const renderSettings& _settings) {
 	Framebuffer().bind();
 	DO_ERROR_CHECK();
 
+	defaultFramebuffer = std::make_shared<renderFramebuffer>();
+
 	// TODO: something like this would be ideal
 	//globalShaderOptions["glsl_version"] = GLSL_VERSION;
 	//globalShaderOptions["max_lights"]   = MAX_LIGHTS;

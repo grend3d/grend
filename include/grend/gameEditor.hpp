@@ -2,6 +2,7 @@
 
 #include <grend/engine.hpp>
 #include <grend/renderPostStage.hpp>
+#include <grend/renderPostChain.hpp>
 #include <grend/sdlContext.hpp>
 #include <grend/gameMain.hpp>
 #include <grend/sceneNode.hpp>
@@ -40,7 +41,7 @@ class gameEditor : public gameView {
 
 		gameEditor();
 		renderPostChain::ptr post;
-		renderPostStage<rOutput>::ptr loading_thing;
+		renderPostStage::ptr loading_thing;
 		Texture::ptr loading_img;
 		Texture::ptr bluenoise;
 

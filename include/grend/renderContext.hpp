@@ -69,6 +69,9 @@ class renderContext : public IoC::Service {
 		// TODO: swap between these
 		renderFramebuffer::ptr framebuffer;
 		//renderFramebuffer last_frame;
+		// framebuffer for '0' framebuffer (in opengl, will have to figure out how this will work
+		// in vulkan)
+		renderFramebuffer::ptr defaultFramebuffer;
 
 		// (actual) screen size
 		int screenX, screenY;

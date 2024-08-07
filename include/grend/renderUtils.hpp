@@ -1,6 +1,7 @@
 #pragma once
 
-#include <grend/renderPostStage.hpp>
+#include <grend/renderPostChain.hpp>
+#include <grend/renderPostJoin.hpp>
 #include <grend/camera.hpp>
 
 #include <grend/camera.hpp>
@@ -41,6 +42,7 @@ void buildClickableQueue(clickableEntities& clicks,
 void buildClickableImports(clickableEntities& clicks, sceneNode::ptr obj, renderQueue& que);
 
 void setPostUniforms(renderPostChain::ptr post, camera::ptr cam);
+void setPostUniforms(renderPostJoin::ptr post, camera::ptr cam);
 
 // namespace grendx
 }

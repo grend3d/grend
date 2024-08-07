@@ -45,6 +45,12 @@ renderFramebuffer::renderFramebuffer(Framebuffer::ptr fb, int Width, int Height)
 	framebuffer = fb;
 }
 
+renderFramebuffer::renderFramebuffer(void) {
+	framebuffer = std::make_shared<Framebuffer>();
+	color = depth = nullptr;
+	isDefaultOutput = true;
+}
+
 void renderFramebuffer::bind(void) {
 #if defined(HAVE_MULTISAMPLE)
 	if (multisample) {
@@ -70,6 +76,7 @@ void renderFramebuffer::bind(void) {
 }
 
 void renderFramebuffer::clear(void) {
+	DO_ERROR_CHECK();
 	framebuffer->bind();
 
 	allocatedIDs = 0;
@@ -170,11 +177,17 @@ void renderFramebuffer::resolve(Shader::parameters options) {
 }
 
 void renderFramebuffer::setSize(int Width, int Height) {
+	int w = width  = max(1, Width);
+	int h = height = max(1, Height);
+
+	if (isDefaultOutput) {
+		// XXX: for default framebuffer, update and return
+		// TODO: probably split this into subclasses for different modes
+		return;
+	}
+
 	LogFmt("Allocating internal buffer with dimensions ({}, {}), MSAA: {}",
 	        Width, Height, multisample);
-
-	auto w = width  = max(1, Width);
-	auto h = height = max(1, Height);
 
 	framebuffer->bind();
 

@@ -271,6 +271,12 @@ void grendx::setPostUniforms(renderPostChain::ptr post,
 	post->setUniformBlock("directional_light_buffer", rend->directionalBuffer, UBO_DIRECTIONAL_LIGHT_BUFFER);
 }
 
+void grendx::setPostUniforms(renderPostJoin::ptr post, camera::ptr cam) {
+	for (auto& chain : post->stages) {
+		setPostUniforms(chain, cam);
+	}
+}
+
 clickableEntities::clickableEntities(uint32_t reserved)
 	: reservedStart(reserved) {};
 

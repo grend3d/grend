@@ -122,6 +122,8 @@ add_library(Grend
 	src/model.cpp
 	src/renderer.cpp
 	src/renderPostStage.cpp
+	src/renderPostChain.cpp
+	src/renderPostJoin.cpp
 	src/rendererProbes.cpp
 	src/renderFramebuffer.cpp
 	src/renderQueue.cpp

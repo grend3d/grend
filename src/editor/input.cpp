@@ -124,7 +124,7 @@ static bindFunc makeClicker(gameEditor *editor,
 }
 
 void gameEditor::loadInputBindings() {
-	inputBinds.bind(MODAL_ALL_MODES, resizeInputHandler(post));
+	inputBinds.bind(MODAL_ALL_MODES, resizeInputHandler());
 
 	// camera movement (on key press)
 	inputBinds.bind(MODAL_ALL_MODES,
