@@ -47,39 +47,43 @@ vec3 raymarch(vec3 pos, vec3 dir, float depth, uint cluster) {
 	float stepLen = inc*depth;
 	float s = n*stepLen;
 
-	vec3 accum = vec3(depth * fogAmbient * (fogAbsorption*fogConcentration));
+	float fogFalloff = 1.0 - fogAbsorption*fogConcentration;
+
+	vec3 ambient = vec3(fogAmbient * fogFalloff);
+	vec3 accum = vec3(0);
 
 	for (uint i = uint(0); i < uint(ITERS); i++) {
 		float k = float(i)*(stepLen);
 		vec3 off = dir*s + dir*k;
 		vec3 p = pos + off;
 
+		float depthsq = depth*depth;
+
 		if (lengthsq(off) > depth*depth) break;
 
 		for (uint m = uint(0); m < ACTIVE_POINTS(cluster); m++) {
 			uint idx = POINT_LIGHT_IDX(m, cluster);
 
-			float foo = fogAbsorption*fogConcentration*length(p - POINT_LIGHT(idx).position.xyz);
-
-			float atten = point_attenuation(idx, p) * pow(max(0.0, 1.0 - foo), 2.0);
+			//float foo = fogFalloff*length(p - POINT_LIGHT(idx).position.xyz);
+			float atten = point_attenuation(idx, p);
 			float shadow = point_shadow(idx, p);
 
-			accum += inc * atten*shadow * POINT_LIGHT(idx).diffuse.rgb;
+			accum += fogFalloff*atten*shadow * POINT_LIGHT(idx).diffuse.rgb;
 		}
 
 		for (uint m = uint(0); m < ACTIVE_SPOTS(cluster); m++) {
 			uint idx = SPOT_LIGHT_IDX(m, cluster);
 
-			float foo = fogAbsorption*fogConcentration*length(p - SPOT_LIGHT(idx).position.xyz);
+			float foo = fogFalloff*length(p - SPOT_LIGHT(idx).position.xyz);
 
-			float atten = spot_attenuation(idx, p) * pow(max(0.0, 1.0 - foo), 2.0);
+			float atten = spot_attenuation(idx, p) * fogFalloff;
 			float shadow = spot_shadow(idx, p);
 
-			accum += inc * atten*shadow * SPOT_LIGHT(idx).diffuse.rgb;
+			accum += fogFalloff*atten*shadow * SPOT_LIGHT(idx).diffuse.rgb;
 		}
 	}
 
-	return accum;
+	return depth*(inc*accum + ambient);
 }
 
 void main(void) {
@@ -99,7 +103,9 @@ void main(void) {
 	vec3 dir = mat3(v_inv)*vec3(duv.x*aspectX*perspOffY, duv.y * perspOffY, -1.0);
 	uint cluster = SCREEN_TO_CLUSTER(gl_FragCoord.x/screen_x, gl_FragCoord.y/screen_y);
 
-	vec3 fog = fogStrength*raymarch(cameraPosition, dir, depth, cluster);
+	vec3 fog = 0.01*fogStrength*raymarch(cameraPosition, dir, depth, cluster);
 
-	FRAG_COLOR = vec4(color.rgb + fog.rgb, 1.0);
+	//FRAG_COLOR = vec4(color.rgb + fog.rgb, 1.0);
+	FRAG_COLOR = vec4(fog.rgb, 1.0);
+	//FRAG_COLOR = vec4(viewport_uv, 0.0, 1.0);
 }
